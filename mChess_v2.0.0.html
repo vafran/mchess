@@ -22,7 +22,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.0.1</title>
+  <title>Monolith Chess v2.0.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -7108,19 +7108,24 @@ limitations under the License.
                 // ── PVS: first move searched at full window ──────────────────
                 v=minimax(child,depth-1+ext,alpha,beta,!maximizing,deadline);
               } else if(doLMR){
-                // LMR: reduced window search first
+                // LMR: reduced window search first — null window in correct space
                 const reduction=moveCount>=6?2:1;
-                v=minimax(child,depth-1-reduction+ext,alpha,alpha+1,!maximizing,deadline);
-                // If it beats alpha, re-search at full depth with null window
-                if(v>alpha&&v<beta){
-                  v=minimax(child,depth-1+ext,alpha,beta,!maximizing,deadline);
+                if(maximizing){
+                  v=minimax(child,depth-1-reduction+ext,alpha,alpha+1,false,deadline);
+                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,false,deadline);
+                } else {
+                  v=minimax(child,depth-1-reduction+ext,beta-1,beta,true,deadline);
+                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,true,deadline);
                 }
               } else {
-                // ── PVS: null window search for remaining moves ──────────────
-                v=minimax(child,depth-1+ext,alpha,alpha+1,!maximizing,deadline);
-                // If it fails high (beats alpha), re-search at full window
-                if(v>alpha&&v<beta){
-                  v=minimax(child,depth-1+ext,alpha,beta,!maximizing,deadline);
+                // ── PVS: null window search — (alpha,alpha+1) for maximizer,
+                //                             (beta-1,beta)   for minimizer ──
+                if(maximizing){
+                  v=minimax(child,depth-1+ext,alpha,alpha+1,false,deadline);
+                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,false,deadline);
+                } else {
+                  v=minimax(child,depth-1+ext,beta-1,beta,true,deadline);
+                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,true,deadline);
                 }
               }
             }catch(e){ if(String(e)==='TIMEOUT') throw e; throw e; }
@@ -7215,10 +7220,15 @@ limitations under the License.
 
                   let rawScore;
                   try {
+                    // ✨ FIX: Aspiration window bounds are in scoreForMe space.
+                    // minimax() always returns rawScore (White's perspective).
+                    // For Black, scoreForMe = -rawScore, so we must invert the window.
+                    const engAlpha = color === 'w' ? alpha : -beta;
+                    const engBeta  = color === 'w' ? beta  : -alpha;
                     if (color === 'w') {
-                      rawScore = minimax(child, d-1, alpha, beta, false, deadline);
+                      rawScore = minimax(child, d-1, engAlpha, engBeta, false, deadline);
                     } else {
-                      rawScore = minimax(child, d-1, alpha, beta, true, deadline);
+                      rawScore = minimax(child, d-1, engAlpha, engBeta, true, deadline);
                     }
                   } catch(err) {
                     if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
@@ -7227,8 +7237,8 @@ limitations under the License.
 
                   let scoreForMe = color === 'w' ? rawScore + repPen : -rawScore + repPen;
                   if (multiPV === 1){
-                    if(color==='w') alpha = Math.max(alpha, scoreForMe);
-                    else beta = Math.min(beta, -scoreForMe);
+                    // Both colors maximize scoreForMe at the root — no inversion needed
+                    alpha = Math.max(alpha, scoreForMe);
                   }
                   currentDepthScores.push({move:m, score:scoreForMe});
                 }
