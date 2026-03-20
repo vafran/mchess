@@ -6686,7 +6686,7 @@ limitations under the License.
       if (chessEngineWorker) { try { chessEngineWorker.terminate(); } catch(e){} }
 
       const workerCode = function() {
-        const PV = { P:100, N:320, B:330, R:500, Q:900, K:20000 };
+        const PV = { P:100, N:305, B:333, R:500, Q:900, K:20000 };
         const PIECE_VALUES = PV;
         function deepCopy(b){ return b.map(r=>r.slice()); }
         function clr(p){ if(!p||p===' ') return null; return p===p.toUpperCase()?'w':'b'; }
@@ -6783,6 +6783,7 @@ limitations under the License.
                 if(b[rr][c]===(isW?'p':'P')||(c>0&&b[rr][c-1]===(isW?'p':'P'))||(c<7&&b[rr][c+1]===(isW?'p':'P'))){ok=false;break;}
               }
               if(ok) bonus=isW?(7-r)*15:r*15;
+              if(ok) bonus = Math.round(bonus * (1 + eg * 2)); // scale up in endgame
             }
 
             // ── Rook on open / semi-open file ─────────────────────────────
@@ -6827,7 +6828,7 @@ limitations under the License.
             }
 
             // ── King safety in middlegame ─────────────────────────────────
-            // (covered by PST KMG, but add pawn shield bonus)
+            // Pawn shield + dynamic attacker penalty (quadratic, capped)
             if(u==='K'&&eg<0.5){
               let shield=0;
               const shieldRow=isW?r-1:r+1;
@@ -6838,6 +6839,22 @@ limitations under the License.
                 }
               }
               bonus+=shield*10;
+
+              // Count enemy pieces attacking the 3×3 zone around the king
+              const enemyClr=isW?'b':'w';
+              let attackers=0;
+              for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+                const nr=r+dr, nc=c+dc;
+                if(nr<0||nr>=8||nc<0||nc>=8) continue;
+                for(let fr2=0;fr2<8;fr2++) for(let fc2=0;fc2<8;fc2++){
+                  if(clr(b[fr2][fc2])===enemyClr && atk(b,fr2,fc2,nr,nc)){
+                    attackers++;
+                  }
+                }
+              }
+              // Quadratic penalty: 1→5, 2→20, 3→45, 4→80 (capped)
+              const kPenalty=Math.min(80, attackers*attackers*5);
+              bonus-=kPenalty*(1-eg); // diminishes as we enter endgame
             }
 
             s+=sign*(val+pst+bonus);
@@ -7183,7 +7200,27 @@ limitations under the License.
             }
 
             const maxDepth = Math.max(1, msg.depth || 3);
-            let scoredRoot = rootMoves.map(m => ({move:m, score:0}));
+
+            // ── Initial root move ordering (MVV-LVA + promotions) ─────────────
+            // Ensures depth-1 iteration benefits from good ordering immediately,
+            // producing better cutoffs from depth-2 onwards.
+            const MVV_LVA_SCORES = {K:0, P:1, N:2, B:3, R:4, Q:5};
+            let scoredRoot = rootMoves.map(m => {
+              let s = 0;
+              const target = state.board[m.tr][m.tc];
+              const mover  = state.board[m.fr][m.fc];
+              if (target && target !== ' ') {
+                // MVV-LVA: capture score = victim value - attacker value (scaled)
+                const victim   = MVV_LVA_SCORES[target.toUpperCase()] || 0;
+                const attacker = MVV_LVA_SCORES[mover.toUpperCase()]  || 0;
+                s = 10 + victim * 10 - attacker;
+              }
+              // Promotions ranked just below winning captures
+              if (mover && mover.toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) s += 50;
+              return {move:m, score:s};
+            });
+            scoredRoot.sort((a,b) => b.score - a.score);
+
             let bestOptions = scoredRoot.slice(0, multiPV);
             let analysisPartial = false;
             let prevBestScore = 0; // For aspiration windows
@@ -7252,6 +7289,41 @@ limitations under the License.
                   if(best >= aspBeta) { aspBeta  += ASPIRATION_DELTA*(attempt+2); continue; }
                 }
                 break; // Window held — no retry needed
+              }
+
+              // ── Aspiration failsafe: if all 3 attempts failed, re-search at full window ──
+              // This guarantees correct scores when the position changes dramatically
+              // (e.g. opponent plays a strong move that shifts evaluation by 300+ cp).
+              if(currentDepthScores.length > 0 && !depthPartial){
+                const best = currentDepthScores.reduce((a,b)=>b.score>a.score?b:a).score;
+                const stillFailing = best <= (prevBestScore - ASPIRATION_DELTA) ||
+                                     best >= (prevBestScore + ASPIRATION_DELTA);
+                if(stillFailing && d >= 3){
+                  // Full window re-search — guaranteed correct result
+                  currentDepthScores = [];
+                  depthPartial = false;
+                  let alpha = -Infinity, beta = Infinity;
+                  for(const {move:m} of scoredRoot){
+                    if(Date.now() >= deadline){ depthPartial = true; analysisPartial = true; break; }
+                    const child = applyMove(state, m);
+                    const childKey = child.board.map(r=>r.join('')).join('|')+'|'+child.turn;
+                    const reps = gameHashCount.get(childKey)||0;
+                    const repPen = reps>=1 ? -(5000*reps*reps) : 0;
+                    let rawScore;
+                    try {
+                      const engAlpha = color === 'w' ? alpha : -beta;
+                      const engBeta  = color === 'w' ? beta  : -alpha;
+                      rawScore = color === 'w'
+                        ? minimax(child, d-1, engAlpha, engBeta, false, deadline)
+                        : minimax(child, d-1, engAlpha, engBeta, true,  deadline);
+                    } catch(err) {
+                      if(String(err)==='TIMEOUT'){ depthPartial=true; analysisPartial=true; break; }
+                      throw err;
+                    }
+                    const scoreForMe = color === 'w' ? rawScore + repPen : -rawScore + repPen;
+                    currentDepthScores.push({move:m, score:scoreForMe});
+                  }
+                }
               }
 
               // Save results only if depth completed without timeout
