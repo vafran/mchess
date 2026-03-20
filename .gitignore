@@ -1,0 +1,22 @@
+# === Ejecutables y Binarios ===
+# No subimos el motor de Stockfish ni cualquier otro exe
+*.exe
+stockfish
+stockfish.exe
+
+# === Dependencias de Node.js ===
+# Estos se instalan con 'npm install', no se suben al repo
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# === Archivos de Sistema y Editores ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# === Logs de la Arena ===
+# Si decides guardar los PGNs en archivos de texto
+*.log
+partidas_guardadas/

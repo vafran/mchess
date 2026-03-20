@@ -2480,6 +2480,53 @@ limitations under the License.
   </div>
 
   <script>
+    // Variable global única y aislada para el Coliseo
+window.askWiseKing = async function(fen) {
+    console.log("🏟️ Recibida petición de FEN:", fen);
+
+    // Parsear FEN y cargar en el estado global del juego
+    const parts = fen.split(' ');
+    const rows = parts[0].split('/');
+    
+    // Reconstruir el tablero global
+    board = [];
+    for (const row of rows) {
+        const r = [];
+        for (const ch of row) {
+            if (ch >= '1' && ch <= '8') {
+                for (let i = 0; i < parseInt(ch); i++) r.push(' ');
+            } else {
+                r.push(ch);
+            }
+        }
+        board.push(r);
+    }
+
+    // Color, derechos de enroque, en passant
+    const color = parts[1]; // 'w' o 'b'
+    const cr = parts[2];
+    castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
+    enPassantTarget = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
+    positionHashes = []; // reset — no hay historial de repeticiones en arena
+
+    // Llamar al motor con el estado ya cargado (Color, Profundidad, Errores, Timeout)
+    const results = await engineSearch(color, 10, 1, 35000);
+
+    if (!results || !results.length) {
+        console.log("❌ Motor sin jugadas");
+        return null;
+    }
+
+    const m = results[0].move;
+    console.log("✅ Jugada encontrada:", m);
+
+    // Convertir {fr, fc, tr, tc} → UCI string "e2e4"
+    const cols = 'abcdefgh';
+    const uci = cols[m.fc] + (8 - m.fr) + cols[m.tc] + (8 - m.tr);
+    console.log("🎯 UCI:", uci);
+    return uci;
+};  
+
     // ═══════════════════════════════════════════
     // Chess Engine — Enhanced kid-friendly version
     // ═══════════════════════════════════════════
@@ -6841,21 +6888,16 @@ limitations under the License.
               bonus+=shield*10;
 
               // Count enemy pieces attacking the 3×3 zone around the king
-              // Iterate pieces first (not zone squares) — each piece counted once,
-              // early break per piece, ~8× faster than previous nested loop.
               const enemyClr=isW?'b':'w';
               let attackers=0;
-              for(let fr2=0;fr2<8;fr2++) for(let fc2=0;fc2<8;fc2++){
-                const ep=b[fr2][fc2];
-                if(!ep||ep===' '||clr(ep)!==enemyClr) continue;
-                let hits=false;
-                outer: for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
-                  const nr=r+dr, nc=c+dc;
-                  if(nr>=0&&nr<8&&nc>=0&&nc<8&&atk(b,fr2,fc2,nr,nc)){
-                    hits=true; break outer;
+              for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+                const nr=r+dr, nc=c+dc;
+                if(nr<0||nr>=8||nc<0||nc>=8) continue;
+                for(let fr2=0;fr2<8;fr2++) for(let fc2=0;fc2<8;fc2++){
+                  if(clr(b[fr2][fc2])===enemyClr && atk(b,fr2,fc2,nr,nc)){
+                    attackers++;
                   }
                 }
-                if(hits) attackers++;
               }
               // Quadratic penalty: 1→5, 2→20, 3→45, 4→80 (capped)
               const kPenalty=Math.min(80, attackers*attackers*5);
@@ -6985,11 +7027,8 @@ limitations under the License.
 
         let killers=Array(64).fill(null).map(()=>[null,null]);
         let histTable=Array(64).fill(null).map(()=>Array(64).fill(0));
-        let counterMoveTable=Array(64).fill(null).map(()=>Array(64).fill(null));
 
-        function moveScore(state,m,depth,ttMove,prevMove){
-          // ── TT move: highest priority — proven best move from previous iteration ──
-          if(ttMove&&m.fr===ttMove.fr&&m.fc===ttMove.fc&&m.tr===ttMove.tr&&m.tc===ttMove.tc) return 1000000;
+        function moveScore(state,m,depth){
           const p=state.board[m.fr][m.fc];
           const t=state.board[m.tr][m.tc];
           const pv=p&&p!==' '?(PV[p.toUpperCase()]||0):0;
@@ -6999,11 +7038,6 @@ limitations under the License.
           const k=killers[depth];
           if(k&&k[0]&&k[0].fr===m.fr&&k[0].fc===m.fc&&k[0].tr===m.tr&&k[0].tc===m.tc) return 50000;
           if(k&&k[1]&&k[1].fr===m.fr&&k[1].fc===m.fc&&k[1].tr===m.tr&&k[1].tc===m.tc) return 49000;
-          // ── Counter move: quiet move that refuted opponent's last move ──────
-          if(prevMove){
-            const cm=counterMoveTable[prevMove.fr*8+prevMove.fc][prevMove.tr*8+prevMove.tc];
-            if(cm&&cm.fr===m.fr&&cm.fc===m.fc&&cm.tr===m.tr&&cm.tc===m.tc) return 48000;
-          }
           let sc=histTable[m.fr*8+m.fc][m.tr*8+m.tc]||0;
           // Instinto asesino: priorizar jugadas cerca del rey enemigo
           const pc=clr(p);
@@ -7066,7 +7100,7 @@ limitations under the License.
           }
         }
 
-        function minimax(state,depth,alpha,beta,maximizing,deadline,nullOk=true,prevMove=null){
+        function minimax(state,depth,alpha,beta,maximizing,deadline,nullOk=true){
           if(Date.now()>=deadline) throw 'TIMEOUT';
           const bk=zob(state);
           // Anti-repetition check
@@ -7074,10 +7108,8 @@ limitations under the License.
           if((gameHashCount.get(repKey)||0)>=2) return 0;
           // TT lookup
           const alphaOrig=alpha;
-          let ttMove=null; // best move from TT — used for move ordering
           if(tt.has(bk)){
             const e=tt.get(bk);
-            if(e.bestMove) ttMove=e.bestMove; // always use for ordering regardless of depth
             if(e.depth>=depth){
               if(e.flag===TT_EXACT)return e.score;
               if(e.flag===TT_LOWER&&e.score>alpha)alpha=e.score;
@@ -7107,16 +7139,15 @@ limitations under the License.
             }
           }
 
-          moves.sort((a,b)=>moveScore(state,b,depth,ttMove,prevMove)-moveScore(state,a,depth,ttMove,prevMove));
+          moves.sort((a,b)=>moveScore(state,b,depth)-moveScore(state,a,depth));
           let best=maximizing?-Infinity:Infinity;
-          let bestMoveSoFar=null;
           let moveCount=0;
 
           // ── Futility Pruning margins ────────────────────────────────────────
           // At low depths, if static eval + margin < alpha (for maximizer), the node
           // is unlikely to raise alpha — skip quiet moves entirely.
-          const FUTILITY_MARGIN=[0,150,300,500]; // depth 0,1,2,3
-          const staticEval=!checked&&depth<=3?evaluate(state):null;
+          const FUTILITY_MARGIN=[0,150,300]; // depth 0,1,2
+          const staticEval=!checked&&depth<=2?evaluate(state):null;
           const canFutility=staticEval!==null&&!checked;
 
           for(const m of moves){
@@ -7127,7 +7158,7 @@ limitations under the License.
             // ── Futility Pruning ────────────────────────────────────────────
             const isCapture=state.board[m.tr][m.tc]!==' ';
             const isPromo=state.board[m.fr][m.fc].toUpperCase()==='P'&&(m.tr===0||m.tr===7);
-            if(canFutility&&depth<=3&&!isCapture&&!isPromo&&ext===0&&moveCount>0){
+            if(canFutility&&depth<=2&&!isCapture&&!isPromo&&ext===0&&moveCount>0){
               const margin=FUTILITY_MARGIN[depth]||0;
               if(maximizing&&staticEval+margin<=alpha){ moveCount++; continue; }
               if(!maximizing&&staticEval-margin>=beta){ moveCount++; continue; }
@@ -7139,48 +7170,44 @@ limitations under the License.
             try{
               if(moveCount===0){
                 // ── PVS: first move searched at full window ──────────────────
-                v=minimax(child,depth-1+ext,alpha,beta,!maximizing,deadline,true,m);
+                v=minimax(child,depth-1+ext,alpha,beta,!maximizing,deadline);
               } else if(doLMR){
-                // LMR: reduced null-window search, re-search if it fails high/low
+                // LMR: reduced window search first — null window in correct space
                 const reduction=moveCount>=6?2:1;
                 if(maximizing){
-                  v=minimax(child,depth-1-reduction+ext,alpha,alpha+1,false,deadline,true,m);
-                  // Re-search at full depth if null window fails high (ANY beat of alpha)
-                  if(v>alpha) v=minimax(child,depth-1+ext,alpha,beta,false,deadline,true,m);
+                  v=minimax(child,depth-1-reduction+ext,alpha,alpha+1,false,deadline);
+                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,false,deadline);
                 } else {
-                  v=minimax(child,depth-1-reduction+ext,beta-1,beta,true,deadline,true,m);
-                  // Re-search at full depth if null window fails low (ANY beat below beta)
-                  if(v<beta) v=minimax(child,depth-1+ext,alpha,beta,true,deadline,true,m);
+                  v=minimax(child,depth-1-reduction+ext,beta-1,beta,true,deadline);
+                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,true,deadline);
                 }
               } else {
                 // ── PVS: null window search — (alpha,alpha+1) for maximizer,
                 //                             (beta-1,beta)   for minimizer ──
                 if(maximizing){
-                  v=minimax(child,depth-1+ext,alpha,alpha+1,false,deadline,true,m);
-                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,false,deadline,true,m);
+                  v=minimax(child,depth-1+ext,alpha,alpha+1,false,deadline);
+                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,false,deadline);
                 } else {
-                  v=minimax(child,depth-1+ext,beta-1,beta,true,deadline,true,m);
-                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,true,deadline,true,m);
+                  v=minimax(child,depth-1+ext,beta-1,beta,true,deadline);
+                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,true,deadline);
                 }
               }
             }catch(e){ if(String(e)==='TIMEOUT') throw e; throw e; }
 
             moveCount++;
-            if(maximizing){if(v>best){best=v;bestMoveSoFar=m;}if(v>alpha)alpha=v;}
-            else{if(v<best){best=v;bestMoveSoFar=m;}if(v<beta)beta=v;}
+            if(maximizing){if(v>best)best=v;if(v>alpha)alpha=v;}
+            else{if(v<best)best=v;if(v<beta)beta=v;}
             if(alpha>=beta){
               if(state.board[m.tr][m.tc]===' '){
                 killers[depth][1]=killers[depth][0];killers[depth][0]=m;
                 histTable[m.fr*8+m.fc][m.tr*8+m.tc]+=depth*depth;
-                // Counter move: remember this quiet move as the answer to opponent's last move
-                if(prevMove) counterMoveTable[prevMove.fr*8+prevMove.fc][prevMove.tr*8+prevMove.tc]=m;
               }
               break;
             }
           }
           const flag=best<=alphaOrig?TT_UPPER:best>=beta?TT_LOWER:TT_EXACT;
           if(tt.size>MAX_TT)ttEvict();
-          tt.set(bk,{score:best,depth,flag,bestMove:bestMoveSoFar});
+          tt.set(bk,{score:best,depth,flag});
           return best;
         }
 
@@ -7212,7 +7239,6 @@ limitations under the License.
             tt.clear();
             killers = Array(64).fill(null).map(()=>[null,null]);
             histTable = Array(64).fill(null).map(()=>Array(64).fill(0));
-            counterMoveTable = Array(64).fill(null).map(()=>Array(64).fill(null));
 
             let rootMoves = legalMoves(state, color);
             if(!rootMoves.length){
@@ -7256,7 +7282,7 @@ limitations under the License.
 
               // ── Aspiration Windows ────────────────────────────────────────
               // Use a narrow window around the previous score. Widen on fail.
-              const ASPIRATION_DELTA = 75;
+              const ASPIRATION_DELTA = 50;
               let aspAlpha = d >= 3 ? prevBestScore - ASPIRATION_DELTA : -Infinity;
               let aspBeta  = d >= 3 ? prevBestScore + ASPIRATION_DELTA :  Infinity;
               let aspirationFailed = false;
