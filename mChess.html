@@ -6824,6 +6824,21 @@ window.askWiseKing = async function(fen) {
 
             // ── Passed pawn bonus ─────────────────────────────────────────
             let bonus=0;
+
+            // 👸 FIX 1: FRENO A LA DAMA (Añadir aquí)
+            if(u==='Q' && eg < 0.2) { 
+              const homeR = isW ? 7 : 0;
+              const homeC = 3;
+              if(r !== homeR || c !== homeC) {
+                let undevelopedMinors = 0;
+                if (b[homeR][1].toUpperCase() === 'N') undevelopedMinors++;
+                if (b[homeR][2].toUpperCase() === 'B') undevelopedMinors++;
+                if (b[homeR][5].toUpperCase() === 'B') undevelopedMinors++;
+                if (b[homeR][6].toUpperCase() === 'N') undevelopedMinors++;
+                bonus -= undevelopedMinors * 25;
+              }
+            }
+
             if(u==='P'){
               let ok=true, dir=isW?-1:1;
               for(let rr=r+dir;isW?rr>=0:rr<=7;rr+=dir){
@@ -6875,8 +6890,19 @@ window.askWiseKing = async function(fen) {
             }
 
             // ── King safety in middlegame ─────────────────────────────────
-            // Pawn shield + dynamic attacker penalty (quadratic, capped)
             if(u==='K'&&eg<0.5){
+              // 1. Detectar atacantes (Lo necesitamos para los siguientes puntos)
+              const enemyClr=isW?'b':'w';
+              let attackers=0;
+              for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+                const nr=r+dr, nc=c+dc;
+                if(nr<0||nr>=8||nc<0||nc>=8) continue;
+                for(let fr2=0;fr2<8;fr2++) for(let fc2=0;fc2<8;fc2++){
+                  if(clr(b[fr2][fc2])===enemyClr && atk(b,fr2,fc2,nr,nc)) attackers++;
+                }
+              }
+
+              // 2. Bonus de Escudo (30 centipeones por peón)
               let shield=0;
               const shieldRow=isW?r-1:r+1;
               if(shieldRow>=0&&shieldRow<8){
@@ -6885,23 +6911,34 @@ window.askWiseKing = async function(fen) {
                   if(nc>=0&&nc<8&&b[shieldRow][nc]===(isW?'P':'p')) shield++;
                 }
               }
-              bonus+=shield*10;
+              bonus+=shield*30; 
 
-              // Count enemy pieces attacking the 3×3 zone around the king
-              const enemyClr=isW?'b':'w';
-              let attackers=0;
-              for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
-                const nr=r+dr, nc=c+dc;
-                if(nr<0||nr>=8||nc<0||nc>=8) continue;
-                for(let fr2=0;fr2<8;fr2++) for(let fc2=0;fc2<8;fc2++){
-                  if(clr(b[fr2][fc2])===enemyClr && atk(b,fr2,fc2,nr,nc)){
-                    attackers++;
+              // 🔒 3. DISCIPLINA DE ZONA (Nuevo Fix)
+              // Solo castigamos si el rey está en un flanco (ya enrocado o casi)
+              if (c >= 5 || c <= 2) { 
+                const startRank = isW ? 6 : 1;
+                const dir = isW ? -1 : 1;
+                let stormPoints = 0;
+                
+                for (let dc = -1; dc <= 1; dc++) {
+                  const nc = c + dc;
+                  if (nc < 0 || nc > 7) continue;
+                  
+                  // Si el peón de esa columna ha avanzado, hay "tormenta"
+                  if (b[startRank][nc] !== (isW?'P':'p')) {
+                    // Si avanzó 1 casilla, sumamos 1 punto. Si avanzó más, sumamos 2.
+                    if (b[startRank + dir][nc] === (isW?'P':'p')) stormPoints += 1;
+                    else stormPoints += 2; 
                   }
                 }
+                // Penalización: Imprudencia (stormPoints) x Presión Enemiga (attackers)
+                // Si hay 2 atacantes y hemos movido 2 peones, son -60 puntos adicionales.
+                bonus -= stormPoints * (attackers * 15);
               }
-              // Quadratic penalty: 1→5, 2→20, 3→45, 4→80 (capped)
-              const kPenalty=Math.min(80, attackers*attackers*5);
-              bonus-=kPenalty*(1-eg); // diminishes as we enter endgame
+
+              // 4. Penalización Dinámica Máxima (Cerrada en 320)
+              const kPenalty=Math.min(320, attackers*attackers*20);
+              bonus-=kPenalty*(1-eg); 
             }
 
             s+=sign*(val+pst+bonus);
