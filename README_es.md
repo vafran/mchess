@@ -25,7 +25,7 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 - **Cero fricción.** Sin instalación, sin cuenta, sin internet tras la primera descarga. Funciona en un portátil de diez años igual que en un teléfono moderno.
 - **Ajedrez real, no una versión simplificada.** Reglas FIDE completas: al paso, enroque, triple repetición, regla de los 50 movimientos, todo.
 - **Indulgente abajo, desafiante arriba.** Fácil y Medio existen para que los principiantes sepan lo que es ganar. Difícil y Rey Sabio existen para cuando estén listos.
-- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~560 KB. Cero dependencias.
+- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~576 KB. Cero dependencias.
 
 ### No-objetivos
 
@@ -216,25 +216,50 @@ El nivel "Más serio" (nivel 0) era imposible de seleccionar — `parseInt("0") 
 
 En el modo IA, el confeti ahora solo se lanza cuando gana el humano. Antes se lanzaba en ambos casos.
 
+### Motor — Bugs críticos corregidos
+
+**Ventanas de aspiración para Negras** — los límites se pasaban a `minimax` en el espacio de las Blancas. Con Negras, `(α, β)` debe invertirse a `(-β, -α)`. Sin este fix el Rey Sabio con Negras quedaba ciego desde profundidad 3 y jugaba cosas como Rd7 en jugada 7 con una pieza gratis disponible.
+
+**Ventana nula PVS para el minimizador** — usaba `(α, α+1)` para ambos lados. El correcto para un nodo minimizador es `(β-1, β)`.
+
+**Condición de re-búsqueda LMR** — la guarda `v < β` era incorrecta: cualquier `v > α` debe disparar una re-búsqueda completa independientemente de si también supera β. Sin este fix, búsquedas superficiales con scores muy altos se aceptaban sin verificar.
+
+**Actualización alpha multiPV** — mezclaba espacios de puntuación para Negras, colapsando la ventana en posiciones buenas para ellas.
+
+**Failsafe de ventana de aspiración** — tras 3 intentos fallidos, ahora se garantiza una búsqueda con ventana completa como cuarto fallback.
+
+### Motor — Mejoras de fuerza
+
+- Ordenación por jugada TT (score 1.000.000, por encima de cualquier captura)
+- Heurística de contramovimiento (score 48.000)
+- Preordenación MVV-LVA de jugadas raíz antes de la primera iteración
+- Poda de futilidad extendida a profundidad 3 (margen 500 cp)
+- Ventana de aspiración ampliada a ±75 cp (antes ±50)
+- Valores de piezas ajustados: C=305, A=333
+- Peón pasado escala ×3 en finales
+- Bucle de seguridad del rey corregido: cada pieza contada una sola vez (antes se contaba una vez por casilla de zona atacada)
+
 ---
 
 ## Arquitectura interna
 
 ### Diseño monolítico
 
-~560 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
+~576 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
 
 ### Motor de búsqueda
 
-Web Worker + motor de respaldo en el hilo principal. Ambos implementan la misma pila alpha-beta: Profundización Iterativa, PVS, NMP (R=2/3), LMR, Poda de Futilidad, Ventanas de Aspiración, Búsqueda de Quietud (profundidad máxima 8, poda delta), Extensiones de Jaque.
+Web Worker + motor de respaldo en el hilo principal. Pila alpha-beta: Profundización Iterativa, PVS, NMP (R=2/3), LMR, Poda de Futilidad (profundidad ≤ 3, márgenes 150/300/500 cp), Ventanas de Aspiración (±75 cp con failsafe garantizado), Búsqueda de Quietud (profundidad máxima 8, poda delta), Extensiones de Jaque.
 
-Tabla de transposición de 200K entradas con hashing Zobrist y desalojo inteligente por profundidad en el Worker. Tabla de 50K en el hilo principal.
+Tabla de transposición de 200K entradas con hashing Zobrist y desalojo por profundidad. Cada entrada guarda la mejor jugada para ordenación en la siguiente iteración.
 
-Ordenación de jugadas: capturas MVV-LVA → coronaciones → jugadas asesinas → heurística de historial → tropismo al rey → bonificación central.
+Ordenación de jugadas: jugada TT (prioridad 1.000.000) → capturas MVV-LVA → coronaciones → jugadas asesinas → contramovimiento → heurística de historial → tropismo al rey. Las jugadas raíz se preordenan con MVV-LVA antes de la primera iteración.
 
 ### Evaluación
 
-Tablas PST estilo PeSTO, evaluación cónica del rey (interpolación mediojuego ↔ final), estructura de peones (doblados −15, aislados −20, pasados rango×15), pareja de alfiles (+30), actividad de torres (columna abierta +25, séptima fila +20), seguridad dinámica del rey (penalización cuadrática, tope en 80).
+Tablas PST estilo PeSTO, evaluación cónica del rey (interpolación mediojuego ↔ final), estructura de peones (doblados −15, aislados −20, pasados rango×15 escalado ×3 en final), pareja de alfiles (+30), actividad de torres (columna abierta +25, séptima fila +20), seguridad dinámica del rey (penalización cuadrática, tope en 80 cp).
+
+Valores de piezas: C=305, A=333, T=500, D=900 (el alfil vale más que el caballo por 28 cp).
 
 ### Libro de aperturas
 
@@ -291,4 +316,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 ---
 
 *Monolith Chess v2.0.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.*  
-*~560 KB. Cero dependencias. Abre el archivo y juega.*
+*~576 KB. Cero dependencias. Abre el archivo y juega.*

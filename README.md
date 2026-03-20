@@ -23,7 +23,7 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 - **Zero friction.** No installation, no account, no internet required after the first download. Works on a 10-year-old laptop and a modern phone equally.
 - **Real chess, not a simplified version.** Full FIDE rules — en passant, castling, threefold repetition, the 50-move rule, all of it.
 - **Forgiving at the bottom, challenging at the top.** Easy and Medium let beginners feel what winning feels like. Hard and Wise King exist for when they are ready for a real test.
-- **Monolithic mastery.** Everything — engine, coach, opening book, training library, animations, sounds — lives in a single `.html` file of ~560 KB. Zero dependencies.
+- **Monolithic mastery.** Everything — engine, coach, opening book, training library, animations, sounds — lives in a single `.html` file of ~576 KB. Zero dependencies.
 
 ### Non-Goals
 
@@ -216,25 +216,52 @@ The "More serious" setting (level 0) was impossible to select — `parseInt("0")
 
 In AI mode, confetti now fires only when the human wins. Previously it fired for both outcomes.
 
+### Engine — Critical Bug Fixes
+
+Several bugs in the search engine were identified and corrected post-release. These fixes have a significant effect on the Wise King level.
+
+**Aspiration windows for Black** — the window bounds were passed to `minimax` in White's score space. With Black, `(α, β)` must be inverted to `(-β, -α)`. Without this fix the Wise King playing Black was effectively blind from depth 3 onwards, producing moves like Kd7 on move 7 when a free piece was available.
+
+**PVS null window for the minimiser** — the null window used `(α, α+1)` for both sides. The correct window for a minimiser node is `(β-1, β)`.
+
+**LMR re-search condition** — the re-search after a reduced null-window probe used `v > α && v < β`. The `v < β` guard is wrong: any fail-high (`v > α`) must trigger a full re-search regardless of whether it also exceeds β. Without this fix, shallow searches returning large scores were trusted without verification.
+
+**multiPV alpha update** — when `multiPV === 1`, the alpha update for Black used `β = Math.min(β, −scoreForMe)`, mixing score spaces and collapsing the window on good positions.
+
+**Aspiration failsafe** — after 3 widening attempts the engine could return stale scores. A guaranteed full-window re-search now runs as a fourth fallback.
+
+### Engine — Strength Improvements
+
+- TT move ordering: best move stored per TT entry, searched first at priority 1,000,000
+- Counter move heuristic: quiet moves that refuted the opponent's last move scored at 48,000
+- MVV-LVA pre-sorting of root moves before depth-1 iteration
+- Futility pruning extended to depth 3 (margin 500 cp)
+- Aspiration delta widened to ±75 cp (was ±50)
+- Piece values tuned: N=305, B=333
+- Passed pawn bonus scales ×3 in endgame
+- King safety loop restructured: each attacking piece counted once (was once per attacked zone square — overcounting)
+
 ---
 
 ## Internal Architecture
 
 ### Single-file design
 
-~560 KB. One `.html` file. No external dependencies, no CDN calls, no cookies, no network requests after load.
+~576 KB. One `.html` file. No external dependencies, no CDN calls, no cookies, no network requests after load.
 
 ### Search
 
-Web Worker + main-thread fallback. Both run the same alpha-beta stack: Iterative Deepening, PVS, NMP (R=2/3), LMR, Futility Pruning, Aspiration Windows, Quiescence Search (max depth 8, delta pruning), Check Extensions.
+Web Worker + main-thread fallback. Alpha-beta stack: Iterative Deepening, PVS, NMP (R=2/3), LMR, Futility Pruning (depth ≤ 3, margins 150/300/500 cp), Aspiration Windows (±75 cp, guaranteed full-window fallback), Quiescence Search (max depth 8, delta pruning), Check Extensions.
 
-200K-entry Zobrist transposition table in the Worker with depth-aware eviction. 50K-entry table on the main thread.
+200K-entry Zobrist transposition table in the Worker with depth-aware eviction. Each entry stores the **best move** for ordering in the next iteration.
 
-Move ordering: MVV-LVA captures → promotions → killer moves → history heuristic → king tropism → central bonus.
+Move ordering: TT move (priority 1,000,000) → MVV-LVA captures → promotions → killer moves → counter move → history heuristic → king tropism → central bonus. Root moves pre-sorted with MVV-LVA before depth-1.
 
 ### Evaluation
 
-PeSTO-style PST tables, tapered king evaluation (middlegame ↔ endgame), pawn structure (doubled −15, isolated −20, passed rank×15), bishop pair (+30), rook activity (open file +25, 7th rank +20), dynamic king safety (quadratic penalty, capped at 80).
+PeSTO-style PST tables, tapered king evaluation (middlegame ↔ endgame), pawn structure (doubled −15, isolated −20, passed pawn rank×15 scaled ×3 in endgame), bishop pair (+30), rook activity (open file +25, 7th rank +20), dynamic king safety (quadratic penalty per attacking piece, capped at 80 cp).
+
+Piece values: N=305, B=333, R=500, Q=900 (bishop correctly valued above knight by 28 cp).
 
 ### Opening Book
 
@@ -291,4 +318,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 ---
 
 *Monolith Chess v2.0.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.*  
-*~560 KB. Zero dependencies. Open the file and play.*
+*~576 KB. Zero dependencies. Open the file and play.*
