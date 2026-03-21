@@ -3,9 +3,10 @@ const { spawn } = require('child_process');
 const { Chess } = require('chess.js');
 const path = require('path');
 const fs = require('fs');
+const readline = require('readline');
 
 // ═══════════════════════════════════════════════════════════════
-// 🏆 TORNEO AUTOMATIZADO: Rey Sabio vs Stockfish (stockfish_tests)
+// 🏆 TORNEO AUTOMATIZADO: mChess vs Stockfish (stockfish_tests)
 // Ejecuta múltiples partidas y calcula estadísticas detalladas
 // ═══════════════════════════════════════════════════════════════
 
@@ -61,7 +62,7 @@ class TournamentStats {
         console.log('🏆 REPORTE FINAL DEL TORNEO');
         console.log('═'.repeat(60));
         console.log(`📊 Partidas jugadas: ${this.partidas.length}`);
-        console.log(`✅ Victorias (Rey Sabio): ${this.wins}`);
+        console.log(`✅ Victorias (mChess): ${this.wins}`);
         console.log(`❌ Derrotas: ${this.losses}`);
         console.log(`🤝 Empates: ${this.draws}`);
         console.log(`📈 Win Rate: ${this.getWinRate()}%`);
@@ -94,7 +95,7 @@ class TournamentStats {
     }
 }
 
-async function playMatch(matchNumber, stats) {
+async function playMatch(matchNumber, stats, aiLevel) {
     console.log(`\n${'─'.repeat(60)}`);
     console.log(`🎮 PARTIDA ${matchNumber}/${CONFIG.numPartidas}`);
     console.log('─'.repeat(60));
@@ -118,6 +119,17 @@ async function playMatch(matchNumber, stats) {
 
     await page.goto(htmlPath);
     await new Promise(r => setTimeout(r, 2000)); 
+
+    // If an AI level was provided, request the page to start the AI at that difficulty
+    if (aiLevel) {
+        try {
+            await page.evaluate((level) => { if(typeof startAIGame==='function') startAIGame(level); }, aiLevel);
+            // give the page a moment to initialize the AI and start the game
+            await new Promise(r => setTimeout(r, 1800));
+        } catch (e) {
+            console.log('⚠️ Warning: could not inject AI level into page:', e.message);
+        }
+    }
 
     const game = new Chess();
     let turn = 'w';
@@ -165,7 +177,7 @@ async function playMatch(matchNumber, stats) {
         }
 
         if (!move || move === 'null' || move.trim() === '') {
-            console.log(`🏳️ ${turn === 'w' ? 'Rey Sabio' : 'Stockfish'} sin jugadas`);
+            console.log(`🏳️ ${turn === 'w' ? 'mChess' : 'Stockfish'} sin jugadas`);
             reason = turn === 'w' ? 'rey_sabio_sin_jugadas' : 'stockfish_sin_jugadas';
             break;
         }
@@ -183,7 +195,7 @@ async function playMatch(matchNumber, stats) {
                 console.log(`   📍 Movimiento ${moveCount}...`);
             }
         } catch (e) {
-            console.error(`❌ Jugada ILEGAL: ${move} (${turn === 'w' ? 'Rey Sabio' : 'Stockfish'})`);
+            console.error(`❌ Jugada ILEGAL: ${move} (${turn === 'w' ? 'mChess' : 'Stockfish'})`);
             reason = turn === 'w' ? 'ilegal_rey_sabio' : 'ilegal_stockfish';
             break;
         }
@@ -218,18 +230,32 @@ async function playMatch(matchNumber, stats) {
 
 async function runTournament() {
     console.log('╔' + '═'.repeat(58) + '╗');
-    console.log('║' + ' '.repeat(10) + '🏆 TORNEO AUTOMÁTICO REY SABIO 🏆' + ' '.repeat(10) + '║');
+    console.log('║' + ' '.repeat(10) + '🏆 TORNEO AUTOMÁTICO mChess vs Stockfish 🏆' + ' '.repeat(10) + '║');
     console.log('╚' + '═'.repeat(58) + '╝');
     console.log(`\n⚙️  Configuración:`);
     console.log(`   • Partidas: ${CONFIG.numPartidas}`);
     console.log(`   • Profundidad Stockfish: ${CONFIG.stockfishDepth}`);
     console.log(`   • Tiempo máximo por partida: ${CONFIG.timePerGame / 1000}s`);
     
+    // Ask user which mChess difficulty to use for Rey Sabio (mChess levels)
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ask = (q) => new Promise(res => rl.question(q, ans => res(ans)));
+    console.log('\nSelecciona nivel de mChess para Rey Sabio:');
+    console.log('  1) Pollito (easy)');
+    console.log('  2) Estudiante (medium)');
+    console.log('  3) Mago (hard)');
+    console.log('  4) Rey Sabio (grandmaster)');
+    const ans = (await ask('Elige 1-4 (enter=4): ')).trim();
+    rl.close();
+    const MAP = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
+    const selectedLevel = MAP[ans] || 'grandmaster';
+    console.log(`\nUsando nivel: ${selectedLevel} (mChess)`);
+
     const stats = new TournamentStats();
     
     for (let i = 1; i <= CONFIG.numPartidas; i++) {
         try {
-            await playMatch(i, stats);
+            await playMatch(i, stats, selectedLevel);
         } catch (error) {
             console.error(`\n💥 Error en partida ${i}:`, error.message);
             stats.addResult('1/2-1/2', 0, 'error', '');
