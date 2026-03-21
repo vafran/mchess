@@ -2558,7 +2558,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                     if (bookMove) {
                         console.log("📖 Jugada seleccionada del libro:", chosenEntry.m);
                         const cols = 'abcdefgh';
-                        const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? 'q' : '';
+                        const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
                         const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
                         console.log("🎯 UCI:", uci);
                         return uci;
@@ -2612,7 +2612,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
         const m = results[0].move;
         const cols = 'abcdefgh';
-        const promotion = (m.tr === 0 || m.tr === 7) && board[m.fr][m.fc].toUpperCase() === 'P' ? 'q' : '';
+        const promotion = (m.tr === 0 || m.tr === 7) && board[m.fr][m.fc].toUpperCase() === 'P' ? (m.promo ? m.promo.toLowerCase() : 'q') : '';
         const uci = cols[m.fc] + (8 - m.fr) + cols[m.tc] + (8 - m.tr) + promotion;
         console.log("✅ Jugada encontrada (Motor):", uci);
         return uci;
@@ -4483,7 +4483,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
     }
     
     // ── Execute a move ─────────────────────
-    async function makeMove(sr, sc, tr, tc) {
+    async function makeMove(sr, sc, tr, tc, promo = null) {
       if (animating) return; // 🛡️ Block to prevent tactical collisions
       if (isViewingHistory) exitHistoryView(); // snap back before AI move lands
 
@@ -4574,8 +4574,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
       // 6. PAWN PROMOTION - ✨ Ahora con selección de pieza Y protección anti-race-condition
       if (type === 'P' && (tr === 0 || tr === 7)) {
         if (gameMode === 'ai' && color !== playerColor) {
-          // IA siempre promociona a dama
-          board[tr][tc] = color === 'w' ? 'Q' : 'q';
+          // ✨ FIX: IA promociona a lo que diga el motor (Dama por defecto)
+          let p = promo ? promo.toUpperCase() : 'Q';
+          board[tr][tc] = color === 'w' ? p : p.toLowerCase();
           animating = false; // Liberar después de promoción IA
         } else {
           // Jugador humano elige pieza - MANTENER animating=true durante el modal
@@ -6428,8 +6429,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
           else if (type === 'B') pst = BISHOP_TABLE[ridx][c];
           else if (type === 'R') pst = ROOK_TABLE[ridx][c];
           else if (type === 'Q') pst = QUEEN_TABLE[ridx][c];
-          else if (type === 'K') { pst = KING_TABLE[ridx][c] * (1 - eg) + KING_ENDGAME_TABLE[ridx][c] * eg; }
-
+          else if (type === 'K') { 
+            // FIX: El Rey solo sale al centro cuando realmente estamos en un final (eg > 0.6)
+            // Si no, se queda protegido. Evita la parálisis por transición gradual.
+            pst = eg > 0.6 ? KING_ENDGAME_TABLE[ridx][c] : KING_TABLE[ridx][c]; 
+          }
           let bonus = 0;
 
           if (type === 'Q' && eg < 0.3) {
@@ -6858,7 +6862,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
       // ── Futility Pruning margins ────────────────────────────────────────────
       const FUTILITY_MARGIN = [0, 150, 300]; // indexed by depth 0,1,2
-      const staticEval = !checked && depth <= 2 ? evaluateBoard(activeBoard, diffLevel) : null;
+      const staticEval = !checked && depth <= 2 ? evaluateBoard(activeBoard, 'exact') : null;
       const canFutility = staticEval !== null && !checked;
 
       let bestScore = isMaximizing ? -Infinity : Infinity;
@@ -6943,8 +6947,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
       }
       copy[m.tr][m.tc] = piece;
       copy[m.fr][m.fc] = ' ';
-      if (piece === 'P' && m.tr === 0) copy[m.tr][m.tc] = 'Q';
-      if (piece === 'p' && m.tr === 7) copy[m.tr][m.tc] = 'q';
+      // ✨ FIX: Promoción inteligente
+      if (piece === 'P' && m.tr === 0) copy[m.tr][m.tc] = m.promo ? m.promo.toUpperCase() : 'Q';
+      if (piece === 'p' && m.tr === 7) copy[m.tr][m.tc] = m.promo ? m.promo.toLowerCase() : 'q';
       return copy;
     }
 
@@ -7099,7 +7104,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // Material + PST
             let val=PV[u]||0;
             let pst=0;
-            if(u==='K') pst=PST.KMG[idx]*(1-eg)+PST.KEG[idx]*eg;
+            if(u==='K') pst=eg > 0.6 ? PST.KEG[idx] : PST.KMG[idx];
             else if(PST[u]) pst=PST[u][idx];
 
             // ── Passed pawn bonus ─────────────────────────────────────────
@@ -7675,6 +7680,17 @@ window.askWiseKing = async function(fen, historyArr = []) {
               return;
             }
 
+            // ✨ INYECCIÓN DE LIBRO (Root Move Locking)
+            const forcedMove = msg.forcedMove;
+            if (forcedMove) {
+               // El Worker anula todas las demás opciones y dedica el 100% de su tiempo
+               // a profundizar en la variante teórica, llenando su Tabla de Transposición.
+               rootMoves = rootMoves.filter(m => 
+                   m.fr === forcedMove.fr && m.fc === forcedMove.fc && 
+                   m.tr === forcedMove.tr && m.tc === forcedMove.tc
+               );
+            }
+
             const maxDepth = Math.max(1, msg.depth || 3);
 
             // ── Initial root move ordering (MVV-LVA + promotions) ─────────────
@@ -7905,44 +7921,30 @@ window.askWiseKing = async function(fen, historyArr = []) {
       });
     }
 
-    function engineSearch(color, depth, multiPV, timeoutMs) {
+    function engineSearch(color, depth, multiPV, timeoutMs, forcedMove = null) {
       return new Promise((resolve) => {
         let worker;
         try {
-          // ✨ PERSISTIR Worker: reutilizar si ya existe
-          if(chessEngineWorker) {
-            worker = chessEngineWorker;
-          } else {
-            worker = createEngineWorker();
-            chessEngineWorker = worker;
-          }
+          if(chessEngineWorker) worker = chessEngineWorker;
+          else { worker = createEngineWorker(); chessEngineWorker = worker; }
         } catch(e) {
-          // Fallback si Worker no disponible
           engineSearchSync(color, depth, multiPV, timeoutMs, positionHashes).then(resolve);
           return;
         }
         let settled = false;
-        const done = (moves) => {
-          if(settled) return; settled = true;
-          // ✨ NO destruir el worker — mantener TT y tablas
-          resolve(moves || []);
-        };
+        const done = (moves) => { if(settled) return; settled = true; resolve(moves || []); };
         const timer = setTimeout(() => done([]), timeoutMs + 4000);
         worker.onmessage = function(evt) {
           const data = evt.data || {};
           clearTimeout(timer);
-          if(data.action === 'result') {
-            done(data.moves || []);
-          } else if(data.action === 'debug'){
-            // debug disabled
-          } else if(data.action === 'error'){ 
+          if(data.action === 'result') done(data.moves || []);
+          else if(data.action === 'error'){ 
             console.error('Engine error:', data.error);
             engineSearchSync(color, depth, multiPV, timeoutMs, positionHashes).then(done);
           }
         };
         worker.onerror = function(err) {
           clearTimeout(timer);
-          console.error('Engine crash:', err.message || err);
           engineSearchSync(color, depth, multiPV, timeoutMs, positionHashes).then(done);
         };
         worker.postMessage({
@@ -7952,7 +7954,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
           castleRights: {...castleRights},
           enPassantTarget: enPassantTarget ? [...enPassantTarget] : null,
           depth, multiPV, timeout: timeoutMs,
-          positionHashes: [...positionHashes]
+          positionHashes: [...positionHashes],
+          forcedMove: forcedMove // ✨ Pasamos la semilla al Worker
         });
       });
     }
@@ -7972,7 +7975,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
       try {
         let move = null;
 
-        // 1. Consultar libro de aperturas (medium uses first 2 moves only; hard/grandmaster use full book)
+        // 1. Consultar libro de aperturas
+        let forcedBookMove = null;
         if (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
             (currentDifficulty === 'medium' && history.length <= 4)) {
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
@@ -7983,7 +7987,6 @@ window.askWiseKing = async function(fen, historyArr = []) {
               legalMvs.some(m => getMoveNotation(board, aiColor, m, castleRights) === entry.m)
             );
             if (validBookMoves.length > 0) {
-              // Medium picks uniformly; hard/grandmaster use weights
               const useWeights = currentDifficulty !== 'medium';
               const totalWeight = useWeights
                 ? validBookMoves.reduce((sum, e) => sum + (e.w || 1), 0)
@@ -7994,33 +7997,23 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 randomWeight -= useWeights ? (entry.w || 1) : 1;
                 if (randomWeight <= 0) { chosenEntry = entry; break; }
               }
-              const bookMove = legalMvs.find(m => getMoveNotation(board, aiColor, m, castleRights) === chosenEntry.m);
-              // Ignorar libro si hay captura con ganancia neta
-              const freeCaptures = legalMvs.filter(m => {
-                const target = board[m.tr][m.tc];
-                if (target === ' ') return false;
-                const myVal = PIECE_VALUES[board[m.fr][m.fc].toUpperCase()] || 0;
-                const targetVal = PIECE_VALUES[target.toUpperCase()] || 0;
-                return targetVal > 0 && targetVal >= myVal - 50;
-              });
-              if (freeCaptures.length === 0) {
-                move = bookMove;
-              }
+              forcedBookMove = legalMvs.find(m => getMoveNotation(board, aiColor, m, castleRights) === chosenEntry.m);
             }
           }
         }
 
-        // 2. Motor principal
-        if (!move) {
+        // 2. Motor principal (Root Move Locking: Calentando la memoria)
+        if (forcedBookMove) {
+          // La IA no elige la jugada, pero usa su tiempo de CPU para estudiar las consecuencias futuras
+          move = await getBestAIMoveAsync(aiColor, aiDepth, aiMistakeChance, aiTimeLimit, forcedBookMove);
+        } else if (!move) {
           move = await getBestAIMoveAsync(aiColor, aiDepth, aiMistakeChance, aiTimeLimit);
           if (move) {
             const legal = getLegalMovesForColorInPlace(aiColor);
             const ok = legal.some(mv => mv.fr===move.fr && mv.fc===move.fc && mv.tr===move.tr && mv.tc===move.tc);
-            if (!ok) {
-              move = findBestMoveFor(aiColor, aiDepth, aiMistakeChance, SEARCH_TIME_LIMIT_MS) || null;
-            }
+            if (!ok) move = findBestMoveFor(aiColor, aiDepth, aiMistakeChance, SEARCH_TIME_LIMIT_MS) || null;
           }
-        }
+        } 
 
         // 2.5 ANTI-REPETITION FILTER in main thread (guaranteed)
         // Uses makeMoveOnBoard/unmakeMove so the generated hash includes
@@ -8074,7 +8067,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
           const turnBarB = document.getElementById('turnBar');
           if (turnBarB) turnBarB.style.display = '';
           aiThinking = false;
-          await makeMove(move.fr, move.fc, move.tr, move.tc);
+          // ✨ FIX: Pasamos la promoción al motor
+          await makeMove(move.fr, move.fc, move.tr, move.tc, move.promo);
         }
 
         if (isCapture) {
@@ -8096,19 +8090,19 @@ window.askWiseKing = async function(fen, historyArr = []) {
       }
     }
 
-    async function getBestAIMoveAsync(color, depth, mistakeChance, timeoutMs) {
-      const results = await engineSearch(color, depth, 6, Math.min(timeoutMs||5000, 35000));
+    async function getBestAIMoveAsync(color, depth, mistakeChance, timeoutMs, forcedMove = null) {
+      // Pasamos el forcedMove al engineSearch
+      const results = await engineSearch(color, depth, 6, Math.min(timeoutMs||5000, 35000), forcedMove);
+      if (forcedMove) return forcedMove; // Si era jugada de libro, la devolvemos garantizada
+      
       if(!results.length) return findBestMoveFor(color, depth, mistakeChance, timeoutMs);
-      // Apply mistake chance: pick from the bottom 30% of scored moves (weak but not suicidal)
+      
       if(mistakeChance > 0 && Math.random() < mistakeChance){
         const legal = getLegalMovesForColorInPlace(color);
         if(legal.length > 1){
           const cutoff = Math.max(1, Math.floor(results.length * 0.7));
-          const weakPool = results.slice(cutoff); // bottom 30%
-          if(weakPool.length > 0){
-            return weakPool[Math.floor(Math.random() * weakPool.length)].move;
-          }
-          // Fallback: pick any non-best legal move
+          const weakPool = results.slice(cutoff); 
+          if(weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)].move;
           const nonBest = legal.filter(m => {
             const b = results[0] && results[0].move;
             return !(b && m.fr===b.fr && m.fc===b.fc && m.tr===b.tr && m.tc===b.tc);
