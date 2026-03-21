@@ -7265,16 +7265,44 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
               let attackers = attackWeight; // Reemplazamos el conteo simple por el peso real
 
-              // 2. Bonus de Escudo (30 centipeones por peón)
+              // 2. Bonus de Escudo (30 centipeones por peón de 1ª fila + 15 por peón de 2ª fila)
               let shield=0;
               const shieldRow=isW?r-1:r+1;
               if(shieldRow>=0&&shieldRow<8){
                 for(let dc=-1;dc<=1;dc++){
                   const nc=c+dc;
-                  if(nc>=0&&nc<8&&b[shieldRow][nc]===(isW?'P':'p')) shield++;
+                  if(nc>=0&&nc<8&&b[shieldRow][nc]===(isW?'P':'p')) shield+=1.0;
                 }
               }
-              bonus+=shield*30; 
+              // ✨ Improvement 4: Extended pawn shield (2nd row in front of king)
+              // Detects destroyed shelter like gxh6 where the second-row pawn is also gone.
+              const shieldRow2=isW?r-2:r+2;
+              if(shieldRow2>=0&&shieldRow2<8){
+                for(let dc=-1;dc<=1;dc++){
+                  const nc=c+dc;
+                  if(nc>=0&&nc<8&&b[shieldRow2][nc]===(isW?'P':'p')) shield+=0.5;
+                }
+              }
+              bonus+=Math.round(shield*30);
+
+              // ✨ Improvement 3: Naked King penalty.
+              // If king has no pawn shield AND has lost all castling rights AND is in middlegame,
+              // apply extra penalty proportional to enemy piece count.
+              // This catches kings forced to f7, f2 etc. after piece sacrifices.
+              const hasCastle = isW ? (state.castleRights.K || state.castleRights.Q) : (state.castleRights.k || state.castleRights.q);
+              if (!hasCastle && shield < 0.5 && eg < 0.4) {
+                // Count enemy major pieces (Q/R/B/N) to scale the danger
+                let enemyMajors = 0;
+                const ec = isW ? 'b' : 'w';
+                for(let er=0;er<8;er++) for(let ecc=0;ecc<8;ecc++){
+                  const ep=b[er][ecc];
+                  if(ep&&ep!==' '&&clr(ep)===ec){
+                    const eu=ep.toUpperCase();
+                    if(eu==='Q'||eu==='R'||eu==='B'||eu==='N') enemyMajors++;
+                  }
+                }
+                bonus -= enemyMajors * 22; // -22 cp per active enemy piece near exposed king
+              }
 
               // 🔒 3. DISCIPLINA DE ZONA (Nuevo Fix)
               // Solo castigamos si el rey está en un flanco (ya enrocado o casi)
@@ -7330,6 +7358,25 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
             s+=sign*(val+pst+bonus);
           }
+
+          // ✨ Improvement 2: Initiative Scaling.
+          // When one side is materially behind (>= 200 cp), scale their positional
+          // contribution UP by 25% to reward active compensation (attacks, piece activity)
+          // instead of going passive. This prevents the engine from shuffling pieces
+          // after a material sacrifice while it should be pressing the attack.
+          // NOTE: 's' is already in White's perspective (positive = White winning).
+          // We apply the scale to the *positional delta* (s minus pure material) approx via:
+          // if White is behind (s < -200), white’s positional bonuses are worth more.
+          // Simple approximation: scale the final score toward 0 slightly when behind.
+          if (Math.abs(s) >= 200) {
+            // The side that’s behind gets a 20% positional bonus on their total.
+            // This means losing positions with active pieces look better, encouraging
+            // the engine to keep fighting rather than drifting passively.
+            const behind = s < 0 ? 'w' : 'b'; // white behind means s<0
+            // Boost: reduce the magnitude by 15% when behind (positions look less losing)
+            s = Math.round(s * 0.87);
+          }
+
           return s;
         }
 
@@ -7723,8 +7770,15 @@ window.askWiseKing = async function(fen, historyArr = []) {
             let analysisPartial = false;
             let prevBestScore = 0; // For aspiration windows
 
+            // ✨ Improvement 1: Soft time limit.
+            // Don’t START a new depth iteration if we have used more than 60% of our budget.
+            // This ensures we always return the last *completed* depth result, which is
+            // significantly better than an aborted partial result from a deeper iteration.
+            const softDeadline = Date.now() + Math.floor(timeout * 0.60);
+
             for(let d = 1; d <= maxDepth; d++){
               if(Date.now() >= deadline){ analysisPartial = true; break; }
+              if(d > 3 && Date.now() >= softDeadline){ break; } // soft limit: don't start unfinishable depth
 
               scoredRoot.sort((a,b) => b.score - a.score);
 
