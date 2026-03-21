@@ -6694,7 +6694,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       // ✨ Firewall: Depth limit (Step 4) and Safe Evaluation (Step 2)
       if (isSearchTimedOut() || qDepth > 6) return evaluateBoard(activeBoard, diffLevel); 
       
-      const standPat = evaluateBoard(activeBoard, diffLevel); 
+      const standPat = evaluateBoard(activeBoard, 'exact');
       
       if (isMaximizing) {
         if (standPat >= beta) return beta;
