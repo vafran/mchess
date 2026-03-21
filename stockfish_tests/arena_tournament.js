@@ -6,14 +6,13 @@ const fs = require('fs');
 const readline = require('readline');
 
 // ═══════════════════════════════════════════════════════════════
-// 🏆 TORNEO AUTOMATIZADO: mChess vs Stockfish (stockfish_tests)
-// Ejecuta múltiples partidas y calcula estadísticas detalladas
+// 🏆 TORNEO AUTOMATIZADO PRO: mChess vs Stockfish
 // ═══════════════════════════════════════════════════════════════
 
 const CONFIG = {
-    numPartidas: 3,          // Número de partidas a jugar
-    stockfishDepth: 10,        // Profundidad de Stockfish (ajustar según ELO deseado)
-    timePerGame: 3600000,       // 1 hora máximo por partida
+    numPartidas: 3,             
+    stockfishDepth: 10,         
+    timePerGame: 3600000,       
     logFile: path.join(__dirname, 'tournament_results.json')
 };
 
@@ -46,13 +45,10 @@ class TournamentStats {
     estimateELO() {
         const total = this.wins + this.losses + this.draws;
         if (total === 0) return 'N/A';
-        
         const score = (this.wins + 0.5 * this.draws) / total;
-        const stockfishELO = 2200; 
-        
+        const stockfishELO = 2200; // ELO base de Stockfish a depth 10
         if (score === 0) return stockfishELO - 600;
         if (score === 1) return stockfishELO + 600;
-        
         const eloDiff = -400 * Math.log10((1 - score) / score);
         return Math.round(stockfishELO + eloDiff);
     }
@@ -71,63 +67,43 @@ class TournamentStats {
         console.log('═'.repeat(60));
 
         const reasons = {};
-        this.partidas.forEach(p => {
-            reasons[p.reason] = (reasons[p.reason] || 0) + 1;
-        });
+        this.partidas.forEach(p => { reasons[p.reason] = (reasons[p.reason] || 0) + 1; });
         console.log('\n📋 Razones de finalización:');
-        Object.entries(reasons).forEach(([reason, count]) => {
-            console.log(`   ${reason}: ${count}`);
-        });
+        Object.entries(reasons).forEach(([reason, count]) => { console.log(`   ${reason}: ${count}`); });
 
         fs.writeFileSync(CONFIG.logFile, JSON.stringify({
             config: CONFIG,
-            stats: {
-                wins: this.wins,
-                losses: this.losses,
-                draws: this.draws,
-                winRate: this.getWinRate(),
-                avgMoves: this.getAvgMoves(),
-                estimatedELO: this.estimateELO()
-            },
+            stats: { wins: this.wins, losses: this.losses, draws: this.draws, winRate: this.getWinRate(), avgMoves: this.getAvgMoves(), estimatedELO: this.estimateELO() },
             partidas: this.partidas
         }, null, 2));
         console.log(`\n💾 Resultados guardados en ${CONFIG.logFile}`);
     }
 }
 
-async function playMatch(matchNumber, stats, aiLevel) {
+// ✨ FIX: Pasamos el 'browser' como parámetro para reutilizarlo
+async function playMatch(matchNumber, stats, aiLevel, browser) {
     console.log(`\n${'─'.repeat(60)}`);
     console.log(`🎮 PARTIDA ${matchNumber}/${CONFIG.numPartidas}`);
     console.log('─'.repeat(60));
     
-    // mChess.html está en la carpeta padre
     const htmlPath = 'file://' + path.join(__dirname, '..', 'mChess.html');
     
-    const browser = await puppeteer.launch({ 
-        headless: "new",
-        protocolTimeout: 120000,
-        args: ['--allow-file-access-from-files', '--no-sandbox'] 
-    });
-    
+    // ✨ FIX: Solo abrimos una pestaña nueva, no todo el navegador
     const page = await browser.newPage();
     
     page.on('console', msg => {
-        if (msg.type() === 'error') {
-            console.log('🌐 Browser Error:', msg.text());
-        }
+        if (msg.type() === 'error') console.log('🌐 Browser Error:', msg.text());
     });
 
     await page.goto(htmlPath);
-    await new Promise(r => setTimeout(r, 2000)); 
+    await new Promise(r => setTimeout(r, 1500)); 
 
-    // If an AI level was provided, request the page to start the AI at that difficulty
     if (aiLevel) {
         try {
             await page.evaluate((level) => { if(typeof startAIGame==='function') startAIGame(level); }, aiLevel);
-            // give the page a moment to initialize the AI and start the game
-            await new Promise(r => setTimeout(r, 1800));
+            await new Promise(r => setTimeout(r, 1500));
         } catch (e) {
-            console.log('⚠️ Warning: could not inject AI level into page:', e.message);
+            console.log('⚠️ Warning: no se pudo inyectar el nivel:', e.message);
         }
     }
 
@@ -136,7 +112,6 @@ async function playMatch(matchNumber, stats, aiLevel) {
     let moveCount = 0;
     let reason = 'completada';
 
-    // stockfish.exe should be in parent folder; allow explicit override via env var
     const stockfishPath = process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish.exe');
     const sf = spawn(stockfishPath); 
 
@@ -158,51 +133,60 @@ async function playMatch(matchNumber, stats, aiLevel) {
 
     const startTime = Date.now();
 
-    while (!game.isGameOver()) {
-        if (Date.now() - startTime > CONFIG.timePerGame) {
-            reason = 'timeout';
-            break;
-        }
+    try {
+        while (!game.isGameOver()) {
+            if (Date.now() - startTime > CONFIG.timePerGame) { reason = 'timeout'; break; }
 
-        const fen = game.fen();
-        const historyObj = game.history();
-        
-        let move;
-        if (turn === 'w') {
-            move = await page.evaluate(async (f, h) => {
-                return await window.askWiseKing(f, h);
-            }, fen, historyObj);
-        } else {
-            move = await askStockfish(fen);
-        }
-
-        if (!move || move === 'null' || move.trim() === '') {
-            console.log(`🏳️ ${turn === 'w' ? 'mChess' : 'Stockfish'} sin jugadas`);
-            reason = turn === 'w' ? 'rey_sabio_sin_jugadas' : 'stockfish_sin_jugadas';
-            break;
-        }
-
-        try {
-            game.move({ 
-                from: move.slice(0,2), 
-                to: move.slice(2,4), 
-                promotion: move.length === 5 ? move[4] : 'q'
-            });
-            turn = turn === 'w' ? 'b' : 'w';
-            moveCount++;
+            const fen = game.fen();
+            const historyObj = game.history();
             
-            if (moveCount % 10 === 0) {
-                console.log(`   📍 Movimiento ${moveCount}...`);
-            }
-        } catch (e) {
-            console.error(`❌ Jugada ILEGAL: ${move} (${turn === 'w' ? 'mChess' : 'Stockfish'})`);
-            reason = turn === 'w' ? 'ilegal_rey_sabio' : 'ilegal_stockfish';
-            break;
-        }
-    }
+            let move;
+            let timeTaken = 0;
 
-    try { await browser.close(); } catch(e){}
-    try { sf.kill(); } catch(e){}
+            if (turn === 'w') {
+                const thinkStart = Date.now();
+                move = await page.evaluate(async (f, h) => {
+                    return await window.askWiseKing(f, h);
+                }, fen, historyObj);
+                timeTaken = (Date.now() - thinkStart) / 1000; // Segundos
+            } else {
+                move = await askStockfish(fen);
+            }
+
+            if (!move || move === 'null' || move.trim() === '') {
+                console.log(`🏳️ ${turn === 'w' ? 'mChess' : 'Stockfish'} sin jugadas`);
+                reason = turn === 'w' ? 'rey_sabio_sin_jugadas' : 'stockfish_sin_jugadas';
+                break;
+            }
+
+            try {
+                game.move({ 
+                    from: move.slice(0,2), 
+                    to: move.slice(2,4), 
+                    promotion: move.length === 5 ? move[4] : 'q'
+                });
+                
+                // ✨ FIX: Imprimir cada movimiento con el tiempo de cálculo
+                if (turn === 'w') {
+                    const alert = timeTaken >= 34.0 ? ' ⚠️ (Límite de tiempo)' : '';
+                    console.log(`   👑 mChess juega ${move} (⏱️ ${timeTaken.toFixed(1)}s)${alert}`);
+                } else {
+                    console.log(`   🐟 Stockfish juega ${move}`);
+                }
+
+                turn = turn === 'w' ? 'b' : 'w';
+                moveCount++;
+            } catch (e) {
+                console.error(`❌ Jugada ILEGAL: ${move} (${turn === 'w' ? 'mChess' : 'Stockfish'})`);
+                reason = turn === 'w' ? 'ilegal_rey_sabio' : 'ilegal_stockfish';
+                break;
+            }
+        }
+    } finally {
+        // ✨ FIX: Cerramos la pestaña y matamos a Stockfish SÍ O SÍ
+        try { await page.close(); } catch(e){}
+        try { sf.kill(); } catch(e){}
+    }
 
     let result = '1/2-1/2';
     if (game.isCheckmate()) {
@@ -222,9 +206,7 @@ async function playMatch(matchNumber, stats, aiLevel) {
     }
 
     console.log(`\n✨ Resultado: ${result} (${reason}) - ${moveCount} movimientos`);
-    
     stats.addResult(result, moveCount, reason, game.pgn());
-    
     return result;
 }
 
@@ -232,12 +214,7 @@ async function runTournament() {
     console.log('╔' + '═'.repeat(58) + '╗');
     console.log('║' + ' '.repeat(10) + '🏆 TORNEO AUTOMÁTICO mChess vs Stockfish 🏆' + ' '.repeat(10) + '║');
     console.log('╚' + '═'.repeat(58) + '╝');
-    console.log(`\n⚙️  Configuración:`);
-    console.log(`   • Partidas: ${CONFIG.numPartidas}`);
-    console.log(`   • Profundidad Stockfish: ${CONFIG.stockfishDepth}`);
-    console.log(`   • Tiempo máximo por partida: ${CONFIG.timePerGame / 1000}s`);
     
-    // Ask user which mChess difficulty to use for Rey Sabio (mChess levels)
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const ask = (q) => new Promise(res => rl.question(q, ans => res(ans)));
     console.log('\nSelecciona nivel de mChess para Rey Sabio:');
@@ -249,19 +226,30 @@ async function runTournament() {
     rl.close();
     const MAP = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
     const selectedLevel = MAP[ans] || 'grandmaster';
-    console.log(`\nUsando nivel: ${selectedLevel} (mChess)`);
+    
+    // ✨ FIX: Lanzamos Puppeteer UNA SOLA VEZ para todo el torneo
+    console.log(`\n🚀 Inicializando navegador base...`);
+    const browser = await puppeteer.launch({ 
+        headless: "new",
+        protocolTimeout: 120000,
+        args: ['--allow-file-access-from-files', '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] 
+    });
 
     const stats = new TournamentStats();
     
-    for (let i = 1; i <= CONFIG.numPartidas; i++) {
-        try {
-            await playMatch(i, stats, selectedLevel);
-        } catch (error) {
-            console.error(`\n💥 Error en partida ${i}:`, error.message);
-            stats.addResult('1/2-1/2', 0, 'error', '');
+    try {
+        for (let i = 1; i <= CONFIG.numPartidas; i++) {
+            try {
+                await playMatch(i, stats, selectedLevel, browser);
+            } catch (error) {
+                console.error(`\n💥 Error crítico en partida ${i}:`, error.message);
+                stats.addResult('1/2-1/2', 0, 'error', '');
+            }
+            await new Promise(r => setTimeout(r, 2000));
         }
-        
-        await new Promise(r => setTimeout(r, 2000));
+    } finally {
+        console.log(`\n🛑 Cerrando navegador base...`);
+        await browser.close();
     }
     
     stats.printReport();
