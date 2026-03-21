@@ -7201,14 +7201,17 @@ window.askWiseKing = async function(fen, historyArr = []) {
             if(u==='K'&&eg<0.5){
               // 1. Detectar atacantes (Lo necesitamos para los siguientes puntos)
               const enemyClr=isW?'b':'w';
-              let attackers=0;
+              let attackersSet = new Set();
               for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
                 const nr=r+dr, nc=c+dc;
                 if(nr<0||nr>=8||nc<0||nc>=8) continue;
                 for(let fr2=0;fr2<8;fr2++) for(let fc2=0;fc2<8;fc2++){
-                  if(clr(b[fr2][fc2])===enemyClr && atk(b,fr2,fc2,nr,nc)) attackers++;
+                  if(clr(b[fr2][fc2])===enemyClr && atk(b,fr2,fc2,nr,nc)) {
+                      attackersSet.add(fr2*8+fc2); // Guardamos la pieza única
+                  }
                 }
               }
+              let attackers = attackersSet.size;
 
               // 2. Bonus de Escudo (30 centipeones por peón)
               let shield=0;
