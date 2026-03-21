@@ -2591,7 +2591,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 castleRights,
                 enPassantTarget,
                 depth: 10, multiPV: 1, timeout: timeoutRes,
-                positionHashes: [] // Evitar filtro de repeticiones roto
+                positionHashes: [...positionHashes]
             });
         });
 
@@ -3220,66 +3220,34 @@ window.askWiseKing = async function(fen, historyArr = []) {
       } catch (_) {}
     }
 
-    // Positional bonuses (encourage center control & development)
+    // Positional bonuses (multiplicados x10 para escala centipeones)
     const PAWN_TABLE = [
-      [0, 0, 0, 0, 0, 0, 0, 0], [5, 5, 5, 5, 5, 5, 5, 5], [1, 1, 2, 3, 3, 2, 1, 1], [0.5, 0.5, 1, 2.5, 2.5, 1, 0.5, 0.5],
-      [0, 0, 0, 2, 2, 0, 0, 0], [0.5, -0.5, -1, 0, 0, -1, -0.5, 0.5], [0.5, 1, 1, -2, -2, 1, 1, 0.5], [0, 0, 0, 0, 0, 0, 0, 0]
+      [0, 0, 0, 0, 0, 0, 0, 0], [50, 50, 50, 50, 50, 50, 50, 50], [10, 10, 20, 30, 30, 20, 10, 10], [5, 5, 10, 25, 25, 10, 5, 5],
+      [0, 0, 0, 20, 20, 0, 0, 0], [5, -5, -10, 0, 0, -10, -5, 5], [5, 10, 10, -20, -20, 10, 10, 5], [0, 0, 0, 0, 0, 0, 0, 0]
     ];
     const KNIGHT_TABLE = [
-      [-5, -4, -3, -3, -3, -3, -4, -5], [-4, -2, 0, 0, 0, 0, -2, -4], [-3, 0, 1, 1.5, 1.5, 1, 0, -3], [-3, 0.5, 1.5, 2, 2, 1.5, 0.5, -3],
-      [-3, 0, 1.5, 2, 2, 1.5, 0, -3], [-3, 0.5, 1, 1.5, 1.5, 1, 0.5, -3], [-4, -2, 0, 0.5, 0.5, 0, -2, -4], [-5, -4, -3, -3, -3, -3, -4, -5]
+      [-50, -40, -30, -30, -30, -30, -40, -50], [-40, -20, 0, 0, 0, 0, -20, -40], [-30, 0, 10, 15, 15, 10, 0, -30], [-30, 5, 15, 20, 20, 15, 5, -30],
+      [-30, 0, 15, 20, 20, 15, 0, -30], [-30, 5, 10, 15, 15, 10, 5, -30], [-40, -20, 0, 5, 5, 0, -20, -40], [-50, -40, -30, -30, -30, -30, -40, -50]
     ];
     const BISHOP_TABLE = [
-      [-2, -1, -1, -1, -1, -1, -1, -2],
-      [-1, 0, 0, 0, 0, 0, 0, -1],
-      [-1, 0, 0.5, 1, 1, 0.5, 0, -1],
-      [-1, 0.5, 0.5, 1, 1, 0.5, 0.5, -1],
-      [-1, 0, 1, 1, 1, 1, 0, -1],
-      [-1, 1, 1, 1, 1, 1, 1, -1],
-      [-1, 0.5, 0, 0, 0, 0, 0.5, -1],
-      [-2, -1, -1, -1, -1, -1, -1, -2]
+      [-20, -10, -10, -10, -10, -10, -10, -20], [-10, 0, 0, 0, 0, 0, 0, -10], [-10, 0, 5, 10, 10, 5, 0, -10], [-10, 5, 5, 10, 10, 5, 5, -10],
+      [-10, 0, 10, 10, 10, 10, 0, -10], [-10, 10, 10, 10, 10, 10, 10, -10], [-10, 5, 0, 0, 0, 0, 5, -10], [-20, -10, -10, -10, -10, -10, -10, -20]
     ];
     const ROOK_TABLE = [
-      [0, 0, 0, 0, 0, 0, 0, 0],
-      [0.5, 1, 1, 1, 1, 1, 1, 0.5],
-      [-0.5, 0, 0, 0, 0, 0, 0, -0.5],
-      [-0.5, 0, 0, 0, 0, 0, 0, -0.5],
-      [-0.5, 0, 0, 0, 0, 0, 0, -0.5],
-      [-0.5, 0, 0, 0, 0, 0, 0, -0.5],
-      [-0.5, 0, 0, 0, 0, 0, 0, -0.5],
-      [0, 0, 0.5, 0.5, 0.5, 0.5, 0, 0]
+      [0, 0, 0, 0, 0, 0, 0, 0], [5, 10, 10, 10, 10, 10, 10, 5], [-5, 0, 0, 0, 0, 0, 0, -5], [-5, 0, 0, 0, 0, 0, 0, -5],
+      [-5, 0, 0, 0, 0, 0, 0, -5], [-5, 0, 0, 0, 0, 0, 0, -5], [-5, 0, 0, 0, 0, 0, 0, -5], [0, 0, 5, 5, 5, 5, 0, 0]
     ];
     const QUEEN_TABLE = [
-      [-2, -1, -1, -0.5, -0.5, -1, -1, -2],
-      [-1, 0, 0, 0, 0, 0, 0, -1],
-      [-1, 0, 0.5, 0.5, 0.5, 0.5, 0, -1],
-      [-0.5, 0, 0.5, 0.5, 0.5, 0.5, 0, -0.5],
-      [0, 0, 0.5, 0.5, 0.5, 0.5, 0, -0.5],
-      [-1, 0.5, 0.5, 0.5, 0.5, 0.5, 0, -1],
-      [-1, 0, 0.5, 0, 0, 0, 0, -1],
-      [-2, -1, -1, -0.5, -0.5, -1, -1, -2]
+      [-20, -10, -10, -5, -5, -10, -10, -20], [-10, 0, 0, 0, 0, 0, 0, -10], [-10, 0, 5, 5, 5, 5, 0, -10], [-5, 0, 5, 5, 5, 5, 0, -5],
+      [0, 0, 5, 5, 5, 5, 0, -5], [-10, 5, 5, 5, 5, 5, 0, -10], [-10, 0, 5, 0, 0, 0, 0, -10], [-20, -10, -10, -5, -5, -10, -10, -20]
     ];
     const KING_TABLE = [
-      [-3, -4, -4, -5, -5, -4, -4, -3],
-      [-3, -4, -4, -5, -5, -4, -4, -3],
-      [-3, -4, -4, -5, -5, -4, -4, -3],
-      [-3, -4, -4, -5, -5, -4, -4, -3],
-      [-2, -3, -3, -4, -4, -3, -3, -2],
-      [-1, -2, -2, -2, -2, -2, -2, -1],
-      [2, 2, 0, 0, 0, 0, 2, 2],
-      [2, 3, 1, 0, 0, 1, 3, 2]
+      [-30, -40, -40, -50, -50, -40, -40, -30], [-30, -40, -40, -50, -50, -40, -40, -30], [-30, -40, -40, -50, -50, -40, -40, -30], [-30, -40, -40, -50, -50, -40, -40, -30],
+      [-20, -30, -30, -40, -40, -30, -30, -20], [-10, -20, -20, -20, -20, -20, -20, -10], [20, 20, 0, 0, 0, 0, 20, 20], [20, 30, 10, 0, 0, 10, 30, 20]
     ];
-
-    // Endgame king table: centralise and activate (mirrors Worker KEG)
     const KING_ENDGAME_TABLE = [
-      [-5, -4, -3, -2, -2, -3, -4, -5],
-      [-3, -2, -1,  0,  0, -1, -2, -3],
-      [-3, -1,  2,  3,  3,  2, -1, -3],
-      [-3, -1,  3,  4,  4,  3, -1, -3],
-      [-3, -1,  3,  4,  4,  3, -1, -3],
-      [-3, -1,  2,  3,  3,  2, -1, -3],
-      [-3, -3,  0,  0,  0,  0, -3, -3],
-      [-5, -3, -3, -3, -3, -3, -3, -5]
+      [-50, -40, -30, -20, -20, -30, -40, -50], [-30, -20, -10,  0,  0, -10, -20, -30], [-30, -10,  20, 30, 30,  20, -10, -30], [-30, -10,  30, 40, 40,  30, -10, -30],
+      [-30, -10,  30, 40, 40,  30, -10, -30], [-30, -10,  20, 30, 30,  20, -10, -30], [-30, -30,   0,  0,  0,   0, -30, -30], [-50, -30, -30, -30, -30, -30, -30, -50]
     ];
 
     function getAiCaptureMessages() {
@@ -6409,7 +6377,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       ph = Math.min(ph, 24);
       const eg = 1 - ph / 24;
 
-      let wUndevelopedMinors = 0;
+ let wUndevelopedMinors = 0;
       if (brd[7][1] === 'N') wUndevelopedMinors++;
       if (brd[7][2] === 'B') wUndevelopedMinors++;
       if (brd[7][5] === 'B') wUndevelopedMinors++;
@@ -6422,22 +6390,26 @@ window.askWiseKing = async function(fen, historyArr = []) {
       if (brd[0][6] === 'n') bUndevelopedMinors++;
 
       if (eg < 0.3) {
-        // INCREASED Undeveloped Penalty from 1.5 to 2.0 to force earlier castling and development
-        score -= wUndevelopedMinors * 2.0;
-        score += bUndevelopedMinors * 2.0;
+        score -= wUndevelopedMinors * 30; // FIX
+        score += bUndevelopedMinors * 30; // FIX
       }
 
-      // ── Pawn structure ──────────────────────────────────────────────────
       for(let c=0;c<8;c++){
-        if(wP[c]>1)score-=3*wP[c];
-        if(bP[c]>1)score+=3*bP[c];
-        if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))score-=4;
-        if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))score+=4;
+        if(wP[c]>1)score-=35*wP[c]; // FIX
+        if(bP[c]>1)score+=35*bP[c]; // FIX
+        if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))score-=40; // FIX
+        if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))score+=40; // FIX
       }
+
+      let wBishopsCount = 0, bBishopsCount = 0;
+      for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+          if(brd[r][c] === 'B') wBishopsCount++;
+          if(brd[r][c] === 'b') bBishopsCount++;
+      }
+      if(wBishopsCount >= 2) score += 40;
+      if(bBishopsCount >= 2) score -= 40;
 
       let wKing = null, bKing = null;
-      const centerSquares = [[3, 3], [3, 4], [4, 3], [4, 4]];
-
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
           const p = brd[r][c];
@@ -6448,7 +6420,6 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
           if (type === 'K') { if (isW) wKing = [r, c]; else bKing = [r, c]; }
 
-          // Material + PST (Already in scale 10 in main thread)
           let val = PIECE_VALUES[type] || 0;
           let pst = 0;
           const ridx = isW ? r : 7 - r;
@@ -6457,28 +6428,33 @@ window.askWiseKing = async function(fen, historyArr = []) {
           else if (type === 'B') pst = BISHOP_TABLE[ridx][c];
           else if (type === 'R') pst = ROOK_TABLE[ridx][c];
           else if (type === 'Q') pst = QUEEN_TABLE[ridx][c];
-          else if (type === 'K') {
-            pst = KING_TABLE[ridx][c] * (1 - eg) + KING_ENDGAME_TABLE[ridx][c] * eg;
-          }
+          else if (type === 'K') { pst = KING_TABLE[ridx][c] * (1 - eg) + KING_ENDGAME_TABLE[ridx][c] * eg; }
 
           let bonus = 0;
 
-          // Center bonus removed: PST already evaluates the center gracefully. Double-dipping caused kamikaze pieces.
-
-          // 👸 FIX 1: Queen brake (Sincronizado)
           if (type === 'Q' && eg < 0.3) {
             const homeR = isW ? 7 : 0;
             if (r !== homeR || c !== 3) {
               const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
-              bonus -= undeveloped * 2.5; // -25 CP -> -2.5 UI
+              bonus -= undeveloped * 25; // FIX
             }
           }
 
-          // Rule 3: Pánico al Caballo Pulpo (Outpost Constrained & Unsupported Penalty)
+          if (type === 'P') {
+              let ok=true, dir=isW?-1:1;
+              for(let rr=r+dir;isW?rr>=0:rr<=7;rr+=dir){
+                if(brd[rr][c]===(isW?'p':'P')||(c>0&&brd[rr][c-1]===(isW?'p':'P'))||(c<7&&brd[rr][c+1]===(isW?'p':'P'))){ok=false;break;}
+              }
+              if(ok) {
+                const distanceToPromotion = isW ? (7-r) : r;
+                bonus += distanceToPromotion * 20; 
+                bonus = Math.round(bonus * (1 + eg * 3.5)); 
+              }
+          }
+
           if (type === 'N') {
             let isOutpost = false;
-            let isAdvanced = (isW && r <= 3) || (!isW && r >= 4); // Knight has crossed midfield
-            
+            let isAdvanced = (isW && r <= 3) || (!isW && r >= 4); 
             if (c >= 2 && c <= 5 && ((isW && r >= 2 && r <= 4) || (!isW && r >= 3 && r <= 5))) {
               let supported = false;
               const pD = isW ? 1 : -1;
@@ -6487,38 +6463,26 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 if (c < 7 && brd[r+pD][c+1] === (isW ? 'P' : 'p')) supported = true;
               }
               let enemyCanAttack = false;
-              const eD = isW ? -1 : 1;
-              const ePawn = isW ? 'p' : 'P';
-              for (let er = r+eD; isW ? er>=0 : er<8; er+=eD) {
-                if (c > 0 && brd[er][c-1] === ePawn) enemyCanAttack = true;
-                if (c < 7 && brd[er][c+1] === ePawn) enemyCanAttack = true;
+              for (let er = r+(isW?-1:1); isW ? er>=0 : er<8; er+=(isW?-1:1)) {
+                if (c > 0 && brd[er][c-1] === (isW?'p':'P')) enemyCanAttack = true;
+                if (c < 7 && brd[er][c+1] === (isW?'p':'P')) enemyCanAttack = true;
               }
               if (supported && !enemyCanAttack) isOutpost = true;
             }
-            if (isOutpost) {
-               bonus += 6; // Outpost is a huge asset
-            } else if (isAdvanced) {
-               bonus -= 4; // Unsupported advanced knights are just targets, wasting tempos!
-            }
+            if (isOutpost) bonus += 140; // FIX
+            else if (isAdvanced) bonus -= 40; // FIX
           }
-          // Rule 1: Anti-Baile de Apertura is now evaluated globally via wUndevelopedMinors/bUndevelopedMinors
 
-          // 🛡️ King Safety (Fix 2, 3, 4)
           if (type === 'K' && eg < 0.5) {
-            // A. Attackers
             let attackers = 0;
             for (let dr = -1; dr <= 1; dr++) {
               for (let dc = -1; dc <= 1; dc++) {
                 const nr = r + dr, nc = c + dc;
                 if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-                  // isSquareAttacked(r, c, sideBeingAttacked, brd)
-                  // Passing isW ? 'w' : 'b' checks attacks on the king of that color.
                   if (isSquareAttacked(nr, nc, isW ? 'w' : 'b', brd)) attackers++;
                 }
               }
             }
-            
-            // B. Shield (3.0 centipawns scale)
             let shield = 0;
             const sRow = isW ? r - 1 : r + 1;
             if (sRow >= 0 && sRow < 8) {
@@ -6527,51 +6491,43 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 if (nc >= 0 && nc < 8 && brd[sRow][nc] === (isW ? 'P' : 'p')) shield++;
               }
             }
-            bonus += shield * 3;
+            bonus += shield * 30; // FIX
 
-            // 🔒 C. Zone Discipline
             if (c >= 5 || c <= 2) {
               const startRank = isW ? 6 : 1;
-              const dir = isW ? -1 : 1;
               let storm = 0;
               for (let dc = -1; dc <= 1; dc++) {
                 const nc = c + dc;
                 if (nc >= 0 && nc <= 7) {
                   if (brd[startRank][nc] !== (isW ? 'P' : 'p')) {
-                    if (brd[startRank + dir][nc] === (isW ? 'P' : 'p')) storm += 1;
+                    if (brd[startRank + (isW?-1:1)][nc] === (isW ? 'P' : 'p')) storm += 1;
                     else storm += 2;
                   }
                 }
               }
-              bonus -= storm * (attackers * 1.5);
+              bonus -= storm * (attackers * 15); // FIX
             }
-
-            // D. Massive King Attack Penalty (Capped at 32 UI = 320 CP)
-            const kPen = Math.min(32, attackers * attackers * 2);
+            const kPen = Math.min(250, attackers * attackers * 15); // FIX
             bonus -= kPen * (1 - eg);
 
-            // E. Miedo a las Columnas Abiertas sobre el Rey Enrocado
             if (c >= 5 || c <= 2) {
               const filesToCheck = c >= 5 ? [5,6,7] : [0,1,2];
               let openFilesThreat = 0;
               for (const fc of filesToCheck) {
                 let hasPawn = false;
-                for (let fr=0; fr<8; fr++) {
-                  if (brd[fr][fc] === (isW?'P':'p')) { hasPawn = true; break; }
-                }
+                for (let fr=0; fr<8; fr++) { if (brd[fr][fc] === (isW?'P':'p')) { hasPawn = true; break; } }
                 if (!hasPawn) {
                   let enemyMajor = false;
                   for (let fr=0; fr<8; fr++) {
-                    const p = brd[fr][fc];
-                    if (p === (isW?'r':'R') || p === (isW?'q':'Q')) { enemyMajor = true; break; }
+                    const pc = brd[fr][fc];
+                    if (pc === (isW?'r':'R') || pc === (isW?'q':'Q')) { enemyMajor = true; break; }
                   }
                   if (enemyMajor) openFilesThreat += 1;
                 }
               }
-              bonus -= openFilesThreat * 8;
+              bonus -= openFilesThreat * 35; // FIX
             }
           }
-
           score += sign * (val + pst + bonus);
         }
       }
@@ -7003,7 +6959,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       if (chessEngineWorker) { try { chessEngineWorker.terminate(); } catch(e){} }
 
       const workerCode = function() {
-        const PV = { P:100, N:305, B:333, R:500, Q:900, K:20000 };
+        const PV = { P:100, N:300, B:300, R:500, Q:900, K:20000 };
         const PIECE_VALUES = PV;
         function deepCopy(b){ return b.map(r=>r.slice()); }
         function clr(p){ if(!p||p===' ') return null; return p===p.toUpperCase()?'w':'b'; }
@@ -7058,7 +7014,19 @@ window.askWiseKing = async function(fen, historyArr = []) {
           }
           return hl+'-'+hh;
         }
-
+        
+        // Traductor para conectar con el historial en texto del hilo principal
+        function stringHash(state) {
+          let key = state.board.map(r => r.join('')).join('|') + '|' + state.turn;
+          if (state.castleRights) {
+            key += '|' + (state.castleRights.K?'K':'') + (state.castleRights.Q?'Q':'') + (state.castleRights.k?'k':'') + (state.castleRights.q?'q':'');
+          }
+          if (state.enPassantTarget && state.enPassantTarget.length === 2) {
+            key += '|ep' + state.enPassantTarget[1];
+          }
+          return key;
+        }
+        
         // Tablas posicionales PeSTO
         const PST={
           P:[0,0,0,0,0,0,0,0,50,50,50,50,50,50,50,50,10,10,20,30,30,20,10,10,5,5,10,25,25,10,5,5,0,0,0,20,20,0,0,0,5,-5,-10,0,0,-10,-5,5,5,10,10,-20,-20,10,10,5,0,0,0,0,0,0,0,0],
@@ -7560,7 +7528,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
           if(Date.now()>=deadline) throw 'TIMEOUT';
           const bk=zob(state);
           // Anti-repetition check — use Zobrist hash (already encodes board+turn+castling+EP)
-          if((gameHashCount.get(bk)||0)>=2) return 0;
+          if((gameHashCount.get(stringHash(state))||0)>=2) return 0;
           // TT lookup
           const alphaOrig=alpha;
           if(tt.has(bk)){
@@ -7760,27 +7728,35 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
                   const child = applyMove(state, m);
                   const childKey = zob(child);
-                  const reps = gameHashCount.get(childKey)||0;
-                  const repPen = reps>=1 ? -(5000*reps*reps) : 0;
+                  const reps = gameHashCount.get(stringHash(child))||0;
 
-                  let rawScore;
-                  try {
-                    // ✨ FIX: Aspiration window bounds are in scoreForMe space.
-                    // minimax() always returns rawScore (White's perspective).
-                    // For Black, scoreForMe = -rawScore, so we must invert the window.
-                    const engAlpha = color === 'w' ? alpha : -beta;
-                    const engBeta  = color === 'w' ? beta  : -alpha;
-                    if (color === 'w') {
-                      rawScore = minimax(child, d-1, engAlpha, engBeta, false, deadline);
-                    } else {
-                      rawScore = minimax(child, d-1, engAlpha, engBeta, true, deadline);
+                  // ✨ FIX Anti-rep: Si el movimiento lleva a una posición ya vista,
+                  // su valor exacto es 0 (tablas FIDE). No se usa una penalización ciega:
+                  // - Si el motor va ganando (+200), 0 < +200 → elige otra jugada. ✓
+                  // - Si va perdiendo (-300), 0 > -300 → acepta las tablas valientemente. ✓
+                  let scoreForMe;
+                  if (reps >= 1) {
+                    scoreForMe = 0; // Tablas por repetición — valor exacto, no penalización
+                  } else {
+                    let rawScore;
+                    try {
+                      // ✨ FIX: Aspiration window bounds are in scoreForMe space.
+                      // minimax() always returns rawScore (White's perspective).
+                      // For Black, scoreForMe = -rawScore, so we must invert the window.
+                      const engAlpha = color === 'w' ? alpha : -beta;
+                      const engBeta  = color === 'w' ? beta  : -alpha;
+                      if (color === 'w') {
+                        rawScore = minimax(child, d-1, engAlpha, engBeta, false, deadline);
+                      } else {
+                        rawScore = minimax(child, d-1, engAlpha, engBeta, true, deadline);
+                      }
+                    } catch(err) {
+                      if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
+                      throw err;
                     }
-                  } catch(err) {
-                    if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
-                    throw err;
+                    scoreForMe = color === 'w' ? rawScore : -rawScore;
                   }
 
-                  let scoreForMe = color === 'w' ? rawScore + repPen : -rawScore + repPen;
                   if (multiPV === 1){
                     // Both colors maximize scoreForMe at the root — no inversion needed
                     alpha = Math.max(alpha, scoreForMe);
@@ -7816,19 +7792,24 @@ window.askWiseKing = async function(fen, historyArr = []) {
                     const child = applyMove(state, m);
                     const childKey = zob(child); // Zobrist hash (encodes board+turn+castling+EP)
                     const reps = gameHashCount.get(childKey)||0;
-                    const repPen = reps>=1 ? -(5000*reps*reps) : 0;
-                    let rawScore;
-                    try {
-                      const engAlpha = color === 'w' ? alpha : -beta;
-                      const engBeta  = color === 'w' ? beta  : -alpha;
-                      rawScore = color === 'w'
-                        ? minimax(child, d-1, engAlpha, engBeta, false, deadline)
-                        : minimax(child, d-1, engAlpha, engBeta, true,  deadline);
-                    } catch(err) {
-                      if(String(err)==='TIMEOUT'){ depthPartial=true; analysisPartial=true; break; }
-                      throw err;
+                    // ✨ FIX Anti-rep: Tablas = 0 exacto (ver loop de aspiración arriba)
+                    let scoreForMe;
+                    if (reps >= 1) {
+                      scoreForMe = 0;
+                    } else {
+                      let rawScore;
+                      try {
+                        const engAlpha = color === 'w' ? alpha : -beta;
+                        const engBeta  = color === 'w' ? beta  : -alpha;
+                        rawScore = color === 'w'
+                          ? minimax(child, d-1, engAlpha, engBeta, false, deadline)
+                          : minimax(child, d-1, engAlpha, engBeta, true,  deadline);
+                      } catch(err) {
+                        if(String(err)==='TIMEOUT'){ depthPartial=true; analysisPartial=true; break; }
+                        throw err;
+                      }
+                      scoreForMe = color === 'w' ? rawScore : -rawScore;
                     }
-                    const scoreForMe = color === 'w' ? rawScore + repPen : -rawScore + repPen;
                     currentDepthScores.push({move:m, score:scoreForMe});
                   }
                 }
@@ -8042,17 +8023,29 @@ window.askWiseKing = async function(fen, historyArr = []) {
         }
 
         // 2.5 ANTI-REPETITION FILTER in main thread (guaranteed)
+        // Uses makeMoveOnBoard/unmakeMove so the generated hash includes
+        // castleRights and enPassantTarget — identical to positionHashes format.
         if (move) {
           const legal = getLegalMovesForColorInPlace(aiColor);
-          const childBoard = simulateMove(board, move);
-          const childKey = childBoard.map(r => r.join('')).join('|') + '|w';
+
+          function _makeChildKey(m) {
+            const prev = makeMoveOnBoard(m);
+            // FIX: Como makeMoveOnBoard no cambia el turno global, lo calculamos manualmente
+            const childTurn = aiColor === 'w' ? 'b' : 'w'; 
+            let key = board.map(r => r.join('')).join('|') + '|' + childTurn;
+            key += '|' + (castleRights.K?'K':'') + (castleRights.Q?'Q':'') + (castleRights.k?'k':'') + (castleRights.q?'q':'');
+            if (enPassantTarget && enPassantTarget.length === 2) key += '|ep' + enPassantTarget[1];
+            unmakeMove(prev);
+            return key;
+          }
+
+          const childKey = _makeChildKey(move);
           const timesSeenChild = positionHashes.filter(h => h === childKey).length;
 
           if (timesSeenChild >= 1 && legal.length > 1) {
             // This position already occurred — find non-repeated alternative
             const nonRepMoves = legal.filter(m => {
-              const sim = simulateMove(board, m);
-              const key = sim.map(r => r.join('')).join('|') + '|w';
+              const key = _makeChildKey(m);
               return positionHashes.filter(h => h === key).length === 0;
             });
             if (nonRepMoves.length > 0) {
