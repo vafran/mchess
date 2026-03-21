@@ -2936,7 +2936,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       grandmaster: { depth: 10, mistakes: 0,    timeLimit: 35000 },
     };
 
-    const PIECE_VALUES = { P: 10, N: 30, B: 30, R: 50, Q: 90, K: 900 };
+    const PIECE_VALUES = { P: 100, N: 300, B: 300, R: 500, Q: 900, K: 20000 };
 
     const I18N = {
       es: {
@@ -4789,19 +4789,20 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
     function isInsufficientMaterial(brd) {
       let whiteKnights=0, whiteBishops=0, blackKnights=0, blackBishops=0, total=0;
+      let wBishopColor=-1, bBishopColor=-2; // Different defaults so they won't match unless both bishops are found
       for(let r=0;r<8;r++) for(let c=0;c<8;c++){
         const p=brd[r][c]; if(p===' ') continue;
         const t=p.toUpperCase();
         if(t==='P'||t==='R'||t==='Q') return false;
         total++;
         if(p==='N') whiteKnights++;
-        if(p==='B') whiteBishops++;
+        if(p==='B') { whiteBishops++; wBishopColor = (r+c)%2; }
         if(p==='n') blackKnights++;
-        if(p==='b') blackBishops++;
+        if(p==='b') { blackBishops++; bBishopColor = (r+c)%2; }
       }
       if(total===2) return true; // K vs K
       if(total===3 && (whiteKnights===1||whiteBishops===1||blackKnights===1||blackBishops===1)) return true; // K+N/B vs K
-      if(total===4 && whiteBishops===1 && blackBishops===1) return true; // K+B vs K+B
+      if(total===4 && whiteBishops===1 && blackBishops===1 && wBishopColor===bBishopColor) return true; // K+B vs K+B only if same-color bishops
       return false;
     }
     
@@ -6367,7 +6368,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
       // Reset search tables so stale data from previous positions doesn't pollute ordering
       killerMoves = Array(64).fill(null).map(() => []);
       historyTable = Array(64).fill(null).map(() => Array(64).fill(0));
-      tt.clear();
+      // Note: tt is intentionally NOT cleared — stale entries can still help move ordering
+      // and may match transpositions in the current search. MAX_TT_SIZE eviction handles capacity.
     }
 
     function endSearch() {
@@ -7392,8 +7394,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
             else{b[m.fr][3]=b[m.fr][0];b[m.fr][0]=' ';}
           }
           b[m.tr][m.tc]=p; b[m.fr][m.fc]=' ';
-          if(p==='P'&&m.tr===0) b[m.tr][m.tc]='Q';
-          if(p==='p'&&m.tr===7) b[m.tr][m.tc]='q';
+          // Promotion: use m.promo if specified, otherwise default to Queen
+          if(p==='P'&&m.tr===0) b[m.tr][m.tc]=m.promo||'Q';
+          if(p==='p'&&m.tr===7) b[m.tr][m.tc]=(m.promo?(m.promo.toLowerCase()):'q');
           if(u==='K'){if(p==='K'){ns.castleRights.K=false;ns.castleRights.Q=false;}else{ns.castleRights.k=false;ns.castleRights.q=false;}}
           if(u==='R'){
             if(m.fr===7&&m.fc===7)ns.castleRights.K=false; if(m.fr===7&&m.fc===0)ns.castleRights.Q=false;
@@ -7416,15 +7419,25 @@ window.askWiseKing = async function(fen, historyArr = []) {
             const u=p.toUpperCase();
             if(u==='P'){
               const dir=color==='w'?-1:1,start=color==='w'?6:1,fr=r+dir;
+              const promoRow = color==='w'?0:7;
+              function addPawnMove(tr,tc){
+                if(tr===promoRow){
+                  // Generate 4 promotion moves
+                  for(const promo of ['Q','R','B','N'])
+                    moves.push({fr:r,fc:c,tr,tc,promo});
+                } else {
+                  moves.push({fr:r,fc:c,tr,tc});
+                }
+              }
               if(ib(fr,c)&&b[fr][c]===' '){
-                moves.push({fr:r,fc:c,tr:fr,tc:c});
-                if(r===start&&b[r+dir*2][c]===' ')moves.push({fr:r,fc:c,tr:r+dir*2,tc:c});
+                addPawnMove(fr,c);
+                if(r===start&&b[r+dir*2][c]===' ')addPawnMove(r+dir*2,c);
               }
               for(const dc of[-1,1]){
                 const tc=c+dc;
                 if(ib(fr,tc)){
-                  if(b[fr][tc]!==' '&&clr(b[fr][tc])!==color)moves.push({fr:r,fc:c,tr:fr,tc});
-                  if(state.enPassantTarget&&state.enPassantTarget[0]===fr&&state.enPassantTarget[1]===tc)moves.push({fr:r,fc:c,tr:fr,tc});
+                  if(b[fr][tc]!==' '&&clr(b[fr][tc])!==color)addPawnMove(fr,tc);
+                  if(state.enPassantTarget&&state.enPassantTarget[0]===fr&&state.enPassantTarget[1]===tc)addPawnMove(fr,tc);
                 }
               }
             } else if(u==='N'){
@@ -7546,15 +7559,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
         function minimax(state,depth,alpha,beta,maximizing,deadline,nullOk=true){
           if(Date.now()>=deadline) throw 'TIMEOUT';
           const bk=zob(state);
-          // Anti-repetition check - INCLUIR derechos de enroque y EP
-          let repKey=state.board.map(r=>r.join('')).join('|')+'|'+state.turn;
-          if(state.castleRights){
-            repKey+='|'+(state.castleRights.K?'K':'')+(state.castleRights.Q?'Q':'')+(state.castleRights.k?'k':'')+(state.castleRights.q?'q':'');
-          }
-          if(state.enPassantTarget && state.enPassantTarget.length===2){
-            repKey+='|ep'+state.enPassantTarget[1];
-          }
-          if((gameHashCount.get(repKey)||0)>=2) return 0;
+          // Anti-repetition check — use Zobrist hash (already encodes board+turn+castling+EP)
+          if((gameHashCount.get(bk)||0)>=2) return 0;
           // TT lookup
           const alphaOrig=alpha;
           if(tt.has(bk)){
@@ -7576,8 +7582,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
           // If we skip our turn and still beat beta, the position is so good we can prune.
           // Skip when: in check, depth too shallow, or endgame (few pieces).
           if(nullOk && !checked && depth>=3){
-            const pieceCount=state.board.flat().filter(p=>p&&p!==' '&&p.toUpperCase()!=='P'&&p.toUpperCase()!=='K').length;
-            if(pieceCount>=4){
+            // Zugzwang guard: only apply NMP when the side to move has at least one minor/major piece
+            const movingClr = maximizing ? 'w' : 'b';
+            const hasMajorOrMinor = state.board.flat().some(p =>
+              p && p !== ' ' && clr(p) === movingClr && 'NBRQ'.includes(p.toUpperCase())
+            );
+            if(hasMajorOrMinor){
               const nullState={...state,turn:opp(color),enPassantTarget:null};
               const R=depth>=6?3:2; // Reduction factor
               try{
@@ -7685,7 +7695,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
             }
 
 
-            tt.clear();
+            // Note: tt is intentionally NOT cleared here — positions evaluated while the
+            // human was thinking are still valid and speed up the next search.
+            // ttEvict() handles capacity management when tt.size >= MAX_TT.
             killers = Array(64).fill(null).map(()=>[null,null]);
             histTable = Array(64).fill(null).map(()=>Array(64).fill(0));
 
@@ -7747,7 +7759,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   if(Date.now() >= deadline){ depthPartial = true; analysisPartial = true; break; }
 
                   const child = applyMove(state, m);
-                  const childKey = child.board.map(r=>r.join('')).join('|')+'|'+child.turn;
+                  const childKey = zob(child);
                   const reps = gameHashCount.get(childKey)||0;
                   const repPen = reps>=1 ? -(5000*reps*reps) : 0;
 
@@ -7802,7 +7814,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   for(const {move:m} of scoredRoot){
                     if(Date.now() >= deadline){ depthPartial = true; analysisPartial = true; break; }
                     const child = applyMove(state, m);
-                    const childKey = child.board.map(r=>r.join('')).join('|')+'|'+child.turn;
+                    const childKey = zob(child); // Zobrist hash (encodes board+turn+castling+EP)
                     const reps = gameHashCount.get(childKey)||0;
                     const repPen = reps>=1 ? -(5000*reps*reps) : 0;
                     let rawScore;
@@ -7839,11 +7851,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
               if(analysisPartial) break;
             }
 
-            // Final anti-repetition filter: exclude already-seen positions
+            // Final anti-repetition filter: exclude already-seen positions (uses Zobrist hash)
             const nonRep = bestOptions.filter(o => {
               const child = applyMove(state, o.move);
-              const h = child.board.map(r=>r.join('')).join('|')+'|'+child.turn;
-              return (gameHashCount.get(h)||0) === 0;
+              return (gameHashCount.get(zob(child))||0) === 0;
             });
             // Si todas repiten, elegir la que menos veces se ha visto
             let finalOptions;
@@ -7852,15 +7863,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
             } else {
               let minReps = Infinity;
               bestOptions.forEach(o => {
-                const child = applyMove(state, o.move);
-                const h = child.board.map(r=>r.join('')).join('|')+'|'+child.turn;
-                const r = gameHashCount.get(h)||0;
+                const r = gameHashCount.get(zob(applyMove(state, o.move)))||0;
                 if(r < minReps) minReps = r;
               });
               finalOptions = bestOptions.filter(o => {
-                const child = applyMove(state, o.move);
-                const h = child.board.map(r=>r.join('')).join('|')+'|'+child.turn;
-                return (gameHashCount.get(h)||0) === minReps;
+                return (gameHashCount.get(zob(applyMove(state, o.move)))||0) === minReps;
               });
             }
 
@@ -8145,12 +8152,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
       // Nunca bloquear capturas con ganancia material neta (targetVal > 0 && targetVal >= myVal - 50)
       const isCapture = targetVal > 0;
       const netGain = targetVal - (hanging.danger ? myVal : 0);
-      // Thresholds use main-thread PIECE_VALUES scale: P=10 N=30 B=30 R=50 Q=90 K=900
+      // Thresholds use centipawn scale: P=100 N=300 B=300 R=500 Q=900
       // "absurd" = a quiet move that immediately loses a rook-or-better for free.
       const absurd = !!(
         !isCapture && (
-          (hanging.danger && (myVal >= 50 && reply.capturedVal >= myVal)) ||
-          (reply.delta <= -12)
+          (hanging.danger && (myVal >= 500 && reply.capturedVal >= myVal)) ||
+          (reply.delta <= -120)
         )
       );
 
@@ -8451,7 +8458,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // (20% of its value is a solid standard for the AI)
             penalty += Math.max(4, (pieceVal * 0.2)); 
             
-            if (pieceVal >= 30) {
+            if (pieceVal >= 300) {
               majorHanging += 1;
             }
           }
@@ -8531,7 +8538,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
             worstMove.tr, worstMove.tc, enemyColor, afterReplyBoard, color
           ).isSafe;
           // Equal or losing exchange for the enemy (they capture less than they lose)
-          if (recapturable && Math.abs(enemyAttackerVal - capturedVal) <= 5) {
+          if (recapturable && Math.abs(enemyAttackerVal - capturedVal) <= 50) {
             return { delta: 0, level: 'low', capturedVal: 0, replyMove: null };
           }
         }
@@ -8539,11 +8546,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
       // 🛡️ PEACE OF MIND FILTER: If the "threat" doesn't take pieces or change 
       // the evaluation drastically, it's noise. Return null so the Professor stays quiet.
-      if (Math.abs(delta) < 20 && capturedVal === 0) {
+      if (Math.abs(delta) < 200 && capturedVal === 0) {
         return { delta: 0, level: 'low', capturedVal: 0, replyMove: null };
       }
 
-      let level = delta <= -20 ? 'high' : (delta <= -12 ? 'medium' : 'low');
+      let level = delta <= -200 ? 'high' : (delta <= -120 ? 'medium' : 'low');
       return { delta, level, capturedVal, replyMove: worstMove };
     }
 
@@ -8566,18 +8573,18 @@ window.askWiseKing = async function(fen, historyArr = []) {
       const replyRisk = getImmediateReplyRisk(move, color);
       const isUndefended = !!attacker && !defender;
       const losingExchangeRisk = isUndefended && attackerVal > 0 && attackerVal < myVal && targetVal < myVal;
-      const severeReplyPunish = replyRisk.delta <= -12 && (replyRisk.capturedVal >= myVal || replyRisk.capturedVal >= 30);
-      const moderateReplyPunish = replyRisk.delta <= -10 && (replyRisk.capturedVal >= 30 || exposureDelta >= 8 || isUndefended);
+      const severeReplyPunish = replyRisk.delta <= -120 && (replyRisk.capturedVal >= myVal || replyRisk.capturedVal >= 300);
+      const moderateReplyPunish = replyRisk.delta <= -100 && (replyRisk.capturedVal >= 300 || exposureDelta >= 80 || isUndefended);
       const isQuietDevelopment = targetVal === 0
         && ['N', 'B'].includes((mover || ' ').toUpperCase())
         && [0, 7].includes(move.fr)
         && majorDelta <= 0 && exposureDelta < 8
-        && replyRisk.delta > -8 && replyRisk.capturedVal < 10;
+        && replyRisk.delta > -80 && replyRisk.capturedVal < 100;
       const openingDevelopmentClamp = history.length <= 6
         && targetVal === 0
         && ['P', 'N', 'B'].includes((mover || ' ').toUpperCase())
         && [0, 1, 6, 7].includes(move.fr)
-        && majorDelta <= 0 && exposureDelta < 12 && replyRisk.delta > -30
+        && majorDelta <= 0 && exposureDelta < 120 && replyRisk.delta > -300
         && !attacker;  // Never clamp if the destination square is directly attacked
 
       // Find which piece of mine is newly hanging after the move (for majorDelta explanations)
@@ -8631,8 +8638,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
         return 'low';
       }
 
-      if (f.majorDelta > 0 || f.exposureDelta >= 20 || f.losingExchangeRisk || f.severeReplyPunish) return 'high';
-      if ((f.isUndefended && f.myVal >= 30 && f.attackerVal <= f.myVal) || f.exposureDelta >= 8 || f.moderateReplyPunish) return 'medium';
+      if (f.majorDelta > 0 || f.exposureDelta >= 200 || f.losingExchangeRisk || f.severeReplyPunish) return 'high';
+      if ((f.isUndefended && f.myVal >= 300 && f.attackerVal <= f.myVal) || f.exposureDelta >= 80 || f.moderateReplyPunish) return 'medium';
       return 'low';
     }
 
@@ -10321,7 +10328,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   const p = board[r][c];
                   if (!p || p === ' ' || colorOf(p) !== currentTurn) continue;
                   const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-                  if (pVal < 30) continue;
+                  if (pVal < 300) continue; // centipawn scale
                   const wasSafe = evaluateSquareSafety(r, c, currentTurn, board, emClr).isSafe;
                   const nowSafe = evaluateSquareSafety(r, c, currentTurn, afterMove, emClr).isSafe;
                   if (!wasSafe && !nowSafe) abandonedPenalty += Math.round(pVal * 0.6);
@@ -10992,7 +10999,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
         // 3. OPENING DAMPING — suppress false positives in development phase
         // Normal piece development in the first 10 moves rarely loses real material;
-        // a delta of -20 to -35 is usually PST noise, not a tactical blunder.
+        // a delta of -200 to -350 is usually PST noise, not a tactical blunder.
         const isOpeningPhase = history.length <= 10;
         const effectiveDelta = isOpeningPhase && !isRealHanging && lostPieces.length === 0
           ? reply.delta * 0.5   // halve the penalty to filter PST noise
@@ -11002,7 +11009,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
         const colorIcon  = moverColor === 'w' ? '⬜' : '⬛';
         const profPrefix = `${colorIcon} <strong>${en ? 'Coach to ' + colorName : 'Profesor a ' + colorName}:</strong>`;
 
-        if (lostPieces.length > 0 || isRealHanging || effectiveDelta <= -20) {
+        if (lostPieces.length > 0 || isRealHanging || effectiveDelta <= -200) {
           let reason = "";
 
           if (lostPieces.length > 0) {
