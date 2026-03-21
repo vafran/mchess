@@ -6300,6 +6300,23 @@ window.askWiseKing = async function(fen, historyArr = []) {
       return namesEs[upper] || 'Pieza';
     }
 
+    /**
+     * Devuelve el artículo correcto (el/la, un/una, the/a) según la pieza y el idioma.
+     * @param {string} pieceChar Carácter de la pieza (P, N, B, R, Q, K)
+     * @param {string} type 'def' para el/la, 'indef' para un/una
+     */
+    function getPieceArticle(pieceChar, type = 'def') {
+      const upper = (pieceChar || ' ').toUpperCase();
+      const en = currentLanguage === 'en';
+      // Femeninos en español: Dama (Q), Torre (R) y "Pieza" (espacio)
+      const isFem = ['Q', 'R', ' '].includes(upper);
+      
+      if (en) return type === 'def' ? 'the' : 'a';
+      
+      if (type === 'def') return isFem ? 'la' : 'el';
+      return isFem ? 'una' : 'un';
+    }
+
     function getMoveNotation(brd, color, move, cr) {
       const piece = brd[move.fr][move.fc];
       const type = piece.toUpperCase();
@@ -9867,7 +9884,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
               contextNotes.push(opps.length === 1
                 ? (en
                     ? `🦅 Your ${myName} can capture the ${capName} on ${capSq}${best.free ? ' <strong>for free</strong>' : ' with material gain'}.`
-                    : `🦅 Tu ${myName} puede capturar el ${capName} en ${capSq}${best.free ? ' <strong>gratis</strong>' : ' con ganancia de material'}.`)
+                    : `🦅 Tu ${myName} puede capturar ${getPieceArticle(best.tp, 'def')} ${capName} en ${capSq}${best.free ? ' <strong>gratis</strong>' : ' con ganancia de material'}.`)
                 : (en
                     ? `🦅 <strong>${opps.length} captures available.</strong> Best: ${myName} takes ${capName} on ${capSq}${best.free ? ' for free' : ''}.`
                     : `🦅 <strong>${opps.length} capturas disponibles.</strong> La mejor: ${myName} toma ${capName} en ${capSq}${best.free ? ' gratis' : ''}.`));
@@ -9890,7 +9907,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   const xName = safety.xrayThreats[0] ? getLocalizedPieceName(safety.xrayThreats[0].piece) : (en ? 'a piece' : 'una pieza');
                   contextNotes.push(en
                     ? `🔭 Your ${pName} on ${sq} looks safe but an enemy ${xName} targets it through a blocker — watch out if that piece moves.`
-                    : `🔭 Tu ${pName} en ${sq} parece segura pero un ${xName} enemigo la apunta a través de un bloqueador — ojo si esa pieza se mueve.`);
+                    : `🔭 Tu ${pName} en ${sq} parece segura pero ${getPieceArticle(safety.xrayThreats[0] ? safety.xrayThreats[0].piece : ' ', 'indef')} ${xName} enemigo la apunta a través de un bloqueador — ojo si esa pieza se mueve.`);
                   break; // one X-Ray warning is enough
                 }
               }
@@ -10993,12 +11010,13 @@ window.askWiseKing = async function(fen, historyArr = []) {
               ? `<br>⚠️ <strong>You lost:</strong> ${lostPieces.map(p => getLocalizedPieceName(p)).join(', ')}.`
               : `<br>⚠️ <strong>Has perdido:</strong> ${lostPieces.map(p => getLocalizedPieceName(p)).join(', ')}.`;
           } else if (isRealHanging) {
+            const pArticle = hanging.attacker ? getPieceArticle(hanging.attacker, 'indef') : (en ? 'an' : 'una');
             const attackerName = hanging.attacker
               ? getLocalizedPieceName(hanging.attacker)
-              : (en ? 'an enemy piece' : 'una pieza enemiga');
+              : (en ? 'enemy piece' : 'pieza enemiga');
             reason = en
-              ? `<br>⚠️ Your piece on ${hanging.square} can be captured for free by the ${attackerName}.`
-              : `<br>⚠️ Tu pieza en ${hanging.square} puede ser capturada gratis por un ${attackerName}.`;
+              ? `<br>⚠️ Your piece on ${hanging.square} can be captured for free by ${pArticle} ${attackerName}.`
+              : `<br>⚠️ Tu pieza en ${hanging.square} puede ser capturada gratis por ${pArticle} ${attackerName}.`;
           } else {
             reason = en
               ? `<br>📉 This move allows the opponent a strong tactical reply that wins material.`
