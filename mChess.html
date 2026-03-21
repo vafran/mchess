@@ -8092,8 +8092,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
     }
 
     async function getBestAIMoveAsync(color, depth, mistakeChance, timeoutMs, forcedMove = null) {
-      // Pasamos el forcedMove al engineSearch
-      const results = await engineSearch(color, depth, 6, Math.min(timeoutMs||5000, 35000), forcedMove);
+      // FIX: Si estamos en Rey Sabio (mistakeChance === 0), usamos multiPV: 1 para máxima fuerza.
+      // Si estamos en niveles más bajos, calculamos 6 opciones para poder elegir una subóptima.
+      const pvCount = mistakeChance === 0 ? 1 : 6;
+      
+      const results = await engineSearch(color, depth, pvCount, Math.min(timeoutMs||5000, 35000), forcedMove);
+      
       if (forcedMove) return forcedMove; // Si era jugada de libro, la devolvemos garantizada
       
       if(!results.length) return findBestMoveFor(color, depth, mistakeChance, timeoutMs);
