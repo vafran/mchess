@@ -7040,7 +7040,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
           R:[0,0,0,0,0,0,0,0,5,10,10,10,10,10,10,5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,0,0,5,5,5,5,0,0],
           Q:[-20,-10,-10,-5,-5,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,5,5,5,0,-10,-5,0,5,5,5,5,0,-5,0,0,5,5,5,5,0,-5,-10,5,5,5,5,5,0,-10,-10,0,5,0,0,0,0,-10,-20,-10,-10,-5,-5,-10,-10,-20],
           KMG:[-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,20,20,0,0,0,0,20,20,20,30,10,0,0,10,30,20],
-          KEG:[-50,-40,-30,-20,-20,-30,-40,-50,-30,-20,-10,0,0,-10,-20,-30,-30,-10,20,30,30,20,-10,-30,-30,-10,30,40,40,30,-10,-30,-30,-10,30,40,40,30,-10,-30,-30,-10,20,30,30,20,-10,-30,-30,-30,0,0,0,0,-30,-30,-50,-30,-30,-30,-30,-30,-30,-50]
+          KEG:[-50,-40,-30,-20,-20,-30,-40,-50,-30,-20,-10,5,5,-10,-20,-30,-30,-5,25,40,40,25,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,25,40,40,25,-5,-30,-30,-20,-10,5,5,-10,-20,-30,-50,-40,-30,-20,-20,-30,-40,-50]
         };
 
         function evaluate(state){
@@ -7125,8 +7125,17 @@ window.askWiseKing = async function(fen, historyArr = []) {
               for(let rr=r+dir;isW?rr>=0:rr<=7;rr+=dir){
                 if(b[rr][c]===(isW?'p':'P')||(c>0&&b[rr][c-1]===(isW?'p':'P'))||(c<7&&b[rr][c+1]===(isW?'p':'P'))){ok=false;break;}
               }
-              if(ok) bonus=isW?(7-r)*15:r*15;
-              if(ok) bonus = Math.round(bonus * (1 + eg * 2)); // scale up in endgame
+              if(ok) {
+                // 🎯 MEJORA CRÍTICA: Bonificación escalada para finales
+                const distanceToPromotion = isW ? (7-r) : r;
+                bonus = distanceToPromotion * 20; // Aumentado de 15 a 20
+                // En endgame, peones pasados son CRUCIALES - multiplicador más agresivo
+                bonus = Math.round(bonus * (1 + eg * 3.5)); // Aumentado de 2 a 3.5
+                // Bonus extra si está cerca de coronar en endgame
+                if(eg > 0.6 && distanceToPromotion >= 5) {
+                  bonus += 50; // Peón en 6ta o 7ma fila en endgame = muy peligroso
+                }
+              }
             }
 
             // ── Rook on open / semi-open file ─────────────────────────────
@@ -7197,6 +7206,30 @@ window.askWiseKing = async function(fen, historyArr = []) {
             }
             // Anti-Baile de Apertura now evaluated globally via wUndevelopedMinors
 
+            // ── King activity in endgame ──────────────────────────────────
+            if(u==='K' && eg > 0.5) {
+              // 👑 MEJORA CRÍTICA: Rey debe activarse en finales
+              // Bonus por centralización (casillas d4, d5, e4, e5)
+              const centerDist = Math.abs(3.5 - r) + Math.abs(3.5 - c);
+              bonus += Math.round((7 - centerDist) * 15 * eg); // Hasta +105 en centro en endgame puro
+              
+              // Bonus adicional por avanzar hacia peones enemigos
+              const enemyPawns = isW ? bP : wP;
+              let closestEnemyPawn = 999;
+              for(let er=0; er<8; er++) {
+                for(let ec=0; ec<8; ec++) {
+                  if(b[er][ec] === (isW ? 'p' : 'P')) {
+                    const dist = Math.abs(r - er) + Math.abs(c - ec);
+                    closestEnemyPawn = Math.min(closestEnemyPawn, dist);
+                  }
+                }
+              }
+              if(closestEnemyPawn < 999) {
+                // Rey cerca de peones enemigos en endgame = bueno para atacarlos
+                bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
+              }
+            }
+            
             // ── King safety in middlegame ─────────────────────────────────
             if(u==='K'&&eg<0.5){
               // 1. Detectar atacantes ÚNICOS y PONDERADOS (Fix Rey Sobrio + Ceguera)
