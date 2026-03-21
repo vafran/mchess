@@ -6334,8 +6334,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
       if (brd[0][6] === 'n') bUndevelopedMinors++;
 
       if (eg < 0.3) {
-        score -= wUndevelopedMinors * 1.5;
-        score += bUndevelopedMinors * 1.5;
+        // INCREASED Undeveloped Penalty from 1.5 to 2.0 to force earlier castling and development
+        score -= wUndevelopedMinors * 2.0;
+        score += bUndevelopedMinors * 2.0;
       }
 
       // ── Pawn structure ──────────────────────────────────────────────────
@@ -6374,8 +6375,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
           let bonus = 0;
 
-          // Center bonus
-          if (centerSquares.some(sq => sq[0] === r && sq[1] === c)) bonus += 6;
+          // Center bonus removed: PST already evaluates the center gracefully. Double-dipping caused kamikaze pieces.
 
           // 👸 FIX 1: Queen brake (Sincronizado)
           if (type === 'Q' && eg < 0.3) {
@@ -6386,9 +6386,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
             }
           }
 
-          // Rule 3: Pánico al Caballo Pulpo (Outpost Constrained)
+          // Rule 3: Pánico al Caballo Pulpo (Outpost Constrained & Unsupported Penalty)
           if (type === 'N') {
             let isOutpost = false;
+            let isAdvanced = (isW && r <= 3) || (!isW && r >= 4); // Knight has crossed midfield
+            
             if (c >= 2 && c <= 5 && ((isW && r >= 2 && r <= 4) || (!isW && r >= 3 && r <= 5))) {
               let supported = false;
               const pD = isW ? 1 : -1;
@@ -6405,7 +6407,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
               }
               if (supported && !enemyCanAttack) isOutpost = true;
             }
-            if (isOutpost) bonus += 6;
+            if (isOutpost) {
+               bonus += 6; // Outpost is a huge asset
+            } else if (isAdvanced) {
+               bonus -= 4; // Unsupported advanced knights are just targets, wasting tempos!
+            }
           }
           // Rule 1: Anti-Baile de Apertura is now evaluated globally via wUndevelopedMinors/bUndevelopedMinors
 
@@ -6982,8 +6988,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
           if (b[0][6] === 'n') bUndevelopedMinors++;
 
           if (eg < 0.3) {
-            s -= wUndevelopedMinors * 15;
-            s += bUndevelopedMinors * 15;
+            // INCREASED Undeveloped Penalty from 15 to 20
+            s -= wUndevelopedMinors * 20;
+            s += bUndevelopedMinors * 20;
           }
 
           // ── Pawn structure ──────────────────────────────────────────────────
@@ -7065,6 +7072,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
               
               // Pánico al Caballo Pulpo (Outpost Constrained)
               let isOutpost = false;
+              let isAdvanced = (isW && r <= 3) || (!isW && r >= 4); // Knight crossed midfield
+
               if (c >= 2 && c <= 5 && ((isW && r >= 2 && r <= 4) || (!isW && r >= 3 && r <= 5))) {
                 let supported = false;
                 const pD = isW ? 1 : -1;
@@ -7081,7 +7090,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 }
                 if (supported && !enemyCanAttack) isOutpost = true;
               }
-              if (isOutpost) bonus += 60;
+              if (isOutpost) {
+                 bonus += 60;
+              } else if (isAdvanced) {
+                 bonus -= 40; // Penalize blindly jumping ahead without pawn support
+              }
             }
 
             // ── Bishop mobility (open diagonals) ─────────────────────────
