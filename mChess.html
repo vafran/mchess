@@ -2512,81 +2512,114 @@ limitations under the License.
     // Variable global única y aislada para el Coliseo
 window.askWiseKing = async function(fen, historyArr = []) {
     console.log("🏟️ Recibida petición de FEN:", fen);
+    try {
+        const parts = fen.split(' ');
+        const rows = parts[0].split('/');
+        
+        let tempBoard = [];
+        for (const row of rows) {
+            const r = [];
+            for (const ch of row) {
+                if (ch >= '1' && ch <= '8') {
+                    for (let i = 0; i < parseInt(ch); i++) r.push(' ');
+                } else {
+                    r.push(ch);
+                }
+            }
+            tempBoard.push(r);
+        }
+        
+        // Asignar al tablero global esperado por el motor
+        board = tempBoard;
+        const color = parts[1];
+        const cr = parts[2];
+        castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
+        enPassantTarget = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
 
-    // Parsear FEN y cargar en el estado global del juego
-    const parts = fen.split(' ');
-    const rows = parts[0].split('/');
-    
-    // Reconstruir el tablero global
-    board = [];
-    for (const row of rows) {
-        const r = [];
-        for (const ch of row) {
-            if (ch >= '1' && ch <= '8') {
-                for (let i = 0; i < parseInt(ch); i++) r.push(' ');
-            } else {
-                r.push(ch);
+        // Apertura
+        const historyKey = historyArr.join(',');
+        if (OPENING_BOOK && OPENING_BOOK[historyKey]) {
+            const valid = OPENING_BOOK[historyKey];
+            if (valid.length > 0) {
+                const legalMvs = getLegalMovesForColorInPlace(color);
+                const validBookMoves = valid.filter(entry => 
+                    legalMvs.some(m => getMoveNotation(board, color, m, castleRights) === entry.m)
+                );
+                
+                if (validBookMoves.length > 0) {
+                    const totalWeight = validBookMoves.reduce((s, e) => s + (e.w || 1), 0);
+                    let randomWeight = Math.random() * totalWeight;
+                    let chosenEntry = validBookMoves[0];
+                    for (const entry of validBookMoves) {
+                        randomWeight -= (entry.w || 1);
+                        if (randomWeight <= 0) { chosenEntry = entry; break; }
+                    }
+                    const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
+                    if (bookMove) {
+                        console.log("📖 Jugada seleccionada del libro:", chosenEntry.m);
+                        const cols = 'abcdefgh';
+                        const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? 'q' : '';
+                        const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
+                        console.log("🎯 UCI:", uci);
+                        return uci;
+                    }
+                }
             }
         }
-        board.push(r);
-    }
 
-    // Color, derechos de enroque, en passant
-    const color = parts[1]; // 'w' o 'b'
-    const cr = parts[2];
-    castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
-    enPassantTarget = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
-    
-    // Solo reseteamos el historial si es el inicio de una partida nueva
-    if (fen.includes("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")) {
-      positionHashes = [];
-    }
-    // Registramos la posición actual para detectar tablas por triple repetición
-    const currentHash = board.map(r => r.join('')).join('|') + '|' + color;
-    positionHashes.push(currentHash);
+        console.log("🧠 Motor pensando (Profundidad 10, 35s max)...");
+        // Aumentar significativamente el buffer de seguridad para Puppeteer
+        const timeoutRes = 35000;
+        const results = await new Promise(resolve => {
+            const worker = createEngineWorker();
+            let settled = false;
+            const t = setTimeout(() => {
+                console.log("⚠️ Timer de seguridad (50s) disparado.");
+                if(!settled) { settled=true; worker.terminate(); resolve([]); }
+            }, timeoutRes + 15000); // 15 segundos extra de margen!
 
-    // 1. Consultar el Libro de Aperturas usando el historial de chess.js
-    const historyKey = historyArr.join(',');
-    const bookEntries = OPENING_BOOK[historyKey];
-    if (bookEntries && bookEntries.length > 0) {
-        const legalMvs = getLegalMovesForColorInPlace(color);
-        const validBookMoves = bookEntries.filter(entry => 
-            legalMvs.some(m => getMoveNotation(board, color, m, castleRights) === entry.m)
-        );
-        if (validBookMoves.length > 0) {
-            // Juega aleatorio basado en los pesos del libro
-            const totalWeight = validBookMoves.reduce((s, e) => s + (e.w || 1), 0);
-            let randomWeight = Math.random() * totalWeight;
-            let chosenEntry = validBookMoves[0];
-            for (const entry of validBookMoves) {
-                randomWeight -= (entry.w || 1);
-                if (randomWeight <= 0) { chosenEntry = entry; break; }
-            }
-            const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
-            if (bookMove) {
-                console.log("📖 Jugada de libro encontrada:", chosenEntry.name, chosenEntry.m);
+            worker.onmessage = function(e) {
+                if(e.data.action === 'result') {
+                    clearTimeout(t);
+                    if(!settled) { settled=true; worker.terminate(); resolve(e.data.moves || []); }
+                }
+            };
+            worker.postMessage({
+                action: 'search',
+                board: tempBoard,
+                turn: color,
+                castleRights,
+                enPassantTarget,
+                depth: 10, multiPV: 1, timeout: timeoutRes,
+                positionHashes: [] // Evitar filtro de repeticiones roto
+            });
+        });
+
+        if (!results || results.length === 0) {
+            console.log("❌ Motor devolvió array vacío.");
+            // ⚠️ FALLBACK: Devolver movimiento legal aleatorio
+            const legalMvs = getLegalMovesForColorInPlace(color);
+            if(legalMvs && legalMvs.length > 0) {
+                const fallbackMove = legalMvs[0];
                 const cols = 'abcdefgh';
-                return cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + (bookMove.promo || '');
+                const promotion = (fallbackMove.tr === 0 || fallbackMove.tr === 7) && board[fallbackMove.fr][fallbackMove.fc].toUpperCase() === 'P' ? 'q' : '';
+                const uci = cols[fallbackMove.fc] + (8 - fallbackMove.fr) + cols[fallbackMove.tc] + (8 - fallbackMove.tr) + promotion;
+                console.log("⚠️ Usando movimiento de fallback:", uci);
+                return uci;
             }
+            return null;
         }
-    }
 
-    // 2. Si no hay jugada de libro, llamar al motor
-    const results = await engineSearch(color, 10, 1, 35000);
-
-    if (!results || !results.length) {
-        console.log("❌ Motor sin jugadas");
+        const m = results[0].move;
+        const cols = 'abcdefgh';
+        const promotion = (m.tr === 0 || m.tr === 7) && board[m.fr][m.fc].toUpperCase() === 'P' ? 'q' : '';
+        const uci = cols[m.fc] + (8 - m.fr) + cols[m.tc] + (8 - m.tr) + promotion;
+        console.log("✅ Jugada encontrada (Motor):", uci);
+        return uci;
+    } catch (e) {
+        console.log("❌ ERROR EN ASKWISEKING:", e);
         return null;
     }
-
-    const m = results[0].move;
-    console.log("✅ Jugada encontrada:", m);
-
-    // Convertir {fr, fc, tr, tc} → UCI string "e2e4"
-    const cols = 'abcdefgh';
-    const uci = cols[m.fc] + (8 - m.fr) + cols[m.tc] + (8 - m.tr);
-    console.log("🎯 UCI:", uci);
-    return uci;
 };  
 
     // ═══════════════════════════════════════════
@@ -3450,7 +3483,19 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
       const oppositeColor = (color === 'w' ? 'b' : 'w');
       const attackers = getAttackersOfSquare(r, c, oppositeColor, brd);
-      const defenders = getAttackersOfSquare(r, c, color, brd);
+      let defenders = getAttackersOfSquare(r, c, color, brd);
+
+      // 🛡️ FILTRAR defensores clavados - solo contar los que pueden moverse legalmente
+      defenders = defenders.filter(def => {
+        // Verificar si este defensor puede capturar en (r,c) sin dejar al rey en jaque
+        const testMove = { fr: def.r, fc: def.c, tr: r, tc: c };
+        const tempBoard = deepCopy(brd);
+        const tempPiece = tempBoard[def.r][def.c];
+        tempBoard[r][c] = tempPiece;
+        tempBoard[def.r][def.c] = ' ';
+        // Verificar si tras este movimiento, el rey del color queda en jaque
+        return !inCheck(color, tempBoard);
+      });
 
       // X-Ray threats: enemy sliding pieces attacking through a less valuable blocker
       const xrayThreats = getXRayAttackersOfSquare(r, c, oppositeColor, brd);
@@ -4089,9 +4134,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
       board[m.fr][m.fc] = ' ';
       if (isEp) board[m.fr][m.tc] = ' '; // Remove captured pawn
 
-      // Auto-queen promotion (main-thread engine always promotes to queen)
-      if (p === 'P' && m.tr === 0) board[m.tr][m.tc] = 'Q';
-      if (p === 'p' && m.tr === 7) board[m.tr][m.tc] = 'q';
+      // ✨ Auto-queen promotion SOLO en el motor (main-thread engine)
+      // En makeMove del jugador, permitimos elegir pieza
+      if (p === 'P' && m.tr === 0 && !m.promo) board[m.tr][m.tc] = 'Q';
+      if (p === 'p' && m.tr === 7 && !m.promo) board[m.tr][m.tc] = 'q';
+      // Si el movimiento ya tiene pieza de promoción especificada
+      if(m.promo) board[m.tr][m.tc] = m.promo;
 
       // Castling: move the rook
       let castleRook = null;
@@ -4531,7 +4579,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       try {
           await animateMove(animList);
       } catch (e) { console.warn("Animación interrumpida"); }
-      animating = false;
+      // ✨ NO liberar animating todavía si hay promoción pendiente
       window.currentAnimList = null;
 
       // 4. EN-PASSANT PAWN LOGIC
@@ -4547,15 +4595,22 @@ window.askWiseKing = async function(fen, historyArr = []) {
         if (color === 'w') capturedByWhite.push(captured); else capturedByBlack.push(captured);
       }
 
-      // 6. PAWN PROMOTION
+      // 6. PAWN PROMOTION - ✨ Ahora con selección de pieza Y protección anti-race-condition
       if (type === 'P' && (tr === 0 || tr === 7)) {
-        if (gameMode === 'ai' && color === 'b') {
-          board[tr][tc] = 'q';
+        if (gameMode === 'ai' && color !== playerColor) {
+          // IA siempre promociona a dama
+          board[tr][tc] = color === 'w' ? 'Q' : 'q';
+          animating = false; // Liberar después de promoción IA
         } else {
+          // Jugador humano elige pieza - MANTENER animating=true durante el modal
           render();
           const promoPiece = await promptPromotion(color);
           board[tr][tc] = promoPiece;
+          animating = false; // ✨ Liberar DESPUÉS del modal
         }
+      } else {
+        // No hay promoción, liberar animating ahora
+        animating = false;
       }
 
       // 7. GENERATE NOTATION
@@ -4603,8 +4658,13 @@ window.askWiseKing = async function(fen, historyArr = []) {
       if (isCheckOnNext) notation += hasMove ? '+' : '#';
       history.push(notation);
       if (fenPositionLoaded) fenPositionLoaded = false; // first move played, now treat as normal game
-      // 🔁 Register position hash for repetition detection
-      positionHashes.push(board.map(r => r.join('')).join('|') + '|' + nextColor);
+      // 🔁 Register position hash for repetition detection - INCLUIR castleRights y EP
+      let posHash = board.map(r => r.join('')).join('|') + '|' + nextColor;
+      posHash += '|' + (castleRights.K?'K':'') + (castleRights.Q?'Q':'') + (castleRights.k?'k':'') + (castleRights.q?'q':'');
+      if(enPassantTarget && enPassantTarget.length===2){
+        posHash += '|ep' + enPassantTarget[1];
+      }
+      positionHashes.push(posHash);
       // ⏱️ 50-move clock: reset on capture or pawn move
       if (type === 'P' || isCapture) { halfMoveClock = 0; } else { halfMoveClock++; }
       turn = nextColor;
@@ -4713,6 +4773,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       if(halfMoveClock>=100){setTimeout(()=>showStatus('🤝 '+(currentLanguage==='en'?'Draw!':'¡Tablas!'),currentLanguage==='en'?'50-move rule.':'Regla de los 50 movimientos.'),400);return;}
       if(isInsufficientMaterial(board)){setTimeout(()=>showStatus('🤝 '+(currentLanguage==='en'?'Draw!':'¡Tablas!'),currentLanguage==='en'?'Insufficient material.':'Falta de material.'),400);return;}
       const cHash=positionHashes[positionHashes.length-1];
+      // La detección ya es correcta porque ahora positionHashes incluye castleRights y EP
       if(positionHashes.filter(h=>h===cHash).length>=3){setTimeout(()=>{const m=document.getElementById('drawClaimModal'),en=currentLanguage==='en';document.getElementById('drawClaimTitle').innerHTML=en?'⚖️ Threefold Repetition!':'⚖️ ¡Triple Repetición!';document.getElementById('drawClaimDesc').innerHTML=en?'The exact same position has occurred 3 times. You can claim a draw right now.':'La misma posición exacta se ha repetido 3 veces. Puedes reclamar un empate ahora mismo.';document.getElementById('btnIgnoreDraw').innerHTML=en?'Keep playing':'Continuar';document.getElementById('btnAcceptDraw').innerHTML=en?'Claim Draw':'Reclamar Tablas';m.classList.add('show');},400);return;}
       if(gameMode==='ai'&&turn!==playerColor)triggerAI();}
       function ignoreDrawClaim(){document.getElementById('drawClaimModal').classList.remove('show');if(gameMode==='ai'&&turn!==playerColor)triggerAI();}
@@ -6925,6 +6986,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
         // Zobrist 64-bit
         const ZL=[], ZH=[];
         let ZBL=0, ZBH=0;
+        const Z_CASTLE_L=[], Z_CASTLE_H=[]; // K, Q, k, q
+        const Z_EP_L=[], Z_EP_H=[]; // 8 columnas para captura al paso
         (function(){
           let s=1070372;
           function r32(){ s^=s<<13; s^=s>>>17; s^=s<<5; return s>>>0; }
@@ -6934,6 +6997,16 @@ window.askWiseKing = async function(fen, historyArr = []) {
             ZL.push(l); ZH.push(h);
           }
           ZBL=r32(); ZBH=r32();
+          // Derechos de enroque: K, Q, k, q
+          for(let i=0;i<4;i++){
+            Z_CASTLE_L.push(r32());
+            Z_CASTLE_H.push(r32());
+          }
+          // Captura al paso: 8 columnas
+          for(let i=0;i<8;i++){
+            Z_EP_L.push(r32());
+            Z_EP_H.push(r32());
+          }
         })();
         const PS="PNBRQKpnbrqk";
         function pidx(p){ return p===' '?-1:PS.indexOf(p); }
@@ -6944,6 +7017,18 @@ window.askWiseKing = async function(fen, historyArr = []) {
             if(i!==-1){hl^=ZL[i][r*8+c];hh^=ZH[i][r*8+c];}
           }
           if(state.turn==='b'){hl^=ZBL;hh^=ZBH;}
+          // Incluir derechos de enroque en el hash
+          if(state.castleRights){
+            if(state.castleRights.K){hl^=Z_CASTLE_L[0];hh^=Z_CASTLE_H[0];}
+            if(state.castleRights.Q){hl^=Z_CASTLE_L[1];hh^=Z_CASTLE_H[1];}
+            if(state.castleRights.k){hl^=Z_CASTLE_L[2];hh^=Z_CASTLE_H[2];}
+            if(state.castleRights.q){hl^=Z_CASTLE_L[3];hh^=Z_CASTLE_H[3];}
+          }
+          // Incluir captura al paso en el hash
+          if(state.enPassantTarget && state.enPassantTarget.length===2){
+            const col=state.enPassantTarget[1];
+            hl^=Z_EP_L[col];hh^=Z_EP_H[col];
+          }
           return hl+'-'+hh;
         }
 
@@ -7091,7 +7176,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 if (supported && !enemyCanAttack) isOutpost = true;
               }
               if (isOutpost) {
-                 bonus += 60;
+                 bonus += 140;
               } else if (isAdvanced) {
                  bonus -= 40; // Penalize blindly jumping ahead without pawn support
               }
@@ -7159,8 +7244,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 bonus -= stormPoints * (attackers * 15);
               }
 
-              // 4. Penalización Dinámica Máxima (Cerrada en 320)
-              const kPenalty=Math.min(320, attackers*attackers*20);
+              // 4. Penalización Dinámica Máxima (Cerrada en 6000)
+              const kPenalty=Math.min(600, attackers*attackers*50);
               bonus-=kPenalty*(1-eg); 
 
               // 5. Miedo a las Columnas Abiertas sobre el Rey Enrocado
@@ -7387,8 +7472,14 @@ window.askWiseKing = async function(fen, historyArr = []) {
         function minimax(state,depth,alpha,beta,maximizing,deadline,nullOk=true){
           if(Date.now()>=deadline) throw 'TIMEOUT';
           const bk=zob(state);
-          // Anti-repetition check
-          const repKey=state.board.map(r=>r.join('')).join('|')+'|'+state.turn;
+          // Anti-repetition check - INCLUIR derechos de enroque y EP
+          let repKey=state.board.map(r=>r.join('')).join('|')+'|'+state.turn;
+          if(state.castleRights){
+            repKey+='|'+(state.castleRights.K?'K':'')+(state.castleRights.Q?'Q':'')+(state.castleRights.k?'k':'')+(state.castleRights.q?'q':'');
+          }
+          if(state.enPassantTarget && state.enPassantTarget.length===2){
+            repKey+='|ep'+state.enPassantTarget[1];
+          }
           if((gameHashCount.get(repKey)||0)>=2) return 0;
           // TT lookup
           const alphaOrig=alpha;
@@ -7756,7 +7847,13 @@ window.askWiseKing = async function(fen, historyArr = []) {
       return new Promise((resolve) => {
         let worker;
         try {
-          worker = createEngineWorker();
+          // ✨ PERSISTIR Worker: reutilizar si ya existe
+          if(chessEngineWorker) {
+            worker = chessEngineWorker;
+          } else {
+            worker = createEngineWorker();
+            chessEngineWorker = worker;
+          }
         } catch(e) {
           // Fallback si Worker no disponible
           engineSearchSync(color, depth, multiPV, timeoutMs, positionHashes).then(resolve);
@@ -7765,8 +7862,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
         let settled = false;
         const done = (moves) => {
           if(settled) return; settled = true;
-          try { worker.terminate(); } catch(e){}
-          chessEngineWorker = null;
+          // ✨ NO destruir el worker — mantener TT y tablas
           resolve(moves || []);
         };
         const timer = setTimeout(() => done([]), timeoutMs + 4000);
