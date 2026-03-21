@@ -4685,8 +4685,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
         for (let r = 0; r < 8; r++) {
           for (let c = 0; c < 8; c++) {
              const p = board[r][c];
-             if (p !== ' ' && colorOf(p) === 'w') {
-                const safety = evaluateSquareSafety(r, c, 'w', board, 'b');
+             // In PvP: warn the side that just moved (they need to see threats now).
+             // In AI mode: always warn the human player regardless of color chosen.
+             const scanColor = (gameMode === 'pvp') ? lastMovedColor : playerColor;
+             if (p !== ' ' && colorOf(p) === scanColor) {
+                const enemyColor = scanColor === 'w' ? 'b' : 'w';
+                const safety = evaluateSquareSafety(r, c, scanColor, board, enemyColor);
                 if (!safety.isSafe) {
                    const val = PIECE_VALUES[p.toUpperCase()] || 0;
                    if (val > maxVal) {
@@ -4710,8 +4714,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
       if (!hasMove) {
         if (isCheckOnNext) {
           // Checkmate — determine who won
-          const winnerIsWhite = turn === 'b'; // turn is the side that just moved (now in check), so winner is the other
-          const humanWon = gameMode === 'pvp' || winnerIsWhite; // in AI mode, human is always white
+          const winnerIsWhite = turn === 'b'; // turn is already flipped to next color; winner is the one who just moved
+          const winnerColor = winnerIsWhite ? 'w' : 'b';
+          const humanWon = gameMode === 'pvp' || winnerColor === playerColor;
           const en = currentLanguage === 'en';
           
           if (humanWon) {
