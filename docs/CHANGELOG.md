@@ -8,9 +8,9 @@ Format: version · size · what changed.
 ---
 
 ## v2.0.0 — The Professor's Edition
-**11,593 lines · 570 KB**
+**12,262 lines · 603 KB**
 
-The engine did not change. The teaching did. This release rebuilt the pedagogical layer from scratch.
+This release features a major architectural engine update alongside a complete rebuild of the pedagogical layer. The engine is no longer "just a wrapper"—it is now a refined tactical core.
 
 ### New features
 - **Opening theory in the Professor** — Analysis and What should I do? now name the opening you are in and show how many theoretical continuations remain available. Works even when the exact move sequence is not stored as a book key.
@@ -19,7 +19,15 @@ The engine did not change. The teaching did. This release rebuilt the pedagogica
 - **100 random challenge FENs** — drawn from real game databases spanning Sicilian middlegames, Ruy López structures, Indian defences, and endgames.
 - **Training button on main menu** — no longer buried in Options.
 - **FEN loader mode selector** — the Training modal now lets you choose mode (2 Players / vs AI) and difficulty before loading any position, avoiding the multi-step menu dance.
+- **Full Support for Playing as Black** — Fixed a critical state-machine bug where the AI would stop responding if the human player chose the Black pieces.
 - **About modal** — version, author, licence, and AI attribution, fully theme-aware.
+
+### Engine Improvements
+- **Anti-Repetition 2.0** — Proper FIDE threefold repetition logic in the root search. Positions are evaluated as 0 (Draw), allowing the engine to strategically force draws when behind or avoid them when ahead.
+- **Architectural Zobrist fix** — Corrected a desync where the main-thread anti-repetition filter used a simplified hash that ignored castling rights and en passant, leading to infinite loops in some scenarios.
+- **Aspiration Window Correctness** — Fixed inverted bounds calculation for Black moves and improved window stability at high depths.
+- **Opening Book Refinement** — Improved selection logic to avoid "edge-of-board" knights (Na4) and premature exchanges (Nd4xc6) in the Bird's Opening and London System.
+- **Performance Optimizations** — Critical search paths in the Web Worker have been refactored for better stability.
 
 ### Bugs fixed
 - **Checkmate in 1 now shows exactly one move** — the pedagogical guarantee was incorrectly forcing a second irrelevant option even when the game was already won. Mate-first sort added; filter truncates to one on mate.

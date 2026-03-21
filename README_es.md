@@ -25,7 +25,7 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 - **Cero fricción.** Sin instalación, sin cuenta, sin internet tras la primera descarga. Funciona en un portátil de diez años igual que en un teléfono moderno.
 - **Ajedrez real, no una versión simplificada.** Reglas FIDE completas: al paso, enroque, triple repetición, regla de los 50 movimientos, todo.
 - **Indulgente abajo, desafiante arriba.** Fácil y Medio existen para que los principiantes sepan lo que es ganar. Difícil y Rey Sabio existen para cuando estén listos.
-- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~576 KB. Cero dependencias.
+- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~604 KB. Cero dependencias.
 
 ### No-objetivos
 
@@ -178,7 +178,7 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ## Novedades en v2.0.0
 
-Esta versión es una reconstrucción completa de la capa pedagógica. El motor es el mismo. La enseñanza no.
+Esta versión incluye una gran actualización arquitectónica del motor junto con una reconstrucción completa de la capa pedagógica. El motor ya no es solo un soporte; ahora es un núcleo táctico refinado.
 
 ### Teoría de aperturas en el Profesor
 
@@ -204,6 +204,10 @@ Un nuevo botón **🧩 Entrenamiento** aparece directamente en el menú principa
 
 El botón **🎲 Reto Aleatorio** carga una de 100 posiciones adicionales curadas al azar, con partidas de la Siciliana, estructuras de la Española, defensas indias y finales puros.
 
+### Soporte completo para jugar como Negras
+
+Corregido un error de transición que impedía que la IA continuara la partida si el jugador humano elegía jugar con Negras. El sistema ahora gestiona el cambio de bando de forma fluida en todos los niveles.
+
 ### Corrección del jaque mate en 1
 
 Cuando existe un jaque mate en 1, el Profesor ahora muestra exactamente una jugada con la cabecera *"🏆 ¡Jaque Mate en 1! Esta jugada termina la partida."* Antes, la garantía pedagógica forzaba que apareciera una segunda jugada irrelevante incluso cuando la partida ya estaba ganada.
@@ -215,6 +219,16 @@ El nivel "Más serio" (nivel 0) era imposible de seleccionar — `parseInt("0") 
 ### Corrección de la detección de victorias
 
 En el modo IA, el confeti ahora solo se lanza cuando gana el humano. Antes se lanzaba en ambos casos.
+
+### Antirepetición 2.0 (Estándar FIDE)
+
+El Rey Sabio ahora entiende el valor estratégico de las tablas. Mientras que las versiones anteriores usaban una penalización ciega para las posiciones repetidas, la v2.0.0 evalúa la triple repetición como exactamente **0.0 (Tablas)**.
+
+Este cambio arquitectónico permite al motor:
+- **Forzar el empate** por repetición cuando está en desventaja material (ej. perdiendo una pieza contra un rival más fuerte).
+- **Evitar el empate** por repetición cuando va ganando, buscando líneas alternativas de victoria en su lugar.
+
+Combinado con una implementación corregida de **Zobrist Hashing** que rastrea los derechos de enroque y el estado de la captura al paso, el motor ya no cae en bucles infinitos de "barajado de piezas" en mediojuegos complejos.
 
 ### Motor — Bugs críticos corregidos
 
@@ -245,7 +259,7 @@ En el modo IA, el confeti ahora solo se lanza cuando gana el humano. Antes se la
 
 ### Diseño monolítico
 
-~576 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
+~604 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
 
 ### Motor de búsqueda
 
@@ -335,4 +349,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 ---
 
 *Monolith Chess v2.0.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.*  
-*~576 KB. Cero dependencias. Abre el archivo y juega.*
+*~604 KB. Cero dependencias. Abre el archivo y juega.*

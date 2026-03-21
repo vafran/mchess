@@ -8,9 +8,9 @@ Formato: versión · tamaño · qué cambió.
 ---
 
 ## v2.0.0 — La Edición del Profesor
-**11.593 líneas · 570 KB**
+**12.262 líneas · 603 KB**
 
-El motor no cambió. La enseñanza sí. Esta versión reconstruyó la capa pedagógica desde cero.
+Esta versión incluye una gran actualización arquitectónica del motor junto con una reconstrucción completa de la capa pedagógica. El motor ya no es solo un soporte; ahora es un núcleo táctico refinado.
 
 ### Nuevas funciones
 - **Teoría de aperturas en el Profesor** — Análisis y ¿Qué hago? ahora nombran la apertura en la que estás y muestran cuántas continuaciones teóricas quedan disponibles. Funciona incluso cuando la secuencia exacta de movimientos no está almacenada como clave del libro.
@@ -19,7 +19,15 @@ El motor no cambió. La enseñanza sí. Esta versión reconstruyó la capa pedag
 - **100 retos aleatorios** — extraídos de partidas reales, con mediojuegos de la Siciliana, estructuras de la Española, defensas indias y finales.
 - **Botón Entrenamiento en el menú principal** — ya no está enterrado en Opciones.
 - **Selector de modo en el modal FEN** — permite elegir modo (2 Jugadores / vs IA) y dificultad antes de cargar cualquier posición, eliminando el laberinto de menús.
+- **Soporte completo para jugar como Negras** — Corregido un bug crítico del motor de estados que hacía que la IA dejara de responder si el humano elegía jugar con las piezas negras.
 - **Modal Acerca de** — versión, autor, licencia y reconocimiento de las IAs, completamente adaptado a cada tema visual.
+
+### Mejoras del Motor
+- **Antirepetición 2.0** — Lógica real de triple repetición FIDE en la raíz de la búsqueda. Las posiciones repetidas se evalúan como 0 (Tablas), permitiendo al motor forzar el empate estratégicamente si va perdiendo o evitarlo si va ganando.
+- **Corrección arquitectónica de Hash Zobrist** — Solucionado un desajuste en el filtro del hilo principal que ignoraba derechos de enroque y peón al paso, evitando bucles infinitos en partidas de alto nivel.
+- **Corrección en Ventanas de Aspiración** — Arreglado un error de inversión de límites para las piezas negras y mejorada la estabilidad de la ventana a grandes profundidades.
+- **Refinamiento del Libro de Aperturas** — Pesos ajustados para evitar desarrollos de caballos al borde (Ca4) e intercambios prematuros (Cd4xc6) en la Apertura Bird y el Sistema Londres.
+- **Optimizaciones de Rendimiento** — Refactorización de rutas críticas en el Web Worker para mayor estabilidad durante el cálculo intensivo.
 
 ### Bugs corregidos
 - **Mate en 1 muestra exactamente una jugada** — la garantía pedagógica forzaba incorrectamente una segunda opción irrelevante cuando la partida ya estaba ganada. Añadido sort mate-primero; el filtro trunca a uno al detectar mate.

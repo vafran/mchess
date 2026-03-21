@@ -23,7 +23,7 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 - **Zero friction.** No installation, no account, no internet required after the first download. Works on a 10-year-old laptop and a modern phone equally.
 - **Real chess, not a simplified version.** Full FIDE rules — en passant, castling, threefold repetition, the 50-move rule, all of it.
 - **Forgiving at the bottom, challenging at the top.** Easy and Medium let beginners feel what winning feels like. Hard and Wise King exist for when they are ready for a real test.
-- **Monolithic mastery.** Everything — engine, coach, opening book, training library, animations, sounds — lives in a single `.html` file of ~576 KB. Zero dependencies.
+- **Monolithic mastery.** Everything — engine, coach, opening book, training library, animations, sounds — lives in a single `.html` file of ~604 KB. Zero dependencies.
 
 ### Non-Goals
 
@@ -175,7 +175,7 @@ Three styles, with labels now visible under the slider:
 
 ## What's new in v2.0.0
 
-This release is a complete rebuild of the pedagogical layer. The engine is the same. The teaching is not.
+This release features a major architectural engine update alongside a complete rebuild of the pedagogical layer. The engine is no longer "just a wrapper"—it is now a refined tactical core.
 
 ### Opening Theory in the Professor
 
@@ -202,6 +202,10 @@ A new **🧩 Training** button appears directly on the main menu — no longer b
 
 A **🎲 Random Challenge** button loads one of 100 additional curated positions at random, spanning Sicilian middlegames, Ruy López structures, Indian defences, and pure endgames.
 
+### Full Support for Playing as Black
+
+Fixed a transition bug that previously prevented the AI from continuing the game if the human player chose to play as Black. The game now handles side-switching seamlessly across all difficulty levels.
+
 
 
 ### Checkmate Handling Fixed
@@ -215,6 +219,16 @@ The "More serious" setting (level 0) was impossible to select — `parseInt("0")
 ### Victory Detection Fixed
 
 In AI mode, confetti now fires only when the human wins. Previously it fired for both outcomes.
+
+### Anti-Repetition 2.0 (FIDE Standard)
+
+The Wise King now understands the strategic value of a draw. While previous versions used a blind penalty for repeated positions, v2.0.0 evaluates threefold repetition as exactly **0.0 (Draw)**.
+
+This architectural shift allows the engine to:
+- **Force a draw** by repetition when it is materially behind (e.g., losing a piece against a stronger opponent).
+- **Avoid a draw** by repetition when it is ahead, seeking alternative winning lines instead.
+
+Combined with a corrected **Zobrist Hashing** implementation that tracks castling rights and en-passant state, the engine no longer falls into infinite "shuffle" loops in complex middle-games.
 
 ### Engine — Critical Bug Fixes
 
@@ -247,7 +261,7 @@ Several bugs in the search engine were identified and corrected post-release. Th
 
 ### Single-file design
 
-~576 KB. One `.html` file. No external dependencies, no CDN calls, no cookies, no network requests after load.
+~604 KB. One `.html` file. No external dependencies, no CDN calls, no cookies, no network requests after load.
 
 ### Search
 
@@ -286,7 +300,7 @@ ES2017+ required. Tested on Chrome 90+, Firefox 88+, Safari 14+.
 
 ---
 
-## Historial de versiones
+## Changelog
 
 [ChangeLog](docs/CHANGELOG.md)
 
@@ -341,4 +355,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 ---
 
 *Monolith Chess v2.0.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.*  
-*~576 KB. Zero dependencies. Open the file and play.*
+*~604 KB. Zero dependencies. Open the file and play.*
