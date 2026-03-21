@@ -2047,7 +2047,7 @@ limitations under the License.
       <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 8px;">
         <div class="levels-grid">
           <div class="level-card" role="button" tabindex="0" data-level="easy"
-            onclick="startAIGame('easy')"
+            onclick="promptColorForAI('easy')"
             onmouseover="if(typeof playHoverSound==='function') playHoverSound();"
             onfocus="if(typeof playHoverSound==='function') playHoverSound();"
             onkeydown="if(event.key==='Enter'||event.key===' ') { this.click(); }">
@@ -2057,7 +2057,7 @@ limitations under the License.
           </div>
 
           <div class="level-card" role="button" tabindex="0" data-level="medium"
-            onclick="startAIGame('medium')"
+            onclick="promptColorForAI('medium')"
             onmouseover="if(typeof playHoverSound==='function') playHoverSound();"
             onfocus="if(typeof playHoverSound==='function') playHoverSound();"
             onkeydown="if(event.key==='Enter'||event.key===' ') { this.click(); }">
@@ -2067,7 +2067,7 @@ limitations under the License.
           </div>
 
           <div class="level-card" role="button" tabindex="0" data-level="hard"
-            onclick="startAIGame('hard')"
+            onclick="promptColorForAI('hard')"
             onmouseover="if(typeof playHoverSound==='function') playHoverSound();"
             onfocus="if(typeof playHoverSound==='function') playHoverSound();"
             onkeydown="if(event.key==='Enter'||event.key===' ') { this.click(); }">
@@ -2077,7 +2077,7 @@ limitations under the License.
           </div>
 
           <div class="level-card" role="button" tabindex="0" data-level="grandmaster"
-            onclick="startAIGame('grandmaster')"
+            onclick="promptColorForAI('grandmaster')"
             onmouseover="if(typeof playHoverSound==='function') playHoverSound();"
             onfocus="if(typeof playHoverSound==='function') playHoverSound();"
             onkeydown="if(event.key==='Enter'||event.key===' ') { this.click(); }">
@@ -2089,6 +2089,29 @@ limitations under the License.
       </div>
       <button class="menu-btn secondary" id="btnBackToMenu" style="margin-top:8px; border:none; background:transparent; font-size:0.85rem;"
         onclick="showScreen('screenMenu')">&#8592; Volver al Menú</button>
+    </div>
+  </div>
+
+  <!-- ── Color Choice Screen ──────────────── -->
+  <div class="screen-overlay hidden" id="screenColor">
+    <div class="menu-card">
+      <div style="font-size:2rem; margin-bottom:4px;">🎨</div>
+      <div class="menu-title" id="colorTitle" style="font-size:1.25rem;">Elige tu Bando</div>
+      <p id="colorSubtitle" style="font-size:0.88rem; color:var(--text-light); text-align:center; margin-bottom:16px;">¿Jugar con Blancas o Negras?</p>
+      
+      <div style="display: flex; gap: 12px; width: 100%;">
+        <button class="menu-btn secondary" onclick="confirmColorStart('w')" style="flex:1; padding: 20px 10px; font-size: 1.05rem; display:flex; flex-direction:column; gap:8px;">
+          <span style="font-size:2.2rem; display:block;">⚪</span>
+          <span id="btnChooseWhite">Jugar Blancas</span>
+        </button>
+        <button class="menu-btn secondary" onclick="confirmColorStart('b')" style="flex:1; padding: 20px 10px; font-size: 1.05rem; display:flex; flex-direction:column; gap:8px; border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.05);">
+          <span style="font-size:2.2rem; display:block;">⚫</span>
+          <span id="btnChooseBlack">Jugar Negras</span>
+        </button>
+      </div>
+      
+      <button class="menu-btn secondary" id="btnBackToDiff" style="margin-top:16px; border:none; background:transparent; font-size:0.85rem;"
+        onclick="showScreen('screenDifficulty')">&#8592; Atrás</button>
     </div>
   </div>
 
@@ -2348,7 +2371,7 @@ limitations under the License.
       <p id="statusMsg"></p>
       <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap;">
         <button class="btn btn-secondary" id="btnReviewGame" style="padding:12px 20px; font-size:1rem;" onclick="reviewGame()">🔍 Repasar partida</button>
-        <button class="btn btn-primary" id="btnRestartStatus" style="padding:12px 20px; font-size:1rem;" onclick="resetGame()">🔄 ¡Jugar de nuevo!</button>
+        <button class="btn btn-primary" id="btnRestartStatus" style="padding:12px 20px; font-size:1rem;" onclick="confirmResetGame()">🔄 ¡Jugar de nuevo!</button>
       </div>
     </div>
   </div>
@@ -2418,11 +2441,17 @@ limitations under the License.
       </div>
 
       <!-- Difficulty selector — only shown when vs AI is selected -->
-      <div id="fenDiffRow" style="display:flex; gap:6px; margin-bottom: 12px;">
+      <div id="fenDiffRow" style="display:flex; gap:6px; margin-bottom: 8px;">
         <button id="fenDiffEasy"   onclick="setFenDiff('easy')"   style="flex:1; padding:7px 2px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer; border:2px solid var(--primary-light); background:transparent; color:var(--text-light); transition:all 0.2s;">🐣 Fácil</button>
         <button id="fenDiffMedium" onclick="setFenDiff('medium')" style="flex:1; padding:7px 2px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer; border:2px solid var(--primary-light); background:transparent; color:var(--text-light); transition:all 0.2s;">📚 Medio</button>
         <button id="fenDiffHard"   onclick="setFenDiff('hard')"   style="flex:1; padding:7px 2px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer; border:2px solid var(--primary-light); background:transparent; color:var(--text-light); transition:all 0.2s;">🔥 Difícil</button>
         <button id="fenDiffGrand"  onclick="setFenDiff('grandmaster')" style="flex:1; padding:7px 2px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer; border:2px solid var(--primary-light); background:transparent; color:var(--text-light); transition:all 0.2s;">👑 Rey</button>
+      </div>
+
+      <!-- Player Color selector -->
+      <div id="fenColorRow" style="display:flex; gap:6px; margin-bottom: 12px;">
+        <button id="fenColorWhite" onclick="setPlayerColor('w')" style="flex:1; padding:7px 2px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer; border:2px solid var(--primary-light); background:var(--primary-light); color:var(--text); transition:all 0.2s;">⚪ Jugar con Blancas</button>
+        <button id="fenColorBlack" onclick="setPlayerColor('b')" style="flex:1; padding:7px 2px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer; border:2px solid var(--primary-light); background:transparent; color:var(--text-light); transition:all 0.2s;">⚫ Jugar con Negras</button>
       </div>
 
       <button class="menu-btn primary" id="btnRandomPuzzle" onclick="loadRandomPuzzle()" style="margin-bottom: 12px; font-size: 0.95rem; padding: 10px; background: linear-gradient(135deg, #10b981, #059669);">
@@ -2507,7 +2536,13 @@ window.askWiseKing = async function(fen) {
     const cr = parts[2];
     castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
     enPassantTarget = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
-    positionHashes = []; // reset — no hay historial de repeticiones en arena
+    // Solo reseteamos el historial si es el inicio de una partida nueva
+    if (fen.includes("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")) {
+      positionHashes = [];
+    }
+    // Registramos la posición actual para detectar tablas por triple repetición
+    const currentHash = board.map(r => r.join('')).join('|') + '|' + color;
+    positionHashes.push(currentHash);
 
     // Llamar al motor con el estado ya cargado (Color, Profundidad, Errores, Timeout)
     const results = await engineSearch(color, 10, 1, 35000);
@@ -2578,6 +2613,8 @@ window.askWiseKing = async function(fen) {
     let lastTrainingTipPly = -99;
     let lastTrainingTipText = '';
     let fenPositionLoaded = false; // true when position was loaded from FEN, not played from start
+    let playerColor = 'w';
+    let boardFlipped = false;
     // Character dialogs for intro and reactions (multilingual + emoji)
     const characterDialogs = {
       easy: {
@@ -2850,6 +2887,7 @@ window.askWiseKing = async function(fen) {
         mainTitle: '♟️ Monolith Chess', mainSubtitle: '¿Con quién juegas hoy?',
         btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
+        colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
         optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual',
         commentaryStyle: '🎙️ Estilo del Comentarista', styleSerious: '🎚️ Más serio', styleMixed: '🎚️ Mixto', styleFunny: '🎚️ Más divertido',
         ingameMenuTitle: 'Menú', continueGame: '▶️ Continuar partida', ingameOptions: '⚙️ Opciones',
@@ -2893,6 +2931,7 @@ window.askWiseKing = async function(fen) {
         mainTitle: '♟️ Monolith Chess', mainSubtitle: 'Who are you playing with today?',
         btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
+        colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
         optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme',
         commentaryStyle: '🎙️ Commentator Style', styleSerious: '🎚️ More serious', styleMixed: '🎚️ Mixed', styleFunny: '🎚️ More playful',
         ingameMenuTitle: 'Menu', continueGame: '▶️ Continue game', ingameOptions: '⚙️ Options',
@@ -3041,6 +3080,7 @@ window.askWiseKing = async function(fen) {
         titleMain: 'mainTitle', menuTitleMain: 'mainTitle', menuSubtitleMain: 'mainSubtitle',
         btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining',
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
+        colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
         optionsTitle: 'optionsTitle', optionsLanguageLabel: 'languageLabel', optionsThemeLabel: 'themeLabel', commentaryStyleLabel: 'commentaryStyle', btnOptionsBack: 'backMenu', optionsLoadFenLabel: 'loadFen',
         ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
         btnQuickPvp: 'quickPvp', btnQuickAi: 'quickAi',
@@ -3525,8 +3565,13 @@ window.askWiseKing = async function(fen) {
       document.getElementById('confirmModal').classList.remove('show');
     }
 
-    function confirmResetGame() {
+    function confirmResetGame(forceBypassPrompt = false) {
       hideConfirmDialog();
+      if (forceBypassPrompt !== true && gameMode === 'ai') {
+        document.getElementById('statusBanner').classList.remove('show');
+        promptColorForAI(currentDifficulty);
+        return;
+      }
       resetGame();
     }
 
@@ -3554,20 +3599,22 @@ window.askWiseKing = async function(fen) {
         }
       }
 
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
+      for (let visualR = 0; visualR < 8; visualR++) {
+        for (let visualC = 0; visualC < 8; visualC++) {
+          const r = boardFlipped ? 7 - visualR : visualR;
+          const c = boardFlipped ? 7 - visualC : visualC;
           const cell = document.createElement('div');
           cell.className = 'cell ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
           cell.dataset.r = r;
           cell.dataset.c = c;
 
-          if (r === 7) {
+          if (visualR === 7) {
             const coordL = document.createElement('div');
             coordL.className = 'coord coord-x';
             coordL.textContent = String.fromCharCode(97 + c);
             cell.appendChild(coordL);
           }
-          if (c === 0) {
+          if (visualC === 0) {
             const coordN = document.createElement('div');
             coordN.className = 'coord coord-y';
             coordN.textContent = 8 - r;
@@ -3660,8 +3707,10 @@ window.askWiseKing = async function(fen) {
       const rect = boardEl.getBoundingClientRect();
       const cellW = rect.width / 8;
       const cellH = rect.height / 8;
-      const cx = c * cellW + cellW / 2;
-      const cy = r * cellH + cellH / 2;
+      const visualR = boardFlipped ? 7 - r : r;
+      const visualC = boardFlipped ? 7 - c : c;
+      const cx = visualC * cellW + cellW / 2;
+      const cy = visualR * cellH + cellH / 2;
       const container = document.getElementById('particles');
 
       for (let i = 0; i < 16; i++) {
@@ -3718,10 +3767,15 @@ window.askWiseKing = async function(fen) {
           fly.style.fontSize = `${cellW * 0.78}px`;
 
           // Offset for padding
-          fly.style.left = `${6 + m.sc * cellW + cellW * 0.1}px`;
-          fly.style.top = `${6 + m.sr * cellH + cellH * 0.06}px`;
+          const visualSc = boardFlipped ? 7 - m.sc : m.sc;
+          const visualSr = boardFlipped ? 7 - m.sr : m.sr;
+          fly.style.left = `${6 + visualSc * cellW + cellW * 0.1}px`;
+          fly.style.top = `${6 + visualSr * cellH + cellH * 0.06}px`;
           wrap.appendChild(fly);
-          return { fly, tc: m.tc, tr: m.tr };
+          
+          const visualTc = boardFlipped ? 7 - m.tc : m.tc;
+          const visualTr = boardFlipped ? 7 - m.tr : m.tr;
+          return { fly, tc: visualTc, tr: visualTr };
         });
 
         requestAnimationFrame(() => {
@@ -4237,12 +4291,9 @@ window.askWiseKing = async function(fen) {
       if (animating || aiThinking) return;
       
       // Si es el turno de la IA, el tablero es de lava, no se toca
-      if (gameMode === 'ai' && turn === 'b') return;
+      if (gameMode === 'ai' && turn !== playerColor) return;
 
       // Limpiar flechas del profesor al interactuar
-      if (typeof clearArrows === 'function') clearArrows();
-      if (animating || aiThinking) return;
-      if (gameMode === 'ai' && turn === 'b') return;
       if (typeof clearArrows === 'function') clearArrows();
       const piece = board[r][c];
 
@@ -4260,7 +4311,7 @@ window.askWiseKing = async function(fen) {
           };
           
           // 🎓 PHASE 3: ACTIVE TRAINING MODE ("Why is it bad?")
-          if (trainingModeEnabled && (turn === 'w' || gameMode === 'pvp')) {
+          if (trainingModeEnabled && (turn === playerColor || gameMode === 'pvp')) {
             const proposedMove = { fr: sr, fc: sc, tr: r, tc: c };
             const enemy = turn === 'w' ? 'b' : 'w';
             const afterBoard = simulateMove(board, proposedMove);
@@ -4514,7 +4565,7 @@ window.askWiseKing = async function(fen) {
 
       // ✨ FIX INTELIGENTE: Solo guardamos la "foto" si es un humano moviendo.
       // En modo 2 Jugadores (pvp) ambos son humanos. En modo IA, solo las Blancas.
-      if (gameMode === 'pvp' || turn === 'w') {
+      if (gameMode === 'pvp' || turn === playerColor) {
         window.snapshotAfterHumanMove = deepCopy(board);
       }
 
@@ -4560,7 +4611,7 @@ window.askWiseKing = async function(fen) {
       lastProfessorAction = null;
 
       // 12. TRAINING SCANNER (PHASE 3)
-      if (trainingModeEnabled && lastMovedColor === 'w') {
+      if (trainingModeEnabled && (gameMode === 'pvp' || lastMovedColor === playerColor)) {
         const quickTip = getTrainingTipMessage();
         if (quickTip) showToast(quickTip, 5200);
         
@@ -4636,8 +4687,8 @@ window.askWiseKing = async function(fen) {
       if(isInsufficientMaterial(board)){setTimeout(()=>showStatus('🤝 '+(currentLanguage==='en'?'Draw!':'¡Tablas!'),currentLanguage==='en'?'Insufficient material.':'Falta de material.'),400);return;}
       const cHash=positionHashes[positionHashes.length-1];
       if(positionHashes.filter(h=>h===cHash).length>=3){setTimeout(()=>{const m=document.getElementById('drawClaimModal'),en=currentLanguage==='en';document.getElementById('drawClaimTitle').innerHTML=en?'⚖️ Threefold Repetition!':'⚖️ ¡Triple Repetición!';document.getElementById('drawClaimDesc').innerHTML=en?'The exact same position has occurred 3 times. You can claim a draw right now.':'La misma posición exacta se ha repetido 3 veces. Puedes reclamar un empate ahora mismo.';document.getElementById('btnIgnoreDraw').innerHTML=en?'Keep playing':'Continuar';document.getElementById('btnAcceptDraw').innerHTML=en?'Claim Draw':'Reclamar Tablas';m.classList.add('show');},400);return;}
-      if(gameMode==='ai'&&turn==='b')triggerAI();}
-      function ignoreDrawClaim(){document.getElementById('drawClaimModal').classList.remove('show');if(gameMode==='ai'&&turn==='b')triggerAI();}
+      if(gameMode==='ai'&&turn!==playerColor)triggerAI();}
+      function ignoreDrawClaim(){document.getElementById('drawClaimModal').classList.remove('show');if(gameMode==='ai'&&turn!==playerColor)triggerAI();}
       function acceptDrawClaim(){document.getElementById('drawClaimModal').classList.remove('show');showStatus('🤝 '+(currentLanguage==='en'?'Draw!':'¡Tablas!'),currentLanguage==='en'?'Claimed by threefold repetition.':'Reclamadas por triple repetición.');}
 
     function isInsufficientMaterial(brd) {
@@ -4788,7 +4839,7 @@ window.askWiseKing = async function(fen) {
       rebuildCommentaryForLanguage();
     }
 
-    function resetGame() { init(); playMoveSound(); }
+    function resetGame() { init(); playMoveSound(); if (playerColor === 'b' && gameMode === 'ai') setTimeout(triggerAI, 500); }
 
     function updateStatusHUD() {
       const hud = document.getElementById('gameStatusHUD');
@@ -6223,107 +6274,205 @@ window.askWiseKing = async function(fen) {
     function evaluateBoard(brd, depthLevel = 'medium') {
       let score = 0;
       const isEndgame = isEndgameCheck(brd);
-      const centerSquares = [[3, 3], [3, 4], [4, 3], [4, 4]];
-
-      let wKing = null;
-      let bKing = null;
-
-      // ── Tapered evaluation phase (mirrors Worker) ────────────────────────────
-      // ph: N/B=1, R=2, Q=4. Max=24 (2Q+4R+4B+4N per side).
-      // eg=0 → full middlegame, eg=1 → full endgame.
+      
+      // Phase calculation (ph: N/B=1, R=2, Q=4. Max=24)
       let ph = 0;
+      const wP = [0,0,0,0,0,0,0,0];
+      const bP = [0,0,0,0,0,0,0,0];
+
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
           const pt = brd[r][c];
           if (pt === ' ') continue;
           const u = pt.toUpperCase();
+          if (u === 'P') { if (pt === 'P') wP[c]++; else bP[c]++; }
           if (u === 'N' || u === 'B') ph += 1;
           else if (u === 'R') ph += 2;
           else if (u === 'Q') ph += 4;
         }
       }
       ph = Math.min(ph, 24);
-      const eg = 1 - ph / 24; // 0=middlegame, 1=endgame
+      const eg = 1 - ph / 24;
+
+      let wUndevelopedMinors = 0;
+      if (brd[7][1] === 'N') wUndevelopedMinors++;
+      if (brd[7][2] === 'B') wUndevelopedMinors++;
+      if (brd[7][5] === 'B') wUndevelopedMinors++;
+      if (brd[7][6] === 'N') wUndevelopedMinors++;
+
+      let bUndevelopedMinors = 0;
+      if (brd[0][1] === 'n') bUndevelopedMinors++;
+      if (brd[0][2] === 'b') bUndevelopedMinors++;
+      if (brd[0][5] === 'b') bUndevelopedMinors++;
+      if (brd[0][6] === 'n') bUndevelopedMinors++;
+
+      if (eg < 0.3) {
+        score -= wUndevelopedMinors * 1.5;
+        score += bUndevelopedMinors * 1.5;
+      }
+
+      // ── Pawn structure ──────────────────────────────────────────────────
+      for(let c=0;c<8;c++){
+        if(wP[c]>1)score-=3*wP[c];
+        if(bP[c]>1)score+=3*bP[c];
+        if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))score-=4;
+        if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))score+=4;
+      }
+
+      let wKing = null, bKing = null;
+      const centerSquares = [[3, 3], [3, 4], [4, 3], [4, 4]];
 
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
           const p = brd[r][c];
           if (p === ' ') continue;
-          const color = colorOf(p);
+          const isW = p === p.toUpperCase();
           const type = p.toUpperCase();
+          const sign = isW ? 1 : -1;
+
+          if (type === 'K') { if (isW) wKing = [r, c]; else bKing = [r, c]; }
+
+          // Material + PST (Already in scale 10 in main thread)
           let val = PIECE_VALUES[type] || 0;
-
-          // Guardamos las posiciones de los reyes para el final
-          if (type === 'K') { if (color === 'w') wKing = [r, c]; else bKing = [r, c]; }
-
-          let posBonus = 0;
-          if (type === 'P') posBonus = (color === 'w') ? PAWN_TABLE[r][c] : PAWN_TABLE[7 - r][c];
-          else if (type === 'N') posBonus = (color === 'w') ? KNIGHT_TABLE[r][c] : KNIGHT_TABLE[7 - r][c];
-          else if (type === 'B') posBonus = (color === 'w') ? BISHOP_TABLE[r][c] : BISHOP_TABLE[7 - r][c];
-          else if (type === 'R') posBonus = (color === 'w') ? ROOK_TABLE[r][c] : ROOK_TABLE[7 - r][c];
-          else if (type === 'Q') posBonus = (color === 'w') ? QUEEN_TABLE[r][c] : QUEEN_TABLE[7 - r][c];
+          let pst = 0;
+          const ridx = isW ? r : 7 - r;
+          if (type === 'P') pst = PAWN_TABLE[ridx][c];
+          else if (type === 'N') pst = KNIGHT_TABLE[ridx][c];
+          else if (type === 'B') pst = BISHOP_TABLE[ridx][c];
+          else if (type === 'R') pst = ROOK_TABLE[ridx][c];
+          else if (type === 'Q') pst = QUEEN_TABLE[ridx][c];
           else if (type === 'K') {
-            // Tapered: blend middlegame and endgame king tables by game phase
-            const kr = color === 'w' ? r : 7 - r;
-            const mgBonus = KING_TABLE[kr][c];
-            const egBonus = KING_ENDGAME_TABLE[kr][c];
-            posBonus = mgBonus * (1 - eg) + egBonus * eg;
+            pst = KING_TABLE[ridx][c] * (1 - eg) + KING_ENDGAME_TABLE[ridx][c] * eg;
           }
 
-          const isCenter = centerSquares.some(sq => sq[0] === r && sq[1] === c);
-          if (isCenter) posBonus += 6;
+          let bonus = 0;
 
-          if (['N', 'B'].includes(type)) {
-            if (color === 'w' && r < 7) posBonus += (history.length <= 10 ? 8 : 3);
-            if (color === 'b' && r > 0) posBonus += (history.length <= 10 ? 8 : 3); // ✅ Fix: += no -=
-          }
+          // Center bonus
+          if (centerSquares.some(sq => sq[0] === r && sq[1] === c)) bonus += 6;
 
-          if (type === 'K') {
-            if (color === 'w' && ((r === 7 && c === 6) || (r === 7 && c === 2))) posBonus += 25;
-            if (color === 'b' && ((r === 0 && c === 6) || (r === 0 && c === 2))) posBonus += 25; // ✅ Fix: += no -=
-            if (history.length > 10 && r >= 3 && r <= 4 && c >= 3 && c <=4) {
-              if (color === 'w') posBonus -= 50; else posBonus -= 50; // King center penalty
+          // 👸 FIX 1: Queen brake (Sincronizado)
+          if (type === 'Q' && eg < 0.3) {
+            const homeR = isW ? 7 : 0;
+            if (r !== homeR || c !== 3) {
+              const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
+              bonus -= undeveloped * 2.5; // -25 CP -> -2.5 UI
             }
           }
 
-          if (color === 'w') score += val + posBonus;
-          else score -= val + posBonus;
+          // Rule 3: Pánico al Caballo Pulpo (Outpost Constrained)
+          if (type === 'N') {
+            let isOutpost = false;
+            if (c >= 2 && c <= 5 && ((isW && r >= 2 && r <= 4) || (!isW && r >= 3 && r <= 5))) {
+              let supported = false;
+              const pD = isW ? 1 : -1;
+              if (r+pD >= 0 && r+pD < 8) {
+                if (c > 0 && brd[r+pD][c-1] === (isW ? 'P' : 'p')) supported = true;
+                if (c < 7 && brd[r+pD][c+1] === (isW ? 'P' : 'p')) supported = true;
+              }
+              let enemyCanAttack = false;
+              const eD = isW ? -1 : 1;
+              const ePawn = isW ? 'p' : 'P';
+              for (let er = r+eD; isW ? er>=0 : er<8; er+=eD) {
+                if (c > 0 && brd[er][c-1] === ePawn) enemyCanAttack = true;
+                if (c < 7 && brd[er][c+1] === ePawn) enemyCanAttack = true;
+              }
+              if (supported && !enemyCanAttack) isOutpost = true;
+            }
+            if (isOutpost) bonus += 6;
+          }
+          // Rule 1: Anti-Baile de Apertura is now evaluated globally via wUndevelopedMinors/bUndevelopedMinors
+
+          // 🛡️ King Safety (Fix 2, 3, 4)
+          if (type === 'K' && eg < 0.5) {
+            // A. Attackers
+            let attackers = 0;
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const nr = r + dr, nc = c + dc;
+                if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                  // isSquareAttacked(r, c, sideBeingAttacked, brd)
+                  // Passing isW ? 'w' : 'b' checks attacks on the king of that color.
+                  if (isSquareAttacked(nr, nc, isW ? 'w' : 'b', brd)) attackers++;
+                }
+              }
+            }
+            
+            // B. Shield (3.0 centipawns scale)
+            let shield = 0;
+            const sRow = isW ? r - 1 : r + 1;
+            if (sRow >= 0 && sRow < 8) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const nc = c + dc;
+                if (nc >= 0 && nc < 8 && brd[sRow][nc] === (isW ? 'P' : 'p')) shield++;
+              }
+            }
+            bonus += shield * 3;
+
+            // 🔒 C. Zone Discipline
+            if (c >= 5 || c <= 2) {
+              const startRank = isW ? 6 : 1;
+              const dir = isW ? -1 : 1;
+              let storm = 0;
+              for (let dc = -1; dc <= 1; dc++) {
+                const nc = c + dc;
+                if (nc >= 0 && nc <= 7) {
+                  if (brd[startRank][nc] !== (isW ? 'P' : 'p')) {
+                    if (brd[startRank + dir][nc] === (isW ? 'P' : 'p')) storm += 1;
+                    else storm += 2;
+                  }
+                }
+              }
+              bonus -= storm * (attackers * 1.5);
+            }
+
+            // D. Massive King Attack Penalty (Capped at 32 UI = 320 CP)
+            const kPen = Math.min(32, attackers * attackers * 2);
+            bonus -= kPen * (1 - eg);
+
+            // E. Miedo a las Columnas Abiertas sobre el Rey Enrocado
+            if (c >= 5 || c <= 2) {
+              const filesToCheck = c >= 5 ? [5,6,7] : [0,1,2];
+              let openFilesThreat = 0;
+              for (const fc of filesToCheck) {
+                let hasPawn = false;
+                for (let fr=0; fr<8; fr++) {
+                  if (brd[fr][fc] === (isW?'P':'p')) { hasPawn = true; break; }
+                }
+                if (!hasPawn) {
+                  let enemyMajor = false;
+                  for (let fr=0; fr<8; fr++) {
+                    const p = brd[fr][fc];
+                    if (p === (isW?'r':'R') || p === (isW?'q':'Q')) { enemyMajor = true; break; }
+                  }
+                  if (enemyMajor) openFilesThreat += 1;
+                }
+              }
+              bonus -= openFilesThreat * 8;
+            }
+          }
+
+          score += sign * (val + pst + bonus);
         }
       }
 
-      // ✨ CHECKMATE HEURISTIC: If we're in an endgame with a large advantage, 
-      // fuerza al rey perdedor a irse a los bordes y acerca el rey ganador.
+      // ✨ CHECKMATE HEURISTIC
       if (isEndgame && wKing && bKing) {
-         if (score > 350) { // Blancas ganan
-             // Empujar al rey negro al borde (0 o 7)
-             const edgeScore = Math.max(3 - bKing[0], bKing[0] - 4) + Math.max(3 - bKing[1], bKing[1] - 4);
-             // Acercar el rey blanco al negro
-             const kingDist = Math.abs(wKing[0] - bKing[0]) + Math.abs(wKing[1] - bKing[1]);
-             score += (edgeScore * 15) + ((14 - kingDist) * 8);
-         } else if (score < -350) { // Negras ganan
-             const edgeScore = Math.max(3 - wKing[0], wKing[0] - 4) + Math.max(3 - wKing[1], wKing[1] - 4);
-             const kingDist = Math.abs(bKing[0] - wKing[0]) + Math.abs(bKing[1] - wKing[1]);
-             score -= (edgeScore * 15) + ((14 - kingDist) * 8);
+         if (score > 35) { // Blancas ganan
+             const edge = Math.max(3 - bKing[0], bKing[0] - 4) + Math.max(3 - bKing[1], bKing[1] - 4);
+             const dist = Math.abs(wKing[0] - bKing[0]) + Math.abs(wKing[1] - bKing[1]);
+             score += (edge * 1.5) + ((14 - dist) * 0.8);
+         } else if (score < -35) { // Negras ganan
+             const edge = Math.max(3 - wKing[0], wKing[0] - 4) + Math.max(3 - wKing[1], wKing[1] - 4);
+             const dist = Math.abs(bKing[0] - wKing[0]) + Math.abs(bKing[1] - wKing[1]);
+             score -= (edge * 1.5) + ((14 - dist) * 0.8);
          }
       }
 
-      const wExp = evaluateExposureRisk(brd, 'w');
-      const bExp = evaluateExposureRisk(brd, 'b');
-      score -= (wExp.penalty * 0.9 + wExp.majorHanging * 12);
-      score += (bExp.penalty * 0.9 + bExp.majorHanging * 12);
-
-      if (depthLevel === 'hard' || depthLevel === 'grandmaster') {
-        const wMob = getAllMovesForColor('w', brd).length;
-        const bMob = getAllMovesForColor('b', brd).length;
-        score += Math.min(30, wMob * 1.5) - Math.min(30, bMob * 1.5);
-        score += evaluateAdvancedFeatures(brd);
-      }
-
+      // Randomness & Difficulty scaling
       const rnd = (() => {
-        if (depthLevel === 'exact' || depthLevel === 'hard' || depthLevel === 'grandmaster') return 0;
-        if (currentDifficulty === 'easy')   return (Math.random() - 0.5) * 24; // ±12cp
-        if (currentDifficulty === 'medium') return (Math.random() - 0.5) * 12; // ±6cp
-        return (Math.random() - 0.5) * 2;
+        if (depthLevel === 'exact') return 0;
+        const range = currentDifficulty === 'easy' ? 2.4 : (currentDifficulty === 'medium' ? 1.2 : 0.2);
+        return (Math.random() - 0.5) * range;
       })();
 
       return score + rnd;
@@ -6793,14 +6942,31 @@ window.askWiseKing = async function(fen) {
           ph=Math.min(ph,24);
           const eg=1-ph/24;
 
+          let wUndevelopedMinors = 0;
+          if (b[7][1] === 'N') wUndevelopedMinors++;
+          if (b[7][2] === 'B') wUndevelopedMinors++;
+          if (b[7][5] === 'B') wUndevelopedMinors++;
+          if (b[7][6] === 'N') wUndevelopedMinors++;
+
+          let bUndevelopedMinors = 0;
+          if (b[0][1] === 'n') bUndevelopedMinors++;
+          if (b[0][2] === 'b') bUndevelopedMinors++;
+          if (b[0][5] === 'b') bUndevelopedMinors++;
+          if (b[0][6] === 'n') bUndevelopedMinors++;
+
+          if (eg < 0.3) {
+            s -= wUndevelopedMinors * 15;
+            s += bUndevelopedMinors * 15;
+          }
+
           // ── Pawn structure ──────────────────────────────────────────────────
           for(let c=0;c<8;c++){
             // Doubled pawns
-            if(wP[c]>1)s-=15*wP[c];
-            if(bP[c]>1)s+=15*bP[c];
+            if(wP[c]>1)s-=30*wP[c];
+            if(bP[c]>1)s+=30*bP[c];
             // Isolated pawns
-            if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))s-=20;
-            if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))s+=20;
+            if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))s-=40;
+            if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))s+=40;
             // Open / semi-open files for rooks (reward, checked per piece below)
           }
 
@@ -6825,17 +6991,13 @@ window.askWiseKing = async function(fen) {
             // ── Passed pawn bonus ─────────────────────────────────────────
             let bonus=0;
 
-            // 👸 FIX 1: FRENO A LA DAMA (Añadir aquí)
-            if(u==='Q' && eg < 0.2) { 
+            // 👸 FIX 1: FRENO A LA DAMA
+            if(u==='Q' && eg < 0.3) { 
               const homeR = isW ? 7 : 0;
               const homeC = 3;
               if(r !== homeR || c !== homeC) {
-                let undevelopedMinors = 0;
-                if (b[homeR][1].toUpperCase() === 'N') undevelopedMinors++;
-                if (b[homeR][2].toUpperCase() === 'B') undevelopedMinors++;
-                if (b[homeR][5].toUpperCase() === 'B') undevelopedMinors++;
-                if (b[homeR][6].toUpperCase() === 'N') undevelopedMinors++;
-                bonus -= undevelopedMinors * 25;
+                const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
+                bonus -= undeveloped * 25;
               }
             }
 
@@ -6873,6 +7035,26 @@ window.askWiseKing = async function(fen) {
                 }
               }
               bonus+=(mob-4)*4; // penalty below avg mobility, reward above
+              
+              // Pánico al Caballo Pulpo (Outpost Constrained)
+              let isOutpost = false;
+              if (c >= 2 && c <= 5 && ((isW && r >= 2 && r <= 4) || (!isW && r >= 3 && r <= 5))) {
+                let supported = false;
+                const pD = isW ? 1 : -1;
+                if (r+pD >= 0 && r+pD < 8) {
+                  if (c > 0 && b[r+pD][c-1] === (isW ? 'P' : 'p')) supported = true;
+                  if (c < 7 && b[r+pD][c+1] === (isW ? 'P' : 'p')) supported = true;
+                }
+                let enemyCanAttack = false;
+                const eD = isW ? -1 : 1;
+                const ePawn = isW ? 'p' : 'P';
+                for (let er = r+eD; isW ? er>=0 : er<8; er+=eD) {
+                  if (c > 0 && b[er][c-1] === ePawn) enemyCanAttack = true;
+                  if (c < 7 && b[er][c+1] === ePawn) enemyCanAttack = true;
+                }
+                if (supported && !enemyCanAttack) isOutpost = true;
+              }
+              if (isOutpost) bonus += 60;
             }
 
             // ── Bishop mobility (open diagonals) ─────────────────────────
@@ -6888,6 +7070,7 @@ window.askWiseKing = async function(fen) {
               }
               bonus+=(mob-6)*3;
             }
+            // Anti-Baile de Apertura now evaluated globally via wUndevelopedMinors
 
             // ── King safety in middlegame ─────────────────────────────────
             if(u==='K'&&eg<0.5){
@@ -6939,6 +7122,30 @@ window.askWiseKing = async function(fen) {
               // 4. Penalización Dinámica Máxima (Cerrada en 320)
               const kPenalty=Math.min(320, attackers*attackers*20);
               bonus-=kPenalty*(1-eg); 
+
+              // 5. Miedo a las Columnas Abiertas sobre el Rey Enrocado
+              if (c >= 5 || c <= 2) {
+                const filesToCheck = c >= 5 ? [5,6,7] : [0,1,2];
+                let openFilesThreat = 0;
+                for (const fc of filesToCheck) {
+                  let hasFriendlyPawn = false;
+                  for (let fr=0; fr<8; fr++) {
+                    if (b[fr][fc] === (isW ? 'P' : 'p')) {
+                      hasFriendlyPawn = true; break;
+                    }
+                  }
+                  if (!hasFriendlyPawn) {
+                    let enemyMajorOnFile = false;
+                    for (let fr=0; fr<8; fr++) {
+                      if (b[fr][fc] === (isW ? 'r' : 'R') || b[fr][fc] === (isW ? 'q' : 'Q')) {
+                        enemyMajorOnFile = true; break;
+                      }
+                    }
+                    if (enemyMajorOnFile) openFilesThreat += 1;
+                  }
+                }
+                bonus -= openFilesThreat * 80;
+              }
             }
 
             s+=sign*(val+pst+bonus);
@@ -7553,7 +7760,8 @@ window.askWiseKing = async function(fen) {
     }
 
     async function triggerAI() {
-      if (turn !== 'b' || aiThinking || !hasAnyLegalMove('b')) return;
+      const aiColor = playerColor === 'w' ? 'b' : 'w';
+      if (turn !== aiColor || aiThinking || !hasAnyLegalMove(aiColor)) return;
       const startPly = history.length; // 🛡️ snapshot — detect if game restarted while AI thinks
       aiThinking = true;
       document.getElementById('thinkingBar').classList.add('show');
@@ -7572,9 +7780,9 @@ window.askWiseKing = async function(fen) {
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
           const bookEntries = OPENING_BOOK[historyKey];
           if (bookEntries && bookEntries.length > 0) {
-            const legalMvs = getLegalMovesForColorInPlace('b');
+            const legalMvs = getLegalMovesForColorInPlace(aiColor);
             const validBookMoves = bookEntries.filter(entry =>
-              legalMvs.some(m => getMoveNotation(board, 'b', m, castleRights) === entry.m)
+              legalMvs.some(m => getMoveNotation(board, aiColor, m, castleRights) === entry.m)
             );
             if (validBookMoves.length > 0) {
               // Medium picks uniformly; hard/grandmaster use weights
@@ -7588,7 +7796,7 @@ window.askWiseKing = async function(fen) {
                 randomWeight -= useWeights ? (entry.w || 1) : 1;
                 if (randomWeight <= 0) { chosenEntry = entry; break; }
               }
-              const bookMove = legalMvs.find(m => getMoveNotation(board, 'b', m, castleRights) === chosenEntry.m);
+              const bookMove = legalMvs.find(m => getMoveNotation(board, aiColor, m, castleRights) === chosenEntry.m);
               // Ignorar libro si hay captura con ganancia neta
               const freeCaptures = legalMvs.filter(m => {
                 const target = board[m.tr][m.tc];
@@ -7606,19 +7814,19 @@ window.askWiseKing = async function(fen) {
 
         // 2. Motor principal
         if (!move) {
-          move = await getBestAIMoveAsync('b', aiDepth, aiMistakeChance, aiTimeLimit);
+          move = await getBestAIMoveAsync(aiColor, aiDepth, aiMistakeChance, aiTimeLimit);
           if (move) {
-            const legal = getLegalMovesForColorInPlace('b');
+            const legal = getLegalMovesForColorInPlace(aiColor);
             const ok = legal.some(mv => mv.fr===move.fr && mv.fc===move.fc && mv.tr===move.tr && mv.tc===move.tc);
             if (!ok) {
-              move = findBestMoveFor('b', aiDepth, aiMistakeChance, SEARCH_TIME_LIMIT_MS) || null;
+              move = findBestMoveFor(aiColor, aiDepth, aiMistakeChance, SEARCH_TIME_LIMIT_MS) || null;
             }
           }
         }
 
         // 2.5 ANTI-REPETITION FILTER in main thread (guaranteed)
         if (move) {
-          const legal = getLegalMovesForColorInPlace('b');
+          const legal = getLegalMovesForColorInPlace(aiColor);
           const childBoard = simulateMove(board, move);
           const childKey = childBoard.map(r => r.join('')).join('|') + '|w';
           const timesSeenChild = positionHashes.filter(h => h === childKey).length;
@@ -8807,7 +9015,7 @@ window.askWiseKing = async function(fen) {
 
     function requestHints() {
       lastProfessorAction = 'analysis';
-      const canAsk = gameMode === 'pvp' || turn === 'w';
+      const canAsk = gameMode === 'pvp' || turn === playerColor;
       if (!canAsk || aiThinking) return;
       // Professor helps equally at every difficulty level — no gating, no warnings.
       switchTab('professor');
@@ -9725,7 +9933,7 @@ window.askWiseKing = async function(fen) {
       // 1. DETERMINAR TURNO Y PERMISOS (Soporte PvP)
       const currentTurn = turn;   
       const enemyColor = (currentTurn === 'w' ? 'b' : 'w');
-      const canAsk = gameMode === 'pvp' || currentTurn === 'w';
+      const canAsk = gameMode === 'pvp' || currentTurn === playerColor;
       
       if (!canAsk || aiThinking) return;
 
@@ -10780,10 +10988,27 @@ window.askWiseKing = async function(fen) {
     }
 
     // ── Screen & Menu Flow ──────────────────
+    let pendingDifficulty = 'medium';
+
+    function promptColorForAI(level) {
+      if (isGameActive() && pendingSettingChange) {
+        setOptionDifficulty(level); 
+        return;
+      }
+      pendingDifficulty = level;
+      showScreen('screenColor');
+    }
+
+    function confirmColorStart(color) {
+      setPlayerColor(color);
+      startAIGame(pendingDifficulty);
+    }
+
     function showScreen(screenId) {
       document.getElementById('screenMenu').classList.add('hidden');
       document.getElementById('screenOptions').classList.add('hidden');
       document.getElementById('screenDifficulty').classList.add('hidden');
+      if (document.getElementById('screenColor')) document.getElementById('screenColor').classList.add('hidden');
       if (screenId) document.getElementById(screenId).classList.remove('hidden');
       // Show floating lang selector only on menu screens, hide during game
       const lc = document.getElementById('langCornerSelect')?.closest('.lang-corner');
@@ -10807,7 +11032,7 @@ window.askWiseKing = async function(fen) {
       const ch = (typeof characterDialogs !== 'undefined' && characterDialogs[level]) ? characterDialogs[level] : null;
       const dialog = ch ? (ch.intro && ch.intro[currentLanguage] ? ch.intro[currentLanguage] : '') : '';
       const card = document.querySelector(`.level-card[data-level="${level}"]`);
-      if (card) {
+      if (card && !document.getElementById('screenDifficulty').classList.contains('hidden')) {
         const emoji = card.querySelector('i');
         if (emoji) { emoji.classList.add('jump'); setTimeout(() => emoji.classList.remove('jump'), 700); }
         showSpeechBubbleFor(card, dialog, 1500);
@@ -10830,7 +11055,7 @@ window.askWiseKing = async function(fen) {
 
       document.getElementById('igModePvP').classList.toggle('active', mode === 'pvp');
       document.getElementById('igModeAI').classList.toggle('active', mode === 'ai');
-      confirmResetGame();
+      confirmResetGame(true);
     }
 
     function goToMainMenu() {
@@ -11451,17 +11676,47 @@ window.askWiseKing = async function(fen) {
       _syncFenDiffButtons(currentDifficulty);
       const diffRow = document.getElementById('fenDiffRow');
       if (diffRow) diffRow.style.display = gameMode === 'ai' ? 'flex' : 'none';
+      const colorRow = document.getElementById('fenColorRow');
+      if (colorRow) colorRow.style.display = gameMode === 'ai' ? 'flex' : 'none';
+      _syncFenColorButtons(playerColor);
 
       renderFenList('all');
       modal.classList.add('show');
     }
 
+    function setPlayerColor(color) {
+      if (playerColor !== color) {
+        playerColor = color;
+        boardFlipped = (color === 'b');
+        _syncFenColorButtons(color);
+        resetGame(); // Reload layout when swapping color
+      }
+    }
+
+    function _syncFenColorButtons(color) {
+      const en = currentLanguage === 'en';
+      const btnW = document.getElementById('fenColorWhite');
+      const btnB = document.getElementById('fenColorBlack');
+      if (btnW) btnW.textContent = en ? '⚪ Play as White' : '⚪ Jugar con Blancas';
+      if (btnB) btnB.textContent = en ? '⚫ Play as Black' : '⚫ Jugar con Negras';
+      
+      if (color === 'w') {
+        if (btnW) { btnW.style.background = 'var(--primary-light)'; btnW.style.color = 'var(--text)'; btnW.style.borderColor = 'var(--primary)'; }
+        if (btnB) { btnB.style.background = 'transparent'; btnB.style.color = 'var(--text-light)'; btnB.style.borderColor = 'var(--primary-light)'; }
+      } else {
+        if (btnB) { btnB.style.background = 'var(--primary-light)'; btnB.style.color = 'var(--text)'; btnB.style.borderColor = 'var(--primary)'; }
+        if (btnW) { btnW.style.background = 'transparent'; btnW.style.color = 'var(--text-light)'; btnW.style.borderColor = 'var(--primary-light)'; }
+      }
+    }
+
     function setFenMode(mode) {
       setMode(mode);
       _syncFenModeButtons(mode);
-      // Show/hide difficulty row
+      // Show/hide difficulty and color row
       const diffRow = document.getElementById('fenDiffRow');
       if (diffRow) diffRow.style.display = mode === 'ai' ? 'flex' : 'none';
+      const colorRow = document.getElementById('fenColorRow');
+      if (colorRow) colorRow.style.display = mode === 'ai' ? 'flex' : 'none';
     }
 
     function setFenDiff(level) {
