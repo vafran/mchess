@@ -4310,13 +4310,21 @@ window.askWiseKing = async function(fen, historyArr = []) {
         defs.appendChild(createMarker("arrowhead-bad", "rgba(239, 68, 68, 0.85)"));  
         svg.appendChild(defs);
 
-        document.querySelector('.board-wrap').appendChild(svg);
+        const boardEl = document.getElementById('board');
+        if (!boardEl) return;
+        boardEl.appendChild(svg);
       }
 
-      const x1 = fc * 100 + 50;
-      const y1 = fr * 100 + 50;
-      const x2 = tc * 100 + 50;
-      const y2 = tr * 100 + 50;
+      // 🔄 FIX: Account for flipped board coordinates
+      const visualFr = boardFlipped ? 7 - fr : fr;
+      const visualFc = boardFlipped ? 7 - fc : fc;
+      const visualTr = boardFlipped ? 7 - tr : tr;
+      const visualTc = boardFlipped ? 7 - tc : tc;
+
+      const x1 = visualFc * 100 + 50;
+      const y1 = visualFr * 100 + 50;
+      const x2 = visualTc * 100 + 50;
+      const y2 = visualTr * 100 + 50;
 
       const dx = x2 - x1;
       const dy = y2 - y1;
