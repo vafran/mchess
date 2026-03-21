@@ -296,7 +296,30 @@ ES2017+ required. Tested on Chrome 90+, Firefox 88+, Safari 14+.
 
 [AI Collaboration](docs/AI_COLLABORATION.md)
 
----
+
+## Stockfish Tests
+
+A set of scripts and utilities to run automated matches between the in-browser engine (`mChess.html`) and Stockfish, collect results and produce quick analysis.
+
+- Location: [stockfish_tests](stockfish_tests)
+- Quick commands (from the project root):
+
+```bash
+# Run a small tournament (writes results to stockfish_tests/tournament_results.json)
+node stockfish_tests/arena_tournament.js
+
+# Inspect the last results
+node stockfish_tests/analyze_results.js
+```
+
+Notes:
+- `arena_tournament.js` opens `mChess.html` from the parent folder and expects `stockfish.exe` in the project root (or set `STOCKFISH_PATH`).
+- Results and suggested patches will be saved inside `stockfish_tests`.
+
+### English / Spanish READMEs
+
+The `stockfish_tests` folder contains both `README.md` and `README_es.md` describing how to run the scripts and where the results are written. Open them for detailed instructions.
+
 
 ## License
 

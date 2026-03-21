@@ -20,3 +20,11 @@ Thumbs.db
 # Si decides guardar los PGNs en archivos de texto
 *.log
 partidas_guardadas/
+
+# === Archivos generados por pruebas / análisis ===
+# Resultados de torneos y artefactos que no deben versionarse
+/tournament_results.json
+/stockfish_tests/tournament_results.json
+/stockfish_tests/*.json
+/engine_patches.js
+/stockfish_tests/engine_patches.js

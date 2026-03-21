@@ -296,6 +296,25 @@ Requiere ES2017+. Probado en Chrome 90+, Firefox 88+, Safari 14+.
 
 ---
 
+## Pruebas con Stockfish
+
+Esta carpeta agrupa las utilidades para ejecutar partidas automáticas entre `mChess.html` y Stockfish, recoger resultados y generar análisis rápidos.
+
+- Ubicación: [stockfish_tests](stockfish_tests)
+- Comandos rápidos (desde la raíz del proyecto):
+
+```bash
+# Ejecutar un torneo pequeño (genera stockfish_tests/tournament_results.json)
+node stockfish_tests/arena_tournament.js
+
+# Inspeccionar resultados
+node stockfish_tests/analyze_results.js
+```
+
+Notas:
+- `arena_tournament.js` abre `../mChess.html` (carpeta padre) y por defecto espera `stockfish.exe` en la raíz. Puede usarse la variable de entorno `STOCKFISH_PATH` para especificar otro ejecutable.
+- Los resultados y sugerencias se guardan en `stockfish_tests`.
+
 ## Licencia
 
 Apache License 2.0  
