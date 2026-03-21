@@ -2510,7 +2510,7 @@ limitations under the License.
 
   <script>
     // Variable global única y aislada para el Coliseo
-window.askWiseKing = async function(fen) {
+window.askWiseKing = async function(fen, historyArr = []) {
     console.log("🏟️ Recibida petición de FEN:", fen);
 
     // Parsear FEN y cargar en el estado global del juego
@@ -2536,6 +2536,7 @@ window.askWiseKing = async function(fen) {
     const cr = parts[2];
     castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
     enPassantTarget = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
+    
     // Solo reseteamos el historial si es el inicio de una partida nueva
     if (fen.includes("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")) {
       positionHashes = [];
@@ -2544,7 +2545,33 @@ window.askWiseKing = async function(fen) {
     const currentHash = board.map(r => r.join('')).join('|') + '|' + color;
     positionHashes.push(currentHash);
 
-    // Llamar al motor con el estado ya cargado (Color, Profundidad, Errores, Timeout)
+    // 1. Consultar el Libro de Aperturas usando el historial de chess.js
+    const historyKey = historyArr.join(',');
+    const bookEntries = OPENING_BOOK[historyKey];
+    if (bookEntries && bookEntries.length > 0) {
+        const legalMvs = getLegalMovesForColorInPlace(color);
+        const validBookMoves = bookEntries.filter(entry => 
+            legalMvs.some(m => getMoveNotation(board, color, m, castleRights) === entry.m)
+        );
+        if (validBookMoves.length > 0) {
+            // Juega aleatorio basado en los pesos del libro
+            const totalWeight = validBookMoves.reduce((s, e) => s + (e.w || 1), 0);
+            let randomWeight = Math.random() * totalWeight;
+            let chosenEntry = validBookMoves[0];
+            for (const entry of validBookMoves) {
+                randomWeight -= (entry.w || 1);
+                if (randomWeight <= 0) { chosenEntry = entry; break; }
+            }
+            const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
+            if (bookMove) {
+                console.log("📖 Jugada de libro encontrada:", chosenEntry.name, chosenEntry.m);
+                const cols = 'abcdefgh';
+                return cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + (bookMove.promo || '');
+            }
+        }
+    }
+
+    // 2. Si no hay jugada de libro, llamar al motor
     const results = await engineSearch(color, 10, 1, 35000);
 
     if (!results || !results.length) {

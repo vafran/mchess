@@ -52,9 +52,10 @@ async function runMatch() {
         let move;
         if (turn === 'w') {
             process.stdout.write("🧠 Rey Sabio pensando...\n");
-            move = await page.evaluate(async (f) => {
-                return await window.askWiseKing(f);
-            }, fen);
+            const historyObj = game.history();
+            move = await page.evaluate(async (f, h) => {
+                return await window.askWiseKing(f, h);
+            }, fen, historyObj);
         } else {
             process.stdout.write("🐟 Stockfish pensando...\n");
             move = await askStockfish(fen);
