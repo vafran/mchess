@@ -7074,15 +7074,15 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
           if (eg < 0.3) {
             // INCREASED Undeveloped Penalty from 15 to 20
-            s -= wUndevelopedMinors * 20;
-            s += bUndevelopedMinors * 20;
+            s -= wUndevelopedMinors * 30;
+            s += bUndevelopedMinors * 30;
           }
 
           // ── Pawn structure ──────────────────────────────────────────────────
           for(let c=0;c<8;c++){
             // Doubled pawns
-            if(wP[c]>1)s-=30*wP[c];
-            if(bP[c]>1)s+=30*bP[c];
+            if(wP[c]>1)s-=35*wP[c];
+            if(bP[c]>1)s+=35*bP[c];
             // Isolated pawns
             if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))s-=40;
             if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))s+=40;
@@ -7091,8 +7091,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
           // ── Bishop pair bonus ───────────────────────────────────────────────
           // Having both bishops is worth ~30 centipawns, more in open positions
-          if(wBishops>=2)s+=30;
-          if(bBishops>=2)s-=30;
+          if(wBishops>=2)s+=40;
+          if(bBishops>=2)s-=40;
 
           // ── Per-piece evaluation ────────────────────────────────────────────
           for(let r=0;r<8;r++)for(let c=0;c<8;c++){
@@ -7199,7 +7199,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
             // ── King safety in middlegame ─────────────────────────────────
             if(u==='K'&&eg<0.5){
-              // 1. Detectar atacantes (Lo necesitamos para los siguientes puntos)
+              // 1. Detectar atacantes ÚNICOS y PONDERADOS (Fix Rey Sobrio + Ceguera)
               const enemyClr=isW?'b':'w';
               let attackersSet = new Set();
               for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
@@ -7207,11 +7207,24 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 if(nr<0||nr>=8||nc<0||nc>=8) continue;
                 for(let fr2=0;fr2<8;fr2++) for(let fc2=0;fc2<8;fc2++){
                   if(clr(b[fr2][fc2])===enemyClr && atk(b,fr2,fc2,nr,nc)) {
-                      attackersSet.add(fr2*8+fc2); // Guardamos la pieza única
+                      attackersSet.add(fr2*8+fc2); // Guardamos la coordenada
                   }
                 }
               }
-              let attackers = attackersSet.size;
+
+              // Calcular el "Peso del Terror" según qué piezas están atacando
+              let attackWeight = 0;
+              attackersSet.forEach(sq => {
+                  const pr = Math.floor(sq / 8);
+                  const pc = sq % 8;
+                  const pType = b[pr][pc].toUpperCase();
+                  
+                  if (pType === 'Q') attackWeight += 3;
+                  else if (pType === 'R') attackWeight += 2;
+                  else attackWeight += 1; // Caballos, Alfiles y Peones
+              });
+
+              let attackers = attackWeight; // Reemplazamos el conteo simple por el peso real
 
               // 2. Bonus de Escudo (30 centipeones por peón)
               let shield=0;
@@ -7247,8 +7260,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 bonus -= stormPoints * (attackers * 15);
               }
 
-              // 4. Penalización Dinámica Máxima (Cerrada en 6000)
-              const kPenalty=Math.min(600, attackers*attackers*50);
+              // 4. Penalización Dinámica Máxima (Cerrada en 500)
+              const kPenalty=Math.min(500, attackers*attackers*30);
               bonus-=kPenalty*(1-eg); 
 
               // 5. Miedo a las Columnas Abiertas sobre el Rey Enrocado
