@@ -9876,10 +9876,15 @@ window.askWiseKing = async function(fen, historyArr = []) {
               const tVal  = PIECE_VALUES[tp.toUpperCase()] || 0;
               const key = `${mv.tr},${mv.tc}`;
               if (seenH.has(key)) return;
-              const eSafety = evaluateSquareSafety(mv.tr, mv.tc, enemyColor, board, sideToAnalyze);
-              if (!eSafety.isSafe || tVal > myVal) {
+              // ✅ FIX: simulate the capture FIRST, then evaluate whether the attacker
+              // is safe on the destination square. Using the pre-move board was wrong —
+              // it missed queen attacks that open up once the attacker moves (e.g. Nxf7 when Qd8 covers f7).
+              const boardAfterCapture = simulateMove(board, mv);
+              const eSafety = evaluateSquareSafety(mv.tr, mv.tc, sideToAnalyze, boardAfterCapture, enemyColor);
+              const isFree = eSafety.isSafe; // our piece is safe after the capture
+              if (isFree || tVal > myVal) {
                 seenH.add(key);
-                opps.push({ mv, tp, tVal, free: !eSafety.isSafe });
+                opps.push({ mv, tp, tVal, free: isFree });
               }
             });
             if (opps.length > 0) {
