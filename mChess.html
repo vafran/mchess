@@ -7294,8 +7294,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
               }
 
               // 4. Penalización Dinámica Máxima (Cerrada en 500)
-              const kPenalty=Math.min(500, attackers*attackers*30);
-              bonus-=kPenalty*(1-eg); 
+              const kPenalty=Math.min(250, attackers*attackers*15);
+              bonus-=kPenalty*(1-eg);
 
               // 5. Miedo a las Columnas Abiertas sobre el Rey Enrocado
               if (c >= 5 || c <= 2) {
@@ -7318,7 +7318,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                     if (enemyMajorOnFile) openFilesThreat += 1;
                   }
                 }
-                bonus -= openFilesThreat * 80;
+                bonus -= openFilesThreat * 35;
               }
             }
 
