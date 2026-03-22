@@ -11230,9 +11230,20 @@ let forcedBookMove = null;
               drawArrow(reply.replyMove.fr, reply.replyMove.fc, reply.replyMove.tr, reply.replyMove.tc, 'bad');
               const pName = getLocalizedPieceName(afterCopy[reply.replyMove.fr][reply.replyMove.fc]);
               const tName = sqName(reply.replyMove.tr, reply.replyMove.tc);
+              
+              // ✨ FIX: Cambiamos temporalmente el tablero global para que getStrategicIntent analice la amenaza
+              const tempBoard = board;
+              board = afterCopy; 
+              let amenazaDesc = simplifyForKids(getStrategicIntent(reply.replyMove, enemyColor));
+              board = tempBoard; // Restauramos el tablero inmediatamente
+              
+              if (!amenazaDesc) {
+                  amenazaDesc = en ? "It wins material cleanly." : "Gana material limpiamente aprovechando tu posición.";
+              }
+
               reason += en
-                ? `<br><br>👁️ <em>The Coach points out the refutation: ${pName} to ${tName}.</em>`
-                : `<br><br>👁️ <em>El Profesor señala la refutación: ${pName} a ${tName}.</em>`;
+                ? `<br><br>👁️ <em>The Coach points out the refutation: ${pName} to ${tName}.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>Why?</strong> ${amenazaDesc}</span>`
+                : `<br><br>👁️ <em>El Profesor señala la refutación: ${pName} a ${tName}.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>¿Por qué?</strong> ${amenazaDesc}</span>`;
             }
             setTimeout(clearArrows, 5500);
           } catch(e) {}
