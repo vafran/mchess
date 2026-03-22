@@ -11300,6 +11300,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       const s = DIFF_SETTINGS[level];
       aiDepth = s.depth;
       aiMistakeChance = s.mistakes;
+      aiTimeLimit = s.timeLimit;
 
       document.querySelectorAll('[id^="optDiff"], [id^="igDiff"]').forEach(b => b.classList.remove('active'));
       let optBtn = document.getElementById('optDiff' + level.charAt(0).toUpperCase() + level.slice(1));
