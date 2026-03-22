@@ -7066,7 +7066,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
           ph=Math.min(ph,24);
           const eg=1-ph/24;
 
-          // Per-piece initiative: side down >200cp positional bonuses scale x1.25
+          // Per-piece initiative: side down >200cp positional bonuses scale x1.10
           let wMat=0,bMat=0;
           for(let _r=0;_r<8;_r++)for(let _c=0;_c<8;_c++){
             const _p=b[_r][_c];if(!_p||_p===' ')continue;
@@ -7074,8 +7074,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
             if(_p===_u)wMat+=PV[_u]||0;else bMat+=PV[_u]||0;
           }
           const matDiff=wMat-bMat;
-          const wIni=matDiff<-200?1.25:1.0;
-          const bIni=matDiff>200?1.25:1.0;
+          const wIni=matDiff<-200?1.10:1.0;
+          const bIni=matDiff>200?1.10:1.0;
 
           let wUndevelopedMinors = 0;
           if (b[7][1] === 'N') wUndevelopedMinors++;
