@@ -2687,6 +2687,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
     let fenPositionLoaded = false; // true when position was loaded from FEN, not played from start
     let playerColor = 'w';
     let boardFlipped = false;
+    let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
     // Character dialogs for intro and reactions (multilingual + emoji)
     const characterDialogs = {
       easy: {
@@ -3533,6 +3534,14 @@ window.askWiseKing = async function(fen, historyArr = []) {
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
+
+      // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
+      aiSearchGeneration++;
+      // Kill the worker if it was thinking when restarting
+      if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker !== null) {
+        try { chessEngineWorker.terminate(); } catch(_) {}
+        chessEngineWorker = null;
+      }
       
       // 🔄 Always start at commentarist tab
       switchTab('commentary');
@@ -8001,6 +8010,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       return new Promise((resolve) => {
         let worker;
         try {
+          // Reuse existing worker if available, create one otherwise
           if(chessEngineWorker) worker = chessEngineWorker;
           else { worker = createEngineWorker(); chessEngineWorker = worker; }
         } catch(e) {
@@ -8014,7 +8024,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
           const data = evt.data || {};
           clearTimeout(timer);
           if(data.action === 'result') done(data.moves || []);
-          else if(data.action === 'error'){ 
+          else if(data.action === 'error'){
             console.error('Engine error:', data.error);
             engineSearchSync(color, depth, multiPV, timeoutMs, positionHashes).then(done);
           }
@@ -8031,7 +8041,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
           enPassantTarget: enPassantTarget ? [...enPassantTarget] : null,
           depth, multiPV, timeout: timeoutMs,
           positionHashes: [...positionHashes],
-          forcedMove: forcedMove // ✨ Pasamos la semilla al Worker
+          forcedMove: forcedMove
         });
       });
     }
@@ -8039,7 +8049,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
     async function triggerAI() {
       const aiColor = playerColor === 'w' ? 'b' : 'w';
       if (turn !== aiColor || aiThinking || !hasAnyLegalMove(aiColor)) return;
-      const startPly = history.length; // 🛡️ snapshot — detect if game restarted while AI thinks
+      const startPly = history.length;          // 🛡️ snapshot — detect restart while thinking
+      const searchGen = aiSearchGeneration;     // 🔴 RACE FIX: capture current generation token
       aiThinking = true;
       document.getElementById('thinkingBar').classList.add('show');
       const turnBarA = document.getElementById('turnBar');
@@ -8058,6 +8069,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
       const thinkTime = Math.floor(Math.random() * 351) + 250;
       await new Promise(r => setTimeout(r, thinkTime));
+      // 🔴 ABORT: if init() was called during the think delay, bail out immediately
+      if (aiSearchGeneration !== searchGen) { aiThinking = false; return; }
 
       console.log(`🤖 IA Iniciando búsqueda: Nivel=${currentDifficulty}, Profundidad=${aiDepth}, Tiempo=${aiTimeLimit}ms`);
 
@@ -8105,13 +8118,16 @@ let forcedBookMove = null;
         if (forcedBookMove) {
           // ¡Ya tenemos la jugada de libro! Asignarla directamente sin quemar el reloj.
           move = forcedBookMove;          
-          // (Opcional) Le damos un pequeño "fake delay" de 1 o 2 segundos para 
-          // simular que el Rey Sabio está recolocándose en la silla, para que no sea instantáneo.
+          // Fake delay so it doesn't look instant
           const bookDelay = currentDifficulty === 'grandmaster' ? 1500 : 500;
           await new Promise(r => setTimeout(r, bookDelay));
+          // 🔴 ABORT: if init() was called during book delay, bail out immediately
+          if (aiSearchGeneration !== searchGen) { aiThinking = false; return; }
         } else if (!move) {
           // Si NO hay jugada de libro, entonces SÍ quema el reloj calculando
           move = await getBestAIMoveAsync(aiColor, aiDepth, aiMistakeChance, aiTimeLimit);
+          // 🔴 ABORT: if init() was called while the engine was thinking, bail out immediately
+          if (aiSearchGeneration !== searchGen) { aiThinking = false; return; }
           if (move) {
             const legal = getLegalMovesForColorInPlace(aiColor);
             const ok = legal.some(mv => mv.fr===move.fr && mv.fc===move.fc && mv.tr===move.tr && mv.tc===move.tc);
@@ -8162,8 +8178,14 @@ let forcedBookMove = null;
         let targetPiece = null;
         let isCapture = false;
         if (move) {
-          // 🛡️ If game was restarted or undone while AI was thinking, discard the move
-          if (history.length !== startPly) { aiThinking = false; return; }
+          // 🛡️ Two-layer staleness check:
+          // 1. history.length changed (undo/restart happened)
+          // 2. aiSearchGeneration changed (init() was called — hard reset)
+          if (history.length !== startPly || aiSearchGeneration !== searchGen) {
+            console.log('🔴 triggerAI: resultado obsoleto descartado (partida reiniciada)');
+            aiThinking = false;
+            return;
+          }
           targetPiece = board[move.tr][move.tc];
           isCapture = targetPiece !== ' ';
           // ⚠️ Release aiThinking BEFORE makeMove so next triggerAI can run
