@@ -1,4 +1,4 @@
-# ♟️ Monolith Chess v2.0.0 — The Professor's Edition
+# ♟️ Monolith Chess v2.0.0 — The Awakening of the Wise King
 
 > A complete, single-file chess game built for children learning to play.  
 > No installation. No internet. No accounts. Open the `.html` file in any browser.
@@ -185,6 +185,11 @@ The two main Professor buttons now speak the language of chess openings.
 
 **What should I do? (🎯)** shows a header line naming the opening and the number of theoretical continuations available, directly above the move list. After 1.Nf3 Nf6, you see: *"📚 Reti Opening — 3 theoretical continuations available below."* After 1.d4 Nf6 2.c4 e6 3.Nc3 Bb4: *"📚 Nimzo-Indian Defence"*. The detection uses a broad algorithm that catches positions even when the exact sequence is not stored as a book key.
 
+### Missed Opportunity Detection
+The Coach no longer just warns you when you hang a piece; it can now detect if you **missed a golden tactical opportunity** (like a free piece or a forced mate) because you were too focused on the opponent's last move. It will tell you exactly what the hidden move was and explain its strategic intent.
+
+### 3rd Person Commentator & Easter Eggs
+The announcer now narrates games strictly in the third person, acting like a real sports broadcaster. It explicitly names captured pieces with proper grammar and includes new clean family jokes and musical easter eggs (like singing Queen's *Runaway* when the Queen flees).
 
 ### Expanded Opening Book
 
@@ -205,8 +210,6 @@ A **🎲 Random Challenge** button loads one of 100 additional curated positions
 ### Full Support for Playing as Black
 
 Fixed a transition bug that previously prevented the AI from continuing the game if the human player chose to play as Black. The game now handles side-switching seamlessly across all difficulty levels.
-
-
 
 ### Checkmate Handling Fixed
 
@@ -246,13 +249,15 @@ Several bugs in the search engine were identified and corrected post-release. Th
 
 ### Engine — Strength Improvements
 
+- **Horizon Effect Fix:** Quiescence search now evaluates checks up to depth 2, preventing the AI from going blind and hanging pieces during long tactical exchanges.
+- **Reckless Attack Prevention:** The engine no longer sacrifices material to expose the enemy king if its own minor pieces are not yet developed (`attackerUndeveloped <= 1`).
+- Passed pawn bonus scales **×4.5** in endgame (was ×3) and King centralization triggers earlier (`eg > 0.4`).
 - TT move ordering: best move stored per TT entry, searched first at priority 1,000,000
 - Counter move heuristic: quiet moves that refuted the opponent's last move scored at 48,000
 - MVV-LVA pre-sorting of root moves before depth-1 iteration
 - Futility pruning extended to depth 3 (margin 500 cp)
 - Aspiration delta widened to ±75 cp (was ±50)
 - Piece values tuned: N=305, B=333
-- Passed pawn bonus scales ×3 in endgame
 - King safety loop restructured: each attacking piece counted once (was once per attacked zone square — overcounting)
 
 ---
@@ -273,7 +278,7 @@ Move ordering: TT move (priority 1,000,000) → MVV-LVA captures → promotions 
 
 ### Evaluation
 
-PeSTO-style PST tables, tapered king evaluation (middlegame ↔ endgame), pawn structure (doubled −15, isolated −20, passed pawn rank×15 scaled ×3 in endgame), bishop pair (+30), rook activity (open file +25, 7th rank +20), dynamic king safety (quadratic penalty per attacking piece, capped at 80 cp).
+PeSTO-style PST tables, tapered king evaluation (middlegame ↔ endgame), pawn structure (doubled −15, isolated −20, passed pawn rank×15 scaled ×4.5 in endgame), bishop pair (+40), rook activity (open file +25, 7th rank +20), dynamic king safety (quadratic penalty per attacking piece, capped at 80 cp).
 
 Piece values: N=305, B=333, R=500, Q=900 (bishop correctly valued above knight by 28 cp).
 
@@ -318,9 +323,9 @@ ES2017+ required. Tested on Chrome 90+, Firefox 88+, Safari 14+.
 - **Review & communication:** Use Issues to request reviews or design feedback; maintainers will label and triage incoming contributions.
 
 
-## Stockfish Tests
+## Stockfish Tests (Training the Engine)
 
-A set of scripts and utilities to run automated matches between the in-browser engine (`mChess.html`) and Stockfish, collect results and produce quick analysis.
+The engine's heuristics and positional weights were **trained and tuned by playing automated tournaments against Stockfish**. A set of scripts and utilities to run automated matches between the in-browser engine (`mChess.html`) and Stockfish was created to collect results and produce quick analysis.
 
 - Location: [stockfish_tests](stockfish_tests)
 - Quick commands (from the project root):
@@ -361,5 +366,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.0.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.*  
-*~604 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.0.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~604 KB. Zero dependencies. Open the file and play.*

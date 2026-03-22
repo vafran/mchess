@@ -1,4 +1,4 @@
-# ♟️ Monolith Chess v2.0.0 — La Edición del Profesor
+# ♟️ Monolith Chess v2.0.0 — El Despertar del Rey Sabio
 
 > Un juego de ajedrez completo en un solo archivo HTML, construido para niños que aprenden a jugar.  
 > Sin instalación. Sin internet. Sin cuentas. Abre el archivo `.html` en cualquier navegador.
@@ -126,8 +126,7 @@ Narra cada movimiento en tiempo real. Reconoce nombres de aperturas, formación 
 Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 - **🧐 Serio** — técnico y preciso
 - **⚖️ Mixto** — equilibrado (por defecto)
-- **🎉 Divertido** — humorístico y 
- - **🎉 Divertido** — humorístico y dramático
+- **🎉 Divertido** — humorístico y dramático
 
 <img src="screenshots/ES/comment_scholarsmate_win.png" alt="Comentarista Jaque Pastor" width="650" />
 <img src="screenshots/ES/comment_historic.png" alt="Comentario de eco histórico" width="650" />
@@ -189,6 +188,12 @@ Los dos botones principales del Profesor ahora hablan el lenguaje de las apertur
 
 **¿Qué hago? (🎯)** muestra una línea de cabecera con el nombre de la apertura y el número de continuaciones teóricas disponibles, justo encima de la lista de jugadas. Tras 1.Nf3 Nf6 ves: *"📚 Apertura Reti — 3 continuaciones teóricas disponibles abajo."* Tras 1.d4 Nf6 2.c4 e6 3.Nc3 Ab4: *"📚 Defensa Nimzoindia"*. La detección utiliza un algoritmo amplio que reconoce posiciones aunque la secuencia exacta no esté almacenada como clave del libro.
 
+### Detección de Oportunidades Perdidas
+El Profesor ahora no solo te regaña cuando te dejas una pieza, sino que es capaz de detectar si **dejaste escapar una táctica de oro** (como un jaque mate o ganar material limpio) por centrarte demasiado en responder a la última jugada del rival. Te mostrará exactamente cuál era la jugada oculta y su intención estratégica.
+
+### Comentarista en 3ª Persona y Huevos de Pascua
+El locutor ahora narra las partidas en estricta tercera persona, separando su rol del trato directo del Profesor. Además, nombra explícitamente la pieza capturada respetando su género gramatical (*"capturando la Torre"*, *"capturando el Caballo"*) e incluye nuevos chistes limpios y huevos de pascua musicales (como cantar *Runaway* de Queen cuando la Dama huye).
+
 ### Libro de aperturas ampliado
 
 De 48 posiciones / 140 entradas a **97 posiciones / 274 entradas**. Nuevas líneas: Defensa Francesa (Winawer, Tarrasch, Avance, Cambio), Escandinava, Caro-Kann (Clásica, Karpov, Avance), Apertura Inglesa (Simétrica, Anglo-India, Cuatro Caballos), Nimzoindia (Rubinstein, Clásica, Sämisch), Grünfeld, India de Dama, Benoni, Reti con todas las respuestas negras, Sistema Londres ampliado.
@@ -245,13 +250,15 @@ Combinado con una implementación corregida de **Zobrist Hashing** que rastrea l
 
 ### Motor — Mejoras de fuerza
 
+- **Corrección del Efecto Horizonte:** La búsqueda de quietud (*Quiescence*) ahora evalúa jaques hasta profundidad 2, evitando que la IA se quede ciega y se deje piezas colgadas en secuencias largas de capturas.
+- **Prevención de ataques suicidas:** El motor ya no sacrifica material a lo loco para exponer al rey enemigo si sus propios caballos y alfiles aún no se han desarrollado (`attackerUndeveloped <= 1`).
+- Peón pasado escala **×4.5** en finales (antes ×3) y el rey se centraliza antes (`eg > 0.4`).
 - Ordenación por jugada TT (score 1.000.000, por encima de cualquier captura)
 - Heurística de contramovimiento (score 48.000)
 - Preordenación MVV-LVA de jugadas raíz antes de la primera iteración
 - Poda de futilidad extendida a profundidad 3 (margen 500 cp)
 - Ventana de aspiración ampliada a ±75 cp (antes ±50)
 - Valores de piezas ajustados: C=305, A=333
-- Peón pasado escala ×3 en finales
 - Bucle de seguridad del rey corregido: cada pieza contada una sola vez (antes se contaba una vez por casilla de zona atacada)
 
 ---
@@ -272,7 +279,7 @@ Ordenación de jugadas: jugada TT (prioridad 1.000.000) → capturas MVV-LVA →
 
 ### Evaluación
 
-Tablas PST estilo PeSTO, evaluación cónica del rey (interpolación mediojuego ↔ final), estructura de peones (doblados −15, aislados −20, pasados rango×15 escalado ×3 en final), pareja de alfiles (+30), actividad de torres (columna abierta +25, séptima fila +20), seguridad dinámica del rey (penalización cuadrática, tope en 80 cp).
+Tablas PST estilo PeSTO, evaluación cónica del rey (interpolación mediojuego ↔ final), estructura de peones (doblados −15, aislados −20, pasados rango×15 escalado ×4.5 en final), pareja de alfiles (+40), actividad de torres (columna abierta +25, séptima fila +20), seguridad dinámica del rey (penalización cuadrática, tope en 80 cp).
 
 Valores de piezas: C=305, A=333, T=500, D=900 (el alfil vale más que el caballo por 28 cp).
 
@@ -319,9 +326,9 @@ Requiere ES2017+. Probado en Chrome 90+, Firefox 88+, Safari 14+.
 
 ---
 
-## Pruebas con Stockfish
+## Pruebas con Stockfish (Entrenamiento del Motor)
 
-Esta carpeta agrupa las utilidades para ejecutar partidas automáticas entre `mChess.html` y Stockfish, recoger resultados y generar análisis rápidos.
+Las heurísticas y pesos posicionales del motor han sido **entrenados y ajustados jugando torneos automatizados contra Stockfish**. Esta carpeta agrupa las utilidades para ejecutar partidas automáticas entre `mChess.html` y Stockfish, recoger resultados y generar análisis rápidos.
 
 - Ubicación: [stockfish_tests](stockfish_tests)
 - Comandos rápidos (desde la raíz del proyecto):
@@ -357,5 +364,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.0.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.*  
-*~604 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.0.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~604 KB. Cero dependencias. Abre el archivo y juega.*
