@@ -5071,6 +5071,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       const btn = document.getElementById('trainingToggleBtn');
       if (btn) btn.textContent = trainingModeEnabled ? t('trainingOn') : t('trainingOff');
       showToast(trainingModeEnabled ? t('trainingEnabled') : t('trainingDisabled'), 5500);
+      render();
     }
 
     const OPENING_BOOK = {
@@ -12390,8 +12391,8 @@ let forcedBookMove = null;
         updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar();
         showToast(currentLanguage === 'en' ? "Position loaded! 🧪" : "¡Posición cargada! 🧪");
         
-        // ✨ AUTO-AI: If it's black's turn and mode is AI, let it move!
-        if (gameMode === 'ai' && turn === 'b') {
+        // ✨ AUTO-AI: If it is the AI's turn, let it move!
+        if (gameMode === 'ai' && turn !== playerColor) {
             setTimeout(triggerAI, 500);
         }
       } catch (e) {
