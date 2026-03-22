@@ -6751,7 +6751,14 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
       moves = moves.filter(m => {
         const target = activeBoard[m.tr][m.tc];
-        return (target !== ' ') || (activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7));
+        if (target !== ' ') return true;
+        if (activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
+        // 🚨 ANTI-CEGUERA: Buscar jaques en primeros 2 plies para no dejar escapar tácticas
+        if (qDepth < 2) {
+             const nextBrd = simulateMove(activeBoard, m);
+             if (inCheck(color === 'w' ? 'b' : 'w', nextBrd)) return true;
+        }
+        return false;
       });
 
       // Delta Pruning: skip captures that cannot improve the position even with a generous margin.
@@ -7351,11 +7358,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
               bonus+=Math.round(shield*30);
 
               // ✨ Improvement 3: Naked King penalty.
-              // If king has no pawn shield AND has lost all castling rights AND is in middlegame,
-              // apply extra penalty proportional to enemy piece count.
-              // This catches kings forced to f7, f2 etc. after piece sacrifices.
               const hasCastle = isW ? (state.castleRights.K || state.castleRights.Q) : (state.castleRights.k || state.castleRights.q);
-              if (!hasCastle && shield < 0.5 && eg < 0.4) {
+              
+              // 🛡️ FIX: No te sacrifiques a lo loco. Solo castigamos al rey desnudo si el rival ya ha desarrollado sus piezas
+              const attackerUndeveloped = isW ? bUndevelopedMinors : wUndevelopedMinors;
+              if (!hasCastle && shield < 0.5 && eg < 0.4 && attackerUndeveloped <= 1) {
                 // Count enemy major pieces (Q/R/B/N) to scale the danger
                 let enemyMajors = 0;
                 const ec = isW ? 'b' : 'w';
@@ -7581,10 +7588,16 @@ window.askWiseKing = async function(fen, historyArr = []) {
           if(maximizing){if(sp>=beta)return beta;if(sp>alpha)alpha=sp;}
           else{if(sp<=alpha)return alpha;if(sp<beta)beta=sp;}
           const color=maximizing?'w':'b';
-          const caps=legalMoves(state,color).filter(m=>
-            state.board[m.tr][m.tc]!==' '||
-            (state.board[m.fr][m.fc].toUpperCase()==='P'&&(m.tr===0||m.tr===7))
-          );
+          const caps=legalMoves(state,color).filter(m=> {
+            if (state.board[m.tr][m.tc] !== ' ') return true;
+            if (state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
+            // 🚨 ANTI-CEGUERA (Horizon Fix): Investigar jaques en los 2 primeros plies de Quiescence
+            if (qd < 2) {
+                const child = applyMove(state, m);
+                if (inChk(child, opp(color))) return true;
+            }
+            return false;
+          });
           caps.sort((a,b)=>moveScore(state,b,0)-moveScore(state,a,0));
           const DELTA=200;
           if(maximizing){
