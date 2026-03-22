@@ -11212,9 +11212,42 @@ let forcedBookMove = null;
               ? `<br>⚠️ Your piece on ${hanging.square} can be captured for free by ${pArticle} ${attackerName}.`
               : `<br>⚠️ Tu pieza en ${hanging.square} puede ser capturada gratis por ${pArticle} ${attackerName}.`;
           } else {
-            reason = en
-              ? `<br>📉 This move allows the opponent a strong tactical reply that wins material.`
-              : `<br>📉 Esta jugada permite al rival una respuesta táctica fuerte que gana material.`;
+            // ✨ FIX: Differentiate between "Blundering a piece" and "Missing a winning move"
+            const absEvalBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
+            const moverEvalBefore = moverColor === 'w' ? absEvalBefore : -absEvalBefore;
+            
+            if (moverEvalBefore >= 200 && effectiveDelta <= -200) {
+              reason = en
+                ? `<br>📉 You missed a golden tactical opportunity! You focused on the opponent's last move and a much stronger attack slipped away.`
+                : `<br>📉 ¡Dejaste escapar una oportunidad táctica de oro! Te centraste en la última jugada del rival y se te escapó un ataque mucho más fuerte.`;
+                
+              // 🧠 Calculate the missed move (depth 3 to keep it almost instantaneous)
+              const bestPastMoves = findGoodMoveOptionsFor(moverColor, 3, 1, 1000);
+              if (bestPastMoves && bestPastMoves.length > 0) {
+                const missedMove = bestPastMoves[0].move;
+                
+                // Ensure the best move is not the one the human actually played
+                if (missedMove.fr !== humanMove.fr || missedMove.fc !== humanMove.fc || missedMove.tr !== humanMove.tr || missedMove.tc !== humanMove.tc) {
+                  const pName = getLocalizedPieceName(board[missedMove.fr][missedMove.fc]);
+                  const tName = sqName(missedMove.tr, missedMove.tc);
+                  const targetPiece = board[missedMove.tr][missedMove.tc];
+                  const isCap = targetPiece !== ' ';
+                  const capName = isCap ? getLocalizedPieceName(targetPiece) : '';
+                  
+                  // Use the helper function to output the correct article (e.g., "la Torre" / "el Caballo")
+                  const article = isCap ? getPieceArticle(targetPiece, 'def') : ''; 
+                  const intent = simplifyForKids(getStrategicIntent(missedMove, moverColor));
+                  
+                  reason += en
+                    ? `<br><br>💡 <em>The hidden opportunity was: <strong>${pName} to ${tName}</strong>${isCap ? ` (capturing ${article} ${capName})` : ''}.<br>Why? ${intent}</em>`
+                    : `<br><br>💡 <em>La oportunidad oculta era: <strong>${pName} a ${tName}</strong>${isCap ? ` (capturando ${article} ${capName})` : ''}.<br>¿Por qué? ${intent}</em>`;
+                }
+              }
+            } else {
+              reason = en
+                ? `<br>📉 This move allows the opponent a strong tactical reply.`
+                : `<br>📉 Esta jugada permite al rival una respuesta táctica fuerte.`;
+            }
           }
 
           // Draw error arrows
