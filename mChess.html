@@ -2543,28 +2543,38 @@ window.askWiseKing = async function(fen, historyArr = []) {
         if (OPENING_BOOK && OPENING_BOOK[historyKey]) {
             const valid = OPENING_BOOK[historyKey];
             if (valid.length > 0) {
-                const legalMvs = getLegalMovesForColorInPlace(color);
-                const validBookMoves = valid.filter(entry => 
-                    legalMvs.some(m => getMoveNotation(board, color, m, castleRights) === entry.m)
-                );
-                
-                if (validBookMoves.length > 0) {
-                    const totalWeight = validBookMoves.reduce((s, e) => s + (e.w || 1), 0);
-                    let randomWeight = Math.random() * totalWeight;
-                    let chosenEntry = validBookMoves[0];
-                    for (const entry of validBookMoves) {
-                        randomWeight -= (entry.w || 1);
-                        if (randomWeight <= 0) { chosenEntry = entry; break; }
+                // 🎯 MEJORA TORNEO: Tasa de exploración — a veces ignoramos el libro para crear variedad.
+                // En nivel grandmaster usamos el motor propio el 20% del tiempo para evitar repetir
+                // siempre las mismas aperturas. Niveles inferiores respetan el libro el 100%.
+                const explorationChance = (typeof currentDifficulty !== 'undefined' && currentDifficulty === 'grandmaster') ? 0.20 : 0.05;
+                const skipBook = Math.random() < explorationChance;
+
+                if (!skipBook) {
+                    const legalMvs = getLegalMovesForColorInPlace(color);
+                    const validBookMoves = valid.filter(entry => 
+                        legalMvs.some(m => getMoveNotation(board, color, m, castleRights) === entry.m)
+                    );
+                    
+                    if (validBookMoves.length > 0) {
+                        const totalWeight = validBookMoves.reduce((s, e) => s + (e.w || 1), 0);
+                        let randomWeight = Math.random() * totalWeight;
+                        let chosenEntry = validBookMoves[0];
+                        for (const entry of validBookMoves) {
+                            randomWeight -= (entry.w || 1);
+                            if (randomWeight <= 0) { chosenEntry = entry; break; }
+                        }
+                        const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
+                        if (bookMove) {
+                            console.log("📖 Jugada seleccionada del libro:", chosenEntry.m);
+                            const cols = 'abcdefgh';
+                            const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
+                            const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
+                            console.log("🎯 UCI:", uci);
+                            return uci;
+                        }
                     }
-                    const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
-                    if (bookMove) {
-                        console.log("📖 Jugada seleccionada del libro:", chosenEntry.m);
-                        const cols = 'abcdefgh';
-                        const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
-                        const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
-                        console.log("🎯 UCI:", uci);
-                        return uci;
-                    }
+                } else {
+                    console.log("🎲 Exploración: ignorando libro de aperturas para buscar variedad...");
                 }
             }
         }
@@ -6851,7 +6861,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       if (nullOk && !checked && depth >= 3) {
         const pieceCount = activeBoard.flat().filter(p => p && p !== ' ' && p.toUpperCase() !== 'P' && p.toUpperCase() !== 'K').length;
         if (pieceCount >= 4) {
-          const R = depth >= 6 ? 3 : 2;
+          const R = depth >= 8 ? 3 : 2;
           // Make a real null move: save state, swap turn, search, restore
           const savedTurn = turn;
           const savedEP = enPassantTarget;
@@ -7144,14 +7154,14 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 if(b[rr][c]===(isW?'p':'P')||(c>0&&b[rr][c-1]===(isW?'p':'P'))||(c<7&&b[rr][c+1]===(isW?'p':'P'))){ok=false;break;}
               }
               if(ok) {
-                // 🎯 MEJORA CRÍTICA: Bonificación escalada para finales
+                // 🎯 MEJORA TORNEO: Bonificación escalada para finales (v2)
                 const distanceToPromotion = isW ? (7-r) : r;
-                bonus = distanceToPromotion * 20; // Aumentado de 15 a 20
+                bonus = distanceToPromotion * 25; // Aumentado de 20 a 25
                 // En endgame, peones pasados son CRUCIALES - multiplicador más agresivo
-                bonus = Math.round(bonus * (1 + eg * 3.5)); // Aumentado de 2 a 3.5
+                bonus = Math.round(bonus * (1 + eg * 4.5)); // Aumentado de 3.5 a 4.5
                 // Bonus extra si está cerca de coronar en endgame
                 if(eg > 0.6 && distanceToPromotion >= 5) {
-                  bonus += 50; // Peón en 6ta o 7ma fila en endgame = muy peligroso
+                  bonus += 70; // Peón en 6ta o 7ma fila en endgame = muy peligroso (antes: 50)
                 }
               }
             }
@@ -7237,7 +7247,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // Anti-Baile de Apertura now evaluated globally via wUndevelopedMinors
 
             // ── King activity in endgame ──────────────────────────────────
-            if(u==='K' && eg > 0.5) {
+            if(u==='K' && eg > 0.4) { // 🎯 MEJORA TORNEO: activar antes (antes: 0.5)
               // 👑 MEJORA CRÍTICA: Rey debe activarse en finales
               // Bonus por centralización (casillas d4, d5, e4, e5)
               const centerDist = Math.abs(3.5 - r) + Math.abs(3.5 - c);
@@ -7621,7 +7631,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
             );
             if(hasMajorOrMinor){
               const nullState={...state,turn:opp(color),enPassantTarget:null};
-              const R=depth>=6?3:2; // Reduction factor
+              const R=depth>=8?3:2; // Reduction factor — 🎯 MEJORA TORNEO: menos agresivo (antes: depth>=6)
               try{
                 const nullScore=minimax(nullState,depth-1-R,alpha,beta,!maximizing,deadline,false);
                 if(maximizing&&nullScore>=beta) return beta;
@@ -8055,7 +8065,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
         let move = null;
 
         // 1. Consultar libro de aperturas
-        let forcedBookMove = null;
+let forcedBookMove = null;
         if (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
             (currentDifficulty === 'medium' && history.length <= 4)) {
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
@@ -8065,18 +8075,27 @@ window.askWiseKing = async function(fen, historyArr = []) {
             const validBookMoves = bookEntries.filter(entry =>
               legalMvs.some(m => getMoveNotation(board, aiColor, m, castleRights) === entry.m)
             );
+            
             if (validBookMoves.length > 0) {
-              const useWeights = currentDifficulty !== 'medium';
-              const totalWeight = useWeights
-                ? validBookMoves.reduce((sum, e) => sum + (e.w || 1), 0)
-                : validBookMoves.length;
-              let randomWeight = Math.random() * totalWeight;
-              let chosenEntry = validBookMoves[0];
-              for (const entry of validBookMoves) {
-                randomWeight -= useWeights ? (entry.w || 1) : 1;
-                if (randomWeight <= 0) { chosenEntry = entry; break; }
+              // ✨ FIX: Tasa de exploración para no jugar siempre de memoria
+              const explorationChance = currentDifficulty === 'grandmaster' ? 0.20 : 0.05;
+              const skipBook = Math.random() < explorationChance;
+
+              if (!skipBook) {
+                const useWeights = currentDifficulty !== 'medium';
+                const totalWeight = useWeights
+                  ? validBookMoves.reduce((sum, e) => sum + (e.w || 1), 0)
+                  : validBookMoves.length;
+                let randomWeight = Math.random() * totalWeight;
+                let chosenEntry = validBookMoves[0];
+                for (const entry of validBookMoves) {
+                  randomWeight -= useWeights ? (entry.w || 1) : 1;
+                  if (randomWeight <= 0) { chosenEntry = entry; break; }
+                }
+                forcedBookMove = legalMvs.find(m => getMoveNotation(board, aiColor, m, castleRights) === chosenEntry.m);
+              } else {
+                console.log("🎲 Exploración IA: ignorando libro de aperturas para buscar variedad...");
               }
-              forcedBookMove = legalMvs.find(m => getMoveNotation(board, aiColor, m, castleRights) === chosenEntry.m);
             }
           }
         }
