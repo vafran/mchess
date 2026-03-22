@@ -9037,103 +9037,107 @@ let forcedBookMove = null;
       }
       const historicalMotif = detectHistoricalMotifFromHistory(currentHistory);
 
-      // Quality Evaluation (Only in vs AI mode)
-      let isHugeBlunder = false;
-      if (gameMode === 'ai' && snapshotBeforeHumanMove && colorWhoMoved === 'w') {
-        const evBefore = evaluateBoard(snapshotBeforeHumanMove, 'hard');
-        const evAfter = evaluateBoard(board, 'hard');
-        if (evAfter - evBefore < -250) isHugeBlunder = true;
-      }
-
-      // 🧠 Diccionarios de Movimientos Normales
+      // 🧠 NORMAL DICTIONARIES (3rd Person Narrative)
       const frasesSerias = {
         es: {
-          P: isOpening 
-            ? ["Control del centro: el Peón avanza a {sq}.", "Desarrollo de peones abriendo líneas en {sq}.", "Lucha por el espacio central con el peón en {sq}.", "Estructura sólida: el peón reclama {sq}."] 
-            : ["Avance estratégico: el Peón refuerza la estructura en {sq}.", "Peón a {sq}: un paso más en el plan a largo plazo.", "Consolidando la posición con el avance a {sq}."],
-          N: ["El Caballo busca una casilla activa en {sq}.", "Maniobra posicional: Caballo a {sq}.", "Control de casillas clave desde {sq}.", "El caballo se centraliza para ganar influencia.", "Buscando un puesto avanzado en {sq}.", "Mejorando la coordinación con el salto a {sq}."],
-          B: ["El Alfil domina la diagonal desde {sq}.", "Presión a larga distancia con el Alfil en {sq}.", "Pieza activa en la diagonal {sq}.", "El alfil barre el tablero desde su nueva posición.", "Controlando casillas críticas desde {sq}.", "Desarrollo armónico del alfil a {sq}."],
-          R: ["La Torre ocupa la columna en {sq}.", "Torre a {sq}: buscando actividad en la fila.", "La Torre se activa por la vertical {sq}.", "Controlando la columna abierta desde {sq}.", "La torre se prepara para doblar fuerzas.", "Posicionamiento defensivo y ofensivo de la torre."],
-          Q: ["La Dama se centraliza para aumentar su influencia.", "Máxima presión de la Dama en {sq}.", "La dama coordina el ataque desde una casilla fuerte.", "Dominio total del tablero con la dama en {sq}.", "La pieza más poderosa busca ángulos de ataque.", "Centralización estratégica de la dama."],
-          K: isEndgame 
-            ? ["El Rey se activa: es pieza de ataque en el final.", "Centralización del rey para escoltar peones.", "El monarca sale al combate, la partida se decide."] 
-            : ["Seguridad: el Rey busca refugio en {sq}.", "Protegiendo al monarca tras la cadena de peones.", "Maniobra de seguridad real en {sq}."]
+          P: isOpening ? ["Control del centro: el Peón avanza a {sq}.", "Desarrollo de peones abriendo líneas en {sq}."] : ["Avance estratégico: el Peón refuerza la estructura en {sq}.", "Consolidando la posición con el avance a {sq}."],
+          N: ["El Caballo busca una casilla activa en {sq}.", "Maniobra posicional: Caballo a {sq}.", "El caballo se centraliza para ganar influencia.", "Buscando un puesto avanzado en {sq}."],
+          B: ["El Alfil domina la diagonal desde {sq}.", "Pieza activa en la diagonal {sq}.", "El alfil barre el tablero desde su nueva posición.", "Desarrollo armónico del alfil a {sq}."],
+          R: ["La Torre ocupa la columna en {sq}.", "Torre a {sq}: buscando actividad en la fila.", "La Torre se activa por la vertical {sq}.", "Controlando la columna abierta desde {sq}."],
+          Q: ["La Dama se centraliza para aumentar su influencia.", "Máxima presión de la Dama en {sq}.", "Dominio total del tablero con la dama en {sq}.", "La pieza más poderosa busca ángulos de ataque."],
+          K: isEndgame ? ["El Rey se activa: es pieza de ataque en el final.", "El monarca sale al combate, la partida se decide."] : ["Seguridad: el Rey busca refugio en {sq}.", "Maniobra de seguridad real en {sq}."]
         },
         en: {
-          P: isOpening ? ["Center control: Pawn moves to {sq}.", "Pawn development opening lines at {sq}.", "Fighting for central space with the pawn on {sq}.", "Solid structure: the pawn claims {sq}."] : ["Strategic advance: Pawn on {sq} strengthens the structure.", "Pawn to {sq}: one more step in the long-term plan.", "Consolidating the position with the advance to {sq}.", "Pawn structure taking shape at {sq}."],
-          N: ["Knight looks for an active square at {sq}.", "Positional maneuver: Knight to {sq}.", "Key square control from {sq}.", "The knight centralizes to gain influence.", "Looking for an advanced outpost on {sq}.", "Improving coordination with the jump to {sq}."],
-          B: ["Bishop dominates the diagonal from {sq}.", "Long-range pressure with the Bishop at {sq}.", "Active piece on the diagonal towards {sq}.", "The bishop sweeps the board from its new post.", "Controlling critical squares from {sq}.", "Harmonious bishop development to {sq}."],
-          R: ["Rook claims the file on {sq}.", "Rook to {sq}: seeking activity along the rank.", "The Rook activates along the {sq} vertical.", "Controlling the open file from {sq}.", "The rook prepares to double forces.", "Defensive and offensive rook placement."],
-          Q: ["The Queen centralizes to increase her influence.", "Maximum Queen pressure at {sq}.", "The queen coordinates the attack from a strong square.", "Full board domination with the queen on {sq}.", "The most powerful piece looks for attack angles.", "Strategic centralization of the queen."],
-          K: isEndgame ? ["The King activates: an attacking piece in the endgame.", "King centralization to escort the pawns.", "The monarch enters the fight — the game is being decided."] : ["Safety first: the King seeks shelter at {sq}.", "Protecting the monarch behind the pawn chain.", "Royal safety maneuver at {sq}."]
+          P: isOpening ? ["Center control: Pawn moves to {sq}.", "Pawn development opening lines at {sq}."] : ["Strategic advance: Pawn on {sq} strengthens the structure.", "Pawn structure taking shape at {sq}."],
+          N: ["Knight looks for an active square at {sq}.", "Key square control from {sq}.", "The knight centralizes to gain influence.", "Looking for an advanced outpost on {sq}."],
+          B: ["Bishop dominates the diagonal from {sq}.", "Active piece on the diagonal towards {sq}.", "The bishop sweeps the board from its new post.", "Harmonious bishop development to {sq}."],
+          R: ["Rook claims the file on {sq}.", "Rook to {sq}: seeking activity along the rank.", "The Rook activates along the {sq} vertical.", "Controlling the open file from {sq}."],
+          Q: ["The Queen centralizes to increase her influence.", "Full board domination with the queen on {sq}.", "The most powerful piece looks for attack angles.", "Strategic centralization of the queen."],
+          K: isEndgame ? ["The King activates: an attacking piece in the endgame.", "The monarch enters the fight — the game is being decided."] : ["Safety first: the King seeks shelter at {sq}.", "Royal safety maneuver at {sq}."]
         }
       };
 
       const frasesBromas = {
         es: {
-          P: ["¡Ese peón va con más prisa que un niño el último día de cole!", "El peón se planta y dice: 'De aquí no me muevo'.", "Peón a {sq}, ¡soñando con ser Dama algún día!", "¡Adelante sin mirar atrás! El peón ya no para.", "¡Este peón tiene el paso cambiado!", "Marcha imparable hacia {sq}, ¡ni el árbitro lo detiene!"],
-          N: ["¡Vaya salto! ¡Ni Michael Jordan en un castillo hinchable!", "¡Caballo a la fuga! Parece que ha oído que hay pizza gratis.", "¡Tiki-taka de herraduras en {sq}!", "El caballo hace su cosa rara en L y nadie le entiende.", "Salto de fe: a ver si alguien adivina el plan.", "¡El caballo ha decidido que {sq} es su nuevo hogar!"],
-          B: ["¡Toma ya! El Alfil barre la diagonal como quien pasa la mopa.", "¡Diagonal libre! Más espacio que el salón tras recoger juguetes.", "¡Ojo al láser! El alfil no perdona desde esa diagonal.", "El alfil deslizándose en silencio... peligro a la vista.", "¡Francotirador de las diagonales en {sq}!", "Mira qué diagonal tan bonita ha encontrado el alfil."],
-          R: ["¡Torre de hierro! Por aquí no pasa ni el aire.", "¡Artillería pesada! La Torre toma la columna y se queda fresca.", "¡Rook & Roll! La torre se activa con ritmo.", "La torre ha reservado esa columna y nadie la mueve.", "¡La torre abre la puerta y dice: yo mando aquí!", "Movimiento de torre: simple, contundente, imparable."],
-          Q: ["¡Atención, ha llegado la Jefa! ¡Como cuando mamá enciende la luz!", "¡Ojo al disparo! La dama se prepara para el asalto final.", "La dama en {sq} dice: 'Aquí mando yo'.", "¡Todos a un lado, que viene la Reina!", "La dama huele sangre y se pone en posición.", "¡Paso, paso! La señora dama quiere sitio en {sq}."],
-          K: ["El Rey se va al banquillo a echarse la siesta.", "El Rey se esconde bajo los palos. ¡Un portero de los de antes!", "¡A cubierto! El monarca busca su búnker en {sq}.", "El Rey mirando el caos desde la distancia.", "Su majestad ha decidido que hoy no sale a pasear.", "El Rey hace mutis por el foro y busca tranquilidad en {sq}."]
+          P: ["¡Ese peón va con más prisa que un niño el último día de cole!", "¿Dónde compran los ajedrecistas? ¡En la casa de em-peones!", "Peón a {sq}, ¡soñando con ser Dama algún día!"],
+          N: ["¡Vaya salto! ¡Ni Michael Jordan en un castillo hinchable!", "¿Qué hace un ajedrecista estresado? ¡Se toma la noche (Knight) libre!", "El caballo hace su cosa rara en L y nadie le entiende."],
+          B: ["¡Toma ya! El Alfil barre la diagonal como quien pasa la mopa.", "¿Por qué este alfil es el más rápido? ¡Porque corre en F1!", "¡Ojo al láser! El alfil no perdona desde esa diagonal."],
+          R: ["¡Torre de hierro! Por aquí no pasa ni el aire.", "¿Música favorita de esta pieza? ¡El Torre y Roll!", "¡Rook & Roll! La torre se activa con ritmo."],
+          Q: ["¡Atención, ha llegado la Jefa! Actuad con naturalidad.", "¿Banda de rock favorita del tablero? ¡Queen, por supuesto!", "La dama en {sq} dice: 'Aquí mando yo'."],
+          K: ["¿Por qué el Rey fue al dentista? ¡Necesitaba una corona nueva!", "¿Dónde duerme el monarca? ¡En una cama King-size!", "El Rey se esconde bajo los palos. ¡Un portero de los de antes!"]
         },
         en: {
-          P: ["Walking like he's lost his bus pass.", "Just a pawn doing pawn things."],
-          N: ["Jumping around like a guy at a wedding.", "Knight's on a mission to find the only open shop at 2 AM."],
-          B: ["Bishop's clearing the way like he's looking for a cinema seat.", "Sniper! Watching you like a teacher during a math test."],
-          R: ["The Rook is a wall. Nothing's getting through that.", "Control tower! He watches the board like a bouncer."],
-          Q: ["Right, here's the Boss. Act natural.", "Queen's ready. She's got that look on her face. Big trouble!"],
-          K: ["King's off for a nap. Can't handle the stress, can he?", "Safety first. The Monarch's tucked away."]
+          P: ["Walking like he's lost his bus pass.", "Where do chess players look for bargains? At the pawnshop!", "Just a pawn doing pawn things."],
+          N: ["Jumping around like a guy at a wedding.", "Why did the player take a break? He needed a Knight off!", "Knight's on a mission to find the only open shop at 2 AM."],
+          B: ["Bishop's clearing the way like he's looking for a cinema seat.", "Why is the white bishop the fastest piece? Because it starts on F1!", "Sniper! Watching the board like a teacher during a math test."],
+          R: ["The Rook is a wall. Nothing's getting through that.", "What's this piece's favorite music? Rook and Roll!", "Control tower! Watching the board like a bouncer."],
+          Q: ["Right, here's the Boss. Act natural.", "Chessboard's favorite rock band? Queen!", "I wah, wah, wah, wah, wonder... why she ran away? My little runaway Queen!", "A-run, run, run, run, runaway! The Queen makes a run for it."],
+          K: ["Why did the King go to the dentist? To get a new crown!", "Where does the King sleep? In a KING-size bed!", "Safety first. The Monarch's tucked away."]
         }
       };
 
-      // ⚔️ NEW Exclusive Dictionaries for CAPTURES
+      // ⚔️ EXCLUSIVE DICTIONARIES FOR CAPTURES ({cap} token)
       const frasesCapturaSerias = {
         es: {
-          P: ["El peón captura y se abre paso en {sq}.", "Intercambio de peones o ganancia de material en {sq}.", "Táctica de infantería: el peón elimina un obstáculo en {sq}.", "El peón recoge el botín en {sq}."],
-          N: ["El caballo salta y captura en {sq}.", "Táctica de caballo: pieza eliminada en {sq}.", "El caballo aterriza con fuerza en {sq} y hace daño."],
-          B: ["El alfil cruza el tablero para capturar en {sq}.", "El alfil elimina a un defensor clave en {sq}.", "Captura precisa del alfil desde la distancia en {sq}."],
-          R: ["La torre limpia la columna capturando en {sq}.", "Fuerza bruta: la torre toma material en {sq}.", "La torre entra en acción y se lleva una pieza en {sq}."],
-          Q: ["La dama captura en {sq} asumiendo el control.", "La pieza más fuerte elimina a un enemigo en {sq}.", "Golpe de dama en {sq}: decisivo y contundente."],
-          K: ["El rey captura, defendiendo su territorio en {sq}.", "El monarca toma la iniciativa y captura en {sq}."]
+          P: ["El peón captura {cap} en {sq}.", "Ganancia de material: el peón toma {cap} en {sq}.", "El peón recoge a {cap} en {sq}."],
+          N: ["El caballo salta y captura {cap} en {sq}.", "Táctica de caballo: elimina a {cap} en {sq}.", "El caballo se lleva {cap} en {sq}."],
+          B: ["El alfil cruza el tablero para capturar {cap} en {sq}.", "El alfil elimina a un defensor clave: {cap} en {sq}.", "Captura precisa del alfil: cae {cap} en {sq}."],
+          R: ["La torre limpia la columna capturando {cap} en {sq}.", "Fuerza bruta: la torre toma {cap} en {sq}.", "La torre entra en acción y se lleva {cap} en {sq}."],
+          Q: ["La dama captura {cap} en {sq} asumiendo el control.", "La pieza más fuerte elimina a {cap} en {sq}.", "Golpe de dama en {sq}: cae {cap}."],
+          K: ["El rey captura {cap}, defendiendo su territorio en {sq}.", "El monarca toma la iniciativa y elimina {cap} en {sq}."]
         },
         en: {
-          P: ["The pawn captures, clearing its path on {sq}.", "Pawn exchange or material gain on {sq}.", "Infantry tactics: the pawn removes an obstacle on {sq}.", "The pawn picks up the spoils on {sq}."],
-          N: ["The knight jumps in and captures on {sq}.", "Knight tactics: piece eliminated on {sq}.", "The knight lands hard on {sq} and takes its prize."],
-          B: ["The bishop crosses the board to capture on {sq}.", "The bishop removes a key defender on {sq}.", "Precise long-range capture by the bishop on {sq}."],
-          R: ["The rook clears the file with a capture on {sq}.", "Brute force: rook takes material on {sq}.", "The rook springs into action and takes a piece on {sq}."],
-          Q: ["The queen captures, assuming full control on {sq}.", "The strongest piece removes an enemy on {sq}.", "Queen strikes on {sq}: decisive and powerful."],
-          K: ["The king captures, defending his territory on {sq}.", "The monarch takes the initiative and captures on {sq}."]
+          P: ["The pawn captures {cap} on {sq}.", "Pawn exchange or material gain: taking {cap} on {sq}.", "The pawn picks up {cap} on {sq}."],
+          N: ["The knight jumps in and captures {cap} on {sq}.", "Knight tactics: {cap} eliminated on {sq}.", "The knight lands hard on {sq} and takes {cap}."],
+          B: ["The bishop crosses the board to capture {cap} on {sq}.", "The bishop removes a key piece: {cap} on {sq}.", "Precise long-range capture: {cap} falls on {sq}."],
+          R: ["The rook clears the file by taking {cap} on {sq}.", "Brute force: rook takes {cap} on {sq}.", "The rook springs into action and takes {cap} on {sq}."],
+          Q: ["The queen captures {cap}, assuming full control on {sq}.", "The strongest piece removes {cap} on {sq}.", "Queen strikes on {sq}: {cap} is gone."],
+          K: ["The king captures {cap}, defending his territory on {sq}.", "The monarch takes the initiative and removes {cap} on {sq}."]
         }
       };
 
       const frasesCapturaBromas = {
         es: {
-          P: ["¡Ñam ñam! Ese peón tenía hambre en {sq}.", "¡Fuera de mi camino! El peón aparta a la competencia en {sq}.", "Peón abusón quitando piezas del medio."],
-          N: ["¡Zasca! El caballo aterriza encima del enemigo en {sq}.", "Caballo ninja: aparece de la nada y se lleva una pieza."],
-          B: ["¡Francotirador! El alfil se cobra una víctima en {sq}.", "¡Cazado en la diagonal! Un problema menos para ti."],
-          R: ["¡La torre pasa como una apisonadora por {sq}!", "¡Boom! La torre derriba la puerta y se lleva el botín."],
-          Q: ["¡La Jefa no hace prisioneros en {sq}!", "¡A la saca! La dama hace limpieza general en {sq}."],
-          K: ["¡El Rey también reparte leña en {sq}!", "Con sus propias manos: el Rey echa al invasor."]
+          P: ["¡Ñam ñam! Ese peón tenía hambre y se comió {cap} en {sq}.", "Peón abusón quitando a {cap} del medio en {sq}."],
+          N: ["¡Zasca! El caballo aterriza encima de {cap} en {sq}.", "Caballo ninja: aparece de la nada y se lleva {cap}."],
+          B: ["¡Francotirador! El alfil se cobra a {cap} en {sq}.", "¡Cazado en la diagonal! Adiós a {cap}."],
+          R: ["¡La torre pasa como una apisonadora por encima de {cap}!", "¡Boom! La torre derriba a {cap} y se lleva el botín."],
+          Q: ["¡La Jefa no hace prisioneros! Adiós a {cap} en {sq}.", "¡A la saca! La dama hace limpieza y se lleva {cap} en {sq}."],
+          K: ["¡El Rey también reparte leña y se carga a {cap} en {sq}!", "Con sus propias manos: el Rey echa a {cap}."]
         },
         en: {
-          P: ["Yum yum! That pawn was hungry on {sq}.", "Out of my way! The pawn pushes the competition aside."],
-          N: ["Bam! The knight lands right on the enemy at {sq}.", "Ninja knight: appears from nowhere and takes a piece."],
-          B: ["Sniper! The bishop claims a victim on {sq}.", "Caught on the diagonal! One less problem."],
-          R: ["The rook rolls through like a bulldozer on {sq}!", "Boom! The rook knocks the door down."],
-          Q: ["The Boss takes no prisoners on {sq}!", "In the bag! The queen does some house cleaning."],
-          K: ["The King gets his hands dirty on {sq}!", "Doing it himself: the King captures the invader."]
+          P: ["Yum yum! That pawn was hungry for {cap} on {sq}.", "Out of my way! The pawn pushes {cap} aside."],
+          N: ["Bam! The knight lands right on {cap} at {sq}.", "Ninja knight: appears from nowhere and takes {cap}."],
+          B: ["Sniper! The bishop claims {cap} on {sq}.", "Caught on the diagonal! Goodbye {cap}."],
+          R: ["The rook rolls over {cap} like a bulldozer on {sq}!", "Boom! The rook knocks down {cap}."],
+          Q: ["The Boss takes no prisoners! {cap} is gone on {sq}.", "In the bag! The queen cleans up {cap} on {sq}."],
+          K: ["The King gets his hands dirty taking {cap} on {sq}!", "Doing it himself: the King captures {cap}."]
         }
       };
 
-      // Detectores Especiales
+      // 🔍 SPECIAL DETECTORS (Quality & Captures)
       let isQueenCaptured = false;
+      let capturedPieceChar = null;
+      let isHugeBlunder = false;
+      let isBrilliant = false;
+
+      // 1. Extract Captured Piece
       if (isCapture) {
           const cementerio = colorWhoMoved === 'w' ? capturedByWhite : capturedByBlack;
-          if (cementerio.length > 0 && cementerio[cementerio.length - 1].toUpperCase() === 'Q') {
-              isQueenCaptured = true;
+          if (cementerio.length > 0) {
+              capturedPieceChar = cementerio[cementerio.length - 1];
+              if (capturedPieceChar.toUpperCase() === 'Q') isQueenCaptured = true;
           }
+      }
+
+      // 2. Evaluate Move Quality against the Engine
+      if (window.snapshotBeforeHumanMove) {
+        const evBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
+        const evAfter = evaluateBoard(board, 'hard');
+        // Delta from the perspective of the player who just moved
+        const delta = colorWhoMoved === 'w' ? (evAfter - evBefore) : (evBefore - evAfter);
+        if (delta <= -250) isHugeBlunder = true;
+        if (delta >= 200) isBrilliant = true;
       }
 
       let isScholarAverted = false;
@@ -9158,204 +9162,105 @@ let forcedBookMove = null;
 
       if (lastMove.includes('#') && endsWithSequence(['f3', 'e5', 'g4', 'Qh4'])) {
         specialComment = lang === 'en'
-          ? getRnd([
-              "🧠 Classic checkmate! That's the Fool's Mate pattern.",
-              "⚡ Fast finish! Fool's Mate lands on h4.",
-              "🎯 Textbook trap: Fool's Mate completed."
-            ], 'special_fools_mate')
-          : getRnd([
-              "🧠 ¡Mate clásico! Ese es el patrón del Mate del Loco.",
-              "⚡ ¡Final relámpago! El Mate del Loco cayó en h4.",
-              "🎯 Trampa de libro: Mate del Loco completado."
-            ], 'special_fools_mate');
+          ? getRnd(["🧠 Classic checkmate! That's the Fool's Mate pattern.", "⚡ Fast finish! Fool's Mate lands on h4."], 'special_fools_mate')
+          : getRnd(["🧠 ¡Mate clásico! Ese es el patrón del Mate del Loco.", "⚡ ¡Final relámpago! El Mate del Loco cayó en h4."], 'special_fools_mate');
       } else if (lastMove.includes('#') && endsWithSequence(['e4', 'e5', 'Qh5', 'Nc6', 'Bc4', 'Nf6', 'Qxf7'])) {
         specialComment = lang === 'en'
-          ? getRnd([
-              "🔥 Scholar's Mate on the board! Quick and precise.",
-              "📚 Textbook Scholar's Mate. Nice tactical finish!",
-              "⚔️ Scholar's Mate executed: queen and bishop worked perfectly.",
-              "🎬 Clean finale: Scholar's Mate lands without mercy.",
-              "🧨 Boom. Scholar's Mate complete."
-            ], 'special_scholar_mate')
-          : getRnd([
-              "🔥 ¡Jaque Pastor en el tablero! Rápido y preciso.",
-              "📚 Jaque Pastor de manual. ¡Buen remate táctico!",
-              "⚔️ Jaque Pastor ejecutado: dama y alfil coordinaron perfecto.",
-              "🎬 Final limpio: el Jaque Pastor entró sin perdón.",
-              "🧨 Boom. Jaque Pastor completado."
-            ], 'special_scholar_mate');
+          ? getRnd(["🔥 Scholar's Mate on the board! Quick and precise.", "🎬 Clean finale: Scholar's Mate lands without mercy."], 'special_scholar_mate')
+          : getRnd(["🔥 ¡Jaque Pastor en el tablero! Rápido y preciso.", "🎬 Final limpio: el Jaque Pastor entró sin perdón."], 'special_scholar_mate');
       } else if (isOpening && lastNorm === 'Qh5' && normalizedHistory.includes('Bc4')) {
         specialComment = lang === 'en'
-          ? getRnd([
-              "👀 Queen on h5: Scholar's Mate idea is in the air.",
-              "⚠️ Early queen sortie! Watch for f7 pressure.",
-              "📌 h5 and bishop developed: classic Scholar's Mate threat.",
-              "🚨 Alarm: Pastor pattern spotted. Defend f7 now.",
-              "🧭 Typical trap route: queen + bishop aiming at f7."
-            ], 'special_scholar_threat')
-          : getRnd([
-              "👀 Dama en h5: huele a idea de Jaque Pastor.",
-              "⚠️ Salida temprana de dama: ojo con la presión en f7.",
-              "📌 h5 y alfil desarrollado: amenaza clásica de Jaque Pastor.",
-              "🚨 Alarma: patrón Pastor detectado. Defiende f7 ya.",
-              "🧭 Ruta típica de trampa: dama + alfil apuntando a f7."
-            ], 'special_scholar_threat');
+          ? getRnd(["👀 Queen on h5: Scholar's Mate idea is in the air.", "🚨 Alarm: Pastor pattern spotted. Defend f7 now."], 'special_scholar_threat')
+          : getRnd(["👀 Dama en h5: huele a idea de Jaque Pastor.", "🚨 Alarma: patrón Pastor detectado. Defiende f7 ya."], 'special_scholar_threat');
       } else if (lastNorm === 'Bxh7' || lastNorm === 'Bxh2') {
         specialComment = lang === 'en'
-          ? getRnd([
-              "🎁 Greek Gift sacrifice spotted! King safety is under fire.",
-              "💥 Bishop sacrifice on h-file: classic attacking theme.",
-              "⚔️ Sharp idea: Greek Gift attempt on the king."
-            ], 'special_greek_gift')
-          : getRnd([
-              "🎁 ¡Sacrificio griego detectado! La seguridad del rey está en juego.",
-              "💥 Sacrificio de alfil en la columna h: tema clásico de ataque.",
-              "⚔️ Idea afilada: intento de sacrificio griego al rey."
-            ], 'special_greek_gift');
+          ? getRnd(["🎁 Greek Gift sacrifice spotted! King safety is under fire."], 'special_greek_gift')
+          : getRnd(["🎁 ¡Sacrificio griego detectado! La seguridad del rey está en juego."], 'special_greek_gift');
       } else if (lastNorm === 'Nxf7' || lastNorm === 'Nxf2') {
         specialComment = lang === 'en'
-          ? getRnd([
-              "🐴 Knight fork zone! f7/f2 is always tactical.",
-              "⚡ Tactical jump on f7/f2: king and rook can get uncomfortable.",
-              "🎯 Strong knight incursion on f7/f2."
-            ], 'special_fork_zone')
-          : getRnd([
-              "🐴 ¡Zona de tenedor! f7/f2 siempre trae táctica.",
-              "⚡ Salto táctico en f7/f2: rey y torre pueden sufrir.",
-              "🎯 Fuerte incursión del caballo en f7/f2."
-            ], 'special_fork_zone');
+          ? getRnd(["🐴 Knight fork zone! f7/f2 is always tactical."], 'special_fork_zone')
+          : getRnd(["🐴 ¡Zona de tenedor! f7/f2 siempre trae táctica."], 'special_fork_zone');
       } else if (lastNorm === 'O-O' || lastNorm === 'O-O-O') {
         specialTone = 'serious';
         specialComment = lang === 'en'
-          ? (lastNorm === 'O-O'
-              ? getRnd([
-                  "🛡️ Kingside castling completed: safer king, connected plan.",
-                  "✅ Good habit: castle and improve king safety.",
-                  "🏰 Short castling: safety first."
-                ], 'special_castle_short')
-              : getRnd([
-                  "🏰 Long castling! Opposite-side attacks may start soon.",
-                  "🛡️ Queenside castling changes the battle plans.",
-                  "⚔️ Long castle on the board: expect sharp play."
-                ], 'special_castle_long'))
-          : (lastNorm === 'O-O'
-              ? getRnd([
-                  "🛡️ Enroque corto completado: rey más seguro y plan más claro.",
-                  "✅ Buen hábito: enrocar y mejorar la seguridad del rey.",
-                  "🏰 Enroque corto: primero la seguridad."
-                ], 'special_castle_short')
-              : getRnd([
-                  "🏰 ¡Enroque largo! Pueden venir ataques a bandos opuestos.",
-                  "🛡️ El enroque largo cambia los planes de combate.",
-                  "⚔️ Enroque largo en el tablero: se viene ajedrez afilado."
-                ], 'special_castle_long'));
+          ? (lastNorm === 'O-O' ? getRnd(["🛡️ Kingside castling completed: safer king, connected plan."], 'special_castle_short') : getRnd(["🏰 Long castling! Opposite-side attacks may start soon."], 'special_castle_long'))
+          : (lastNorm === 'O-O' ? getRnd(["🛡️ Enroque corto completado: rey más seguro y plan más claro."], 'special_castle_short') : getRnd(["🏰 ¡Enroque largo! Pueden venir ataques a bandos opuestos."], 'special_castle_long'));
       }
 
-      // Prioridades Finales
+      // 🎯 FINAL RESOLUTION
       let comment = "";
       let toneUsed = 'serious';
-      if (isHugeBlunder) {
-          comment = lang === 'en' 
-          ? getRnd(["Careful! That move was risky.", "Ouch! Let’s choose a safer move next time.", "Not ideal, but we can fix it with solid defense.", "That opened a door for your rival. Let’s close it next move."], 'quality')
-          : getRnd(["¡Cuidado! Esa jugada fue arriesgada.", "Ups, no pasa nada: la próxima será más segura.", "No fue la mejor, pero se puede arreglar defendiendo bien.", "Esa jugada dejó una puerta abierta. Cerrémosla en la siguiente."], 'quality');
-      }
-      else if (isQueenCaptured) {
+      let actionComment = "";
+
+      if (isQueenCaptured) {
           toneUsed = 'funny';
-          comment = lang === 'en'
-            ? getRnd(["💎 Great move! You captured the Queen.", "💎 Big hit! The Queen is off the board.", "💎 Boom! That Queen capture changes everything."], 'queen_cap')
-            : getRnd(["💎 ¡Gran jugada! Capturaste la Dama.", "💎 ¡Golpe enorme! La Dama se fue del tablero.", "💎 ¡Boom! Esa captura de Dama cambia todo."], 'queen_cap');
+          actionComment = lang === 'en'
+            ? getRnd(["💎 A massive blow! The Queen is captured.", "💎 Big hit! The Queen leaves the board.", "💎 Boom! That Queen capture changes the whole game."], 'queen_cap')
+            : getRnd(["💎 ¡Golpe brutal! Cae la Dama.", "💎 ¡Momento clave! La Dama abandona el tablero.", "💎 ¡Boom! Esta captura de Dama lo cambia todo."], 'queen_cap');
       } 
-      else if (isScholarAverted) {
+      else if (isCapture && capturedPieceChar) {
+          const isFunny = Math.random() < getCommentaryFunnyChance('capture');
+          toneUsed = isFunny ? 'funny' : 'serious';
+          const pool = isFunny ? frasesCapturaBromas[lang][pieceChar] : frasesCapturaSerias[lang][pieceChar];
+          
+          // Inject captured piece name
+          const capName = getLocalizedPieceName(capturedPieceChar);
+          const capArt = getPieceArticle(capturedPieceChar, 'def');
+          const capToken = lang === 'en' ? `the ${capName}` : `${capArt} ${capName}`;
+          
+          actionComment = pickFreshPhrase(pool, `cap_${pieceChar}`).replace('{sq}', targetSq).replace('{cap}', capToken);
+      }
+      else {
+          const phaseFunnyChance = isOpening ? getCommentaryFunnyChance('opening') : (isEndgame ? getCommentaryFunnyChance('endgame') : getCommentaryFunnyChance('normal'));
+          const isFunny = Math.random() < phaseFunnyChance;
+          toneUsed = isFunny ? 'funny' : 'serious';
+          const pool = isFunny ? frasesBromas[lang][pieceChar] : frasesSerias[lang][pieceChar];
+          actionComment = pickFreshPhrase(pool, `norm_${pieceChar}`).replace('{sq}', targetSq);
+          
+          if (commentaryLog.length > 0 && actionComment === commentaryLog[0].html) {
+             const backups = lang === 'en' ? ["A solid maneuver.", "The tension continues on the board."] : ["Una maniobra sólida.", "La tensión continúa en el tablero."];
+             actionComment = backups[Math.floor(Math.random() * backups.length)];
+          }
+      }
+
+      // Overrides
+      if (isScholarAverted) {
           toneUsed = 'funny';
-          comment = lang === 'en'
-            ? getRnd([
-                "Did they really think that cheap Scholar's Mate was going to work?",
-                "Nice try with the Scholar's Mate... denied.",
-                "Nope. Scholar's Mate attempt blocked in style.",
-                "Scholar's Mate? Not on this board.",
-                "They tried the shortcut. You closed the door.",
-                "That Pastor trick bounced off your defense.",
-                "Good defense. Their trap expired instantly."
-              ], 'scholar_stop')
-            : getRnd([
-                "¿Realmente se creía que iba a poder hacerte eso con el Pastor?",
-                "Buen intento de Jaque Pastor... pero aquí no cuela.",
-                "Jaque Pastor bloqueado con estilo.",
-                "¿Jaque Pastor? En este tablero no pasa.",
-                "Intentaron el atajo. Tú cerraste la puerta.",
-                "Ese truco del Pastor rebotó contra tu defensa.",
-                "Buena defensa: su trampa se apagó al instante."
-              ], 'scholar_stop');
+          comment = lang === 'en' ? getRnd(["Did someone really think that Scholar's Mate would work?", "A Scholar's Mate attempt... completely denied."], 'scholar_stop') : getRnd(["¿Alguien pensaba que ese Pastor iba a funcionar?", "Intento de Jaque Pastor... totalmente neutralizado."], 'scholar_stop');
       }
       else if (isPromotion) {
           toneUsed = 'funny';
-          comment = lang === 'en'
-            ? getRnd(["👑 EPIC! That pawn just got promoted!", "👑 Promotion time! New power on the board.", "👑 That pawn grew up fast. Big piece now!"], 'promo')
-            : getRnd(["👑 ¡ÉPICO! ¡Ese peón coronó!", "👑 ¡Coronación! Nueva pieza poderosa en tablero.", "👑 Ese peón creció rápido. ¡Ahora pega fuerte!"], 'promo');
+          comment = lang === 'en' ? getRnd(["👑 EPIC! A pawn reaches the end and promotes!"], 'promo') : getRnd(["👑 ¡ÉPICO! ¡Un peón ha logrado coronar!"], 'promo');
       }
-        else if (specialComment) {
+      else if (specialComment) {
           toneUsed = specialTone;
           comment = specialComment;
-        }
+      }
       else if (openingName) {
-          comment = lang === 'en'
-            ? getRnd([
-                `We are in the **${openingName}**. ${openingTechNote}`,
-                `Opening detected: **${openingName}**. ${openingTechNote}`,
-                `Nice! This looks like **${openingName}**. ${openingTechNote}`
-              ], 'opening_note')
-            : getRnd([
-                `Estamos en la **${openingName}**. ${openingTechNote}`,
-                `Apertura detectada: **${openingName}**. ${openingTechNote}`,
-                `¡Bien! Esto parece **${openingName}**. ${openingTechNote}`
-              ], 'opening_note');
+          comment = lang === 'en' ? getRnd([`The game enters the **${openingName}**. ${openingTechNote}`], 'opening_note') : getRnd([`Se plantea la **${openingName}**. ${openingTechNote}`], 'opening_note');
       }
       else if (historicalMotif) {
-          comment = lang === 'en'
-            ? getRnd([
-                `Historical echo: **${lastMove}** recalls **${historicalMotif.nameEn}**.`,
-                `This move has classic vibes: **${historicalMotif.nameEn}**.`,
-                `Nice motif! It reminds us of **${historicalMotif.nameEn}**.`
-              ], 'historical_note')
-            : getRnd([
-                `Eco histórico: **${lastMove}** recuerda a **${historicalMotif.nameEs}**.`,
-                `Esta jugada tiene sabor clásico: **${historicalMotif.nameEs}**.`,
-                `¡Buen motivo! Nos recuerda a **${historicalMotif.nameEs}**.`
-              ], 'historical_note');
+          comment = lang === 'en' ? getRnd([`Historical echo: **${lastMove}** recalls **${historicalMotif.nameEn}**.`], 'historical_note') : getRnd([`Eco histórico: **${lastMove}** recuerda a **${historicalMotif.nameEs}**.`], 'historical_note');
       }
       else if (isCheck && isEndgame) {
-          comment = lang === 'en'
-            ? getRnd(["Check! Keep calm and find the best finish.", "Check in the endgame! Precision matters now.", "Strong check! Look for the clean conversion."], 'end_check')
-            : getRnd(["¡Jaque! Mantén la calma y busca el mejor final.", "¡Jaque en el final! Ahora manda la precisión.", "¡Buen jaque! Busca convertir con limpieza."], 'end_check');
+          comment = lang === 'en' ? getRnd(["Check! Precision is absolutely required now."], 'end_check') : getRnd(["¡Jaque! Ahora la precisión es absolutamente vital."], 'end_check');
       }
-      // ✨ RAMA NUEVA: Si es una captura normal
-      else if (isCapture) {
-          const recentFunny = (commentaryLog || []).slice(0, 2).filter(e => e && e.tone === 'funny').length;
-          const isFunny = recentFunny < 2 && Math.random() < getCommentaryFunnyChance('capture');
-          toneUsed = isFunny ? 'funny' : 'serious';
-          const styleKey = isFunny ? 'funny' : 'serious';
-          const bucketName = `${styleKey}_capture_${pieceChar}`; 
-          
-          const pool = isFunny ? frasesCapturaBromas[lang][pieceChar] : frasesCapturaSerias[lang][pieceChar];
-          comment = pickFreshPhrase(pool, bucketName).replace('{sq}', targetSq);
-      }
-      // RAMA NORMAL: Solo desplazamientos
       else {
-          const recentFunny = (commentaryLog || []).slice(0, 2).filter(e => e && e.tone === 'funny').length;
-          const phaseFunnyChance = isOpening ? getCommentaryFunnyChance('opening') : (isEndgame ? getCommentaryFunnyChance('endgame') : getCommentaryFunnyChance('normal'));
-          const isFunny = recentFunny < 2 && Math.random() < phaseFunnyChance;
-          toneUsed = isFunny ? 'funny' : 'serious';
-          const styleKey = isFunny ? 'funny' : 'serious';
-          const bucketName = `${styleKey}_${pieceChar}`; 
-          
-          const pool = isFunny ? frasesBromas[lang][pieceChar] : frasesSerias[lang][pieceChar];
-          comment = pickFreshPhrase(pool, bucketName).replace('{sq}', targetSq);
-          
-          if (commentaryLog.length > 0 && comment === commentaryLog[0].html) {
-             const backups = lang === 'en' ? ["Nice move.", "Keeping control."] : ["Buen movimiento.", "Manteniendo el control."];
-             comment = backups[Math.floor(Math.random() * backups.length)];
-          }
+          comment = actionComment;
       }
+
+      // 📊 Append Engine Quality Evaluation at the end
+      if (isHugeBlunder) {
+          comment += lang === 'en' 
+            ? "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>Blunder!</strong> A piece is left completely unprotected or advantage is lost.</span>" 
+            : "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>¡Error grave!</strong> Una pieza queda sin defensa o se pierde la ventaja.</span>";
+      } else if (isBrilliant) {
+          comment += lang === 'en' 
+            ? "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>Brilliant move!</strong> A spectacular tactical vision.</span>" 
+            : "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>¡Jugada brillante!</strong> Una visión táctica espectacular.</span>";
+      }
+
+      // Renderizado
 
       // Renderizado
       const now = new Date();
