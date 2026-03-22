@@ -7,45 +7,35 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
-## v2.0.0 — La Edición del Profesor
-**12.262 líneas · 603 KB**
+## v2.0.0 — El Despertar del Rey Sabio
+**12.500+ líneas · 628 KB**
 
 Esta versión incluye una gran actualización arquitectónica del motor junto con una reconstrucción completa de la capa pedagógica. El motor ya no es solo un soporte; ahora es un núcleo táctico refinado.
 
 ### Nuevas funciones
-- **Teoría de aperturas en el Profesor** — Análisis y ¿Qué hago? ahora nombran la apertura en la que estás y muestran cuántas continuaciones teóricas quedan disponibles. Funciona incluso cuando la secuencia exacta de movimientos no está almacenada como clave del libro.
-- **Libro de aperturas ampliado** — 48 → 97 posiciones, 140 → 274 entradas. Nuevas líneas: Defensa Francesa (Winawer, Tarrasch, Avance, Cambio), Escandinava, Caro-Kann (Clásica, Karpov, Avance), Apertura Inglesa (Simétrica, Anglo-India, Cuatro Caballos), Nimzoindia (Rubinstein, Clásica, Sämisch), Grünfeld, India de Dama, Benoni, Reti con todas las respuestas negras, Sistema Londres ampliado.
-- **Librería de Entrenamiento** — 36 posiciones curadas en tres pestañas (Aperturas, Táctica, Finales) accesibles desde el menú principal. Cada posición tiene nombre y descripción de la tarea en ambos idiomas.
-- **100 retos aleatorios** — extraídos de partidas reales, con mediojuegos de la Siciliana, estructuras de la Española, defensas indias y finales.
-- **Botón Entrenamiento en el menú principal** — ya no está enterrado en Opciones.
-- **Selector de modo en el modal FEN** — permite elegir modo (2 Jugadores / vs IA) y dificultad antes de cargar cualquier posición, eliminando el laberinto de menús.
-- **Soporte completo para jugar como Negras** — Corregido un bug crítico del motor de estados que hacía que la IA dejara de responder si el humano elegía jugar con las piezas negras.
-- **Modal Acerca de** — versión, autor, licencia y reconocimiento de las IAs, completamente adaptado a cada tema visual.
+- **Teoría de aperturas en el Profesor** — Análisis y ¿Qué hago? ahora nombran la apertura en la que estás y muestran cuántas continuaciones teóricas quedan disponibles.
+- **Detección de Oportunidades Perdidas** — El Profesor ahora detecta si dejaste escapar una táctica de oro (como un mate o ganar material limpio) por centrarte demasiado en la última jugada del rival.
+- **Comentarista en 3ª Persona y Easter Eggs** — Narración deportiva en estricta tercera persona. Nombres de piezas con género gramatical correcto y huevos de pascua musicales.
+- **Libro de aperturas ampliado** — 48 → 97 posiciones, 140 → 274 entradas. Nuevas líneas: Defensa Francesa, Escandinava, Caro-Kann, Apertura Inglesa, Nimzoindia, Grünfeld, India de Dama, Benoni, Reti y Sistema Londres.
+- **Librería de Entrenamiento** — 36 posiciones curadas en tres pestañas más 100 retos aleatorios accesibles desde el menú principal.
+- **Soporte completo para jugar como Negras** — Corregido un bug crítico del motor de estados y garantizada la respuesta de la IA en cualquier bando.
 
 ### Mejoras del Motor
-- **Antirepetición 2.0** — Lógica real de triple repetición FIDE en la raíz de la búsqueda. Las posiciones repetidas se evalúan como 0 (Tablas), permitiendo al motor forzar el empate estratégicamente si va perdiendo o evitarlo si va ganando.
-- **Corrección arquitectónica de Hash Zobrist** — Solucionado un desajuste en el filtro del hilo principal que ignoraba derechos de enroque y peón al paso, evitando bucles infinitos en partidas de alto nivel.
-- **Corrección en Ventanas de Aspiración** — Arreglado un error de inversión de límites para las piezas negras y mejorada la estabilidad de la ventana a grandes profundidades.
-- **Refinamiento del Libro de Aperturas** — Pesos ajustados para evitar desarrollos de caballos al borde (Ca4) e intercambios prematuros (Cd4xc6) en la Apertura Bird y el Sistema Londres.
-- **Optimizaciones de Rendimiento** — Refactorización de rutas críticas en el Web Worker para mayor estabilidad durante el cálculo intensivo.
+- **Mejoras de Fuerza (P1-P4)** — Puntuación de peones pasados (base 25, multiplicador final ×4.5), centralización temprana del Rey (eg > 0.4), NMP refinado (R=3 a profundidad 8) y tasa de exploración (20%).
+- **Fix del Efecto Horizonte** — La búsqueda de quietud ahora evalúa jaques hasta profundidad 2, evitando la ceguera táctica en intercambios profundos.
+- **Prevención de Ataques Suicidas** — El motor evita sacrificios dudosos si sus piezas menores aún no están desarrolladas.
+- **Antirepetición 2.0** — Lógica real de triple repetición FIDE (evaluación 0.0). Combinado con Hash Zobrist corregido.
+- **Corrección en Ventanas de Aspiración** — Arreglado el error de límites para Negras y mejorada la estabilidad.
+- **Ordenación de Jugadas** — Jugada TT, heurística de contramovimiento y preordenación raíz MVV-LVA.
 
 ### Bugs corregidos
-- **Mate en 1 muestra exactamente una jugada** — la garantía pedagógica forzaba incorrectamente una segunda opción irrelevante cuando la partida ya estaba ganada. Añadido sort mate-primero; el filtro trunca a uno al detectar mate.
-- **Nivel Serio era imposible de seleccionar** — `parseInt("0") || 1` devuelve `1` porque `0` es falsy en JavaScript. Corregido con comprobación explícita de `isNaN`.
-- **Etiquetas del slider ahora visibles** — Serio / Mixto / Divertido aparecen bajo ambos controles deslizantes.
-- **Confeti de victoria solo cuando gana el humano** — en modo IA el confeti se lanzaba en ambos resultados.
-- **`simulateMove` ahora maneja el enroque** — movía al Rey pero dejaba la Torre en su casilla original. El Profesor evaluaba mal la seguridad del rey y no detectaba jaquematos después de cualquier enroque.
-- **Toque en tablero durante revisión de historial** — tocar el tablero mientras se revisa el pasado ahora vuelve al presente de forma limpia antes de procesar el clic.
-- **Movimiento fantasma de la IA** — si se reiniciaba la partida mientras la IA calculaba, el movimiento resultante caía sobre el tablero nuevo corrompiéndolo. Solucionado con un snapshot `startPly` en `triggerAI`.
-- **Deshacer durante revisión del historial** — `undoMove` ahora llama a `exitHistoryView()` primero, evitando que el botón cohete 🚀 quede visible indefinidamente.
-- **Temporizadores del Ojo Halcón y del Profesor** — clics rápidos lanzaban `setTimeout` solapados; el temporizador anterior expiraba y borraba las flechas del clic más reciente. Solucionado con guardas `clearTimeout`.
-- **Fuga de estado al cargar FEN** — cargar un FEN en mitad de una partida ahora limpia correctamente `positionHashes`, `halfMoveClock`, `moveNumber` y las tres variables de snapshot. Antes la regla de los 50 movimientos o la triple repetición podían dispararse en mitad de un puzzle usando datos de la partida anterior.
-- **`snapshotBeforeRules` era código huérfano fuera de `undoMove`** — estaba después de la llave de cierre de la función por accidente, sin ejecutarse nunca al deshacer.
-- **Garantía de Intercambio Rentable** — el Profesor podía sugerir jugadas que salvaban una pieza mientras abandonaban otra ya colgada. Añadida inyección de capturas gratuitas/rentables en la lista de jugadas, y una Penalización por Pieza Abandonada aplicada de forma consistente en las tres rutas del Profesor (renderProfessorOptions, requestBestMove, continueProfessorSearch).
-- **Bug de la "Dama Esnob"** — la lógica de inyección de capturas rechazaba cualquier captura donde la pieza objetivo valía menos que la atacante antes de comprobar si era gratis. Una Dama no podía capturar un Caballo libre porque `30 < 90` disparaba un return temprano antes de evaluar `safeAfter`.
-- **203 líneas de código muerto eliminadas** — un bloque de fallback enorme dentro de `continueProfessorSearch` era matemáticamente inalcanzable porque `engineSearch()` devuelve una Promise que captura sus propios errores con `.catch()`. El `return` tras configurar la Promise hacía que todo lo siguiente fuera código zombi. Función reducida de 230 a 28 líneas.
-- **`updateVsAiButton` tenía el español hardcodeado** — la función escribía `'🤖 vs IA'` directamente en lugar de llamar a `t('btnVsAi')`, así que el botón nunca se traducía al inglés.
-- **Barra "Pensando" movida arriba** — era una píldora flotante en la parte inferior que causaba desplazamientos de layout en móvil. Ahora es una banda fija en la parte superior de la pantalla con animación de progreso continua.
+- **Race Condition IA (Movimiento Fantasma)** — Corregido el bug de la "IA loca" al reiniciar durante una búsqueda. Añadidos tokens de generación y abortos de corrutinas.
+- **Manejo de Jaquemate** — Corregido "¿Fue buena?" para identificar correctamente mates/ahogados y estados terminales. El mate en 1 ahora muestra solo una jugada.
+- **Nivel Serio era imposible de seleccionar** — Corregido con comprobación `isNaN`.
+- **Fix de enroque en `simulateMove`** — Ahora mueve correctamente tanto el rey como la torre.
+- **Fuga de estado al cargar FEN** — Ahora resetea correctamente todos los relojes y hashes de repetición.
+- **Garantía de Intercambio Rentable** — Evita que el Profesor sugiera jugadas que dejen piezas valiosas colgadas.
+- **Barra "Pensando" arriba** — Corregidos los saltos de layout en móvil.
 
 ### Interno
 - Flag `fenPositionLoaded` — distingue posiciones cargadas desde FEN de la jugada-0 de una partida normal, evitando que se muestren mensajes de bienvenida, hints de teoría de apertura y maxShow=20 en posiciones complejas.

@@ -7,45 +7,35 @@ Format: version · size · what changed.
 
 ---
 
-## v2.0.0 — The Professor's Edition
-**12,262 lines · 603 KB**
+## v2.0.0 — The Awakening of the Wise King
+**12,500+ lines · 628 KB**
 
 This release features a major architectural engine update alongside a complete rebuild of the pedagogical layer. The engine is no longer "just a wrapper"—it is now a refined tactical core.
 
 ### New features
 - **Opening theory in the Professor** — Analysis and What should I do? now name the opening you are in and show how many theoretical continuations remain available. Works even when the exact move sequence is not stored as a book key.
-- **Opening book expanded** — 48 → 97 positions, 140 → 274 entries. New coverage: French Defence (Winawer, Tarrasch, Advance, Exchange), Scandinavian, Caro-Kann (Classical, Karpov, Advance), English Opening (Symmetrical, Anglo-Indian, Four Knights), Nimzo-Indian (Rubinstein, Classical, Sämisch), Grünfeld, Queen's Indian, Benoni, Reti with all black responses, extended London System.
-- **Training Library** — 36 curated positions in three tabs (Openings, Tactics, Endgames) accessible from the main menu. Each position has a name and a one-line task description in both languages.
-- **100 random challenge FENs** — drawn from real game databases spanning Sicilian middlegames, Ruy López structures, Indian defences, and endgames.
-- **Training button on main menu** — no longer buried in Options.
-- **FEN loader mode selector** — the Training modal now lets you choose mode (2 Players / vs AI) and difficulty before loading any position, avoiding the multi-step menu dance.
-- **Full Support for Playing as Black** — Fixed a critical state-machine bug where the AI would stop responding if the human player chose the Black pieces.
-- **About modal** — version, author, licence, and AI attribution, fully theme-aware.
+- **Missed Opportunity Detection** — The Coach now detects if you missed a golden tactical opportunity (like a free piece or a forced mate) because you were too focused on the opponent's last move.
+- **3rd Person Commentator & Easter Eggs** — The announcer now narrates games strictly in the third person. Includes explicit piece naming with proper grammar and new musical/humorous easter eggs.
+- **Opening book expanded** — 48 → 97 positions, 140 → 274 entries. New coverage: French Defence, Scandinavian, Caro-Kann, English Opening, Nimzo-Indian, Grünfeld, Queen's Indian, Benoni, Reti, and extended London System.
+- **Training Library** — 36 curated positions in three tabs (Openings, Tactics, Endgames) plus 100 random challenge FENs accessible from the main menu.
+- **Full Support for Playing as Black** — Fixed a critical state-machine bug and ensured the AI responds correctly regardless of side.
 
 ### Engine Improvements
-- **Anti-Repetition 2.0** — Proper FIDE threefold repetition logic in the root search. Positions are evaluated as 0 (Draw), allowing the engine to strategically force draws when behind or avoid them when ahead.
-- **Architectural Zobrist fix** — Corrected a desync where the main-thread anti-repetition filter used a simplified hash that ignored castling rights and en passant, leading to infinite loops in some scenarios.
-- **Aspiration Window Correctness** — Fixed inverted bounds calculation for Black moves and improved window stability at high depths.
-- **Opening Book Refinement** — Improved selection logic to avoid "edge-of-board" knights (Na4) and premature exchanges (Nd4xc6) in the Bird's Opening and London System.
-- **Performance Optimizations** — Critical search paths in the Web Worker have been refactored for better stability.
+- **Strength Improvements (P1-P4)** — Passed pawn scoring (base 25, endgame multiplier ×4.5), earlier King centralization (eg > 0.4), refined NMP (R=3 at depth 8), and opening exploration rate (20%).
+- **Horizon Effect Fix** — Quiescence search now evaluates checks up to depth 2, preventing tactical blindness in deep exchanges.
+- **Reckless Attack Prevention** — Engine avoids unsound sacrifices if its own minor pieces aren't developed.
+- **Anti-Repetition 2.0** — Proper FIDE threefold repetition logic (0.0 evaluation). Combined with corrected Zobrist Hashing (tracking castling/EP).
+- **Aspiration Window Correctness** — Fixed inverted bounds calculation for Black moves and improved window stability.
+- **Move Ordering** — TT move ordering, counter-move heuristic, and root MVV-LVA pre-sorting.
 
 ### Bugs fixed
-- **Checkmate in 1 now shows exactly one move** — the pedagogical guarantee was incorrectly forcing a second irrelevant option even when the game was already won. Mate-first sort added; filter truncates to one on mate.
-- **Commentary level 0 (Serious) was unselectable** — `parseInt("0") || 1` evaluates to `1` because `0` is falsy in JavaScript. Fixed with explicit `isNaN` check.
-- **Slider labels now visible** — Serious / Mixed / Playful labels appear under both commentary sliders.
-- **Victory confetti fires only when the human wins** — in AI mode confetti previously fired on both outcomes.
-- **`simulateMove` now handles castling** — it moved the King but left the Rook on its original square. The Professor was evaluating king safety and detecting mates incorrectly after any castling move.
-- **History time machine + tap on board** — tapping the board while reviewing history now snaps back to the present gracefully before processing the click.
-- **AI zombie move** — if the game was restarted while the AI was thinking, its move would land on the new board. Fixed with a `startPly` snapshot guard in `triggerAI`.
-- **Undo while in history view** — `undoMove` now calls `exitHistoryView()` first, preventing the rocket 🚀 button from staying stuck on screen.
-- **Hawk Eye and Professor highlight timers** — rapid double-clicks launched overlapping `setTimeout` calls; the earlier timer would expire and wipe the arrows requested by the later click. Fixed with `clearTimeout` guards.
-- **FEN load state leak** — loading a FEN mid-game now correctly clears `positionHashes`, `halfMoveClock`, `moveNumber`, and all three snapshot variables. Previously the 50-move rule and threefold repetition could fire mid-puzzle using data from the previous game.
-- **`snapshotBeforeRules` was orphaned outside `undoMove`** — placed after the closing brace by accident, meaning it never ran on undo.
-- **Profitable Trade Guarantee** — the Professor could suggest moves that saved one piece while abandoning a different piece that was already hanging. Added injection of free/profitable captures into the move list, and an Abandoned Piece Penalty applied consistently across all three Professor code paths (renderProfessorOptions, requestBestMove, continueProfessorSearch).
-- **"Queen Snob" bug** — the capture injection logic rejected any capture where the target was worth less than the attacking piece before checking if it was free. A Queen could not capture a free Knight because `30 < 90` triggered an early return before `safeAfter` was evaluated.
-- **203 lines of dead code removed** — a large fallback block inside `continueProfessorSearch` was unreachable because `engineSearch()` returns a Promise whose errors are caught by `.catch()`. The `return` after setting up the Promise made everything below it dead. Function reduced from 230 to 28 lines.
-- **`updateVsAiButton` hardcoded Spanish** — the function wrote `'🤖 vs IA'` directly instead of calling `t('btnVsAi')`, so the main menu button never translated to English.
-- **Thinking bar moved to top** — was a floating pill at the bottom that caused layout shifts on mobile. Now a fixed banner at the top of the viewport with a running progress animation.
+- **AI Race Condition (Zombie Move)** — Fixed the "crazy AI" bug where restarting during a search corrupted the next game. Added generation tokens and coroutine aborts.
+- **Checkmate Handling** — Fixed "Fue buena?" to correctly identify checkmate/stalemate and terminal states. Mate-in-1 now shows exactly one move.
+- **Commentary level 0 (Serious) was unselectable** — Fixed with explicit `isNaN` check.
+- **`simulateMove` castling fix** — Now correctly moves both king and rook.
+- **FEN load state leak** — Loading a FEN now correctly resets all clocks and repetition hashes.
+- **Profitable Trade Guarantee** — Prevented the Professor from suggesting moves that hang valuable pieces.
+- **Thinking bar moved to top** — Fixed mobile layout shifts.
 
 ### Internal
 - `fenPositionLoaded` flag — distinguishes FEN-loaded positions from move-0 of a normal game, preventing welcome messages, opening theory hints, and maxShow=20 from firing on complex positions.
