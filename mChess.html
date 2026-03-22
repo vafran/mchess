@@ -7147,14 +7147,20 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // ── Rook on open / semi-open file ─────────────────────────────
             if(u==='R'){
               const myPawns=isW?wP:bP, epPawns=isW?bP:wP;
-              if(myPawns[c]===0 && epPawns[c]===0) bonus+=25; // fully open
-              else if(myPawns[c]===0) bonus+=12;              // semi-open
+              if(myPawns[c]===0 && epPawns[c]===0) bonus+=40; // fully open (was 25)
+              else if(myPawns[c]===0) bonus+=20;              // semi-open (was 12)
+
+              // Anti-Shuffle: rook tension near enemy king
+              let _eKing=null;
+              for(let _er=0;_er<8&&!_eKing;_er++) for(let _ec=0;_ec<8;_ec++)
+                if(b[_er][_ec]===(isW?'k':'K')){_eKing=[_er,_ec];break;}
+              if(_eKing){const _fd=Math.abs(c-_eKing[1]);if(_fd<=1){bonus+=35;if(epPawns[c]===0)bonus+=25;}else if(_fd<=2)bonus+=15;}
             }
 
             // ── Rook on 7th rank (or 2nd for black) ──────────────────────
             if(u==='R'){
               const rank7=isW?1:6;
-              if(r===rank7) bonus+=20;
+              if(r===rank7) bonus+=35; // was 20
             }
 
             // ── Knight mobility (count reachable squares) ─────────────────
@@ -7168,7 +7174,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   if(!t||t===' '||clr(t)!==(isW?'w':'b')) mob++;
                 }
               }
-              bonus+=(mob-4)*4; // penalty below avg mobility, reward above
+              // ✨ Anti-Shuffle: mobility ×2.5 (was ×4 per square, now ×10).
+              // A knight with 8 reachable squares (+40cp) vs 2 squares (-20cp) = 60cp diff.
+              // Previously (+16 vs -8) = 24cp — invisible against a 300cp piece value.
+              bonus+=(mob-4)*10;
               
               // Pánico al Caballo Pulpo (Outpost Constrained)
               let isOutpost = false;
@@ -7208,7 +7217,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   else{if(clr(t)!==(isW?'w':'b'))mob++;break;}
                 }
               }
-              bonus+=(mob-6)*3;
+              // ✨ Anti-Shuffle: bishop mobility ×2.5 (was ×3 per square, now ×8).
+              // Open-diagonal bishop (+56cp) vs blocked bishop (-48cp) = 104cp difference.
+              // Previously (+21 vs -18) = 39cp — barely visible vs 300cp piece value.
+              bonus+=(mob-6)*8;
             }
             // Anti-Baile de Apertura now evaluated globally via wUndevelopedMinors
 
@@ -7368,12 +7380,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
           // We apply the scale to the *positional delta* (s minus pure material) approx via:
           // if White is behind (s < -200), white’s positional bonuses are worth more.
           // Simple approximation: scale the final score toward 0 slightly when behind.
-          if (Math.abs(s) >= 200) {
-            // The side that’s behind gets a 20% positional bonus on their total.
-            // This means losing positions with active pieces look better, encouraging
-            // the engine to keep fighting rather than drifting passively.
-            const behind = s < 0 ? 'w' : 'b'; // white behind means s<0
-            // Boost: reduce the magnitude by 15% when behind (positions look less losing)
+          // Two-tier initiative scaling: >=400cp x0.75, >=200cp x0.87
+          if (Math.abs(s) >= 400) {
+            s = Math.round(s * 0.75);
+          } else if (Math.abs(s) >= 200) {
             s = Math.round(s * 0.87);
           }
 
