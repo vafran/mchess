@@ -6456,18 +6456,27 @@ window.askWiseKing = async function(fen, historyArr = []) {
           else if (type === 'R') pst = ROOK_TABLE[ridx][c];
           else if (type === 'Q') pst = QUEEN_TABLE[ridx][c];
           else if (type === 'K') { 
-            // FIX: El Rey solo sale al centro cuando realmente estamos en un final (eg > 0.6)
-            // Si no, se queda protegido. Evita la parálisis por transición gradual.
+            // FIX: The King only comes out to the center when we are really in an endgame (eg > 0.6)
+            // Otherwise, he stays protected. Avoids paralysis due to gradual transition.
             pst = eg > 0.6 ? KING_ENDGAME_TABLE[ridx][c] : KING_TABLE[ridx][c]; 
           }
           let bonus = 0;
 
-          if (type === 'Q' && eg < 0.3) {
+          if (type === 'Q' && eg < 0.5) {
             const homeR = isW ? 7 : 0;
             if (r !== homeR || c !== 3) {
               const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
-              bonus -= undeveloped * 25; // FIX
+              bonus -= undeveloped * 70; 
+              if ((isW && r <= 4) || (!isW && r >= 3)) {
+                 bonus -= 150; 
+              }
             }
+          }
+
+          if (type === 'Q' || type === 'R') {
+              if (isSquareAttacked(r, c, isW ? 'b' : 'w', brd)) {
+                  bonus -= (type === 'Q' ? 400 : 180);
+              }
           }
 
           if (type === 'P') {
@@ -6499,8 +6508,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
               }
               if (supported && !enemyCanAttack) isOutpost = true;
             }
-            if (isOutpost) bonus += 140; // FIX
-            else if (isAdvanced) bonus -= 40; // FIX
+            if (isOutpost) bonus += 140;
+            else if (isAdvanced) bonus -= 40; 
           }
 
           if (type === 'K' && eg < 0.5) {
@@ -6555,7 +6564,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   if (enemyMajor) openFilesThreat += 1;
                 }
               }
-              bonus -= openFilesThreat * 35; // FIX
+              bonus -= openFilesThreat * 35;
             }
           }
           score += sign * (val + pst + bonus);
@@ -6564,11 +6573,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
       // ✨ CHECKMATE HEURISTIC
       if (isEndgame && wKing && bKing) {
-         if (score > 35) { // Blancas ganan
+         if (score > 35) { // White wins
              const edge = Math.max(3 - bKing[0], bKing[0] - 4) + Math.max(3 - bKing[1], bKing[1] - 4);
              const dist = Math.abs(wKing[0] - bKing[0]) + Math.abs(wKing[1] - bKing[1]);
              score += (edge * 1.5) + ((14 - dist) * 0.8);
-         } else if (score < -35) { // Negras ganan
+         } else if (score < -35) { // Black wins
              const edge = Math.max(3 - wKing[0], wKing[0] - 4) + Math.max(3 - wKing[1], wKing[1] - 4);
              const dist = Math.abs(bKing[0] - wKing[0]) + Math.abs(bKing[1] - wKing[1]);
              score -= (edge * 1.5) + ((14 - dist) * 0.8);
@@ -7147,14 +7156,27 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // ── Passed pawn bonus ─────────────────────────────────────────
             let bonus=0;
 
-            // 👸 FIX 1: FRENO A LA DAMA
-            if(u==='Q' && eg < 0.3) { 
+            // 👸 FIX 1: STOP THE QUEEN EARLY
+            if(u==='Q' && eg < 0.5) { 
               const homeR = isW ? 7 : 0;
               const homeC = 3;
               if(r !== homeR || c !== homeC) {
                 const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
-                bonus -= undeveloped * 25;
+                // Brutal penalty for taking her out before the knights and bishops
+                bonus -= undeveloped * 70; 
+                // Forbidden to cross the midfield in the opening!
+                if ((isW && r <= 4) || (!isW && r >= 3)) {
+                   bonus -= 150; 
+                }
               }
+            }
+
+            // 🚨 SIXTH SENSE: Panic about giving away heavy pieces (Anti-Blunder)
+            // We give the engine static intuition to flee danger if it runs out of time
+            if (u === 'Q' || u === 'R') {
+                if (isAtk(state, r, c, isW ? 'b' : 'w')) {
+                    bonus -= (u === 'Q' ? 400 : 180); // Strong penalty if the Queen or Rook is under fire
+                }
             }
 
             if(u==='P'){
