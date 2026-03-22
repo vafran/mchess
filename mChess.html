@@ -2931,10 +2931,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
     
     // LA NUEVA ESCALERA DE DIFICULTAD
     const DIFF_SETTINGS = {
-      easy:        { depth: 2,  mistakes: 0.40, timeLimit: 1000  },
-      medium:      { depth: 4,  mistakes: 0.20, timeLimit: 3000  },
-      hard:        { depth: 6,  mistakes: 0.05, timeLimit: 8000  },
-      grandmaster: { depth: 10, mistakes: 0,    timeLimit: 35000 },
+      easy:        { depth: 2,  mistakes: 0.50, timeLimit: 800   },
+      medium:      { depth: 4,  mistakes: 0.20, timeLimit: 2000  },
+      hard:        { depth: 7,  mistakes: 0.05, timeLimit: 5000  },
+      grandmaster: { depth: 99, mistakes: 0,    timeLimit: 35000 },
     };
 
     const PIECE_VALUES = { P: 100, N: 300, B: 300, R: 500, Q: 900, K: 20000 };
