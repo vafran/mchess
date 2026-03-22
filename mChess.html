@@ -7066,6 +7066,17 @@ window.askWiseKing = async function(fen, historyArr = []) {
           ph=Math.min(ph,24);
           const eg=1-ph/24;
 
+          // Per-piece initiative: side down >200cp positional bonuses scale x1.25
+          let wMat=0,bMat=0;
+          for(let _r=0;_r<8;_r++)for(let _c=0;_c<8;_c++){
+            const _p=b[_r][_c];if(!_p||_p===' ')continue;
+            const _u=_p.toUpperCase();if(_u==='P'||_u==='K')continue;
+            if(_p===_u)wMat+=PV[_u]||0;else bMat+=PV[_u]||0;
+          }
+          const matDiff=wMat-bMat;
+          const wIni=matDiff<-200?1.25:1.0;
+          const bIni=matDiff>200?1.25:1.0;
+
           let wUndevelopedMinors = 0;
           if (b[7][1] === 'N') wUndevelopedMinors++;
           if (b[7][2] === 'B') wUndevelopedMinors++;
@@ -7368,23 +7379,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
               }
             }
 
-            s+=sign*(val+pst+bonus);
-          }
-
-          // ✨ Improvement 2: Initiative Scaling.
-          // When one side is materially behind (>= 200 cp), scale their positional
-          // contribution UP by 25% to reward active compensation (attacks, piece activity)
-          // instead of going passive. This prevents the engine from shuffling pieces
-          // after a material sacrifice while it should be pressing the attack.
-          // NOTE: 's' is already in White's perspective (positive = White winning).
-          // We apply the scale to the *positional delta* (s minus pure material) approx via:
-          // if White is behind (s < -200), white’s positional bonuses are worth more.
-          // Simple approximation: scale the final score toward 0 slightly when behind.
-          // Two-tier initiative scaling: >=400cp x0.75, >=200cp x0.87
-          if (Math.abs(s) >= 400) {
-            s = Math.round(s * 0.75);
-          } else if (Math.abs(s) >= 200) {
-            s = Math.round(s * 0.87);
+            const _ini=isW?wIni:bIni; s+=sign*(val+pst+(bonus*_ini));
           }
 
           return s;
