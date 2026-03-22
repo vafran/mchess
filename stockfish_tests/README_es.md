@@ -23,3 +23,25 @@ Notas
 - `engine_patches.js` contiene sugerencias para editar `mChess.html` manualmente.
 
 Ajusta `CONFIG` dentro de `arena_tournament.js` para cambiar número de partidas, profundidad o límites de tiempo.
+
+Instalación / Dependencias
+
+- Este conjunto de scripts usa `puppeteer` y `chess.js`. Desde la raíz del proyecto ejecuta:
+
+```bash
+npm init -y
+npm install puppeteer chess.js
+```
+
+- Ejemplo (PowerShell) para establecer `STOCKFISH_PATH` temporalmente y ejecutar:
+
+```powershell
+# temporal para la sesión actual
+$env:STOCKFISH_PATH = 'C:\ruta\completa\a\stockfish.exe'
+node stockfish_tests/arena_tournament.js
+
+# o establecerlo permanentemente (nueva terminal requerida)
+setx STOCKFISH_PATH 'C:\ruta\completa\a\stockfish.exe'
+```
+
+- Alternativa: coloca `stockfish.exe` junto a `mChess.html` en la raíz del proyecto y ejecuta los scripts desde la raíz para usar la ruta por defecto.

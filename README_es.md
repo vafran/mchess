@@ -127,6 +127,7 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 - **🧐 Serio** — técnico y preciso
 - **⚖️ Mixto** — equilibrado (por defecto)
 - **🎉 Divertido** — humorístico y 
+ - **🎉 Divertido** — humorístico y dramático
 
 <img src="screenshots/ES/comment_scholarsmate_win.png" alt="Comentarista Jaque Pastor" width="650" />
 <img src="screenshots/ES/comment_historic.png" alt="Comentario de eco histórico" width="650" />
@@ -157,7 +158,7 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | Captura al paso | ✅ |
 | Enroque — ambos lados, derechos, bloqueado en jaque | ✅ |
 | Coronación — auto-dama o elección del jugador | ✅ |
-| Material insuficiente (RR, RAR, RCR, RARA mismo color) | ✅ |
+| Material insuficiente (KK, KBK, KNK, KBKB mismo color) | ✅ |
 | Triple repetición con modal de reclamación | ✅ |
 | Regla de los 50 movimientos | ✅ |
 | Deshacer restaura el estado completo | ✅ |
@@ -307,6 +308,14 @@ Requiere ES2017+. Probado en Chrome 90+, Firefox 88+, Safari 14+.
 ## Ejemplos de colaboración con la IA
 
 [Colaboración IA](docs/AI_COLLABORATION_es.md)
+
+## Cómo contribuir
+
+- **Bugs y features:** Abre un **Issue** describiendo el error o la petición de nueva funcionalidad (pasos para reproducir, comportamiento esperado vs real, capturas si aplican). Los Issues son el lugar preferido para discutir y ordenar tareas.
+- **Cambios de código:** Haz fork del repositorio, crea una rama `fix/descripcion-corta` o `feature/descripcion-corta` y abre un **Pull Request**. PRs pequeños y centrados facilitan la revisión.
+- **Pruebas y scripts:** Si tu cambio afecta a los scripts en `stockfish_tests`, incluye los pasos de configuración y logs relevantes en la descripción del PR. Consulta `stockfish_tests/README_es.md` para la configuración de pruebas.
+- **Revisión y comunicación:** Usa Issues para solicitar revisiones o discutir diseño; los mantenedores triarán y etiquetarán las contribuciones.
+
 
 ---
 

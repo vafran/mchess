@@ -310,6 +310,13 @@ ES2017+ required. Tested on Chrome 90+, Firefox 88+, Safari 14+.
 
 [AI Collaboration](docs/AI_COLLABORATION.md)
 
+## How to Contribute
+
+- **Bugs & features:** Please open an **Issue** describing the bug or feature request with steps to reproduce, expected vs actual behaviour, and screenshots when helpful. Issues are the preferred place for discussion and triage.
+- **Code changes:** Fork the repo, create a branch named `fix/your-brief-desc` or `feature/your-brief-desc`, and open a **Pull Request**. Small, focused PRs are easier to review.
+- **Tests & scripts:** If you change or run the `stockfish_tests` scripts, list any setup steps in the PR and include relevant logs. See `stockfish_tests/README.md` for test setup.
+- **Review & communication:** Use Issues to request reviews or design feedback; maintainers will label and triage incoming contributions.
+
 
 ## Stockfish Tests
 
