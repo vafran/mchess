@@ -2012,6 +2012,7 @@ limitations under the License.
     <div class="thinking-bar" id="thinkingBar">
       <div class="thinking-spinner"></div>
       <span id="thinkingText">🤖 Pensando<span class="thinking-dots"></span></span>
+      <span id="thinkingCountdown" style="margin-left:8px; font-weight:700; color:var(--primary); font-family:monospace; font-size:1rem; min-width:30px; display:inline-block; text-align:right;"></span>
     </div>
     <select id="topBarLangSelect" class="lang-select" onchange="setLanguage(this.value)" style="flex-shrink:0; padding:3px 4px; font-size:0.8rem;">
       <option value="es">ES</option>
@@ -2934,7 +2935,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       easy:        { depth: 2,  mistakes: 0.50, timeLimit: 800   },
       medium:      { depth: 4,  mistakes: 0.20, timeLimit: 2000  },
       hard:        { depth: 7,  mistakes: 0.05, timeLimit: 5000  },
-      grandmaster: { depth: 99, mistakes: 0,    timeLimit: 35000 },
+      grandmaster: { depth: 10, mistakes: 0,    timeLimit: 35000 },
     };
 
     const PIECE_VALUES = { P: 100, N: 300, B: 300, R: 500, Q: 900, K: 20000 };
@@ -8033,9 +8034,22 @@ window.askWiseKing = async function(fen, historyArr = []) {
       document.getElementById('thinkingBar').classList.add('show');
       const turnBarA = document.getElementById('turnBar');
       if (turnBarA) turnBarA.style.display = 'none';
+      
+      // ✨ Countdown Timer logic
+      let secondsLeft = Math.ceil(aiTimeLimit / 1000);
+      const countdownEl = document.getElementById('thinkingCountdown');
+      if (countdownEl) countdownEl.innerText = secondsLeft + "s";
+      
+      const countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (countdownEl && secondsLeft >= 0) countdownEl.innerText = secondsLeft + "s";
+        if (secondsLeft <= 0) clearInterval(countdownInterval);
+      }, 1000);
 
       const thinkTime = Math.floor(Math.random() * 351) + 250;
       await new Promise(r => setTimeout(r, thinkTime));
+
+      console.log(`🤖 IA Iniciando búsqueda: Nivel=${currentDifficulty}, Profundidad=${aiDepth}, Tiempo=${aiTimeLimit}ms`);
 
       try {
         let move = null;
@@ -8068,10 +8082,16 @@ window.askWiseKing = async function(fen, historyArr = []) {
         }
 
         // 2. Motor principal (Root Move Locking: Calentando la memoria)
+        // 2. Motor principal
         if (forcedBookMove) {
-          // La IA no elige la jugada, pero usa su tiempo de CPU para estudiar las consecuencias futuras
-          move = await getBestAIMoveAsync(aiColor, aiDepth, aiMistakeChance, aiTimeLimit, forcedBookMove);
+          // ¡Ya tenemos la jugada de libro! Asignarla directamente sin quemar el reloj.
+          move = forcedBookMove;          
+          // (Opcional) Le damos un pequeño "fake delay" de 1 o 2 segundos para 
+          // simular que el Rey Sabio está recolocándose en la silla, para que no sea instantáneo.
+          const bookDelay = currentDifficulty === 'grandmaster' ? 1500 : 500;
+          await new Promise(r => setTimeout(r, bookDelay));
         } else if (!move) {
+          // Si NO hay jugada de libro, entonces SÍ quema el reloj calculando
           move = await getBestAIMoveAsync(aiColor, aiDepth, aiMistakeChance, aiTimeLimit);
           if (move) {
             const legal = getLegalMovesForColorInPlace(aiColor);
@@ -8149,6 +8169,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
       } finally {
         // Asegurar limpieza en caso de error
         document.getElementById('thinkingBar').classList.remove('show');
+        const countdownEl = document.getElementById('thinkingCountdown');
+        if (countdownEl) countdownEl.innerText = "";
+        // Clean up countdown if triggerAI finishes early
+        if (typeof countdownInterval !== 'undefined') clearInterval(countdownInterval);
+        
         const turnBarB = document.getElementById('turnBar');
         if (turnBarB) turnBarB.style.display = '';
         aiThinking = false;
