@@ -11327,6 +11327,16 @@ window.askWiseKing = async function(fen, historyArr = []) {
       aiMistakeChance = s.mistakes;
       aiTimeLimit = s.timeLimit;
 
+      // Force OFF for training mode on Wise King level
+      if (level === 'grandmaster') {
+          trainingModeEnabled = false;
+          try { 
+              localStorage.setItem(TRAINING_MODE_STORAGE_KEY, '0'); 
+          } catch (_) { }
+          
+          const btn = document.getElementById('trainingToggleBtn');
+          if (btn) btn.textContent = t('trainingOff');
+      }
       document.querySelectorAll('[id^="optDiff"], [id^="igDiff"]').forEach(b => b.classList.remove('active'));
       let optBtn = document.getElementById('optDiff' + level.charAt(0).toUpperCase() + level.slice(1));
       let igBtn = document.getElementById('igDiff' + level.charAt(0).toUpperCase() + level.slice(1));
