@@ -8568,19 +8568,26 @@ window.askWiseKing = async function(fen, historyArr = []) {
         // Simulamos la respuesta
         const afterReply = simulateMove(after, enemyMove);
         let ev = evaluateBoard(afterReply, 'hard');
-        
-        // ✨ FIX: EFECTO HORIZONTE (El parche para que no odie los intercambios justos)
-        const targetPiece = after[enemyMove.tr][enemyMove.tc];
-        if (targetPiece && targetPiece !== ' ') {
-           // Si el rival captura nuestra pieza, revisamos si su pieza queda a salvo
-           const safety = evaluateSquareSafety(enemyMove.tr, enemyMove.tc, enemyColor, afterReply, color);
-           if (!safety.isSafe) {
-               // If not safe (will be recaptured), return the points 
-               // to the Professor so it doesn't evaluate the exchange as "High Risk"
-               const enemyPieceChar = afterReply[enemyMove.tr][enemyMove.tc];
-               const enemyPieceVal = PIECE_VALUES[enemyPieceChar.toUpperCase()] || 0;
-               ev += color === 'w' ? enemyPieceVal : -enemyPieceVal;
-           }
+
+        // 🔴 CHECKMATE DETECTION: if this reply delivers checkmate to us, assign catastrophic eval
+        const ourKingInCheck = inCheck(color, afterReply);
+        if (ourKingInCheck && getAllMovesForColor(color, afterReply).length === 0) {
+          // Checkmate — worst possible outcome for the side that just moved
+          ev = color === 'w' ? -99999 : 99999;
+        } else {
+          // ✨ FIX: EFECTO HORIZONTE (El parche para que no odie los intercambios justos)
+          const targetPiece = after[enemyMove.tr][enemyMove.tc];
+          if (targetPiece && targetPiece !== ' ') {
+             // Si el rival captura nuestra pieza, revisamos si su pieza queda a salvo
+             const safety = evaluateSquareSafety(enemyMove.tr, enemyMove.tc, enemyColor, afterReply, color);
+             if (!safety.isSafe) {
+                 // If not safe (will be recaptured), return the points
+                 // to the Professor so it doesn't evaluate the exchange as "High Risk"
+                 const enemyPieceChar = afterReply[enemyMove.tr][enemyMove.tc];
+                 const enemyPieceVal = PIECE_VALUES[enemyPieceChar.toUpperCase()] || 0;
+                 ev += color === 'w' ? enemyPieceVal : -enemyPieceVal;
+             }
+          }
         }
 
         if (color === 'w') {
@@ -11035,6 +11042,37 @@ window.askWiseKing = async function(fen, historyArr = []) {
       switchTab('professor');
       const en = currentLanguage === 'en';
 
+      // 🔴 TERMINAL STATE CHECK: if the game is already over, report result instead of analyzing
+      {
+        const currentPlayerColor = turn; // turn already flipped to next player after the last move
+        const gameOver = !hasAnyLegalMove(currentPlayerColor);
+        if (gameOver) {
+          const isCheckmated = inCheck(currentPlayerColor, board);
+          const winnerIsWhite = currentPlayerColor === 'b'; // the player who just moved (before turn flipped) won
+          const colorIcon = currentPlayerColor === 'w' ? '⬜' : '⬛';
+          let resultHtml;
+          if (isCheckmated) {
+            // The current player (whose turn it now is) is in checkmate — they LOST
+            const humanLost = (gameMode === 'pvp') ? false : (currentPlayerColor === playerColor);
+            if (humanLost) {
+              resultHtml = `<div class="hint-item" style="border-left:4px solid var(--danger); padding-left:10px; background:rgba(239,68,68,0.05);">
+                <span class="hint-icon">🏳️</span>
+                <span class="hint-text">${colorIcon} <strong>${en ? 'Coach:' : 'Profesor:'}</strong> ${en ? 'The game is over — you were checkmated. The last move didn\'t prevent the defeat, but keep learning from each game!' : 'La partida ha terminado — estás en jaque mate. La última jugada no evitó la derrota, ¡pero cada partida es una lección!'}</span></div>`;
+            } else {
+              resultHtml = `<div class="hint-item" style="border-left:4px solid var(--success); padding-left:10px; background:rgba(34,197,94,0.05);">
+                <span class="hint-icon">🏆</span>
+                <span class="hint-text">${colorIcon} <strong>${en ? 'Coach:' : 'Profesor:'}</strong> ${en ? 'Checkmate! You won the game. Congratulations!' : '¡Jaque Mate! Has ganado la partida. ¡Enhorabuena!'}</span></div>`;
+            }
+          } else {
+            resultHtml = `<div class="hint-item" style="border-left:4px solid var(--accent); padding-left:10px; background:rgba(244,114,182,0.05);">
+              <span class="hint-icon">🤝</span>
+              <span class="hint-text">${colorIcon} <strong>${en ? 'Coach:' : 'Profesor:'}</strong> ${en ? 'The game ended in stalemate — a draw!' : '¡La partida terminó en tablas por ahogado!'}</span></div>`;
+          }
+          pList.innerHTML = resultHtml;
+          return;
+        }
+      }
+
       // 🛡️ 1. SAVE ALL PRESENT STATE — restored unconditionally in finally
       const savedBoard = deepCopy(board);
       const savedCastleRights = { ...castleRights };
@@ -11152,22 +11190,55 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
         } else if (riskLevel === 'low') {
           const intent = getStrategicIntent(humanMove, moverColor);
+
+          // 🟡 ABSOLUTE EVALUATION CHECK: Warn if the player is losing badly despite no mistake
+          const absEval = evaluateBoard(window.snapshotAfterHumanMove, 'hard');
+          // Convert to mover's perspective: positive = mover is winning
+          const moverEval = moverColor === 'w' ? absEval : -absEval;
+          let situationWarning = '';
+          if (moverEval <= -600) {
+            situationWarning = en
+              ? `<br><br>⚠️ <em>However, the overall position is very difficult. You are significantly behind in material or strategic terms.</em>`
+              : `<br><br>⚠️ <em>Sin embargo, la posición general es muy difícil. Estás significativamente en desventaja en material o estrategia.</em>`;
+          } else if (moverEval <= -300) {
+            situationWarning = en
+              ? `<br><br>💬 <em>That said, you are under pressure. Look for chances to simplify or create counterplay.</em>`
+              : `<br><br>💬 <em>Aunque así, estás bajo presión. Busca oportunidades para simplificar o crear contraataque.</em>`;
+          }
+
           html = `<div class="hint-item" style="border-left:4px solid var(--primary); padding-left:10px; background:rgba(168,85,247,0.05);">
             <span class="hint-icon">✨</span>
             <span class="hint-text">
               ${profPrefix} ${en ? 'A solid and balanced move. No mistakes detected.' : 'Una jugada sólida y equilibrada. No detecto errores graves.'}
               <br><br>💡 <em>${simplifyForKids(getStrategicIntent(humanMove, moverColor))}</em>
+              ${situationWarning}
             </span></div>`;
 
         } else {
           const intent     = getStrategicIntent(humanMove, moverColor);
           const riskReason = getMoveRiskReason(humanMove, moverColor, riskLevel);
+
+          // 🟡 ABSOLUTE EVALUATION CHECK for dynamic moves too
+          const absEval = evaluateBoard(window.snapshotAfterHumanMove, 'hard');
+          const moverEval = moverColor === 'w' ? absEval : -absEval;
+          let situationWarning = '';
+          if (moverEval <= -600) {
+            situationWarning = en
+              ? `<br><span style="font-size:0.85rem;opacity:0.9;">⚠️ The overall position is very difficult — you are significantly behind.</span>`
+              : `<br><span style="font-size:0.85rem;opacity:0.9;">⚠️ La posición general es muy difícil — estás significativamente en desventaja.</span>`;
+          } else if (moverEval <= -300) {
+            situationWarning = en
+              ? `<br><span style="font-size:0.85rem;opacity:0.9;">💬 You are under pressure in this position.</span>`
+              : `<br><span style="font-size:0.85rem;opacity:0.9;">💬 Estás bajo presión en esta posición.</span>`;
+          }
+
           html = `<div class="hint-item" style="border-left:4px solid var(--accent); padding-left:10px; background:rgba(244,114,182,0.05);">
             <span class="hint-icon">⚖️</span>
             <span class="hint-text">
               ${profPrefix} ${en ? 'A dynamic move with some risk, but acceptable.' : 'Una jugada dinámica con algo de riesgo, pero aceptable.'}
               <br><br>💡 <em>${simplifyForKids(intent)}</em>
               ${riskReason ? `<br><span style="font-size:0.85rem;opacity:0.9;">${riskReason}</span>` : ''}
+              ${situationWarning}
             </span></div>`;
         }
 
