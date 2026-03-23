@@ -6423,8 +6423,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
       }
 
       for(let c=0;c<8;c++){
-        if(wP[c]>1)score-=35*wP[c]; // FIX
-        if(bP[c]>1)score+=35*bP[c]; // FIX
+        if(wP[c]>1)score-=15*wP[c]; // FIX
+        if(bP[c]>1)score+=15*bP[c]; // FIX
         if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))score-=40; // FIX
         if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))score+=40; // FIX
       }
@@ -7135,8 +7135,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
           // ── Pawn structure ──────────────────────────────────────────────────
           for(let c=0;c<8;c++){
             // Doubled pawns
-            if(wP[c]>1)s-=35*wP[c];
-            if(bP[c]>1)s+=35*bP[c];
+            if(wP[c]>1)s-=15*wP[c];
+            if(bP[c]>1)s+=15*bP[c];
             // Isolated pawns
             if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))s-=40;
             if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))s+=40;
@@ -8804,7 +8804,7 @@ let forcedBookMove = null;
       }
 
       if (f.majorDelta > 0 || f.exposureDelta >= 200 || f.losingExchangeRisk || f.severeReplyPunish) return 'high';
-      if ((f.isUndefended && f.myVal >= 300 && f.attackerVal <= f.myVal) || f.exposureDelta >= 80 || f.moderateReplyPunish) return 'medium';
+      if ((f.isUndefended && f.myVal >= 100 && f.attackerVal <= f.myVal) || f.exposureDelta >= 80 || f.moderateReplyPunish) return 'medium';
       return 'low';
     }
 
