@@ -7601,7 +7601,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
           const caps=legalMoves(state,color).filter(m=> {
             if (state.board[m.tr][m.tc] !== ' ') return true;
             if (state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
-            // 🚨 ANTI-CEGUERA (Horizon Fix): Investigar jaques en los 2 primeros plies de Quiescence
+            // 🚨 ANTI-BLINDNESS (Horizon Fix): Investigate checks in the first 2 plies of Quiescence
             if (qd < 2) {
                 const child = applyMove(state, m);
                 if (inChk(child, opp(color))) return true;
@@ -7767,7 +7767,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
         }
 
         // ══════════════════════════════════════════
-        // MENSAJE UNIFICADO: Multi-PV
+        // UNIFIED MESSAGE: Multi-PV
         // ══════════════════════════════════════════
         self.onmessage = function(e) {
           const msg = e.data;
@@ -7784,7 +7784,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
               enPassantTarget: msg.enPassantTarget || null
             };
 
-            // Cargar historial de posiciones
+            // Load position history
             gameHashCount = new Map();
             for(const h of (msg.positionHashes||[])){
               gameHashCount.set(h,(gameHashCount.get(h)||0)+1);
@@ -7803,11 +7803,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
               return;
             }
 
-            // ✨ INYECCIÓN DE LIBRO (Root Move Locking)
+            // ✨ BOOK INJECTION (Root Move Locking)
             const forcedMove = msg.forcedMove;
             if (forcedMove) {
-               // El Worker anula todas las demás opciones y dedica el 100% de su tiempo
-               // a profundizar en la variante teórica, llenando su Tabla de Transposición.
+               // The Worker cancels all other options and dedicates 100% of its time
+               // to deepening the theoretical variant, filling its Transposition Table.
                rootMoves = rootMoves.filter(m => 
                    m.fr === forcedMove.fr && m.fc === forcedMove.fc && 
                    m.tr === forcedMove.tr && m.tc === forcedMove.tc
@@ -7876,13 +7876,13 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   const childKey = zob(child);
                   const reps = gameHashCount.get(stringHash(child))||0;
 
-                  // ✨ FIX Anti-rep: Si el movimiento lleva a una posición ya vista,
-                  // su valor exacto es 0 (tablas FIDE). No se usa una penalización ciega:
-                  // - Si el motor va ganando (+200), 0 < +200 → elige otra jugada. ✓
-                  // - Si va perdiendo (-300), 0 > -300 → acepta las tablas valientemente. ✓
+                  // ✨ FIX Anti-rep: If the move leads to an already seen position,
+                  // its exact value is 0 (FIDE draw). No blind penalty is used:
+                  // - If the engine is winning (+200), 0 < +200 → chooses another move. ✓
+                  // - If losing (-300), 0 > -300 → accepts the draw valiantly. ✓
                   let scoreForMe;
                   if (reps >= 1) {
-                    scoreForMe = 0; // Tablas por repetición — valor exacto, no penalización
+                    scoreForMe = 0; // Draw by repetition — exact value, not a penalty
                   } else {
                     let rawScore;
                     try {
@@ -7938,7 +7938,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                     const child = applyMove(state, m);
                     const childKey = zob(child); // Zobrist hash (encodes board+turn+castling+EP)
                     const reps = gameHashCount.get(childKey)||0;
-                    // ✨ FIX Anti-rep: Tablas = 0 exacto (ver loop de aspiración arriba)
+                    // ✨ FIX Anti-rep: Draw = exact 0 (see aspiration loop above)
                     let scoreForMe;
                     if (reps >= 1) {
                       scoreForMe = 0;
@@ -7983,7 +7983,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
               const child = applyMove(state, o.move);
               return (gameHashCount.get(zob(child))||0) === 0;
             });
-            // Si todas repiten, elegir la que menos veces se ha visto
+            // If all repeat, choose the one seen the fewest times
             let finalOptions;
             if(nonRep.length > 0){
               finalOptions = nonRep;
@@ -8025,7 +8025,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
               castleRights: {...castleRights},
               enPassantTarget: enPassantTarget ? [...enPassantTarget] : null
             };
-            // Usar findBestMoveFor como fallback real
+            // Use findBestMoveFor as real fallback
             const moves = getLegalMovesForColorInPlace(color);
             if(!moves.length){ resolve([]); return; }
             
@@ -8132,8 +8132,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
       try {
         let move = null;
 
-        // 1. Consultar libro de aperturas
-let forcedBookMove = null;
+        // 1. Opening book
+        let forcedBookMove = null;
         if (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
             (currentDifficulty === 'medium' && history.length <= 4)) {
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
@@ -8169,10 +8169,9 @@ let forcedBookMove = null;
           }
         }
 
-        // 2. Motor principal (Root Move Locking: Calentando la memoria)
-        // 2. Motor principal
+        // 2. Main engine (Root Move Locking: Warming up memory)
         if (forcedBookMove) {
-          // ¡Ya tenemos la jugada de libro! Asignarla directamente sin quemar el reloj.
+          // We already have the book move! Assign it directly without burning the clock.
           move = forcedBookMove;          
           // Fake delay so it doesn't look instant
           const bookDelay = currentDifficulty === 'grandmaster' ? 1500 : 500;
@@ -8180,7 +8179,7 @@ let forcedBookMove = null;
           // 🔴 ABORT: if init() was called during book delay, bail out immediately
           if (aiSearchGeneration !== searchGen) { aiThinking = false; return; }
         } else if (!move) {
-          // Si NO hay jugada de libro, entonces SÍ quema el reloj calculando
+          // If there is no book move, then the clock is burned calculating
           move = await getBestAIMoveAsync(aiColor, aiDepth, aiMistakeChance, aiTimeLimit);
           // 🔴 ABORT: if init() was called while the engine was thinking, bail out immediately
           if (aiSearchGeneration !== searchGen) { aiThinking = false; return; }
@@ -8199,7 +8198,7 @@ let forcedBookMove = null;
 
           function _makeChildKey(m) {
             const prev = makeMoveOnBoard(m);
-            // FIX: Como makeMoveOnBoard no cambia el turno global, lo calculamos manualmente
+            // FIX: Since makeMoveOnBoard does not change the global turn, we calculate it manually
             const childTurn = aiColor === 'w' ? 'b' : 'w'; 
             let key = board.map(r => r.join('')).join('|') + '|' + childTurn;
             key += '|' + (castleRights.K?'K':'') + (castleRights.Q?'Q':'') + (castleRights.k?'k':'') + (castleRights.q?'q':'');
@@ -8230,7 +8229,7 @@ let forcedBookMove = null;
           }
         }
 
-        // 3. Ejecutar movimiento
+        // 3. Execute move
         let targetPiece = null;
         let isCapture = false;
         if (move) {
@@ -8249,7 +8248,7 @@ let forcedBookMove = null;
           const turnBarB = document.getElementById('turnBar');
           if (turnBarB) turnBarB.style.display = '';
           aiThinking = false;
-          // ✨ FIX: Pasamos la promoción al motor
+          // ✨ FIX: Pass the promotion to the engine
           await makeMove(move.fr, move.fc, move.tr, move.tc, move.promo);
         }
 
@@ -8264,7 +8263,7 @@ let forcedBookMove = null;
           else showToast(smallMsgs[Math.floor(Math.random() * smallMsgs.length)]);
         }
       } finally {
-        // Asegurar limpieza en caso de error
+        // Ensure cleanup in case of error
         document.getElementById('thinkingBar').classList.remove('show');
         const countdownEl = document.getElementById('thinkingCountdown');
         if (countdownEl) countdownEl.innerText = "";
@@ -8278,8 +8277,8 @@ let forcedBookMove = null;
     }
 
     async function getBestAIMoveAsync(color, depth, mistakeChance, timeoutMs, forcedMove = null) {
-      // FIX: Si estamos en Rey Sabio (mistakeChance === 0), usamos multiPV: 1 para máxima fuerza.
-      // Si estamos en niveles más bajos, calculamos 6 opciones para poder elegir una subóptima.
+      // FIX: If we are in Sage King (mistakeChance === 0), we use multiPV: 1 for maximum strength.
+      // If we are in lower levels, we calculate 6 options to be able to choose a suboptimal one.
       const pvCount = mistakeChance === 0 ? 1 : 6;
       
       const results = await engineSearch(color, depth, pvCount, Math.min(timeoutMs||5000, 35000), forcedMove);
@@ -8332,7 +8331,7 @@ let forcedBookMove = null;
       const tacticalPenalty = (reply.delta < 0 ? Math.abs(reply.delta) : 0) + (hanging.danger ? 14 : 0) + riskPenalty;
 
       // Detects real suicides: only blocks if net loss is clear
-      // Nunca bloquear capturas con ganancia material neta (targetVal > 0 && targetVal >= myVal - 50)
+      // Never block captures with net material gain (targetVal > 0 && targetVal >= myVal - 50)
       const isCapture = targetVal > 0;
       const netGain = targetVal - (hanging.danger ? myVal : 0);
       // Thresholds use centipawn scale: P=100 N=300 B=300 R=500 Q=900
