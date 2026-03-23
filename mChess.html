@@ -2688,6 +2688,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
     let playerColor = 'w';
     let boardFlipped = false;
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
+    let _currentEngineDone = null; // 🔴 RACE FIX: reference to active engineSearch resolve(), called by init() to unblock instantly
     // Character dialogs for intro and reactions (multilingual + emoji)
     const characterDialogs = {
       easy: {
@@ -3537,6 +3538,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
       aiSearchGeneration++;
+      // 🔴 RACE FIX: Immediately unblock any pending engineSearch Promise.
+      // Without this, the old triggerAI coroutine stays alive for up to 39s (timeoutMs+4000)
+      // and both old and new triggerAI run concurrently, corrupting the board.
+      if (_currentEngineDone) { _currentEngineDone([]); _currentEngineDone = null; }
       // Kill the worker if it was thinking when restarting
       if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker !== null) {
         try { chessEngineWorker.terminate(); } catch(_) {}
@@ -8043,6 +8048,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
     }
 
     function engineSearch(color, depth, multiPV, timeoutMs, forcedMove = null) {
+      const myGen = aiSearchGeneration; // 🔴 RACE FIX: snapshot generation at search start
       return new Promise((resolve) => {
         let worker;
         try {
@@ -8054,7 +8060,16 @@ window.askWiseKing = async function(fen, historyArr = []) {
           return;
         }
         let settled = false;
-        const done = (moves) => { if(settled) return; settled = true; resolve(moves || []); };
+        const done = (moves) => {
+          if(settled) return;
+          settled = true;
+          _currentEngineDone = null; // 🔴 unregister ourselves
+          // 🔴 RACE FIX: If generation changed while we waited, resolve with [] immediately.
+          // triggerAI's generation check will then abort cleanly without touching new game state.
+          if (aiSearchGeneration !== myGen) { resolve([]); return; }
+          resolve(moves || []);
+        };
+        _currentEngineDone = done; // 🔴 RACE FIX: allow init() to unblock us immediately
         const timer = setTimeout(() => done([]), timeoutMs + 4000);
         worker.onmessage = function(evt) {
           const data = evt.data || {};
@@ -8266,7 +8281,12 @@ let forcedBookMove = null;
       
       if (forcedMove) return forcedMove; // Si era jugada de libro, la devolvemos garantizada
       
-      if(!results.length) return findBestMoveFor(color, depth, mistakeChance, timeoutMs);
+      // 🔴 RACE FIX: If worker was cancelled by init(), engineSearch returns [].
+      // DO NOT fall back to synchronous findBestMoveFor here — it runs at depth 10
+      // and would freeze the browser for up to 35s on the NEW board after a restart.
+      // triggerAI's generation check (immediately after this await) handles null safely.
+      if(!results.length) return null;
+
       
       if(mistakeChance > 0 && Math.random() < mistakeChance){
         const legal = getLegalMovesForColorInPlace(color);
