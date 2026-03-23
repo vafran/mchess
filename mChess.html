@@ -6909,7 +6909,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       moves.sort((a, b) => moveOrderingScore(b, board, color, depth) - moveOrderingScore(a, board, color, depth));
 
       // ── Futility Pruning margins ────────────────────────────────────────────
-      const FUTILITY_MARGIN = [0, 150, 300]; // indexed by depth 0,1,2
+      const FUTILITY_MARGIN = [0, 200, 400];
       const staticEval = !checked && depth <= 2 ? evaluateBoard(activeBoard, 'exact') : null;
       const canFutility = staticEval !== null && !checked;
 
@@ -7184,11 +7184,15 @@ window.askWiseKing = async function(fen, historyArr = []) {
               }
             }
 
-            // 🚨 SIXTH SENSE: Panic about giving away heavy pieces (Anti-Blunder)
-            // We give the engine static intuition to flee danger if it runs out of time
-            if (u === 'Q' || u === 'R') {
+            // 🚨 SIXTH SENSE: Panic when piece is attacked
+            if (u === 'Q' || u === 'R' || u === 'B' || u === 'N') {
                 if (isAtk(state, r, c, isW ? 'b' : 'w')) {
-                    bonus -= (u === 'Q' ? 400 : 180); // Strong penalty if the Queen or Rook is under fire
+                    let isDefended = isAtk(state, r, c, isW ? 'w' : 'b');
+                    if (!isDefended) {
+                        bonus -= (PV[u] * 0.7);
+                    } else if (u === 'Q' || u === 'R') {
+                        bonus -= (u === 'Q' ? 400 : 180);
+                    }
                 }
             }
 
@@ -7605,7 +7609,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
             return false;
           });
           caps.sort((a,b)=>moveScore(state,b,0)-moveScore(state,a,0));
-          const DELTA=200;
+          const DELTA = 250;
           if(maximizing){
             for(const m of caps){
               const tv=PV[state.board[m.tr][m.tc].toUpperCase()]||0;
@@ -7697,7 +7701,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
           // ── Futility Pruning margins ────────────────────────────────────────
           // At low depths, if static eval + margin < alpha (for maximizer), the node
           // is unlikely to raise alpha — skip quiet moves entirely.
-          const FUTILITY_MARGIN=[0,150,300]; // depth 0,1,2
+          const FUTILITY_MARGIN=[0,250,500]; // depth 0,1,2
           const staticEval=!checked&&depth<=2?evaluate(state):null;
           const canFutility=staticEval!==null&&!checked;
 
