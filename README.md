@@ -66,7 +66,7 @@ That is everything. The game handles the rest.
 
 6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Maestro / Wise King — *Rey Sabio / Wise King* (~1750 ELO)
+### 👑 Maestro / Master — *Rey Sabio / Wise King* (~1750 ELO)
 
 **Target:** Strong club players and advanced amateurs.
 
