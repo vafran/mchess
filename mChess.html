@@ -8141,8 +8141,9 @@ let forcedBookMove = null;
             );
             
             if (validBookMoves.length > 0) {
-              // ✨ FIX: Tasa de exploración para no jugar siempre de memoria
-              const explorationChance = currentDifficulty === 'grandmaster' ? 0.20 : 0.05;
+              // ✨ Exploration rate: skip book occasionally to avoid 100% predictable openings.
+              // Only from move 5+ so that move 1-2 is always instant (from book).
+              const explorationChance = (currentDifficulty === 'grandmaster' && history.length >= 4) ? 0.10 : 0.0;
               const skipBook = Math.random() < explorationChance;
 
               if (!skipBook) {
