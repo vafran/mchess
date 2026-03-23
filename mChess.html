@@ -6410,7 +6410,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       ph = Math.min(ph, 24);
       const eg = 1 - ph / 24;
 
- let wUndevelopedMinors = 0;
+      let wUndevelopedMinors = 0;
       if (brd[7][1] === 'N') wUndevelopedMinors++;
       if (brd[7][2] === 'B') wUndevelopedMinors++;
       if (brd[7][5] === 'B') wUndevelopedMinors++;
@@ -6494,6 +6494,18 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 const distanceToPromotion = isW ? (7-r) : r;
                 bonus += distanceToPromotion * 20; 
                 bonus = Math.round(bonus * (1 + eg * 3.5)); 
+              }
+
+              // 🧱 NEW: Pawn Chains (Solid Structure)
+              const backRow = r + (isW ? 1 : -1);
+              if (backRow >= 0 && backRow <= 7) {
+                let isDefendedByPawn = false;
+                if (c > 0 && brd[backRow][c - 1] === (isW ? 'P' : 'p')) isDefendedByPawn = true;
+                if (c < 7 && brd[backRow][c + 1] === (isW ? 'P' : 'p')) isDefendedByPawn = true;
+                if (isDefendedByPawn) {
+                  bonus += 12;
+                  if (c >= 2 && c <= 5) bonus += 8; 
+                }
               }
           }
 
@@ -7169,6 +7181,15 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // ── Passed pawn bonus ─────────────────────────────────────────
             let bonus=0;
 
+            // Penalty for "floating" piece (undefended AND not currently attacked — SIXTH SENSE covers the attacked case)
+            if (u === 'N' || u === 'B' || u === 'R') {
+                const isAttacked = isAtk(state, r, c, isW ? 'b' : 'w');
+                const isDefendedByFriend = isAtk(state, r, c, isW ? 'w' : 'b');
+                if (!isDefendedByFriend && !isAttacked) {
+                    bonus -= 12; // Small coordination penalty — avoids double-counting with SIXTH SENSE
+                }
+            }
+
             // 👸 FIX 1: STOP THE QUEEN EARLY
             if(u==='Q' && eg < 0.5) { 
               const homeR = isW ? 7 : 0;
@@ -7182,6 +7203,40 @@ window.askWiseKing = async function(fen, historyArr = []) {
                    bonus -= 150; 
                 }
               }
+            }
+
+            // 👁️ Fear of X-Rays for the Queen (correctly checks for blockers)
+            if (u === 'Q') {
+                const enemyRook = isW ? 'r' : 'R';
+                const enemyQueen = isW ? 'q' : 'Q';
+                let xRayThreat = false;
+
+                // Check along the column (up and down)
+                for (let dir = -1; dir <= 1; dir += 2) {
+                    for (let scanR = r + dir; scanR >= 0 && scanR < 8; scanR += dir) {
+                        const sq = b[scanR][c];
+                        if (!sq || sq === ' ') continue;
+                        if (sq === enemyRook || sq === enemyQueen) { xRayThreat = true; }
+                        break; // any piece (friendly or not) blocks the X-Ray
+                    }
+                    if (xRayThreat) break;
+                }
+                // Check along the row (left and right)
+                if (!xRayThreat) {
+                    for (let dir = -1; dir <= 1; dir += 2) {
+                        for (let scanC = c + dir; scanC >= 0 && scanC < 8; scanC += dir) {
+                            const sq = b[r][scanC];
+                            if (!sq || sq === ' ') continue;
+                            if (sq === enemyRook || sq === enemyQueen) { xRayThreat = true; }
+                            break;
+                        }
+                        if (xRayThreat) break;
+                    }
+                }
+
+                if (xRayThreat) {
+                    bonus -= 40; // Nudge Queen away from X-Ray lines
+                }
             }
 
             // 🚨 SIXTH SENSE: Panic when piece is attacked
@@ -7202,15 +7257,27 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 if(b[rr][c]===(isW?'p':'P')||(c>0&&b[rr][c-1]===(isW?'p':'P'))||(c<7&&b[rr][c+1]===(isW?'p':'P'))){ok=false;break;}
               }
               if(ok) {
-                // 🎯 MEJORA TORNEO: Bonificación escalada para finales (v2)
+                // 🎯  Scaled bonus for finals (v2)
                 const distanceToPromotion = isW ? (7-r) : r;
-                bonus = distanceToPromotion * 25; // Aumentado de 20 a 25
-                // En endgame, peones pasados son CRUCIALES - multiplicador más agresivo
-                bonus = Math.round(bonus * (1 + eg * 4.5)); // Aumentado de 3.5 a 4.5
-                // Bonus extra si está cerca de coronar en endgame
+                bonus = distanceToPromotion * 25; // Increased from 20 to 25
+                // In endgame, passed pawns are CRUCIAL - more aggressive multiplier
+                bonus = Math.round(bonus * (1 + eg * 4.5)); // Increased from 3.5 to 4.5
+                // Bonus extra if it is close to crowning in endgame
                 if(eg > 0.6 && distanceToPromotion >= 5) {
-                  bonus += 70; // Peón en 6ta o 7ma fila en endgame = muy peligroso (antes: 50)
+                  bonus += 70; // Pawn on 6th or 7th row in endgame = very dangerous (before: 50)
                 }
+              }
+              const backRow = r + (isW ? 1 : -1);
+              if (backRow >= 0 && backRow <= 7) {
+                  let isDefendedByPawn = false;
+                  if (c > 0 && b[backRow][c - 1] === (isW ? 'P' : 'p')) isDefendedByPawn = true;
+                  if (c < 7 && b[backRow][c + 1] === (isW ? 'P' : 'p')) isDefendedByPawn = true;
+                  
+                  if (isDefendedByPawn) {
+                      bonus += 12; // Small positional bonus for rocky structure
+                      // If they are also in the center (columns c, d, e, f), it's worth more
+                      if (c >= 2 && c <= 5) bonus += 8; 
+                  }
               }
             }
 
@@ -7225,6 +7292,21 @@ window.askWiseKing = async function(fen, historyArr = []) {
               for(let _er=0;_er<8&&!_eKing;_er++) for(let _ec=0;_ec<8;_ec++)
                 if(b[_er][_ec]===(isW?'k':'K')){_eKing=[_er,_ec];break;}
               if(_eKing){const _fd=Math.abs(c-_eKing[1]);if(_fd<=1){bonus+=35;if(epPawns[c]===0)bonus+=25;}else if(_fd<=2)bonus+=15;}
+              
+              // 🌪️ ESTRATEGIA: Regla de Tarrasch (Torre detrás de peón pasado)
+              const myPawnChar = isW ? 'P' : 'p';
+              const enemyPawnChar = isW ? 'p' : 'P';
+              const pushDir = isW ? -1 : 1;
+              for (let scanR = r + pushDir; isW ? scanR >= 0 : scanR <= 7; scanR += pushDir) {
+                  const pieceInFront = b[scanR][c];
+                  if (pieceInFront === myPawnChar) {
+                      if (epPawns[c] === 0) bonus += 25; // Torre empujando su propio peón libre
+                      break;
+                  } else if (pieceInFront === enemyPawnChar) {
+                      if (myPawns[c] === 0) bonus += 15; // Torre frenando desde atrás al peón enemigo
+                      break;
+                  }
+              }
             }
 
             // ── Rook on 7th rank (or 2nd for black) ──────────────────────
@@ -7320,7 +7402,16 @@ window.askWiseKing = async function(fen, historyArr = []) {
             
             // ── King safety in middlegame ─────────────────────────────────
             if(u==='K'&&eg<0.5){
-              // 1. Detectar atacantes ÚNICOS y PONDERADOS (Fix Rey Sobrio + Ceguera)
+              // 🏰 STRATEGY: Penalty for losing castling without having left the center
+              const homeR = isW ? 7 : 0;
+              if (r === homeR && c >= 3 && c <= 5) { // If the king is still in the central columns (d, e, f)
+                  const cr = state.castleRights;
+                  const canCastle = isW ? (cr.K || cr.Q) : (cr.k || cr.q);
+                  if (!canCastle) {
+                      bonus -= 60; // Hard penalty: King stuck in the center without being able to castle
+                  }
+              }
+              // Detect unique and weighted attackers (Fix Sober King + Blindness)
               const enemyClr=isW?'b':'w';
               let attackersSet = new Set();
               for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
@@ -7333,7 +7424,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 }
               }
 
-              // Calcular el "Peso del Terror" según qué piezas están atacando
+              // Calculate the "Weight of Terror" according to which pieces are attacking
               let attackWeight = 0;
               attackersSet.forEach(sq => {
                   const pr = Math.floor(sq / 8);
@@ -7342,12 +7433,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   
                   if (pType === 'Q') attackWeight += 3;
                   else if (pType === 'R') attackWeight += 2;
-                  else attackWeight += 1; // Caballos, Alfiles y Peones
+                  else attackWeight += 1; // Knights, Bishops and Pawns
               });
 
-              let attackers = attackWeight; // Reemplazamos el conteo simple por el peso real
+              let attackers = attackWeight; // Replaced simple count with real weight
 
-              // 2. Bonus de Escudo (30 centipeones por peón de 1ª fila + 15 por peón de 2ª fila)
+              // Shield Bonus (30 centipeones per 1st row pawn + 15 per 2nd row pawn)
               let shield=0;
               const shieldRow=isW?r-1:r+1;
               if(shieldRow>=0&&shieldRow<8){
@@ -7598,15 +7689,17 @@ window.askWiseKing = async function(fen, historyArr = []) {
           if(maximizing){if(sp>=beta)return beta;if(sp>alpha)alpha=sp;}
           else{if(sp<=alpha)return alpha;if(sp<beta)beta=sp;}
           const color=maximizing?'w':'b';
-          const caps=legalMoves(state,color).filter(m=> {
-            if (state.board[m.tr][m.tc] !== ' ') return true;
-            if (state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
-            // 🚨 ANTI-BLINDNESS (Horizon Fix): Investigate checks in the first 2 plies of Quiescence
-            if (qd < 2) {
-                const child = applyMove(state, m);
-                if (inChk(child, opp(color))) return true;
-            }
-            return false;
+          const inCheckNow = inChk(state, color);
+          // If we are in check, we MUST look at all legal moves to save ourselves.
+          // If not, we only look at captures/promotions.
+          const caps = inCheckNow ? legalMoves(state, color) : legalMoves(state, color).filter(m => {
+              if (state.board[m.tr][m.tc] !== ' ') return true;
+              if (state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
+              if (qd < 2) {
+                  const child = applyMove(state, m);
+                  if (inChk(child, opp(color))) return true;
+              }
+              return false;
           });
           caps.sort((a,b)=>moveScore(state,b,0)-moveScore(state,a,0));
           const DELTA = 250;
@@ -7701,7 +7794,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
           // ── Futility Pruning margins ────────────────────────────────────────
           // At low depths, if static eval + margin < alpha (for maximizer), the node
           // is unlikely to raise alpha — skip quiet moves entirely.
-          const FUTILITY_MARGIN=[0,250,500]; // depth 0,1,2
+          const FUTILITY_MARGIN=[0,175,350]; // depth 0,1,2 — balanced: not too aggressive
           const staticEval=!checked&&depth<=2?evaluate(state):null;
           const canFutility=staticEval!==null&&!checked;
 
