@@ -48,25 +48,25 @@ That is everything. The game handles the rest.
 
 ## Difficulty Levels
 
-### 🐣 Fácil / Easy — *Pollito / Chick* (~630 ELO)
+### 🐣 Easy — *Chick* (~630 ELO)
 
 **Target:** Complete beginners, children under 8, first-time players.
 
 2-ply depth · 40% mistake rate · ±12 cp noise · no book · no quiescence
 
-### 📚 Medio / Medium — *Estudiante / Student* (~1010 ELO)
+### 📚 Medium — *Student* (~1010 ELO)
 
 **Target:** Players who know the rules and want their first real game.
 
 4-ply depth · 20% mistake rate · ±6 cp noise · book (first 2 moves) · full quiescence
 
-### 🔥 Difícil / Hard — *Mago / Mage* (~1400 ELO)
+### 🔥 Hard — *Mage* (~1400 ELO)
 
 **Target:** Experienced casual players who want a real test.
 
 6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Maestro / Master — *Rey Sabio / Wise King* (~1750 ELO)
+### 👑 Master — *Wise King* (~1750 ELO)
 
 **Target:** Strong club players and advanced amateurs.
 
