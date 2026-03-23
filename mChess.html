@@ -9272,7 +9272,41 @@ let forcedBookMove = null;
           comment = specialComment;
       }
       else if (openingName) {
-          comment = lang === 'en' ? getRnd([`The game enters the **${openingName}**. ${openingTechNote}`], 'opening_note') : getRnd([`Se plantea la **${openingName}**. ${openingTechNote}`], 'opening_note');
+          // Use colorWhoMoved to frame the announcement correctly:
+          // White's moves establish openings; Black's moves choose defenses.
+          // Use a pool of varied phrases so it doesn't always say "Se plantea".
+          const isWhiteMove = colorWhoMoved === 'w';
+          if (lang === 'en') {
+            const phrases = isWhiteMove
+              ? [
+                  `The game enters the **${openingName}**. ${openingTechNote}`,
+                  `White chooses the **${openingName}**. ${openingTechNote}`,
+                  `Opening confirmed: **${openingName}**. ${openingTechNote}`,
+                  `Classic opening: **${openingName}**. ${openingTechNote}`,
+                  `White sets up the **${openingName}**. ${openingTechNote}`,
+                ]
+              : [
+                  `Black responds with the **${openingName}**. ${openingTechNote}`,
+                  `Black chooses the **${openingName}**. ${openingTechNote}`,
+                  `Black enters the **${openingName}**. ${openingTechNote}`,
+                ];
+            comment = getRnd(phrases, 'opening_note');
+          } else {
+            const phrases = isWhiteMove
+              ? [
+                  `Se plantea la **${openingName}**. ${openingTechNote}`,
+                  `Las blancas eligen la **${openingName}**. ${openingTechNote}`,
+                  `Apertura confirmada: **${openingName}**. ${openingTechNote}`,
+                  `Clásica **${openingName}** en el tablero. ${openingTechNote}`,
+                  `Las blancas configuran la **${openingName}**. ${openingTechNote}`,
+                ]
+              : [
+                  `Las negras responden con la **${openingName}**. ${openingTechNote}`,
+                  `Las negras eligen la **${openingName}**. ${openingTechNote}`,
+                  `El rival opta por la **${openingName}**. ${openingTechNote}`,
+                ];
+            comment = getRnd(phrases, 'opening_note');
+          }
       }
       else if (historicalMotif) {
           comment = lang === 'en' ? getRnd([`Historical echo: **${lastMove}** recalls **${historicalMotif.nameEn}**.`], 'historical_note') : getRnd([`Eco histórico: **${lastMove}** recuerda a **${historicalMotif.nameEs}**.`], 'historical_note');
