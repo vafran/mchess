@@ -10682,7 +10682,12 @@ let forcedBookMove = null;
         const wasHangingEarly = !evaluateSquareSafety(m.fr, m.fc, color, board, enemyColor).isSafe;
         const isSafeNowEarly  =  evaluateSquareSafety(m.tr, m.tc, color, copy,  enemyColor).isSafe;
         if (wasHangingEarly && isSafeNowEarly) {
+          const pieceName = getLocalizedPieceName(movingPiece);
+          const targetPieceVal = target !== ' ' ? (PIECE_VALUES[target.toUpperCase()] || 0) : 0;
+          const myPieceVal = PIECE_VALUES[piece] || 0;
+
           // Secondary: does this rescue also create a pin?
+          let createsPinDesc = '';
           if (['B', 'R', 'Q'].includes(piece)) {
             const eKChar = enemyColor === 'w' ? 'K' : 'k';
             let eKr = -1, eKc = -1;
@@ -10695,16 +10700,51 @@ let forcedBookMove = null;
               const isRankFile = (dkr === 0 || dkc === 0) && !(dkr === 0 && dkc === 0);
               const canAttack = (piece === 'B' && isDiag) || (piece === 'R' && isRankFile) || (piece === 'Q' && (isDiag || isRankFile));
               if (canAttack) {
-                const pieceName = getLocalizedPieceName(movingPiece);
-                return en
-                  ? `🛡️ You rescue your ${pieceName} to a safe square — and it also pins an enemy piece!`
-                  : `🛡️ Salvas tu ${pieceName} a una casilla segura — ¡y además clava una pieza enemiga!`;
+                createsPinDesc = en ? ' — and it also pins an enemy piece!' : ' — ¡y además clava una pieza enemiga!';
               }
             }
           }
-          return en ? "🛡️ You rescue your piece moving it to a safe square." : "🛡️ Reacción crítica: rescatas tu pieza moviéndola a una casilla segura.";
+
+          // Case 1: Capture — counter-attack is better than retreating
+          if (targetPieceVal > 0) {
+            if (targetPieceVal >= myPieceVal) {
+              return en
+                ? `⚔️ Counter-attack! Your ${pieceName} was under threat — you respond by capturing a piece of equal or greater value.`
+                : `⚔️ ¡Contraataque! Tu ${pieceName} estaba amenazada — respondes capturando una pieza de igual o mayor valor.`;
+            }
+            return en
+              ? `⚔️ Your ${pieceName} was under attack — you respond by capturing an enemy piece to avoid losing material.`
+              : `⚔️ Tu ${pieceName} estaba bajo ataque — respondes capturando una pieza enemiga para no perder material.`;
+          }
+
+          // Case 2: Pawn escape — distinguish advance from retreat
+          if (piece === 'P') {
+            const isAdvance = (color === 'w' && m.tr < m.fr) || (color === 'b' && m.tr > m.fr);
+            if (isAdvance) {
+              return en
+                ? `🚶 Space gain: the Pawn advances and escapes the attack, restricting enemy piece mobility.`
+                : `🚶 Ganancia de espacio: el Peón avanza y escapa del ataque, restringiendo la movilidad de las piezas enemigas.`;
+            }
+            // Pawn can't actually retreat normally, so this covers diagonal captures (handled above)
+            return en
+              ? `🛡️ Your Pawn escapes the attack by moving to a safer square.`
+              : `🛡️ Tu Peón escapa del ataque moviéndose a una casilla más segura.`;
+          }
+
+          // Case 3: Piece retreat with pin bonus
+          if (createsPinDesc) {
+            return en
+              ? `🛡️ You rescue your ${pieceName} to a safe square${createsPinDesc}`
+              : `🛡️ Salvas tu ${pieceName} a una casilla segura${createsPinDesc}`;
+          }
+
+          // Case 4: Generic piece retreat to safety
+          return en
+            ? `🛡️ Your ${pieceName} was under attack — you move it to a safe square to avoid losing it for free.`
+            : `🛡️ Tu ${pieceName} estaba atacada — la mueves a una casilla segura para no perderla gratis.`;
         }
       }
+
 
       // 📌 3.6 ACTIVE PIN — the moved piece now pins an enemy piece against the enemy king
       if (['B', 'R', 'Q'].includes(piece)) {
