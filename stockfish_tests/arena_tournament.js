@@ -6,12 +6,12 @@ const fs = require('fs');
 const readline = require('readline');
 
 // ═══════════════════════════════════════════════════════════════
-// 🏆 TORNEO AUTOMATIZADO PRO: mChess vs Stockfish
+// 🏆 AUTOMATED TOURNAMENT: mChess vs Stockfish
 // ═══════════════════════════════════════════════════════════════
 
 const CONFIG = {
     numPartidas: 10,             
-    stockfishDepth:9,         
+    stockfishDepth:7,         
     timePerGame: 3600000,       
     logFile: path.join(__dirname, 'tournament_results.json')
 };

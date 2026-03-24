@@ -2951,7 +2951,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       easy:        { depth: 2,  mistakes: 0.50, timeLimit: 800   },
       medium:      { depth: 4,  mistakes: 0.20, timeLimit: 2000  },
       hard:        { depth: 7,  mistakes: 0.05, timeLimit: 5000  },
-      grandmaster: { depth: 9,  mistakes: 0,    timeLimit: 25000 },
+      grandmaster: { depth: 7,  mistakes: 0,    timeLimit: 10000 },
     };
 
     const PIECE_VALUES = { P: 100, N: 300, B: 300, R: 500, Q: 900, K: 20000 };
@@ -7935,8 +7935,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // significantly better than an aborted partial result from a deeper iteration.
             // Immediate exit if there is only one legal move — no quality cost.
 
-            // Soft time limit al 80%: más presupuesto para profundidades altas.
-            const softDeadline = Date.now() + Math.floor(timeout * 0.80);
+            // Soft time limit at 50%: if we have used more than half of the budget
+            // we don't start another depth that almost certainly won't finish.
+            const softDeadline = Date.now() + Math.floor(timeout * 0.50);
 
             let bestMovesHistory = []; // To track confidence
             
@@ -8072,7 +8073,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 bestMovesHistory.push(bestOptions[0].move);
                 let timeSpent = Date.now() - (deadline - timeout);
                 
-                if (timeSpent > timeout * 0.50 && bestMovesHistory.length >= 3) {
+                if (timeSpent > timeout * 0.40 && bestMovesHistory.length >= 3) {
                     let m1 = bestMovesHistory[bestMovesHistory.length - 1];
                     let m2 = bestMovesHistory[bestMovesHistory.length - 2];
                     let m3 = bestMovesHistory[bestMovesHistory.length - 3];
