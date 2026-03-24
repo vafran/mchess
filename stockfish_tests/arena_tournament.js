@@ -11,8 +11,8 @@ const readline = require('readline');
 
 const CONFIG = {
     numPartidas: 10,             
-    stockfishDepth:9,         
-    timePerGame: 3600000,       
+    stockfishDepth:8,         
+    timePerGame: 3600000,
     logFile: path.join(__dirname, 'tournament_results.json')
 };
 
@@ -168,7 +168,7 @@ async function playMatch(matchNumber, stats, aiLevel, browser) {
                 
                 // ✨ FIX: Imprimir cada movimiento con el tiempo de cálculo
                 if (turn === 'w') {
-                    const alert = timeTaken >= 20.0 ? ' ⚠️ (Time limit)' : '';
+                    const alert = timeTaken >= 30.0 ? ' ⚠️ (Time limit)' : '';
                     console.log(`   👑 mChess plays ${move} (⏱️ ${timeTaken.toFixed(1)}s)${alert}`);
                 } else {
                     console.log(`   🐟 Stockfish plays ${move}`);
