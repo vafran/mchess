@@ -1,4 +1,4 @@
-# ♟️ Monolith Chess v2.0.0 — The Awakening of the Wise King
+# ♟️ Monolith Chess
 
 > A complete, single-file chess game built for children learning to play.  
 > No installation. No internet. No accounts. Open the `.html` file in any browser.
