@@ -1,4 +1,4 @@
-# ♟️ Monolith Chess v2.0.0 — El Despertar del Rey Sabio
+# ♟️ Monolith Chess
 
 > Un juego de ajedrez completo en un solo archivo HTML, construido para niños que aprenden a jugar.  
 > Sin instalación. Sin internet. Sin cuentas. Abre el archivo `.html` en cualquier navegador.
