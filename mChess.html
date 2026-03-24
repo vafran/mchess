@@ -11283,13 +11283,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       const idx = history.length % 3;
       // ✨ FIX: Si hay pocas piezas, SIEMPRE es el final, sin importar el turno
       if (piecesCount <= 10) return endgameTips[idx];
-      if (moveCount <= 7) {
-        // If the castling tip (idx 1) would fire but castling is already gone, skip to middlegame tip
-        const playerCR = castleRights; // castleRights is the current global state
-        const canStillCastle = playerCR && (playerCR.K || playerCR.Q || playerCR.k || playerCR.q);
-        if (idx === 1 && !canStillCastle) return middlegameTips[1];
-        return openingTips[idx];
-      }
+      if (moveCount <= 10) return openingTips[idx];
       return middlegameTips[idx];
     }
 
