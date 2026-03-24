@@ -7509,16 +7509,62 @@ window.askWiseKing = async function(fen, historyArr = []) {
           while(cr!==tr||cc!==tc){if(board[cr][cc]!==' ')return false;cr+=sr;cc+=sc;}
           return true;
         }
+        // ── isAtk: outward ray-casting — much faster than scanning 64 squares ──
         function isAtk(state,r,c,byColor){
-          for(let fr=0;fr<8;fr++) for(let fc=0;fc<8;fc++)
-            if(clr(state.board[fr][fc])===byColor&&atk(state.board,fr,fc,r,c)) return true;
+          const b=state.board;
+          const pawn=byColor==='w'?'P':'p';
+          const knight=byColor==='w'?'N':'n';
+          const king=byColor==='w'?'K':'k';
+          const bishop=byColor==='w'?'B':'b';
+          const rook=byColor==='w'?'R':'r';
+          const queen=byColor==='w'?'Q':'q';
+          // 1. Pawn attacks
+          const pd=byColor==='w'?1:-1;
+          if(r+pd>=0&&r+pd<8){
+            if(c-1>=0&&b[r+pd][c-1]===pawn)return true;
+            if(c+1<8&&b[r+pd][c+1]===pawn)return true;
+          }
+          // 2. Knight attacks
+          for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){
+            const nr=r+dr,nc=c+dc;
+            if(nr>=0&&nr<8&&nc>=0&&nc<8&&b[nr][nc]===knight)return true;
+          }
+          // 3. King attacks
+          for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+            if(!dr&&!dc)continue;
+            const nr=r+dr,nc=c+dc;
+            if(nr>=0&&nr<8&&nc>=0&&nc<8&&b[nr][nc]===king)return true;
+          }
+          // 4. Diagonal rays (bishop/queen)
+          for(const[dr,dc]of[[-1,-1],[-1,1],[1,-1],[1,1]]){
+            let nr=r+dr,nc=c+dc;
+            while(nr>=0&&nr<8&&nc>=0&&nc<8){
+              const t=b[nr][nc];
+              if(t!==' '){if(t===bishop||t===queen)return true;break;}
+              nr+=dr;nc+=dc;
+            }
+          }
+          // 5. Straight rays (rook/queen)
+          for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){
+            let nr=r+dr,nc=c+dc;
+            while(nr>=0&&nr<8&&nc>=0&&nc<8){
+              const t=b[nr][nc];
+              if(t!==' '){if(t===rook||t===queen)return true;break;}
+              nr+=dr;nc+=dc;
+            }
+          }
           return false;
         }
+        // ── inChk: O(1) via king position cache ──
         function inChk(state,color){
-          const k=color==='w'?'K':'k';
-          for(let r=0;r<8;r++) for(let c=0;c<8;c++)
-            if(state.board[r][c]===k) return isAtk(state,r,c,opp(color));
-          return false;
+          const kPos=color==='w'?state.wKing:state.bKing;
+          if(!kPos){
+            const k=color==='w'?'K':'k';
+            for(let r=0;r<8;r++)for(let c=0;c<8;c++)
+              if(state.board[r][c]===k)return isAtk(state,r,c,opp(color));
+            return false;
+          }
+          return isAtk(state,kPos[0],kPos[1],opp(color));
         }
         function cloneS(s){
           return {board:s.board.map(r=>r.slice()),turn:s.turn,
@@ -7562,12 +7608,13 @@ window.askWiseKing = async function(fen, historyArr = []) {
           const b = state.board;
           const p = b[m.fr][m.fc]; const u = p.toUpperCase();
           const save = {
-            p,                                    // piece that moved (for promo undo)
-            captured: b[m.tr][m.tc],             // piece at destination (' ' if empty)
-            epCapture: null, epPos: null,         // en-passant captured pawn
-            rookFrom: null, rookTo: null, rookPiece: null, // castling rook
-            oldEP: state.enPassantTarget,         // previous EP target
-            oldCR: {...state.castleRights},       // previous castling rights
+            p,
+            captured: b[m.tr][m.tc],
+            epCapture: null, epPos: null,
+            rookFrom: null, rookTo: null, rookPiece: null,
+            oldEP: state.enPassantTarget,
+            oldCR: {...state.castleRights},
+            oldWK: state.wKing, oldBK: state.bKing,  // king cache snapshot
           };
           // En passant: pawn captures diagonally to an empty square → remove captured pawn
           if (u==='P' && m.tc!==m.fc && b[m.tr][m.tc]===' ') {
@@ -7584,6 +7631,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
           // Promotion
           if (p==='P' && m.tr===0) b[m.tr][m.tc] = m.promo || 'Q';
           if (p==='p' && m.tr===7) b[m.tr][m.tc] = m.promo ? m.promo.toLowerCase() : 'q';
+          // Update king position cache
+          if (p==='K') state.wKing = [m.tr, m.tc];
+          if (p==='k') state.bKing = [m.tr, m.tc];
           // Update castling rights (moving piece)
           if (u==='K') { if(p==='K'){state.castleRights.K=false;state.castleRights.Q=false;} else {state.castleRights.k=false;state.castleRights.q=false;} }
           if (u==='R') { if(m.fr===7&&m.fc===7)state.castleRights.K=false; if(m.fr===7&&m.fc===0)state.castleRights.Q=false; if(m.fr===0&&m.fc===7)state.castleRights.k=false; if(m.fr===0&&m.fc===0)state.castleRights.q=false; }
@@ -7599,12 +7649,14 @@ window.askWiseKing = async function(fen, historyArr = []) {
         function unmakeMove(state, m, save) {
           state.turn = opp(state.turn);
           const b = state.board;
-          b[m.fr][m.fc] = save.p;           // restore original piece (undoes promotion too)
-          b[m.tr][m.tc] = save.captured;    // restore captured piece (' ' if none)
-          if (save.epPos)   { b[save.epPos[0]][save.epPos[1]] = save.epCapture; b[m.tr][m.tc]=' '; } // undo EP
-          if (save.rookFrom){ b[save.rookFrom[0]][save.rookFrom[1]]=save.rookPiece; b[save.rookTo[0]][save.rookTo[1]]=' '; } // undo castling
+          b[m.fr][m.fc] = save.p;
+          b[m.tr][m.tc] = save.captured;
+          if (save.epPos)   { b[save.epPos[0]][save.epPos[1]] = save.epCapture; b[m.tr][m.tc]=' '; }
+          if (save.rookFrom){ b[save.rookFrom[0]][save.rookFrom[1]]=save.rookPiece; b[save.rookTo[0]][save.rookTo[1]]=' '; }
           state.enPassantTarget = save.oldEP;
           state.castleRights    = save.oldCR;
+          // Restore king position cache in O(1)
+          state.wKing = save.oldWK; state.bKing = save.oldBK;
         }
         // ─────────────────────────────────────────────────────────────────────
 
@@ -7933,7 +7985,9 @@ window.askWiseKing = async function(fen, historyArr = []) {
             const state = {
               board: msg.board, turn: msg.turn,
               castleRights: msg.castleRights || {K:false,Q:false,k:false,q:false},
-              enPassantTarget: msg.enPassantTarget || null
+              enPassantTarget: msg.enPassantTarget || null,
+              wKing: findKing(msg.board, 'w'),  // king position cache
+              bKing: findKing(msg.board, 'b'),
             };
 
             // Load position history
