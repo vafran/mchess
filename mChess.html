@@ -2543,11 +2543,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
         if (OPENING_BOOK && OPENING_BOOK[historyKey]) {
             const valid = OPENING_BOOK[historyKey];
             if (valid.length > 0) {
-                // 🎯 MEJORA TORNEO: Tasa de exploración — a veces ignoramos el libro para crear variedad.
-                // En nivel grandmaster usamos el motor propio el 20% del tiempo para evitar repetir
-                // siempre las mismas aperturas. Niveles inferiores respetan el libro el 100%.
-                const explorationChance = (typeof currentDifficulty !== 'undefined' && currentDifficulty === 'grandmaster') ? 0.20 : 0.05;
-                const skipBook = Math.random() < explorationChance;
+                // 🏆 TOURNAMENT MODE: Always use the best book move — no exploration.
+                // Exploration (ignoring the book) is only for variety in human games, not benchmarking.
+                const explorationChance = 0;
+                const skipBook = false;
 
                 if (!skipBook) {
                     const legalMvs = getLegalMovesForColorInPlace(color);

@@ -68,11 +68,11 @@ Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimien
 
 Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técnicas activas
 
-### 👑 Maestro — *Rey Sabio* (~1750 ELO)
+### 👑 Maestro — *Rey Sabio* (~1700 ELO)
 
 **Para:** Jugadores de club fuertes y amateurs avanzados.
 
-Profundidad 7 · 0% de errores · 10s de tiempo · libro completo · evaluación completa · Modo Entrenamiento desactivado automáticamente
+Profundidad 9 · 0% de errores · 10s de tiempo · libro completo · evaluación completa · Modo Entrenamiento desactivado automáticamente
 
 <img src="screenshots/ES/characters.png" alt="Personajes" width="300" />
 
@@ -84,7 +84,7 @@ Profundidad 7 · 0% de errores · 10s de tiempo · libro completo · evaluación
 | 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
 | 🔥 Difícil | ~1400 | 6 | 5% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~1750 | 10 | 0% | ninguno | ✅ completo | ✅ |
+| 👑 Rey Sabio | ~1700 | 9 | 0% | ninguno | ✅ completo | ✅ |
 
 ---
 

@@ -66,7 +66,7 @@ That is everything. The game handles the rest.
 
 6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Master — *Wise King* (~1750 ELO)
+### 👑 Master — *Wise King* (~1700 ELO)
 
 **Target:** Strong club players and advanced amateurs.
 
@@ -82,7 +82,7 @@ That is everything. The game handles the rest.
 | 🐣 Easy | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medium | ~1010 | 4 | 20% | ±6 cp | first 2 moves | ✅ |
 | 🔥 Hard | ~1400 | 6 | 5% | none | ✅ full | ✅ |
-| 👑 Wise King | ~1750 | 10 | 0% | none | ✅ full | ✅ |
+| 👑 Wise King | ~1700 | 9 | 0% | none | ✅ full | ✅ |
 
 ---
 
