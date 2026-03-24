@@ -2951,7 +2951,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       easy:        { depth: 2,  mistakes: 0.50, timeLimit: 800   },
       medium:      { depth: 4,  mistakes: 0.20, timeLimit: 2000  },
       hard:        { depth: 7,  mistakes: 0.05, timeLimit: 5000  },
-      grandmaster: { depth: 7,  mistakes: 0,    timeLimit: 10000 },
+      grandmaster: { depth: 9,  mistakes: 0,    timeLimit: 30000 },
     };
 
     const PIECE_VALUES = { P: 100, N: 300, B: 300, R: 500, Q: 900, K: 20000 };
@@ -7553,6 +7553,62 @@ window.askWiseKing = async function(fen, historyArr = []) {
           ns.turn=opp(state.turn);
           return ns;
         }
+        // ─── Make / Unmake Move ───────────────────────────────────────────────
+        // Applies a move IN-PLACE on state.board and returns a save object so
+        // the move can be perfectly undone afterwards.  This eliminates the
+        // cloneS heap allocation in every minimax/quiesce node (~3-5× speedup).
+        // IMPORTANT: callers MUST wrap the recursive call in try/finally and
+        // always call unmakeMove, even when a TIMEOUT exception is thrown.
+        function makeMove(state, m) {
+          const b = state.board;
+          const p = b[m.fr][m.fc]; const u = p.toUpperCase();
+          const save = {
+            p,                                    // piece that moved (for promo undo)
+            captured: b[m.tr][m.tc],             // piece at destination (' ' if empty)
+            epCapture: null, epPos: null,         // en-passant captured pawn
+            rookFrom: null, rookTo: null, rookPiece: null, // castling rook
+            oldEP: state.enPassantTarget,         // previous EP target
+            oldCR: {...state.castleRights},       // previous castling rights
+          };
+          // En passant: pawn captures diagonally to an empty square → remove captured pawn
+          if (u==='P' && m.tc!==m.fc && b[m.tr][m.tc]===' ') {
+            save.epCapture = b[m.fr][m.tc]; save.epPos = [m.fr, m.tc];
+            b[m.fr][m.tc] = ' ';
+          }
+          // Castling: move the rook
+          if (u==='K' && Math.abs(m.tc-m.fc)===2) {
+            if (m.tc===6) { save.rookFrom=[m.fr,7]; save.rookTo=[m.fr,5]; save.rookPiece=b[m.fr][7]; b[m.fr][5]=b[m.fr][7]; b[m.fr][7]=' '; }
+            else          { save.rookFrom=[m.fr,0]; save.rookTo=[m.fr,3]; save.rookPiece=b[m.fr][0]; b[m.fr][3]=b[m.fr][0]; b[m.fr][0]=' '; }
+          }
+          // Move piece
+          b[m.tr][m.tc] = p; b[m.fr][m.fc] = ' ';
+          // Promotion
+          if (p==='P' && m.tr===0) b[m.tr][m.tc] = m.promo || 'Q';
+          if (p==='p' && m.tr===7) b[m.tr][m.tc] = m.promo ? m.promo.toLowerCase() : 'q';
+          // Update castling rights (moving piece)
+          if (u==='K') { if(p==='K'){state.castleRights.K=false;state.castleRights.Q=false;} else {state.castleRights.k=false;state.castleRights.q=false;} }
+          if (u==='R') { if(m.fr===7&&m.fc===7)state.castleRights.K=false; if(m.fr===7&&m.fc===0)state.castleRights.Q=false; if(m.fr===0&&m.fc===7)state.castleRights.k=false; if(m.fr===0&&m.fc===0)state.castleRights.q=false; }
+          // Update castling rights (captured rook on original square)
+          if(m.tr===7&&m.tc===7)state.castleRights.K=false; if(m.tr===7&&m.tc===0)state.castleRights.Q=false;
+          if(m.tr===0&&m.tc===7)state.castleRights.k=false; if(m.tr===0&&m.tc===0)state.castleRights.q=false;
+          // Update en passant target
+          state.enPassantTarget = (u==='P' && Math.abs(m.tr-m.fr)===2) ? [(m.fr+m.tr)/2, m.fc] : null;
+          state.turn = opp(state.turn);
+          return save;
+        }
+
+        function unmakeMove(state, m, save) {
+          state.turn = opp(state.turn);
+          const b = state.board;
+          b[m.fr][m.fc] = save.p;           // restore original piece (undoes promotion too)
+          b[m.tr][m.tc] = save.captured;    // restore captured piece (' ' if none)
+          if (save.epPos)   { b[save.epPos[0]][save.epPos[1]] = save.epCapture; b[m.tr][m.tc]=' '; } // undo EP
+          if (save.rookFrom){ b[save.rookFrom[0]][save.rookFrom[1]]=save.rookPiece; b[save.rookTo[0]][save.rookTo[1]]=' '; } // undo castling
+          state.enPassantTarget = save.oldEP;
+          state.castleRights    = save.oldCR;
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         function pseudoMoves(state,color){
           const b=state.board,moves=[];
           for(let r=0;r<8;r++) for(let c=0;c<8;c++){
@@ -7614,7 +7670,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
           return moves;
         }
         function legalMoves(state,color){
-          return pseudoMoves(state,color).filter(m=>!inChk(applyMove(state,m),color));
+          return pseudoMoves(state,color).filter(m=>{
+            const save=makeMove(state,m);
+            const legal=!inChk(state,color);
+            unmakeMove(state,m,save);
+            return legal;
+          });
         }
         function findKing(board,color){
           const k=color==='w'?'K':'k';
@@ -7663,8 +7724,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
               if (state.board[m.tr][m.tc] !== ' ') return true;
               if (state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
               if (qd < 2) {
-                  const child = applyMove(state, m);
-                  if (inChk(child, opp(color))) return true;
+                  const save2 = makeMove(state, m);
+                  const givesCheck = inChk(state, opp(color));
+                  unmakeMove(state, m, save2);
+                  if (givesCheck) return true;
               }
               return false;
           });
@@ -7680,7 +7743,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
               const tv=PV[state.board[m.tr][m.tc].toUpperCase()]||0;
               const isP=state.board[m.fr][m.fc].toUpperCase()==='P'&&(m.tr===0||m.tr===7);
               if(!isP&&sp+tv+DELTA<alpha) continue;
-              const s=quiesce(applyMove(state,m),alpha,beta,false,deadline,qd+1);
+              const save=makeMove(state,m);
+              let s;
+              try { s=quiesce(state,alpha,beta,false,deadline,qd+1); }
+              finally { unmakeMove(state,m,save); }
               if(s>=beta)return beta; if(s>alpha)alpha=s;
             }
             return alpha;
@@ -7689,7 +7755,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
               const tv=PV[state.board[m.tr][m.tc].toUpperCase()]||0;
               const isP=state.board[m.fr][m.fc].toUpperCase()==='P'&&(m.tr===0||m.tr===7);
               if(!isP&&sp-tv-DELTA>beta) continue;
-              const s=quiesce(applyMove(state,m),alpha,beta,true,deadline,qd+1);
+              const save=makeMove(state,m);
+              let s;
+              try { s=quiesce(state,alpha,beta,true,deadline,qd+1); }
+              finally { unmakeMove(state,m,save); }
               if(s<=alpha)return alpha; if(s<beta)beta=s;
             }
             return beta;
@@ -7753,13 +7822,15 @@ window.askWiseKing = async function(fen, historyArr = []) {
               p && p !== ' ' && clr(p) === movingClr && 'NBRQ'.includes(p.toUpperCase())
             );
             if(hasMajorOrMinor){
-              const nullState={...state,turn:opp(color),enPassantTarget:null};
-              const R=depth>=8?3:2; // Reduction factor — 🎯 MEJORA TORNEO: menos agresivo (antes: depth>=6)
+              const R=depth>=8?3:2;
+              const savedTurn=state.turn; const savedEP=state.enPassantTarget;
+              state.turn=opp(color); state.enPassantTarget=null;
               try{
-                const nullScore=minimax(nullState,depth-1-R,alpha,beta,!maximizing,deadline,false);
-                if(maximizing&&nullScore>=beta) return beta;
-                if(!maximizing&&nullScore<=alpha) return alpha;
+                const nullScore=minimax(state,depth-1-R,alpha,beta,!maximizing,deadline,false);
+                if(maximizing&&nullScore>=beta){ state.turn=savedTurn; state.enPassantTarget=savedEP; return beta; }
+                if(!maximizing&&nullScore<=alpha){ state.turn=savedTurn; state.enPassantTarget=savedEP; return alpha; }
               }catch(e){ if(String(e)==='TIMEOUT') throw e; }
+              finally{ state.turn=savedTurn; state.enPassantTarget=savedEP; }
             }
           }
 
@@ -7783,48 +7854,47 @@ window.askWiseKing = async function(fen, historyArr = []) {
           const canFutility=staticEval!==null&&!checked;
 
           for(const m of moves){
-            const child=applyMove(state,m);
-            const ext=inChk(child,opp(color))?1:0;
-            let v;
-
             // ── Futility Pruning ────────────────────────────────────────────
             const isCapture=state.board[m.tr][m.tc]!==' ';
             const isPromo=state.board[m.fr][m.fc].toUpperCase()==='P'&&(m.tr===0||m.tr===7);
-            if(canFutility&&depth<=2&&!isCapture&&!isPromo&&ext===0&&moveCount>0){
+            if(canFutility&&depth<=2&&!isCapture&&!isPromo&&moveCount>0){
               const margin=FUTILITY_MARGIN[depth]||0;
               if(maximizing&&staticEval+margin<=alpha){ moveCount++; continue; }
               if(!maximizing&&staticEval-margin>=beta){ moveCount++; continue; }
             }
 
             // ── Late Move Reductions (LMR) ──────────────────────────────────
-            const doLMR=moveCount>=3&&depth>=2&&!checked&&!isCapture&&!isPromo&&ext===0;
+            const doLMR=moveCount>=3&&depth>=2&&!checked&&!isCapture&&!isPromo;
 
+            const save=makeMove(state,m);
+            const ext=inChk(state,opp(color))?1:0; // check extension: computed AFTER makeMove
+            if(doLMR && ext!==0) { /* don't reduce when move gives check */ }
+            let v;
             try{
               if(moveCount===0){
                 // ── PVS: first move searched at full window ──────────────────
-                v=minimax(child,depth-1+ext,alpha,beta,!maximizing,deadline);
-              } else if(doLMR){
+                v=minimax(state,depth-1+ext,alpha,beta,!maximizing,deadline);
+              } else if(doLMR&&ext===0){
                 // LMR: reduced window search first — null window in correct space
                 const reduction=moveCount>=6?2:1;
                 if(maximizing){
-                  v=minimax(child,depth-1-reduction+ext,alpha,alpha+1,false,deadline);
-                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,false,deadline);
+                  v=minimax(state,depth-1-reduction+ext,alpha,alpha+1,false,deadline);
+                  if(v>alpha&&v<beta) v=minimax(state,depth-1+ext,alpha,beta,false,deadline);
                 } else {
-                  v=minimax(child,depth-1-reduction+ext,beta-1,beta,true,deadline);
-                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,true,deadline);
+                  v=minimax(state,depth-1-reduction+ext,beta-1,beta,true,deadline);
+                  if(v>alpha&&v<beta) v=minimax(state,depth-1+ext,alpha,beta,true,deadline);
                 }
               } else {
-                // ── PVS: null window search — (alpha,alpha+1) for maximizer,
-                //                             (beta-1,beta)   for minimizer ──
+                // ── PVS: null window search ──────────────────────────────────
                 if(maximizing){
-                  v=minimax(child,depth-1+ext,alpha,alpha+1,false,deadline);
-                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,false,deadline);
+                  v=minimax(state,depth-1+ext,alpha,alpha+1,false,deadline);
+                  if(v>alpha&&v<beta) v=minimax(state,depth-1+ext,alpha,beta,false,deadline);
                 } else {
-                  v=minimax(child,depth-1+ext,beta-1,beta,true,deadline);
-                  if(v>alpha&&v<beta) v=minimax(child,depth-1+ext,alpha,beta,true,deadline);
+                  v=minimax(state,depth-1+ext,beta-1,beta,true,deadline);
+                  if(v>alpha&&v<beta) v=minimax(state,depth-1+ext,alpha,beta,true,deadline);
                 }
               }
-            }catch(e){ if(String(e)==='TIMEOUT') throw e; throw e; }
+            } finally { unmakeMove(state,m,save); } // ALWAYS undo — even on TIMEOUT
 
             moveCount++;
             if(maximizing){if(v>best){best=v;bestMoveFound=m;}if(v>alpha)alpha=v;}
@@ -8091,8 +8161,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // Final anti-repetition filter: exclude already-seen positions
             // IMPORTANT: uses stringHash() to match the same key used when building gameHashCount
             const nonRep = bestOptions.filter(o => {
-              const child = applyMove(state, o.move);
-              return (gameHashCount.get(stringHash(child))||0) === 0;
+              const save = makeMove(state, o.move);
+              const seen = (gameHashCount.get(stringHash(state))||0) === 0;
+              unmakeMove(state, o.move, save);
+              return seen;
             });
             // If all repeat, choose the one seen the fewest times
             let finalOptions;
@@ -8101,11 +8173,16 @@ window.askWiseKing = async function(fen, historyArr = []) {
             } else {
               let minReps = Infinity;
               bestOptions.forEach(o => {
-                const r = gameHashCount.get(zob(applyMove(state, o.move)))||0;
+                const save=makeMove(state,o.move);
+                const r = gameHashCount.get(stringHash(state))||0;
+                unmakeMove(state,o.move,save);
                 if(r < minReps) minReps = r;
               });
               finalOptions = bestOptions.filter(o => {
-                return (gameHashCount.get(zob(applyMove(state, o.move)))||0) === minReps;
+                const save=makeMove(state,o.move);
+                const r=(gameHashCount.get(stringHash(state))||0);
+                unmakeMove(state,o.move,save);
+                return r === minReps;
               });
             }
 
