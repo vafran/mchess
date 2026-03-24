@@ -2579,16 +2579,20 @@ window.askWiseKing = async function(fen, historyArr = []) {
             }
         }
 
-        console.log("🧠 Motor pensando (Profundidad 10, 35s max)...");
-        // Aumentar significativamente el buffer de seguridad para Puppeteer
-        const timeoutRes = 35000;
+        // Read from DIFF_SETTINGS so arena and web use the same values
+        const _diff = (typeof currentDifficulty !== 'undefined' && DIFF_SETTINGS[currentDifficulty])
+            ? DIFF_SETTINGS[currentDifficulty]
+            : DIFF_SETTINGS['grandmaster'];
+        const _depth = _diff.depth;
+        const timeoutRes = _diff.timeLimit;
+        console.log(`🧠 Motor pensando (Profundidad ${_depth}, ${timeoutRes/1000}s max)...`);
         const results = await new Promise(resolve => {
             const worker = createEngineWorker();
             let settled = false;
             const t = setTimeout(() => {
-                console.log("⚠️ Timer de seguridad (50s) disparado.");
+                console.log("⚠️ Timer de seguridad disparado.");
                 if(!settled) { settled=true; worker.terminate(); resolve([]); }
-            }, timeoutRes + 15000); // 15 segundos extra de margen!
+            }, timeoutRes + 15000);
 
             worker.onmessage = function(e) {
                 if(e.data.action === 'result') {
@@ -2602,7 +2606,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 turn: color,
                 castleRights,
                 enPassantTarget,
-                depth: 10, multiPV: 1, timeout: timeoutRes,
+                depth: _depth, multiPV: 1, timeout: timeoutRes,
                 positionHashes: [...positionHashes]
             });
         });

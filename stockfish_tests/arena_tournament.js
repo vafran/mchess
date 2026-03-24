@@ -55,15 +55,15 @@ class TournamentStats {
 
     printReport() {
         console.log('\n' + '═'.repeat(60));
-        console.log('🏆 REPORTE FINAL DEL TORNEO');
+        console.log('🏆 FINAL TOURNAMENT REPORT');
         console.log('═'.repeat(60));
-        console.log(`📊 Partidas jugadas: ${this.partidas.length}`);
-        console.log(`✅ Victorias (mChess): ${this.wins}`);
-        console.log(`❌ Derrotas: ${this.losses}`);
-        console.log(`🤝 Empates: ${this.draws}`);
+        console.log(`📊 Games played: ${this.partidas.length}`);
+        console.log(`✅ Wins (mChess): ${this.wins}`);
+        console.log(`❌ Losses: ${this.losses}`);
+        console.log(`🤝 Draws: ${this.draws}`);
         console.log(`📈 Win Rate: ${this.getWinRate()}%`);
-        console.log(`📏 Promedio de movimientos: ${this.getAvgMoves()}`);
-        console.log(`🎯 ELO Estimado: ${this.estimateELO()}`);
+        console.log(`📏 Average moves: ${this.getAvgMoves()}`);
+        console.log(`🎯 Estimated ELO: ${this.estimateELO()}`);
         console.log('═'.repeat(60));
 
         const reasons = {};
@@ -76,14 +76,14 @@ class TournamentStats {
             stats: { wins: this.wins, losses: this.losses, draws: this.draws, winRate: this.getWinRate(), avgMoves: this.getAvgMoves(), estimatedELO: this.estimateELO() },
             partidas: this.partidas
         }, null, 2));
-        console.log(`\n💾 Resultados guardados en ${CONFIG.logFile}`);
+        console.log(`\n💾 Results saved to ${CONFIG.logFile}`);
     }
 }
 
 // ✨ FIX: Pasamos el 'browser' como parámetro para reutilizarlo
 async function playMatch(matchNumber, stats, aiLevel, browser) {
     console.log(`\n${'─'.repeat(60)}`);
-    console.log(`🎮 PARTIDA ${matchNumber}/${CONFIG.numPartidas}`);
+    console.log(`🎮 MATCH ${matchNumber}/${CONFIG.numPartidas}`);
     console.log('─'.repeat(60));
     
     const htmlPath = 'file://' + path.join(__dirname, '..', 'mChess.html');
@@ -103,14 +103,14 @@ async function playMatch(matchNumber, stats, aiLevel, browser) {
             await page.evaluate((level) => { if(typeof startAIGame==='function') startAIGame(level); }, aiLevel);
             await new Promise(r => setTimeout(r, 1500));
         } catch (e) {
-            console.log('⚠️ Warning: no se pudo inyectar el nivel:', e.message);
+            console.log('⚠️ Warning: could not inject level:', e.message);
         }
     }
 
     const game = new Chess();
     let turn = 'w';
     let moveCount = 0;
-    let reason = 'completada';
+    let reason = 'completed';
 
     const stockfishPath = process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish.exe');
     const sf = spawn(stockfishPath); 
@@ -168,16 +168,16 @@ async function playMatch(matchNumber, stats, aiLevel, browser) {
                 
                 // ✨ FIX: Imprimir cada movimiento con el tiempo de cálculo
                 if (turn === 'w') {
-                    const alert = timeTaken >= 34.0 ? ' ⚠️ (Límite de tiempo)' : '';
-                    console.log(`   👑 mChess juega ${move} (⏱️ ${timeTaken.toFixed(1)}s)${alert}`);
+                    const alert = timeTaken >= 20.0 ? ' ⚠️ (Time limit)' : '';
+                    console.log(`   👑 mChess plays ${move} (⏱️ ${timeTaken.toFixed(1)}s)${alert}`);
                 } else {
-                    console.log(`   🐟 Stockfish juega ${move}`);
+                    console.log(`   🐟 Stockfish plays ${move}`);
                 }
 
                 turn = turn === 'w' ? 'b' : 'w';
                 moveCount++;
             } catch (e) {
-                console.error(`❌ Jugada ILEGAL: ${move} (${turn === 'w' ? 'mChess' : 'Stockfish'})`);
+                console.error(`❌ ILLEGAL MOVE: ${move} (${turn === 'w' ? 'mChess' : 'Stockfish'})`);
                 reason = turn === 'w' ? 'ilegal_rey_sabio' : 'ilegal_stockfish';
                 break;
             }
@@ -205,30 +205,30 @@ async function playMatch(matchNumber, stats, aiLevel, browser) {
         result = '1-0';
     }
 
-    console.log(`\n✨ Resultado: ${result} (${reason}) - ${moveCount} movimientos`);
+    console.log(`\n✨ Result: ${result} (${reason}) - ${moveCount} moves`);
     stats.addResult(result, moveCount, reason, game.pgn());
     return result;
 }
 
 async function runTournament() {
     console.log('╔' + '═'.repeat(58) + '╗');
-    console.log('║' + ' '.repeat(10) + '🏆 TORNEO AUTOMÁTICO mChess vs Stockfish 🏆' + ' '.repeat(10) + '║');
+    console.log('║' + ' '.repeat(5) + '🏆 AUTOMATIC TOURNAMENT mChess vs Stockfish 🏆' + ' '.repeat(10) + '║');
     console.log('╚' + '═'.repeat(58) + '╝');
     
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const ask = (q) => new Promise(res => rl.question(q, ans => res(ans)));
-    console.log('\nSelecciona nivel de mChess para Rey Sabio:');
-    console.log('  1) Pollito (easy)');
-    console.log('  2) Estudiante (medium)');
-    console.log('  3) Mago (hard)');
-    console.log('  4) Rey Sabio (grandmaster)');
-    const ans = (await ask('Elige 1-4 (enter=4): ')).trim();
+    console.log('\nSelect mChess level for Wise King:');
+    console.log('  1) Chick (easy)');
+    console.log('  2) Student (medium)');
+    console.log('  3) Wizard (hard)');
+    console.log('  4) Wise King (grandmaster)');
+    const ans = (await ask('Choose 1-4 (enter=4): ')).trim();
     rl.close();
     const MAP = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
     const selectedLevel = MAP[ans] || 'grandmaster';
     
     // ✨ FIX: Lanzamos Puppeteer UNA SOLA VEZ para todo el torneo
-    console.log(`\n🚀 Inicializando navegador base...`);
+    console.log(`\n🚀 Initializing base browser...`);
     const browser = await puppeteer.launch({ 
         headless: "new",
         protocolTimeout: 120000,
@@ -242,13 +242,13 @@ async function runTournament() {
             try {
                 await playMatch(i, stats, selectedLevel, browser);
             } catch (error) {
-                console.error(`\n💥 Error crítico en partida ${i}:`, error.message);
+                console.error(`\n💥 Critical error in match ${i}:`, error.message);
                 stats.addResult('1/2-1/2', 0, 'error', '');
             }
             await new Promise(r => setTimeout(r, 2000));
         }
     } finally {
-        console.log(`\n🛑 Cerrando navegador base...`);
+        console.log(`\n🛑 Closing base browser...`);
         await browser.close();
     }
     
