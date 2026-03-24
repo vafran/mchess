@@ -5107,7 +5107,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       // 1.e4 e5 — Juego Abierto
       "e4,e5": [
         { m: "Nf3", w: 10, name: "Apertura de Juego Abierto", desc: "Desarrollo del caballo atacando e5. La línea más popular y correcta." },
-        { m: "Nc3", w:  5, name: "Apertura Viena",         desc: "Desarrollo del caballo a c3. Permite plans agresivos con f4." },
+        { m: "Nc3", w:  5, name: "Apertura Viena",         desc: "Desarrollo del caballo a c3. Permite planes agresivos con f4." },
         { m: "f4",  w:  3, name: "Gambito de Rey",         desc: "¡Gambito audaz! El blanco ofrece un peón para abrir la columna f y atacar rápido." },
         { m: "Bc4", w:  3, name: "Apertura Italiana (directa)", desc: "El alfil apunta a f7, el punto más débil del negro." }
       ],
@@ -5720,8 +5720,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
     function shouldAnnounceOpening(currentHistory, openingMatch, brd) {
       if (!openingMatch) return false;
+      // Solo anunciamos en jugadas del blanco, excepto la primera respuesta negra
+      // (que define la defensa, ej. "Defensa Siciliana"). Evita repeticiones molestas.
+      const isBlackMove = currentHistory.length % 2 === 0;
+      if (isBlackMove && currentHistory.length > 2) return false;
       if (currentHistory.length <= 3) return true;
-      if (currentHistory.length > 12) return false;
+      if (currentHistory.length > 14) return false;
 
       const prevHistory = currentHistory.slice(0, -1);
       if (prevHistory.length === 0) return true;
@@ -7181,73 +7185,25 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // ── Passed pawn bonus ─────────────────────────────────────────
             let bonus=0;
 
-            // Penalty for "floating" piece (undefended AND not currently attacked — SIXTH SENSE covers the attacked case)
-            if (u === 'N' || u === 'B' || u === 'R') {
-                const isAttacked = isAtk(state, r, c, isW ? 'b' : 'w');
-                const isDefendedByFriend = isAtk(state, r, c, isW ? 'w' : 'b');
-                if (!isDefendedByFriend && !isAttacked) {
-                    bonus -= 12; // Small coordination penalty — avoids double-counting with SIXTH SENSE
-                }
-            }
 
-            // 👸 FIX 1: STOP THE QUEEN EARLY
-            if(u==='Q' && eg < 0.5) { 
+            // 💎 PÁNICO QUIRÚRGICO: solo protegemos a la Dama (ahorro masivo de CPU)
+            // El resto de piezas ya está cubierto por la búsqueda táctica (quiesce).
+
+            // 👸 Frenar la Dama en la apertura: no salir antes de desarrollar menores
+            if(u==='Q' && eg < 0.5){
               const homeR = isW ? 7 : 0;
-              const homeC = 3;
-              if(r !== homeR || c !== homeC) {
+              if(r !== homeR || c !== 3){
                 const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
-                // Brutal penalty for taking her out before the knights and bishops
-                bonus -= undeveloped * 70; 
-                // Forbidden to cross the midfield in the opening!
-                if ((isW && r <= 4) || (!isW && r >= 3)) {
-                   bonus -= 150; 
-                }
+                bonus -= undeveloped * 70;
+                if((isW && r <= 4) || (!isW && r >= 3)) bonus -= 150;
               }
             }
 
-            // 👁️ Fear of X-Rays for the Queen (correctly checks for blockers)
+            // 🚨 Si la Dama está en peligro, penalizamos fuerte
             if (u === 'Q') {
-                const enemyRook = isW ? 'r' : 'R';
-                const enemyQueen = isW ? 'q' : 'Q';
-                let xRayThreat = false;
-
-                // Check along the column (up and down)
-                for (let dir = -1; dir <= 1; dir += 2) {
-                    for (let scanR = r + dir; scanR >= 0 && scanR < 8; scanR += dir) {
-                        const sq = b[scanR][c];
-                        if (!sq || sq === ' ') continue;
-                        if (sq === enemyRook || sq === enemyQueen) { xRayThreat = true; }
-                        break; // any piece (friendly or not) blocks the X-Ray
-                    }
-                    if (xRayThreat) break;
-                }
-                // Check along the row (left and right)
-                if (!xRayThreat) {
-                    for (let dir = -1; dir <= 1; dir += 2) {
-                        for (let scanC = c + dir; scanC >= 0 && scanC < 8; scanC += dir) {
-                            const sq = b[r][scanC];
-                            if (!sq || sq === ' ') continue;
-                            if (sq === enemyRook || sq === enemyQueen) { xRayThreat = true; }
-                            break;
-                        }
-                        if (xRayThreat) break;
-                    }
-                }
-
-                if (xRayThreat) {
-                    bonus -= 40; // Nudge Queen away from X-Ray lines
-                }
-            }
-
-            // 🚨 SIXTH SENSE: Panic when piece is attacked
-            if (u === 'Q' || u === 'R' || u === 'B' || u === 'N') {
                 if (isAtk(state, r, c, isW ? 'b' : 'w')) {
-                    let isDefended = isAtk(state, r, c, isW ? 'w' : 'b');
-                    if (!isDefended) {
-                        bonus -= (PV[u] * 0.7);
-                    } else if (u === 'Q' || u === 'R') {
-                        bonus -= (u === 'Q' ? 400 : 180);
-                    }
+                    const isDefended = isAtk(state, r, c, isW ? 'w' : 'b');
+                    bonus -= isDefended ? 150 : 500;
                 }
             }
 
@@ -7665,6 +7621,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
         let killers=Array(64).fill(null).map(()=>[null,null]);
         let histTable=Array(64).fill(null).map(()=>Array(64).fill(0));
 
+        // 📊 TELEMETRÍA
+        let searchNodes = 0;
+        let qSearchNodes = 0;
+        let ttHitsCount = 0;
+        let searchStartTime = 0;
+
         function moveScore(state,m,depth){
           const p=state.board[m.fr][m.fc];
           const t=state.board[m.tr][m.tc];
@@ -7684,6 +7646,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
         }
 
         function quiesce(state,alpha,beta,maximizing,deadline,qd=0){
+          qSearchNodes++; // 📊
           if(Date.now()>=deadline||qd>8) return evaluate(state);
           const sp=evaluate(state);
           if(maximizing){if(sp>=beta)return beta;if(sp>alpha)alpha=sp;}
@@ -7701,7 +7664,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
               }
               return false;
           });
-          caps.sort((a,b)=>moveScore(state,b,0)-moveScore(state,a,0));
+          // ⚡ MVV-LVA puro: Víctima alta - Atacante bajo (sin overhead de killers/history)
+          caps.sort((a, b) => {
+            const valA = (PV[state.board[a.tr][a.tc].toUpperCase()]||0)*10 - (PV[state.board[a.fr][a.fc].toUpperCase()]||0);
+            const valB = (PV[state.board[b.tr][b.tc].toUpperCase()]||0)*10 - (PV[state.board[b.fr][b.fc].toUpperCase()]||0);
+            return valB - valA;
+          });
           const DELTA = 250;
           if(maximizing){
             for(const m of caps){
@@ -7746,15 +7714,19 @@ window.askWiseKing = async function(fen, historyArr = []) {
         }
 
         function minimax(state,depth,alpha,beta,maximizing,deadline,nullOk=true){
+          searchNodes++; // 📊
           if(Date.now()>=deadline) throw 'TIMEOUT';
           const bk=zob(state);
           // Anti-repetition check — use Zobrist hash (already encodes board+turn+castling+EP)
           if((gameHashCount.get(stringHash(state))||0)>=2) return 0;
-          // TT lookup
+          // TT lookup + Hash Move
           const alphaOrig=alpha;
+          let hashMove = null;
           if(tt.has(bk)){
             const e=tt.get(bk);
+            hashMove = e.bestMove || null; // 🚀 Recuperamos la mejor jugada anterior
             if(e.depth>=depth){
+              ttHitsCount++; // 📊
               if(e.flag===TT_EXACT)return e.score;
               if(e.flag===TT_LOWER&&e.score>alpha)alpha=e.score;
               if(e.flag===TT_UPPER&&e.score<beta)beta=e.score;
@@ -7787,9 +7759,17 @@ window.askWiseKing = async function(fen, historyArr = []) {
             }
           }
 
-          moves.sort((a,b)=>moveScore(state,b,depth)-moveScore(state,a,depth));
+          // 🚀 Ordenación con prioridad absoluta al Hash Move
+          moves.sort((a, b) => {
+            const isHashA = hashMove && a.fr===hashMove.fr && a.fc===hashMove.fc && a.tr===hashMove.tr && a.tc===hashMove.tc && a.promo===hashMove.promo;
+            const isHashB = hashMove && b.fr===hashMove.fr && b.fc===hashMove.fc && b.tr===hashMove.tr && b.tc===hashMove.tc && b.promo===hashMove.promo;
+            if(isHashA) return -1;
+            if(isHashB) return 1;
+            return moveScore(state,b,depth)-moveScore(state,a,depth);
+          });
           let best=maximizing?-Infinity:Infinity;
           let moveCount=0;
+          let bestMoveFound=null; // 🚀 Rastreamos la mejor jugada del nodo
 
           // ── Futility Pruning margins ────────────────────────────────────────
           // At low depths, if static eval + margin < alpha (for maximizer), the node
@@ -7843,8 +7823,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
             }catch(e){ if(String(e)==='TIMEOUT') throw e; throw e; }
 
             moveCount++;
-            if(maximizing){if(v>best)best=v;if(v>alpha)alpha=v;}
-            else{if(v<best)best=v;if(v<beta)beta=v;}
+            if(maximizing){if(v>best){best=v;bestMoveFound=m;}if(v>alpha)alpha=v;}
+            else{if(v<best){best=v;bestMoveFound=m;}if(v<beta)beta=v;}
             if(alpha>=beta){
               if(state.board[m.tr][m.tc]===' '){
                 killers[depth][1]=killers[depth][0];killers[depth][0]=m;
@@ -7854,8 +7834,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
             }
           }
           const flag=best<=alphaOrig?TT_UPPER:best>=beta?TT_LOWER:TT_EXACT;
-          if(tt.size>MAX_TT)ttEvict();
-          tt.set(bk,{score:best,depth,flag});
+          // ☣️ ANTI-TT POLLUTION: solo sobrescribimos si aportamos valor real
+          const _existing = tt.get(bk);
+          if(!_existing || depth >= _existing.depth || _existing.flag !== TT_EXACT){
+            if(tt.size>MAX_TT)ttEvict();
+            tt.set(bk,{score:best,depth,flag,bestMove:bestMoveFound||moves[0]||null});
+          }
           return best;
         }
 
@@ -7868,6 +7852,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
 
           try {
             const timeout = Math.max(1000, msg.timeout || 5000);
+            searchStartTime = Date.now(); // ⏱️
+            searchNodes = 0; qSearchNodes = 0; ttHitsCount = 0;
             const deadline = Date.now() + timeout;
             const color = msg.turn;
             const multiPV = msg.multiPV || 1;
@@ -7894,6 +7880,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
             if(!rootMoves.length){
               postMessage({action:'result', moves:[], isPartial:false});
               return;
+            }
+
+            // 🚀 IMMEDIATE EXIT: If there is only 1 legal move, move in 1 millisecond
+            if (rootMoves.length === 1) {
+                postMessage({action:'result', moves:[{move:rootMoves[0], score:0}], isPartial:false});
+                return;
             }
 
             // ✨ BOOK INJECTION (Root Move Locking)
@@ -7937,8 +7929,13 @@ window.askWiseKing = async function(fen, historyArr = []) {
             // Don’t START a new depth iteration if we have used more than 60% of our budget.
             // This ensures we always return the last *completed* depth result, which is
             // significantly better than an aborted partial result from a deeper iteration.
-            const softDeadline = Date.now() + Math.floor(timeout * 0.60);
+            // Immediate exit if there is only one legal move — no quality cost.
 
+            // Soft time limit al 80%: más presupuesto para profundidades altas.
+            const softDeadline = Date.now() + Math.floor(timeout * 0.80);
+
+            let bestMovesHistory = []; // To track confidence
+            
             for(let d = 1; d <= maxDepth; d++){
               if(Date.now() >= deadline){ analysisPartial = true; break; }
               if(d > 3 && Date.now() >= softDeadline){ break; } // soft limit: don't start unfinishable depth
@@ -7966,7 +7963,6 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   if(Date.now() >= deadline){ depthPartial = true; analysisPartial = true; break; }
 
                   const child = applyMove(state, m);
-                  const childKey = zob(child);
                   const reps = gameHashCount.get(stringHash(child))||0;
 
                   // ✨ FIX Anti-rep: If the move leads to an already seen position,
@@ -8029,8 +8025,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   for(const {move:m} of scoredRoot){
                     if(Date.now() >= deadline){ depthPartial = true; analysisPartial = true; break; }
                     const child = applyMove(state, m);
-                    const childKey = zob(child); // Zobrist hash (encodes board+turn+castling+EP)
-                    const reps = gameHashCount.get(childKey)||0;
+                    const reps = gameHashCount.get(stringHash(child))||0;
                     // ✨ FIX Anti-rep: Draw = exact 0 (see aspiration loop above)
                     let scoreForMe;
                     if (reps >= 1) {
@@ -8058,6 +8053,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
               if(!depthPartial && currentDepthScores.length > 0){
                 currentDepthScores.sort((a,b) => b.score - a.score);
                 prevBestScore = currentDepthScores[0].score; // Track for aspiration windows
+                
                 scoredRoot.forEach(sr => {
                   const found = currentDepthScores.find(cs =>
                     cs.move.fr===sr.move.fr && cs.move.fc===sr.move.fc &&
@@ -8065,16 +8061,33 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   );
                   if(found) sr.score = found.score;
                 });
+                
                 bestOptions = currentDepthScores.slice(0, multiPV);
+
+                // ⏱️ SOFT DEADLINE REAL
+                bestMovesHistory.push(bestOptions[0].move);
+                let timeSpent = Date.now() - (deadline - timeout);
+                
+                if (timeSpent > timeout * 0.50 && bestMovesHistory.length >= 3) {
+                    let m1 = bestMovesHistory[bestMovesHistory.length - 1];
+                    let m2 = bestMovesHistory[bestMovesHistory.length - 2];
+                    let m3 = bestMovesHistory[bestMovesHistory.length - 3];
+                    
+                    if (m1.fr === m2.fr && m1.fc === m2.fc && m1.tr === m2.tr && m1.tc === m2.tc &&
+                        m2.fr === m3.fr && m2.fc === m3.fc && m2.tr === m3.tr && m2.tc === m3.tc) {
+                        break; // ¡Ahora sí! Rompe el bucle for(let d=1...) correctamente
+                    }
+                }
               }
 
               if(analysisPartial) break;
             }
 
-            // Final anti-repetition filter: exclude already-seen positions (uses Zobrist hash)
+            // Final anti-repetition filter: exclude already-seen positions
+            // IMPORTANT: uses stringHash() to match the same key used when building gameHashCount
             const nonRep = bestOptions.filter(o => {
               const child = applyMove(state, o.move);
-              return (gameHashCount.get(zob(child))||0) === 0;
+              return (gameHashCount.get(stringHash(child))||0) === 0;
             });
             // If all repeat, choose the one seen the fewest times
             let finalOptions;
@@ -8091,7 +8104,12 @@ window.askWiseKing = async function(fen, historyArr = []) {
               });
             }
 
-            postMessage({action:'result', moves:finalOptions, isPartial:analysisPartial});
+            // 📊 SIGNOS VITALES
+            const _totalN = searchNodes + qSearchNodes;
+            const _ms = Date.now() - searchStartTime;
+            const _nps = _ms > 0 ? Math.floor((_totalN / _ms) * 1000) : 0;
+            console.log(`🧠 Prof: ${maxDepth} | Nodos: ${_totalN} (${qSearchNodes} en Q) | NPS: ${_nps} | TT Hits: ${ttHitsCount}`);
+            postMessage({action:'result', moves:finalOptions, isPartial:analysisPartial, nps: _nps, nodes: _totalN, depth: maxDepth});
 
           } catch(err){
             postMessage({action:'error', error:String(err)});
@@ -9062,7 +9080,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       resetCommentaryStyleMemory();
       
       // Travel in time and re-translate the last 5 moves
-      const start = Math.max(0, history.length - 5);
+      const start = Math.max(0, history.length - 15);
       for (let i = start; i < history.length; i++) {
         const partial = history.slice(0, i + 1);
         addCommentaryEntry(partial[partial.length - 1], partial);
@@ -9128,7 +9146,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
         const now2 = new Date();
         const timeStr2 = now2.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
         commentaryLog.unshift({ html: castleComment, time: timeStr2, tone: 'serious' });
-        if (commentaryLog.length > 5) commentaryLog.pop();
+        if (commentaryLog.length > 15) commentaryLog.pop();
         list.innerHTML = commentaryLog.map((entry, i) => `
           <div class="commentary-entry" style="border-left: 4px solid ${i === 0 ? 'var(--accent)' : 'rgba(168,85,247,0.25)'}; padding: 6px 10px; background: rgba(168,85,247,${i === 0 ? '0.06' : '0.02'}); margin-bottom: 5px; opacity: ${i === 0 ? '1' : '0.6'};">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -9431,7 +9449,7 @@ window.askWiseKing = async function(fen, historyArr = []) {
       const now = new Date();
       const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
           commentaryLog.unshift({ html: comment, time: timeStr, tone: toneUsed });
-      if (commentaryLog.length > 5) commentaryLog.pop();
+      if (commentaryLog.length > 15) commentaryLog.pop();
       list.innerHTML = commentaryLog.map((entry, i) => `
         <div class="commentary-entry" style="border-left: 4px solid ${i === 0 ? (isCapture ? 'var(--danger)' : 'var(--accent)') : 'rgba(168,85,247,0.25)'}; padding: 6px 10px; background: rgba(168,85,247,${i === 0 ? '0.06' : '0.02'}); margin-bottom: 5px; opacity: ${i === 0 ? '1' : '0.6'};">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -11318,9 +11336,23 @@ window.askWiseKing = async function(fen, historyArr = []) {
             const attackerName = hanging.attacker
               ? getLocalizedPieceName(hanging.attacker)
               : (en ? 'enemy piece' : 'pieza enemiga');
-            reason = en
-              ? `<br>⚠️ Your piece on ${hanging.square} can be captured for free by ${pArticle} ${attackerName}.`
-              : `<br>⚠️ Tu pieza en ${hanging.square} puede ser capturada gratis por ${pArticle} ${attackerName}.`;
+              
+            // Obtenemos el motivo que calculó el cerebro matemático
+            const motivo = hanging.reason || 'indefensa';
+             
+            if (motivo === 'superada en número') {
+                reason = en 
+                  ? `<br>⚠️ <strong>Count the attackers!</strong> There are more enemies pointing at your piece on ${hanging.square} than defenders. They will win the fight!` 
+                  : `<br>⚠️ <strong>¡Cuenta los atacantes!</strong> Hay más enemigos apuntando a tu pieza en ${hanging.square} que defensores. ¡Van a ganar la pelea!`;
+            } else if (motivo === 'atacada por una pieza de menor valor') {
+                reason = en 
+                  ? `<br>⚠️ <strong>Watch out!</strong> A little ${attackerName} is attacking your valuable piece on ${hanging.square}. Run away, it's a trap!` 
+                  : `<br>⚠️ <strong>¡Cuidado!</strong> Un${pArticle === 'una' ? 'a' : ''} pequeñ${pArticle === 'una' ? 'a' : 'o'} ${attackerName} está atacando a tu valiosa pieza en ${hanging.square}. ¡Huye, es una trampa!`;
+            } else {
+                reason = en 
+                  ? `<br>⚠️ Your piece on ${hanging.square} can be captured for free by ${pArticle} ${attackerName}.` 
+                  : `<br>⚠️ Tu pieza en ${hanging.square} está indefensa y puede ser capturada gratis por ${pArticle} ${attackerName}.`;
+            }
           } else {
             // ✨ FIX: Differentiate between "Blundering a piece" and "Missing a winning move"
             const absEvalBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
