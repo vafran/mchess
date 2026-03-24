@@ -7885,26 +7885,33 @@ window.askWiseKing = async function(fen, historyArr = []) {
             }
           }
 
-          // 🚀 Ordenación con prioridad absoluta al Hash Move
-          moves.sort((a, b) => {
-            const isHashA = hashMove && a.fr===hashMove.fr && a.fc===hashMove.fc && a.tr===hashMove.tr && a.tc===hashMove.tc && a.promo===hashMove.promo;
-            const isHashB = hashMove && b.fr===hashMove.fr && b.fc===hashMove.fc && b.tr===hashMove.tr && b.tc===hashMove.tc && b.promo===hashMove.promo;
-            if(isHashA) return -1;
-            if(isHashB) return 1;
-            return moveScore(state,b,depth)-moveScore(state,a,depth);
-          });
+          // 🚀 Pre-calcular scores UNA VEZ por nodo (evita N·logN llamadas a moveScore en .sort)
+          const scores = new Int32Array(moves.length);
+          for (let i = 0; i < moves.length; i++) {
+            const mi = moves[i];
+            scores[i] = (hashMove && mi.fr===hashMove.fr && mi.fc===hashMove.fc && mi.tr===hashMove.tr && mi.tc===hashMove.tc && mi.promo===hashMove.promo)
+              ? 9000000 : moveScore(state, mi, depth);
+          }
+
           let best=maximizing?-Infinity:Infinity;
           let moveCount=0;
-          let bestMoveFound=null; // 🚀 Rastreamos la mejor jugada del nodo
+          let bestMoveFound=null;
 
           // ── Futility Pruning margins ────────────────────────────────────────
-          // At low depths, if static eval + margin < alpha (for maximizer), the node
-          // is unlikely to raise alpha — skip quiet moves entirely.
-          const FUTILITY_MARGIN=[0,175,350]; // depth 0,1,2 — balanced: not too aggressive
+          const FUTILITY_MARGIN=[0,175,350];
           const staticEval=!checked&&depth<=2?evaluate(state):null;
           const canFutility=staticEval!==null&&!checked;
 
-          for(const m of moves){
+          for(let idx=0; idx<moves.length; idx++){
+            // ── Selection Sort: swap best remaining to front (lazy — stops at first cutoff) ──
+            let bestIdx=idx, bestSc=scores[idx];
+            for(let j=idx+1; j<moves.length; j++){ if(scores[j]>bestSc){bestSc=scores[j];bestIdx=j;} }
+            if(bestIdx!==idx){
+              const tm=moves[bestIdx]; moves[bestIdx]=moves[idx]; moves[idx]=tm;
+              const ts=scores[bestIdx]; scores[bestIdx]=scores[idx]; scores[idx]=ts;
+            }
+            const m=moves[idx];
+
             // ── Futility Pruning ────────────────────────────────────────────
             const isCapture=state.board[m.tr][m.tc]!==' ';
             const isPromo=state.board[m.fr][m.fc].toUpperCase()==='P'&&(m.tr===0||m.tr===7);
