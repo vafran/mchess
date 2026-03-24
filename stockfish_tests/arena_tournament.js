@@ -68,7 +68,7 @@ class TournamentStats {
 
         const reasons = {};
         this.partidas.forEach(p => { reasons[p.reason] = (reasons[p.reason] || 0) + 1; });
-        console.log('\n📋 Razones de finalización:');
+        console.log('\n📋 Reasons for completion:');
         Object.entries(reasons).forEach(([reason, count]) => { console.log(`   ${reason}: ${count}`); });
 
         fs.writeFileSync(CONFIG.logFile, JSON.stringify({
