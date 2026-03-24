@@ -11,7 +11,7 @@ const readline = require('readline');
 
 const CONFIG = {
     numPartidas: 10,             
-    stockfishDepth: 10,         
+    stockfishDepth:9,         
     timePerGame: 3600000,       
     logFile: path.join(__dirname, 'tournament_results.json')
 };
