@@ -2953,7 +2953,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
       grandmaster: { depth: 9,  mistakes: 0,    timeLimit: 30000 },
     };
 
-    const PIECE_VALUES = { P: 100, N: 300, B: 300, R: 500, Q: 900, K: 20000 };
+    // Piece values used by the Profesor for trade evaluation and hanging-piece detection.
+    // Calibrated to match the worker's tapered averages (mgPV/egPV at ~50% game phase):
+    //   2 minors (315+330=645) > R+P (510+100=610) ✓   B(330) > N(315) ✓
+    const PIECE_VALUES = { P: 100, N: 315, B: 330, R: 510, Q: 885, K: 20000 };
 
     const I18N = {
       es: {
