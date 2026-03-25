@@ -7279,6 +7279,23 @@ window.askWiseKing = async function(fen, historyArr = []) {
                   if(bp===(isW?'R':'r')){ bonus+=Math.round(40*eg); break; }
                   if(bp!==' ') break; // any other piece blocks the line
                 }
+
+                // ── Rule of the Square (Unstoppable Passer) ──────────────────
+                // If the enemy king cannot geometrically intercept the pawn, it
+                // is worth ~a rook (it WILL promote). Uses Chebyshev distance.
+                if(eg > 0.5){
+                  const eKing = isW ? state.bKing : state.wKing;
+                  if(eKing){
+                    const stepsToPromo = isW ? r : (7 - r);
+                    const eKingDist = Math.max(
+                      Math.abs(eKing[0] - (isW ? 0 : 7)),
+                      Math.abs(eKing[1] - c)
+                    );
+                    if(eKingDist > stepsToPromo + 1){
+                      bonus += Math.round(600 * eg); // Scale with endgame phase
+                    }
+                  }
+                }
               }
               const backRow = r + (isW ? 1 : -1);
               if (backRow >= 0 && backRow <= 7) {
