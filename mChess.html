@@ -5128,11 +5128,29 @@ window.askWiseKing = async function(fen, historyArr = []) {
       "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1,b5,Bb3,d6,c3,O-O,h3": [
         { m: "Na5", w: 10, name: "Ruy López, Ataque Marshall", desc: "El negro ataca el alfil y prepara el contrajuego con ...c5. Una posición dinámica y táctica." }
       ],
-      "e4,c5,Nf3,Nc6,d4,cxd4": [
-        { m: "Nxd4", w: 10, name: "Siciliana Abierta", desc: "La mejor jugada. Recupera el peón y mantiene un caballo centralizado y poderoso." }
-      ],
       "d4,d5,c4,c6,Nf3,Bf5,Nc3,Nf6,Bg5,dxc4": [
         { m: "e3", w: 10, name: "Consolidación Eslava", desc: "Defiende el centro y prepara la recuperación del peón de c4 con el alfil." }
+      ],
+
+      // Alapin Siciliano
+      "e4,c5,c3,d5,exd5,Qxd5,d4": [
+        { m: "Nf3", w: 10, name: "Alapin Siciliano", desc: "Desarrolla atacando la dama y prepara Be2/O-O." }
+      ],
+      
+      // Siciliana Dragon: respuesta estándar al g6 temprano
+      "e4,c5,Nf3,Nc6,d4,cxd4,Nxd4,g6": [
+        { m: "Nc2", w: 8, name: "Dragón Siciliano", desc: "Variante Yugoslav preparatoria: mantiene el caballo seguro." },
+        { m: "Be3", w: 7, name: "Dragón Inglés", desc: "Desarrollo clásico contra el Dragón." }
+      ],
+
+      // London System con respuesta ...Nbd7 de negras
+      "d4,d5,Nf3,Nf6,Bf4,c5,e3,Nc6,c3,e6": [
+        { m: "Nbd2", w: 10, name: "Londres Sólido", desc: "Desarrollo tranquilo. Evita complicaciones tácticas prematuras." }
+      ],
+
+      // Defensa Pirc / Moderna
+      "e4,d6,d4,Nf6,Nc3,g6,Nf3": [
+        { m: "Bg7", w: 10, name: "Defensa Pirc", desc: "El negro completa la estructura fianchetto antes de enrocarse." }
       ],
 
       // ── 1.e4 ─────────────────────────────────────────────────────────────────
@@ -6128,7 +6146,22 @@ window.askWiseKing = async function(fen, historyArr = []) {
         'Reti Eslava: sistema Londres inverso': 'Slav Reti: Reversed London System',
         'Reti Eslava: presión central': 'Slav Reti: Central Pressure',
         'Ataque Indio de Rey: esquema sólido': 'King\'s Indian Attack: Solid Setup',
-        'Transposición a Inglesa Simétrica': 'Transposition to Symmetrical English'
+        'Transposición a Inglesa Simétrica': 'Transposition to Symmetrical English',
+        // ── New entries added during Stockfish training ──────────────────────
+        'Variante Pelikan/Sveshnikov': 'Pelikan/Sveshnikov Variation',
+        'Presión en b7': 'Pressure on b7',
+        'Defensa del Peón': 'Pawn Defense',
+        'Bloqueo del Mate': 'Mate Block',
+        'Defensa Ruy López': 'Ruy Lopez Defense',
+        'Ruy López, Variante Cerrada': 'Ruy Lopez: Closed Variation',
+        'Ruy López, Ataque Marshall': 'Ruy Lopez: Marshall Attack',
+        'Consolidación Eslava': 'Slav Consolidation',
+        'Salto de Caballo': 'Knight Leap',
+        'Alapin Siciliano': 'Alapin Sicilian',
+        'Siciliana Abierta': 'Open Sicilian',
+        'Dragón Siciliano': 'Sicilian Dragon',
+        'Dragón Inglés': 'English Dragon',
+        'Londres Sólido': 'Solid London'
       };
 
       if (exact[out]) return exact[out];
