@@ -5097,6 +5097,43 @@ window.askWiseKing = async function(fen, historyArr = []) {
         { m: "g4", w: 1, name: "Apertura Grob", desc: "Una elección muy creativa y arriesgada desde la primera jugada." }
       ],
 
+      // Additional from training with Stockfish
+      "e4,c5,Nf3,Nc6,d4,cxd4": [
+        { m: "Nxd4", w: 10, name: "Siciliana Abierta", desc: "La jugada teórica. Recupera el peón y centraliza el caballo evitando ataques dobles." }
+      ],
+      "g3,e5,Nc3,d5,e3,h5,Nf3,e4": [
+        { m: "Nd4", w: 10, name: "Salto de Caballo", desc: "El caballo busca una casilla central segura en lugar de arriesgarse con capturas dudosas." }
+      ],
+      "e4,c5,Nf3,Nc6,d4,cxd4,Nxd4,e5": [
+        { m: "Nb5", w: 10, name: "Variante Pelikan/Sveshnikov", desc: "Presiona d6 inmediatamente aprovechando que el negro ha debilitado esa casilla." }
+      ],
+      "d4,d5,c4,c6,Nf3,Bf5,Nc3,Nf6,cxd5,cxd5": [
+        { m: "Qb3", w: 10, name: "Presión en b7", desc: "Ataca el peón de b7 que ha quedado indefenso tras la salida del alfil negro a f5." }
+      ],
+      "d4,d5,c4,c6,Nf3,Nf6,Nc3,e6,e3,Nbd7,Bd3,dxc4,Bxc4,b5": [
+        { m: "Bd3", w: 10, name: "Defensa Eslava", desc: "El negro defiende su peón de b5 con el alfil, una maniobra típica de esta variante." }
+      ],
+      "e4,e5,Qh5": [
+        { m: "Nc6", w: 10, name: "Defensa del Peón", desc: "Desarrolla una pieza y defiende e5. No saques el caballo a f6 todavía porque la dama te comería el peón de e5." }
+      ],
+      "e4,e5,Qh5,Nc6,Bc4": [
+        { m: "g6", w: 10, name: "Bloqueo del Mate", desc: "Expulsa a la dama y bloquea el ataque sobre f7. ¡El pastor se tiene que ir a casa!" }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5": [
+        { m: "a6", w: 10, name: "Defensa Ruy López", desc: "La jugada teórica. Ataca al alfil y gana espacio en el flanco de dama." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O": [
+        { m: "Be7", w: 10, name: "Ruy López, Variante Cerrada", desc: "El negro prepara el enroque y defiende el peón de e5. Una posición sólida y estratégica." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1,b5,Bb3,d6,c3,O-O,h3": [
+        { m: "Na5", w: 10, name: "Ruy López, Ataque Marshall", desc: "El negro ataca el alfil y prepara el contrajuego con ...c5. Una posición dinámica y táctica." }
+      ],
+      "e4,c5,Nf3,Nc6,d4,cxd4": [
+        { m: "Nxd4", w: 10, name: "Siciliana Abierta", desc: "La mejor jugada. Recupera el peón y mantiene un caballo centralizado y poderoso." }
+      ],
+      "d4,d5,c4,c6,Nf3,Bf5,Nc3,Nf6,Bg5,dxc4": [
+        { m: "e3", w: 10, name: "Consolidación Eslava", desc: "Defiende el centro y prepara la recuperación del peón de c4 con el alfil." }
+      ],
 
       // ── 1.e4 ─────────────────────────────────────────────────────────────────
       "e4": [
