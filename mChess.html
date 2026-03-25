@@ -7221,8 +7221,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
             const sign=isW?1:-1;
             const idx=isW?(r*8+c):((7-r)*8+c);
 
-            // Material (tapered) + PST
-            const val= u==='K' ? 20000 : Math.round((mgPV[u]||PV[u]||0)*(1-eg)+(egPV[u]||PV[u]||0)*eg);
+            // Material + PST
+            // ⚠️ Use flat PV values here to keep evaluate() consistent with quiesce()/moveScore().
+            // Tapered mgPV/egPV only used for wMat/bMat (initiative calc above).
+            const val= PV[u]||0;
             let pst=0;
             if(u==='K') pst=eg > 0.6 ? PST.KEG[idx] : PST.KMG[idx];
             else if(PST[u]) pst=PST[u][idx];
@@ -7267,7 +7269,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 // Check the square directly ahead: if attacked by enemy, reduce bonus
                 const nextR = r + (isW ? -1 : 1);
                 if(nextR >= 0 && nextR < 8) {
-                  if(isAtk(state, nextR, c, isW ? 'b' : 'w')) bonus = Math.round(bonus * 0.55);
+                  // Only a 20% reduction: contested paths still valuable (55% was too harsh)
+                  if(isAtk(state, nextR, c, isW ? 'b' : 'w')) bonus = Math.round(bonus * 0.80);
                 }
                 // Tarrasch from pawn perspective: friendly rook directly behind the pawn
                 const behindDir = isW ? 1 : -1;
