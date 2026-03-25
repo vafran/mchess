@@ -7031,8 +7031,11 @@ window.askWiseKing = async function(fen, historyArr = []) {
       if (chessEngineWorker) { try { chessEngineWorker.terminate(); } catch(e){} }
 
       const workerCode = function() {
-        const PV = { P:100, N:300, B:300, R:500, Q:900, K:20000 };
+        const PV = { P:100, N:300, B:300, R:500, Q:900, K:20000 }; // kept for moveScore/quiesce (no interpolation overhead)
         const PIECE_VALUES = PV;
+        // ── Tapered piece values (Kaufman-inspired, Phase 1) ──
+        const mgPV = { P:100, N:325, B:335, R:500, Q:900 }; // Middlegame: minors stronger
+        const egPV = { P:120, N:280, B:340, R:530, Q:860 }; // Endgame: rook/pawn scale up, queen down
         function deepCopy(b){ return b.map(r=>r.slice()); }
         function clr(p){ if(!p||p===' ') return null; return p===p.toUpperCase()?'w':'b'; }
         function opp(c){ return c==='w'?'b':'w'; }
@@ -7065,6 +7068,23 @@ window.askWiseKing = async function(fen, historyArr = []) {
         })();
         const PS="PNBRQKpnbrqk";
         function pidx(p){ return p===' '?-1:PS.indexOf(p); }
+        // ── Phase 4: Pawn Hash Table ──
+        // Caches doubled/isolated pawn structure score by pawn-only Zobrist hash.
+        // Passed pawn logic stays outside (depends on enemy pawn/king position).
+        const PAWN_CACHE_SIZE = 1 << 15; // 32768 entries
+        const pawnCacheKey  = new Int32Array(PAWN_CACHE_SIZE * 2).fill(0); // [h, l] pairs
+        const pawnCacheVal  = new Int32Array(PAWN_CACHE_SIZE).fill(0);
+        // Compute pawn-only Zobrist hash (only P/p pieces)
+        function pawnHash(b) {
+          let hl=0, hh=0;
+          const pIdx=0, pIdx2=6; // P=0, p=6 in PS
+          for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+            const p=b[r][c];
+            if(p==='P'){ hl^=ZL[pIdx][r*8+c]; hh^=ZH[pIdx][r*8+c]; }
+            else if(p==='p'){ hl^=ZL[pIdx2][r*8+c]; hh^=ZH[pIdx2][r*8+c]; }
+          }
+          return [hl>>>0, hh>>>0];
+        }
         function zob(state){
           let hl=0,hh=0;
           for(let r=0;r<8;r++) for(let c=0;c<8;c++){
@@ -7110,6 +7130,15 @@ window.askWiseKing = async function(fen, historyArr = []) {
           KEG:[-50,-40,-30,-20,-20,-30,-40,-50,-30,-20,-10,5,5,-10,-20,-30,-30,-5,25,40,40,25,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,25,40,40,25,-5,-30,-30,-20,-10,5,5,-10,-20,-30,-50,-40,-30,-20,-20,-30,-40,-50]
         };
 
+        // ── Phase 2: isAttackedByPawn — O(1), 2 lookups ──
+        function isAttackedByPawn(r, c, enemyColor, b) {
+          const dr = enemyColor === 'w' ? 1 : -1; // look in the direction the enemy pawn attacks FROM
+          const er = r + dr;
+          if (er < 0 || er > 7) return false;
+          const pawn = enemyColor === 'w' ? 'P' : 'p';
+          return (c > 0 && b[er][c-1] === pawn) || (c < 7 && b[er][c+1] === pawn);
+        }
+
         function evaluate(state){
           const b=state.board;
           let s=0,ph=0;
@@ -7127,12 +7156,14 @@ window.askWiseKing = async function(fen, historyArr = []) {
           ph=Math.min(ph,24);
           const eg=1-ph/24;
 
-          // Per-piece initiative: side down >200cp positional bonuses scale x1.10
+          // Per-piece initiative: side down >200cp positional bonuses scale ×1.10
+          // Uses tapered values for accurate material comparison
           let wMat=0,bMat=0;
           for(let _r=0;_r<8;_r++)for(let _c=0;_c<8;_c++){
             const _p=b[_r][_c];if(!_p||_p===' ')continue;
             const _u=_p.toUpperCase();if(_u==='P'||_u==='K')continue;
-            if(_p===_u)wMat+=PV[_u]||0;else bMat+=PV[_u]||0;
+            const tv=Math.round((mgPV[_u]||0)*(1-eg)+(egPV[_u]||0)*eg);
+            if(_p===_u)wMat+=tv;else bMat+=tv;
           }
           const matDiff=wMat-bMat;
           const wIni=matDiff<-200?1.10:1.0;
@@ -7156,16 +7187,24 @@ window.askWiseKing = async function(fen, historyArr = []) {
             s += bUndevelopedMinors * 30;
           }
 
-          // ── Pawn structure ──────────────────────────────────────────────────
-          for(let c=0;c<8;c++){
-            // Doubled pawns
-            if(wP[c]>1)s-=15*wP[c];
-            if(bP[c]>1)s+=15*bP[c];
-            // Isolated pawns
-            if(wP[c]>0&&(c===0||wP[c-1]===0)&&(c===7||wP[c+1]===0))s-=40;
-            if(bP[c]>0&&(c===0||bP[c-1]===0)&&(c===7||bP[c+1]===0))s+=40;
-            // Open / semi-open files for rooks (reward, checked per piece below)
+          // ── Phase 4: Pawn structure via pawn hash cache ──
+          const [phL, phH] = pawnHash(b);
+          const pSlot = ((phL ^ (phH * 1234567)) >>> 0) & (PAWN_CACHE_SIZE - 1);
+          let pawnScore;
+          if (pawnCacheKey[pSlot*2] === phL && pawnCacheKey[pSlot*2+1] === phH) {
+            pawnScore = pawnCacheVal[pSlot]; // ✅ Cache hit
+          } else {
+            pawnScore = 0;
+            for(let pcc=0;pcc<8;pcc++){
+              if(wP[pcc]>1) pawnScore-=15*wP[pcc];
+              if(bP[pcc]>1) pawnScore+=15*bP[pcc];
+              if(wP[pcc]>0&&(pcc===0||wP[pcc-1]===0)&&(pcc===7||wP[pcc+1]===0)) pawnScore-=40;
+              if(bP[pcc]>0&&(pcc===0||bP[pcc-1]===0)&&(pcc===7||bP[pcc+1]===0)) pawnScore+=40;
+            }
+            pawnCacheKey[pSlot*2]=phL; pawnCacheKey[pSlot*2+1]=phH;
+            pawnCacheVal[pSlot]=pawnScore;
           }
+          s += pawnScore;
 
           // ── Bishop pair bonus ───────────────────────────────────────────────
           // Having both bishops is worth ~30 centipawns, more in open positions
@@ -7179,8 +7218,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
             const sign=isW?1:-1;
             const idx=isW?(r*8+c):((7-r)*8+c);
 
-            // Material + PST
-            let val=PV[u]||0;
+            // Material (tapered) + PST
+            const val= u==='K' ? 20000 : Math.round((mgPV[u]||PV[u]||0)*(1-eg)+(egPV[u]||PV[u]||0)*eg);
             let pst=0;
             if(u==='K') pst=eg > 0.6 ? PST.KEG[idx] : PST.KMG[idx];
             else if(PST[u]) pst=PST[u][idx];
@@ -7216,14 +7255,23 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 if(b[rr][c]===(isW?'p':'P')||(c>0&&b[rr][c-1]===(isW?'p':'P'))||(c<7&&b[rr][c+1]===(isW?'p':'P'))){ok=false;break;}
               }
               if(ok) {
-                // 🎯  Scaled bonus for finals (v2)
                 const distanceToPromotion = isW ? (7-r) : r;
-                bonus = distanceToPromotion * 25; // Increased from 20 to 25
-                // In endgame, passed pawns are CRUCIAL - more aggressive multiplier
-                bonus = Math.round(bonus * (1 + eg * 4.5)); // Increased from 3.5 to 4.5
-                // Bonus extra if it is close to crowning in endgame
-                if(eg > 0.6 && distanceToPromotion >= 5) {
-                  bonus += 70; // Pawn on 6th or 7th row in endgame = very dangerous (before: 50)
+                bonus = distanceToPromotion * 25;
+                bonus = Math.round(bonus * (1 + eg * 4.5));
+                if(eg > 0.6 && distanceToPromotion >= 5) bonus += 70;
+
+                // ── Phase 3: Path scanner ──
+                // Check the square directly ahead: if attacked by enemy, reduce bonus
+                const nextR = r + (isW ? -1 : 1);
+                if(nextR >= 0 && nextR < 8) {
+                  if(isAtk(state, nextR, c, isW ? 'b' : 'w')) bonus = Math.round(bonus * 0.55);
+                }
+                // Tarrasch from pawn perspective: friendly rook directly behind the pawn
+                const behindDir = isW ? 1 : -1;
+                for(let br=r+behindDir; br>=0 && br<8; br+=behindDir){
+                  const bp=b[br][c];
+                  if(bp===(isW?'R':'r')){ bonus+=Math.round(40*eg); break; }
+                  if(bp!==' ') break; // any other piece blocks the line
                 }
               }
               const backRow = r + (isW ? 1 : -1);
@@ -7282,7 +7330,8 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 const nr=r+dr,nc=c+dc;
                 if(nr>=0&&nr<8&&nc>=0&&nc<8){
                   const t=b[nr][nc];
-                  if(!t||t===' '||clr(t)!==(isW?'w':'b')) mob++;
+                  if((!t||t===' '||clr(t)!==(isW?'w':'b')) &&
+                     !isAttackedByPawn(nr,nc,isW?'b':'w',b)) mob++;
                 }
               }
               // ✨ Anti-Shuffle: mobility ×2.5 (was ×4 per square, now ×10).
@@ -7324,8 +7373,10 @@ window.askWiseKing = async function(fen, historyArr = []) {
                 let nr=r+dr,nc=c+dc;
                 while(nr>=0&&nr<8&&nc>=0&&nc<8){
                   const t=b[nr][nc];
-                  if(!t||t===' '){mob++;nr+=dr;nc+=dc;}
-                  else{if(clr(t)!==(isW?'w':'b'))mob++;break;}
+                  if(!t||t===' '){
+                    if(!isAttackedByPawn(nr,nc,isW?'b':'w',b)) mob++;
+                    nr+=dr;nc+=dc;
+                  } else{if(clr(t)!==(isW?'w':'b')&&!isAttackedByPawn(nr,nc,isW?'b':'w',b))mob++;break;}
                 }
               }
               // ✨ Anti-Shuffle: bishop mobility ×2.5 (was ×3 per square, now ×8).
