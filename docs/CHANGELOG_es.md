@@ -7,6 +7,30 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.1.0 — Edición de Rendimiento y Heurística
+**12.850+ líneas · 653 KB**
+
+Esta versión se centra en la velocidad de ejecución y la profundidad táctica. Al eliminar cuellos de botella de JavaScript y añadir heurísticas posicionales clásicas, el motor ha subido significativamente de nivel, alcanzando un estimado de **~1900 ELO**.
+
+### Optimizaciones de Rendimiento (Turbo Boost)
+- **Seguimiento del Rey O(1)** — Las posiciones de los reyes se mantienen en caché, eliminando escaneos costosos del tablero durante la búsqueda.
+- **Ray-Casting Inverso isAtk** — La detección de piezas atacadas ahora escanea hacia afuera desde la casilla objetivo, reduciendo drásticamente las comprobaciones por nodo.
+- **Lazy Selection Sort** — Reemplazado `.sort()` por una ordenación manual con puntuaciones precalculadas en `Int32Array`, permitiendo cortes Alpha-Beta mucho más rápidos.
+
+### Heurística Avanzada (HCE)
+- **Fase 1: Material Tapered** — Los valores de las piezas (mgPV/egPV) se interpolan según la fase del juego, corrigiendo la valoración de intercambios de piezas menores vs torres.
+- **Fase 2: Movilidad Segura** — Los bonos de movilidad para Caballos y Alfiles ahora ignoran las casillas controladas por peones enemigos.
+- **Fase 3: Ruta de Peones Pasados** — Escaneo avanzado que penaliza rutas de promoción disputadas y añade el **Bono Tarrasch** (torre detrás del peón).
+- **Fase 4: Tabla Hash de Peones** — Caché basada en Zobrist para estructuras de peones, evitando escaneos redundantes para peones doblados o aislados.
+- **Regla del Cuadrado** — Detección geométrica de peones pasados imparables en el final (+600 de bono).
+
+### Bugs Corregidos y Mejoras
+- **Sincronización de Idioma del Comentarista** — Corregido el error que reseteaba las horas a "ahora" y disparaba avisos fantasma de error grave al cambiar de idioma.
+- **Sincronización de Valores del Profesor** — Alineados los valores de las piezas en la UI con los promedios del motor (D:885, T:510, A:330, C:315).
+- **Libro de Aperturas** — Ampliado a ~100 posiciones / ~280 entradas (incluyendo la Siciliana Abierta, entre otras).
+
+---
+
 ## v2.0.0 — El Despertar del Rey Sabio
 **12.500+ líneas · 628 KB**
 

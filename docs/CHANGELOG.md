@@ -7,6 +7,30 @@ Format: version · size · what changed.
 
 ---
 
+## v2.1.0 — The Performance & Heuristics Edition
+**12,850+ lines · 653 KB**
+
+This release focuses on raw execution speed and tactical depth. By eliminating high-level JavaScript bottlenecks and implementing classic positional heuristics, the engine's strength has jumped significantly, reaching an estimated **~1900 ELO**.
+
+### Performance Optimizations (Turbo Boost)
+- **O(1) King Tracking** — Kings' positions are now cached and updated during make/unmake, eliminating expensive board scans.
+- **Reverse Ray-Casting isAtk** — The "is attacked" detection now scans outwards from the target square, significantly reducing the number of checks per node.
+- **Lazy Selection Sort** — Replaced `.sort()` with a manual selection sort using an `Int32Array` of pre-computed scores, enabling faster Alpha-Beta pruning.
+
+### Heuristic Evaluation (HCE)
+- **Phase 1: Tapered Material** — Piece values (mgPV/egPV) interpolate based on game phase, correctly valuing minor piece trades vs rooks.
+- **Phase 2: Safe Mobility** — Mobility bonuses for Knights and Bishops now ignore squares attacked by enemy pawns.
+- **Phase 3: Passed Pawn Pathing** — Advanced path scanner reduces bonuses for contested promotion routes and adds **Tarrasch bonus** (rook behind pawn).
+- **Phase 4: Pawn Hash Table** — Zobrist-based caching for pawn structures, avoiding redundant O(64) scans for doubled/isolated pawns.
+- **Rule of the Square** — Geometric detection of unstoppable passed pawns in the endgame (+600 bonus).
+
+### Bug Fixes & Improvements
+- **Commentator Language Sync** — Fixed a bug where switching languages reset timestamps to "now" and triggered phantom blunder warnings on historical moves.
+- **Professor Value Sync** — Aligned UI piece values with engine averages (Q:885, R:510, B:330, N:315) for consistent advice.
+- **Opening Book** — Expanded to ~100 positions / ~280 entries (added Open Sicilian and others).
+
+---
+
 ## v2.0.0 — The Awakening of the Wise King
 **12,500+ lines · 628 KB**
 

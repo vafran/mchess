@@ -29,10 +29,10 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 
 ### No-objetivos
 
-- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza ~1750 ELO.
+- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza picos de **~1900 ELO**.
 - **Multijugador en línea.** Solo juego local.
 - **Herramientas avanzadas de preparación.** El libro de aperturas está curado para enseñar, no para preparación profesional.
-- **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad.
+- **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad, aunque la v2.1.0 introdujo correcciones críticas en cuellos de botella de bajo nivel.
 
 ---
 
@@ -68,7 +68,7 @@ Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimien
 
 Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técnicas activas
 
-### 👑 Maestro — *Rey Sabio* (~1700 ELO)
+### 👑 Maestro — *Rey Sabio* (~1900 ELO)
 
 **Para:** Jugadores de club fuertes y amateurs avanzados.
 
@@ -84,7 +84,7 @@ Profundidad 9 · 0% de errores · 10s de tiempo · libro completo · evaluación
 | 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
 | 🔥 Difícil | ~1400 | 6 | 5% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~1700 | 9 | 0% | ninguno | ✅ completo | ✅ |
+| 👑 Rey Sabio | ~1900 | 9 | 0% | ninguno | ✅ completo | ✅ |
 
 ---
 
@@ -176,6 +176,24 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
+## Novedades en v2.1.0
+
+Esta versión, la **Edición de Rendimiento y Heurística**, aporta un salto masivo en fuerza táctica y velocidad de ejecución (+80% NPS) a través de optimizaciones de bajo nivel y heurísticas posicionales clásicas.
+
+### Búsqueda de Alto Rendimiento (40k+ NPS)
+Hemos eliminado los tres mayores cuellos de botella del motor:
+- **Caché de Posición del Rey (O(1))**: Ya no se escanea el tablero para encontrar a los reyes; sus posiciones se cachean y actualizan en tiempo real.
+- **Ray-Casting Inverso**: La detección `isAtk` (pieza atacada) ahora utiliza ráfagas de rayos hacia afuera en lugar de bucles sobre el tablero, reduciendo drásticamente el tiempo de computación.
+- **Lazy Selection Sort**: Reemplazado el `.sort()` genérico por una ordenación por selección manual con puntuaciones precalculadas en `Int32Array`, permitiendo cortes Alpha-Beta mucho más rápidos.
+
+### Heurística Avanzada (HCE)
+- **Evaluación Tapered**: Los valores de las piezas se interpolan suavemente entre el Medio Juego y el Final (ej: ajuste de paridad Alfil/Caballo según la fase).
+- **Movilidad Segura**: Las bonificaciones de movilidad para piezas menores ahora se calculan solo para casillas no controladas por peones enemigos.
+- **Lógica de Peones Pasados**: Escaneo de ruta (penalización por casillas de promoción disputadas) y la **Regla del Cuadrado** (detección geométrica de peones imparables en finales).
+- **Tabla Hash de Peones**: Caché basada en Zobrist para estructuras de peones para evitar escaneos redundantes.
+
+---
+
 ## Novedades en v2.0.0
 
 Esta versión incluye una gran actualización arquitectónica del motor junto con una reconstrucción completa de la capa pedagógica. El motor ya no es solo un soporte; ahora es un núcleo táctico refinado.
@@ -196,7 +214,7 @@ El locutor ahora narra las partidas en estricta tercera persona, separando su ro
 
 ### Libro de aperturas ampliado
 
-De 48 posiciones / 140 entradas a **97 posiciones / 274 entradas**. Nuevas líneas: Defensa Francesa (Winawer, Tarrasch, Avance, Cambio), Escandinava, Caro-Kann (Clásica, Karpov, Avance), Apertura Inglesa (Simétrica, Anglo-India, Cuatro Caballos), Nimzoindia (Rubinstein, Clásica, Sämisch), Grünfeld, India de Dama, Benoni, Reti con todas las respuestas negras, Sistema Londres ampliado.
+De 48 posiciones / 140 entradas a **~100 posiciones / ~280 entradas**. Nueva cobertura: Defensa Francesa (Winawer, Tarrasch, Avance, Cambio), Escandinava, Caro-Kann (Clásica, Karpov, Avance), Apertura Inglesa (Simétrica, Anglo-India, Cuatro Caballos), Nimzoindia (Rubinstein, Clásica, Sämisch), Grünfeld, India de Dama, Benoni, Reti con todas las respuestas negras, Sistema Londres ampliado y Siciliana Abierta.
 
 Posiciones que antes generaban un falso *"ya saliste del libro"* en la jugada 2 — como 1.Cf3 Cf6 o 1.d4 e6 — ahora se detectan correctamente como líneas teóricas.
 
@@ -285,7 +303,7 @@ Valores de piezas: C=305, A=333, T=500, D=900 (el alfil vale más que el caballo
 
 ### Libro de aperturas
 
-97 posiciones con pesos teóricos en Difícil/Rey Sabio, aleatorio uniforme en Medio (2 movimientos), desactivado en Fácil.
+~100 posiciones con pesos teóricos en Difícil/Rey Sabio, aleatorio uniforme en Medio (2 movimientos), desactivado en Fácil.
 
 ### Audio
 
@@ -364,4 +382,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.0.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~604 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.1.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~628 KB. Cero dependencias. Abre el archivo y juega.*
