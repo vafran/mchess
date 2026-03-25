@@ -9270,16 +9270,45 @@ window.askWiseKing = async function(fen, historyArr = []) {
         addCommentaryEntry();
         return;
       }
-      
-      // Limpiamos la memoria del comentarista
+
+      // 🔒 Save original timestamps before wiping the log
+      const savedTimes = commentaryLog.map(e => e.time);
+
+      // Clear memory and style
       commentaryLog = [];
       resetCommentaryStyleMemory();
-      
-      // Travel in time and re-translate the last 5 moves
+
+      // 🔒 Temporarily suppress blunder/brilliant re-evaluation on historical moves.
+      // addCommentaryEntry uses window.snapshotBeforeHumanMove (stale — points to the
+      // last human move's snapshot, not the historical one), which causes wrong deltas
+      // and false blunder labels on every past move when rebuilding.
+      const savedSnapshot = window.snapshotBeforeHumanMove;
+      window.snapshotBeforeHumanMove = null;
+
+      // Re-translate the last 15 moves
       const start = Math.max(0, history.length - 15);
       for (let i = start; i < history.length; i++) {
         const partial = history.slice(0, i + 1);
         addCommentaryEntry(partial[partial.length - 1], partial);
+      }
+
+      // Restore snapshot for future use
+      window.snapshotBeforeHumanMove = savedSnapshot;
+
+      // 🔒 Restore original timestamps (commentaryLog is newest-first via unshift)
+      for (let i = 0; i < Math.min(commentaryLog.length, savedTimes.length); i++) {
+        commentaryLog[i].time = savedTimes[i];
+      }
+
+      // Final single render with corrected timestamps
+      if (commentaryLog.length > 0) {
+        list.innerHTML = commentaryLog.map((entry, i) => `
+          <div class="commentary-entry" style="border-left: 4px solid ${i === 0 ? 'var(--accent)' : 'rgba(168,85,247,0.25)'}; padding: 6px 10px; background: rgba(168,85,247,${i === 0 ? '0.06' : '0.02'}); margin-bottom: 5px; opacity: ${i === 0 ? '1' : '0.6'};">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <span class="hint-text" style="font-style: italic; font-size: ${i === 0 ? '0.95rem' : '0.82rem'};">🎙️ ${entry.html}</span>
+              <span style="font-size:0.7rem; color:var(--text-light); margin-left:8px;">${entry.time}</span>
+            </div>
+          </div>`).join('');
       }
     }
 
