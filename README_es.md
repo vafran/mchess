@@ -141,7 +141,7 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | Aperturas | 7 | Mate del Pastor, Fried Liver, Gambito Budapest |
 | Táctica | 15 | Tenedor, clavada, enfilada, descubierta, pasillo, zugzwang |
 | Finales | 14 | Lucena, Philidor, regla del cuadrado, oposición, alfil equivocado |
-| Aleatorio | 100 | Posiciones mixtas de partidas reales |
+| Aleatorio | 30 | Puzzles tácticos curados con tema: mate, tenedor, clavada, ensarte, sacrificio, coronación |
 
 <img src="screenshots/ES/training.png" alt="Librearía FEN de entrenamiento" width="500" />
 
@@ -226,7 +226,7 @@ Un nuevo botón **🧩 Entrenamiento** aparece directamente en el menú principa
 - **Táctica (15)** — Mate del pasillo, tenedor de caballo, clavada absoluta, ataque a la descubierta, jaque doble, enfilada, trampa de dama, jaque ahogado, mate de Anastasia, mate Árabe, zugzwang, sacrificio de alfil en h6, batería, y más
 - **Finales (14)** — Escalera, mate de dama, oposición de reyes, coronación, Lucena, Philidor, regla del cuadrado, alfil del color equivocado, dos alfiles vs rey, y más
 
-El botón **🎲 Reto Aleatorio** carga una de 100 posiciones adicionales curadas al azar, con partidas de la Siciliana, estructuras de la Española, defensas indias y finales puros.
+El botón **🎲 Reto Aleatorio** carga uno de **30 puzzles tácticos curados** al azar. Cada puzzle incluye un tema específico (Mate en 1, Tenedor, Clavada, Ensarte, Ataque Descubierto, Coronación, Sacrificio) y una descripción bilingüe que explica el reto. Un botón **🎲 Otro** dentro del modal del reto permite pasar a otro puzzle sin volver a la librería.
 
 ### Soporte completo para jugar como Negras
 

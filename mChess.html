@@ -1,4 +1,4 @@
-<!--
+﻿<!--
 Monolith Chess v2.1.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -12802,106 +12802,45 @@ limitations under the License.
 
     // 🎲 BASE DE DATOS DE PUZZLES ALEATORIOS (100 posiciones curadas)
     const PUZZLES_DB = [
-      "r1bqk2r/1p2bppp/p1np1n2/4p3/4P3/1NN1B3/PPP2PPP/R2QKB1R w KQkq - 0 9",
-      "r1bq1rk1/pp2ppbp/2np1np1/8/3NP3/2N1B3/PPPQBPPP/R4RK1 b - - 7 9",
-      "r1bqk2r/pp2bppp/2n2n2/2pp4/3P4/2PB1N2/PP3PPP/RNBQ1RK1 w kq - 3 8",
-      "r1bqk2r/p2nbppp/2p1pn2/1p6/3P1B2/2NBPN2/PP3PPP/R2QK2R w KQkq - 0 9",
-      "r2q1rk1/1b2bppp/p1n1pn2/1p6/3P4/P1N1BN2/1PQ2PPP/1BR2RK1 b - - 2 14",
-      "r2q1rk1/1p2bppp/p1n2n2/3p4/3P2b1/2N1BN2/PP2BPPP/R2Q1RK1 w - - 4 12",
-      "r1bq1rk1/1p2bppp/p1nppn2/8/3NP3/2N1B3/PPP1BPPP/R2Q1RK1 w - - 4 10",
-      "rnbq1rk1/1p2bppp/p2ppn2/8/3NP3/2N1B3/PPP1BPPP/R2Q1RK1 w - - 4 9",
-      "r1bqk2r/1p2bppp/p1nppn2/8/3NP3/2N1B3/PPP1BPPP/R2Q1RK1 b kq - 5 9",
-      "r1bq1rk1/1p2bppp/p1nppn2/8/3NP3/2N1BB2/PPP2PPP/R2Q1RK1 b - - 6 10",
-      "r1bqk2r/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1 b kq - 3 7",
-      "r1bq1rk1/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1 w - - 4 8",
-      "r1bq1rk1/2p1bppp/p1n2n2/1p1pp3/4P3/1BP2N2/PP1P1PPP/RNBQR1K1 w - - 0 9",
-      "r2q1rk1/1bp1bppp/p1n2n2/1p1pp3/4P3/1BP2N2/PP1P1PPP/RNBQR1K1 w - - 1 10",
-      "r2q1rk1/1bp1bppp/p1n2n2/1p1pp3/4P3/1BP2N2/PP1PQPPP/RNB1R1K1 b - - 2 10",
-      "r1bq1rk1/2p1bppp/p1n2n2/1p1pp3/4P3/1BP2N1P/PP1P1PP1/RNBQR1K1 b - - 0 9",
-      "r1bq1rk1/2p1bppp/p2p1n2/1p2p3/3nP3/1B1P1N2/PPP2PPP/RNBQR1K1 w - - 1 10",
-      "r1bq1rk1/2p1bppp/p2p1n2/1p2p3/3nP3/1B1P1N1P/PPP2PP1/RNBQR1K1 b - - 0 10",
-      "r1bq1rk1/2p1bppp/p2p1n2/1p2p3/4P3/1P1P1N2/1PP2PPP/RNBQR1K1 w - - 0 11",
-      "r1bq1rk1/2p1bppp/p2p1n2/1p2p3/4P3/1P1P1N1P/1PP2PP1/RNBQR1K1 b - - 0 11",
-      "rn1qk1nr/ppp1bppp/4p3/3pP3/3P2b1/5N2/PPP2PPP/RNBQKB1R w KQkq - 1 5",
-      "rn1q1rk1/ppp1bppp/4p3/3pP3/3P2b1/2P2N2/P1P2PPP/R1BQKB1R w KQ - 0 7",
-      "rn1q1rk1/ppp1bppp/4p3/3pP3/3P2b1/2P2N2/P1P1BPPP/R1BQK2R b KQ - 1 7",
-      "r1bqk2r/pp2nppp/2n1p3/3pP3/3P4/P1PB1N2/5PPP/R1BQK2R b KQkq - 2 10",
-      "r1bqk2r/pp2nppp/2n1p3/3pP3/3P4/P1PB1N2/5PPP/R1BQK2R w KQkq - 2 11",
-      "rn1qk2r/pp3ppp/2p1pn2/3p4/1b1P4/2N1PN2/PPP1QPPP/R1B1K2R w KQkq - 1 8",
-      "r2qk2r/pp1n1ppp/2p1pn2/3p4/1b1P4/2N1PN2/PPPBQPPP/R3K2R b KQkq - 2 9",
-      "r2qk2r/pp1n1ppp/2p1pn2/3p4/3P4/2b1PN2/PPPBQPPP/R3K2R w KQkq - 0 10",
-      "r3k2r/pp1q1ppp/2n1pn2/3p4/3P4/2P1PN2/P2BQPPP/R3K2R b KQkq - 0 11",
-      "r3k2r/pp1q1ppp/2n1pn2/3p4/3P4/2P1PN2/P3QPPP/R3K2R w KQkq - 1 12",
-      "r1bq1rk1/ppp2pbp/3p1np1/4p3/2PnP3/2N1B1P1/PP2NPBP/R2Q1RK1 b - - 1 10",
-      "rnbq1rk1/ppp2pbp/3p1np1/4p3/2PPP3/2N2N2/PP2BPPP/R1BQK2R w KQ - 0 7",
-      "rnbq1rk1/ppp2pbp/3p1np1/4p3/2PPP3/2N2N2/PP2BPPP/R1BQ1RK1 b - - 1 7",
-      "r1bq1rk1/ppp1npbp/3p1np1/3Pp3/2P1P3/2N2N2/PP2BPPP/R1BQ1RK1 w - - 1 9",
-      "r1bq1rk1/ppp1npbp/3p1np1/3Pp3/2P1P3/2N2N1P/PP2BPP1/R1BQ1RK1 b - - 0 9",
-      "r1bq1rk1/ppp2pbp/3p1np1/3Ppn2/2P1P3/2N1BN1P/PP2BPP1/R2Q1RK1 w - - 1 11",
-      "r1bq1rk1/pppn1pbp/3p1np1/3Pp3/2P1P3/2N1BN1P/PP2BPP1/R2Q1RK1 b - - 2 11",
-      "r1bq1rk1/ppp2pbp/3p1np1/3Pp3/2P1P3/2N1B1NP/PP3PP1/R2Q1RK1 b - - 0 12",
-      "r1bq1rk1/1pp2pbp/p2p1np1/3Pp3/2P1P3/2N1B1NP/PP3PP1/R2Q1RK1 w - - 0 13",
-      "r1bq1rk1/1pp2pbp/p2p1np1/3Pp3/1nP1P3/2N1B1NP/PP3PP1/R2Q1RK1 b - - 1 13",
-      "rnbq1rk1/pp3ppp/4pn2/2pp4/2PP4/P1P1PN2/5PPP/R1BQKB1R w KQ - 0 8",
-      "rnbq1rk1/pp3ppp/4pn2/2pp4/2PP4/P1P1PN2/5PPP/R1B1KB1R b KQ - 1 8",
-      "rnbq1rk1/pp3ppp/4p3/2pn4/2PP4/P1P1PN2/5PPP/R1B1KB1R w KQ - 0 9",
-      "r1bq1rk1/pp3ppp/2n1p3/2pn4/3P4/P1P1PN2/5PPP/R1B1KB1R w KQ - 1 10",
-      "r1bq1rk1/pp3ppp/2n1p3/2pn4/3P4/P1P1PN2/5PPP/R1B1QRK1 b - - 3 11",
-      "r2q1rk1/1b2bppp/ppn1pn2/3p4/2PP4/1PN2NP1/PB3PBP/R2Q1RK1 w - - 0 12",
-      "r2q1rk1/1b2bppp/ppn1pn2/8/P1pP4/1PN2NP1/1B3PBP/R2Q1RK1 w - - 0 13",
-      "r2q1rk1/1b2bppp/pp2pn2/2n5/P1pP4/1PN2NP1/1B3PBP/R2Q1RK1 b - - 1 13",
-      "r2q1rk1/1b2bppp/pp2pn2/2n5/P1pP4/1PN2NP1/1B2QPBP/R4RK1 w - - 2 14",
-      "r2q1rk1/1b2bppp/pp2pn2/2n5/P1pP4/1P3NP1/1B1NQPBP/R4RK1 b - - 0 14",
-      "r2q1rk1/pb2bppp/1p2pn2/2n5/P1pP4/1P3NP1/1B1NQPBP/R4RK1 w - - 1 15",
-      "r2q1rk1/pb2bppp/1p2pn2/2n5/P1P5/1P3NP1/1B1NQPBP/R4RK1 b - - 0 15",
-      "r1bq1rk1/1p2bppp/p1n1pn2/2pp4/2PP4/2N1PN2/PP1BBPPP/R2Q1RK1 w - - 0 9",
-      "r1bq1rk1/1p2bppp/p1n1pn2/2pp4/2PP4/2N1PN2/PP1BBPPP/R2Q1RK1 b - - 0 9",
-      "r1bq1rk1/1p2bppp/p1n1pn2/2pp4/2PP4/1PN1PN2/PB2BPPP/R2Q1RK1 w - - 1 10",
-      "r1bq1rk1/1p2bppp/p1n1pn2/3p4/2PP4/1PN1PN2/PB2BPPP/R2Q1RK1 b - - 0 10",
-      "r1b2rk1/1p1qbppp/p1n1pn2/3p4/2PP4/1PN1PN2/PB2BPPP/R2Q1RK1 w - - 1 11",
-      "r1b2rk1/1p1qbppp/p1n1pn2/3p4/2PP4/1PN1PN2/PB2BPPP/R2Q1RK1 b - - 1 11",
-      "r1b2rk1/1p1qbppp/p1n1pn2/3p4/2PP4/1PN1PN2/PB1QBPPP/R4RK1 w - - 2 12",
-      "r1b2rk1/1p1qbppp/p3pn2/3p4/2PP4/1PN1PN2/PB1QBPPP/R4RK1 b - - 0 12",
-      "r1bq1rk1/pppp1ppp/2n2n2/2b1p3/2B1P3/2P2N2/PP1P1PPP/RNBQ1RK1 w - - 3 6",
-      "r1bq1rk1/pppp1ppp/2n2n2/2b1p3/2B1P3/2P2N2/PP1P1PPP/RNBQ1RK1 b - - 3 6",
-      "r1bq1rk1/ppp2ppp/2n2n2/2bpp3/2B1P3/2P2N2/PP1P1PPP/RNBQ1RK1 w - - 0 7",
-      "r1bq1rk1/ppp2ppp/2n2n2/2bpp3/2B1P3/2P2N2/PP1PQPPP/RNB2RK1 b - - 1 7",
-      "r1bq1rk1/ppp2ppp/2n2n2/2bpP3/2B5/2P2N2/PP1PQPPP/RNB2RK1 w - - 0 8",
-      "r1bq1rk1/ppp2ppp/2n2n2/2bpP3/2B5/2P2N2/PP1PQPPP/RNB2RK1 b - - 0 8",
-      "r1bq1rk1/ppp2ppp/2n5/2bpP2n/2B5/2P2N2/PP1PQPPP/RNB2RK1 w - - 1 9",
-      "r1bq1rk1/ppp2ppp/2n5/2bpP2n/2B5/2P2N2/PP1PQPPP/RNB2RK1 b - - 1 9",
-      "r1bq1rk1/ppp2ppp/2n5/3pP2n/2B5/2P2N2/PP1PQPPP/RNB2RK1 w - - 0 10",
-      "r1bq1rk1/ppp2ppp/2n5/3pP2n/2B5/2P2N2/PP1NQPPP/R4RK1 b - - 1 10",
-      "r1b1qrk1/ppp2ppp/2n5/3pP2n/2B5/2P2N2/PP1NQPPP/R4RK1 w - - 2 11",
-      "r1b1qrk1/ppp2ppp/2n5/3pP2n/2B5/2P2N2/P2NQPPP/R4RK1 b - - 0 11",
-      "r1bqk2r/pp1nbppp/2p1pn2/3p4/2PP4/2N2NP1/PP2PPBP/R1BQK2R w KQkq - 3 7",
-      "r1bqk2r/pp1nbppp/2p1pn2/3p4/2PP4/2N2NP1/PP2PPBP/R1BQ1RK1 b kq - 4 7",
-      "r1bqk2r/pp1n1ppp/2pbpn2/3p4/2PP4/2N2NP1/PP2PPBP/R1BQ1RK1 w kq - 5 8",
-      "r1bqk2r/pp1n1ppp/2pbpn2/3p4/2PP4/2N2NP1/PPQ1PPBP/R1B2RK1 b kq - 6 8",
-      "r1bqk2r/pp1n1ppp/2pbpn2/3p4/2PP4/2N1PNP1/PPQ2PBP/R1B2RK1 w kq - 0 9",
-      "r1bqk2r/pp1n1ppp/2pbpn2/3p4/2PP4/2N1PNP1/PPQ2PBP/R1B2RK1 b kq - 0 9",
-      "r1bq1rk1/pp1n1ppp/2pbpn2/3p4/2PP4/2N1PNP1/PPQ2PBP/R1B2RK1 w - - 1 10",
-      "r1bq1rk1/pp1n1ppp/2pbpn2/3p4/2PP4/2N1PNP1/PPQ2PBP/R1B2RK1 b - - 1 10",
-      "r1bq1rk1/pp1n1ppp/2pbpn2/3p4/2PP4/1PN1PNP1/P1Q2PBP/R1B2RK1 w - - 0 11",
-      "r1bq1rk1/pp1n1ppp/2pbpn2/3p4/2PP4/1PN1PNP1/P1Q2PBP/R1B2RK1 b - - 0 11",
-      "8/5pk1/4p1p1/8/8/4P1P1/5PK1/8 w - - 0 40",
-      "8/5pk1/4p1p1/8/8/4P1P1/5PK1/8 b - - 0 40",
-      "8/8/5k2/5p2/5P2/8/8/5K2 w - - 0 50",
-      "8/8/5k2/5p2/5P2/8/8/5K2 b - - 0 50",
-      "8/p1p5/1p1p4/8/8/1P1P4/P1P5/8 w - - 0 60",
-      "8/p1p5/1p1p4/8/8/1P1P4/P1P5/8 b - - 0 60",
-      "4k3/R7/8/8/8/8/8/4K3 w - - 0 80",
-      "4k3/R7/8/8/8/8/8/4K3 b - - 0 80",
-      "8/8/8/4k3/8/4K3/r7/8 w - - 0 90",
-      "8/8/8/4k3/8/4K3/r7/8 b - - 0 90",
-      "r2q1rk1/pb1nbppp/1p2pn2/2pp4/2PP4/2N2NP1/PP2PPBP/R1BQR1K1 w - - 1 10",
-      "r1bq1rk1/pp1nbppp/2p1pn2/3p4/2PP4/2N2NP1/PP2PPBP/R1BQR1K1 w - - 5 9",
-      "r1bq1rk1/pp2bppp/2n2n2/2pp4/3P4/2N2NP1/PP2PPBP/R1BQR1K1 w - - 0 10",
-      "r1bq1rk1/pp2bppp/2n1pn2/3p4/2P5/2N2NP1/PP2PPBP/R1BQ1RK1 w - - 0 9",
-      "r2q1rk1/pp1nbppp/2p1pn2/8/2pP4/2N2NP1/PP2PPBP/R1BQR1K1 w - - 0 10",
-      "r1bq1rk1/pp1n1ppp/2pb1n2/3p4/2PP4/2N2NP1/PP2PPBP/R1BQR1K1 w - - 3 9",
-      "r1bq1rk1/pp2bppp/2n1pn2/3P4/8/2N2NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
-      "r1bq1rk1/pp2bppp/2n2n2/3p4/2P5/2N3P1/PP2NPBP/R1BQ1RK1 b - - 0 10"
+      // ── Mate in 1 ───────────────────────────────────────────────────────
+      { fen:"6k1/R7/6K1/8/8/8/8/8 w - - 0 1",         themes:["mateIn1","backRankMate"],       rating:800,  descEn:"Back rank mate! Find the winning rook move.",                      descEs:"¡Mate de pasillo! Encuentra el movimiento de torre ganador." },
+      { fen:"7k/6pp/7K/8/8/8/8/R7 w - - 0 1",         themes:["mateIn1","smotheredMate"],      rating:850,  descEn:"The enemy king is smothered by its own pawns. Finish it!",           descEs:"El rey enemigo está asfixiado por sus propios peones. ¡Remata!" },
+      { fen:"7k/8/6QK/8/8/8/8/8 w - - 0 1",           themes:["mateIn1","endgame"],            rating:900,  descEn:"King and queen vs lone king — deliver the final blow.",              descEs:"Rey y dama contra rey solo. Da el golpe final." },
+      { fen:"R7/7k/6K1/8/8/8/8/8 w - - 0 1",          themes:["mateIn1","kingsideAttack"],     rating:800,  descEn:"One precise rook move ends the game immediately.",                  descEs:"Un preciso movimiento de torre termina la partida al instante." },
+      { fen:"rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2", themes:["mateIn1","trappedPiece"], rating:800, descEn:"Fool's Mate! The fastest checkmate — find it.", descEs:"¡Mate del loco! El jaque mate más rápido. Encuéntralo." },
+      // ── Mate in 2 ───────────────────────────────────────────────────────
+      { fen:"r1b1kb1r/pppp1ppp/2n2q2/4p3/2B1P3/2N5/PPPP1PPP/R1BQK1NR w KQkq - 4 4", themes:["mateIn2","pin"],         rating:1350, descEn:"Set up a decisive double attack. The king cannot escape in two moves.",   descEs:"Prepara un doble ataque decisivo. El rey no puede escapar en dos jugadas." },
+      { fen:"6k1/pp3Rpp/8/8/8/8/PP4PP/6K1 w - - 0 1", themes:["mateIn2","backRankMate"],       rating:1100, descEn:"The rook dominates — find the two-move mating sequence on the back rank.", descEs:"La torre domina: encuentra la secuencia de mate en dos en la última fila." },
+      { fen:"r4rk1/ppp2ppp/8/3Q4/8/8/PPP2PPP/R5K1 w - - 0 1", themes:["mateIn2","queenSacrifice"], rating:1500, descEn:"Sacrifice the queen to force a back-rank mate in two.", descEs:"Sacrifica la dama para forzar el mate de pasillo en dos." },
+      { fen:"6k1/5ppp/8/8/8/5Q2/8/6K1 w - - 0 1",     themes:["mateIn2","endgame"],            rating:1000, descEn:"Queen vs lone pawn shelter. Force checkmate in two precise moves.",     descEs:"Dama contra refugio de peones. Fuerza el mate en dos jugadas precisas." },
+      { fen:"r5k1/5Rpp/8/8/8/8/6PP/6K1 w - - 0 1",    themes:["mateIn2","backRankMate"],       rating:1200, descEn:"The back rank is weak. Find the two-step knockout.",                  descEs:"La última fila está débil. Encuentra el nocaut en dos pasos." },
+      // ── Fork ────────────────────────────────────────────────────────────
+      { fen:"r3k3/8/8/3N4/8/8/8/4K3 w - - 0 1",       themes:["fork","knightEndgame"],         rating:1200, descEn:"Knight fork! One move attacks the king and wins the rook.",          descEs:"¡Salto de caballo! Un movimiento ataca al rey y gana la torre." },
+      { fen:"r3k3/8/8/3Q4/8/8/8/4K3 w - - 0 1",       themes:["fork","queenEndgame"],          rating:1100, descEn:"The queen can fork king and rook in one move. Find it!",             descEs:"La dama puede atacar al rey y a la torre en un movimiento. ¡Encuéntralo!" },
+      { fen:"r1bqkb1r/ppp2ppp/2n5/3pp3/4P3/3P1N2/PPP2PPP/RNBQKB1R w KQkq - 0 5", themes:["fork","middlegame"], rating:1350, descEn:"A knight move forks two pieces — don't miss the tempo win.", descEs:"Un salto de caballo ataca dos piezas a la vez. No pierdas la ganancia de tiempo." },
+      { fen:"4k3/8/4r3/8/3N4/8/8/4K3 w - - 0 1",      themes:["fork","knightEndgame"],         rating:1300, descEn:"The knight can simultaneously threaten the king and win the rook.",  descEs:"El caballo puede amenazar al rey y ganar la torre simultáneamente." },
+      { fen:"2r1k3/8/8/3N4/8/8/8/4K3 w - - 0 1",      themes:["fork","knightEndgame"],         rating:1250, descEn:"Find the knight move that attacks two targets at once!",              descEs:"¡Encuentra el salto de caballo que ataca dos blancos a la vez!" },
+      // ── Pin ─────────────────────────────────────────────────────────────
+      { fen:"r4rk1/ppp2ppp/2n1b3/3p4/3P4/2NBP3/PPP2PPP/R4RK1 w - - 0 1", themes:["pin","middlegame"], rating:1400, descEn:"A pin wins material. The pinned piece cannot move without losing more.", descEs:"Una clavada gana material. La pieza clavada no puede moverse sin perder más." },
+      { fen:"rnb1kbnr/pppp1ppp/8/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 0 3", themes:["pin","opening"], rating:1500, descEn:"Watch out — a pin threatens your knight. Can you find the resource?", descEs:"Cuidado: una clavada amenaza tu caballo. ¿Puedes encontrar el recurso?" },
+      { fen:"r1bq1rk1/ppp2ppp/2n5/3p4/1b1P4/2NB1N2/PPP2PPP/R1BQR1K1 w - - 0 1", themes:["pin","tactics"], rating:1450, descEn:"Exploit the pin on the c3-knight to win material.",                   descEs:"Explota la clavada sobre el caballo de c3 para ganar material." },
+      // ── Skewer ──────────────────────────────────────────────────────────
+      { fen:"8/8/8/8/8/1k6/8/RK6 w - - 0 1",           themes:["skewer","endgame"],             rating:1150, descEn:"A rook skewer wins the game in the endgame.",                        descEs:"Un ensarte de torre gana la partida en el final." },
+      { fen:"4k3/8/4r3/8/8/8/8/B3K3 w - - 0 1",        themes:["skewer","endgame"],             rating:1200, descEn:"The bishop skewers king and rook along the diagonal.",               descEs:"El alfil ensarta al rey y a la torre por la diagonal." },
+      { fen:"r7/4k3/8/8/8/8/4K3/R7 w - - 0 1",         themes:["skewer","rookEndgame"],         rating:1100, descEn:"Force a skewer along the file to win the rook.",                     descEs:"Fuerza un ensarte por la columna para ganar la torre." },
+      // ── Discovered Attack ────────────────────────────────────────────────
+      { fen:"r1bqk2r/pppp1ppp/2n2n2/4p3/1bB1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 4 4", themes:["discoveredAttack","opening"], rating:1550, descEn:"A discovered attack unleashes a hidden piece onto the board.",       descEs:"Un ataque descubierto libera una pieza oculta en el tablero." },
+      { fen:"r3k2r/ppp1bppp/2n5/3p4/3P2b1/2N2N2/PPP1BPPP/R2QR1K1 b kq - 0 1", themes:["discoveredAttack","middlegame"], rating:1600, descEn:"Find the discovered attack that wins decisive material.",            descEs:"Encuentra el ataque descubierto que gana material decisivo." },
+      { fen:"8/8/8/3Bp3/8/8/k7/K7 w - - 0 1",          themes:["discoveredAttack","endgame"],   rating:1300, descEn:"Move the bishop to deliver a discovered check and win the pawn.",    descEs:"Mueve el alfil para dar un jaque descubierto y ganar el peón." },
+      // ── Promotion ───────────────────────────────────────────────────────
+      { fen:"8/P7/8/8/8/8/8/k1K5 w - - 0 1",           themes:["promotion","queenEndgame"],     rating:900,  descEn:"Promote and win! The pawn is one step from queening.",              descEs:"¡Corona y gana! El peón está a un paso de convertirse en dama." },
+      { fen:"8/3P4/8/8/8/8/3k4/3K4 w - - 0 1",         themes:["promotion","endgame"],          rating:1100, descEn:"The path to promotion is open. Choose your promotion wisely.",       descEs:"El camino a la coronación está abierto. Elige bien tu promoción." },
+      { fen:"8/8/8/8/k7/8/P7/K7 w - - 0 1",            themes:["promotion","endgame"],          rating:1000, descEn:"Advance the pawn to promotion while keeping the king active.",      descEs:"Avanza el peón a coronación manteniendo al rey activo." },
+      // ── Sacrifice ───────────────────────────────────────────────────────
+      { fen:"r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/3P1N2/PPP1BPPP/RNBQK2R w KQkq - 2 4", themes:["sacrifice","kingsideAttack"], rating:1700, descEn:"A piece sacrifice cracks open the king's defense on the kingside.", descEs:"Un sacrificio de pieza destruye la defensa del rey en el flanco de rey." },
+      { fen:"r2qkb1r/ppp1pppp/2n5/3p4/3PP1b1/2N2N2/PPP2PPP/R1BQKB1R w KQkq - 1 5", themes:["sacrifice","discoveredAttack"], rating:1650, descEn:"Find the exhilarating piece sacrifice that opens the position.",   descEs:"Encuentra el emocionante sacrificio de pieza que abre la posición." },
+      { fen:"r1b1k2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQ1RK1 w kq - 0 6", themes:["sacrifice","pin"],  rating:1800, descEn:"A stunning sacrifice exploits the pin and wins decisive material.", descEs:"Un sacrificio impresionante explota la clavada y gana material decisivo." },
+      { fen:"r3k2r/pp3ppp/2p5/4pb2/4P3/8/PPP2PPP/RNBQKB1R b KQkq - 0 1",            themes:["sacrifice","endgame"], rating:1750, descEn:"A bold exchange sacrifice changes the structure to your advantage.", descEs:"Un audaz sacrificio de intercambio cambia la estructura a tu favor." }
     ];
 
     function openFenLibrary() {
@@ -13016,10 +12955,40 @@ limitations under the License.
     let _pendingChallengeFen = null;
     let _pendingChallengeIsRandom = false;
 
-    function showFenChallengeModal(fen, nameOverride, descOverride, isRandom) {
+    // puzzleItem can be a string (FEN) or a PUZZLES_DB object {fen,themes,rating,descEn,descEs}
+    function showFenChallengeModal(puzzleItem, nameOverride, descOverride, isRandom) {
       const en = currentLanguage === 'en';
+      const isPuzzleObj = (typeof puzzleItem === 'object' && puzzleItem !== null);
+      const fen = isPuzzleObj ? puzzleItem.fen : puzzleItem;
       _pendingChallengeFen = fen;
       _pendingChallengeIsRandom = !!isRandom;
+
+      // Use puzzle object's own description if available
+      if (isPuzzleObj && !nameOverride && !descOverride) {
+        const firstTheme = (puzzleItem.themes || [])[0] || '';
+        const themeLabels = {
+          mateIn1:'Mate in 1', mateIn2:'Mate in 2',
+          fork:'Fork', pin:'Pin', skewer:'Skewer',
+          discoveredAttack:'Discovered Attack', promotion:'Promotion',
+          sacrifice:'Sacrifice', backRankMate:'Back Rank',
+          endgame:'Endgame', middlegame:'Middlegame', opening:'Opening',
+          kingsideAttack:'Kingside Attack', queenSacrifice:'Queen Sacrifice',
+          trappedPiece:'Trapped Piece', smotheredMate:'Smothered Mate',
+          knightEndgame:'Knight Endgame', rookEndgame:'Rook Endgame'
+        };
+        const themeLabelsEs = {
+          mateIn1:'Mate en 1', mateIn2:'Mate en 2',
+          fork:'Salto de Caballo', pin:'Clavada', skewer:'Ensarte',
+          discoveredAttack:'Ataque Descubierto', promotion:'Coronación',
+          sacrifice:'Sacrificio', backRankMate:'Mate de Pasillo',
+          endgame:'Final', middlegame:'Mediojuego', opening:'Apertura',
+          kingsideAttack:'Ataque al Flanco Rey', queenSacrifice:'Sacrificio de Dama',
+          trappedPiece:'Pieza Atrapada', smotheredMate:'Mate Ahogado',
+          knightEndgame:'Final de Caballo', rookEndgame:'Final de Torre'
+        };
+        nameOverride = en ? (themeLabels[firstTheme] || firstTheme) : (themeLabelsEs[firstTheme] || firstTheme);
+        descOverride = en ? puzzleItem.descEn : puzzleItem.descEs;
+      }
 
       const parts = (fen || '').split(/\s+/);
       const fenTurn = (parts[1] || 'w').toLowerCase() === 'b' ? 'b' : 'w';
@@ -13112,11 +13081,12 @@ limitations under the License.
         btn.className = 'fen-item';
         btn.onclick = () => {
           closeFenLibrary();
+          // Pass as plain FEN string with name/desc overrides (FEN_LIBRARY has detailed descriptions)
           showFenChallengeModal(
             item.fen,
             en ? item.nameEn : item.nameEs,
             en ? item.descEn : item.descEs,
-            false // not a random puzzle, hide reroll button
+            false
           );
         };
         const name = en ? item.nameEn : item.nameEs;
@@ -13128,9 +13098,9 @@ limitations under the License.
 
     function loadRandomPuzzle() {
       if (PUZZLES_DB.length === 0) return;
-      const randomFen = PUZZLES_DB[Math.floor(Math.random() * PUZZLES_DB.length)];
+      const puzzle = PUZZLES_DB[Math.floor(Math.random() * PUZZLES_DB.length)];
       closeFenLibrary();
-      showFenChallengeModal(randomFen, null, null, true); // true = show reroll button
+      showFenChallengeModal(puzzle, null, null, true); // true = show reroll button
     }
 
     function _syncFenDiffButtons(level) {

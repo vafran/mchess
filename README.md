@@ -138,7 +138,7 @@ Three styles, with labels now visible under the slider:
 | Openings | 7 | Scholar's Mate, Fried Liver Attack, Budapest Gambit |
 | Tactics | 15 | Fork, pin, skewer, discovered attack, back rank, zugzwang |
 | Endgames | 14 | Lucena, Philidor, square rule, king opposition, wrong bishop |
-| Random | 100 | Mixed positions from real games |
+| Random | 30 | Curated tactical puzzles with themes: mate, fork, pin, skewer, sacrifice, promotion |
 
 <img src="screenshots/EN/training.png" alt="FEN Training Library" width="300" />
 
@@ -223,7 +223,7 @@ A new **🧩 Training** button appears directly on the main menu — no longer b
 - **Tactics (15)** — Back rank mate, knight fork, absolute pin, discovered attack, double check, skewer, queen trap, smothered mate, Anastasia's mate, Arabian mate, zugzwang, bishop sacrifice on h6, battery, and more
 - **Endgames (14)** — Ladder mate, queen mate, king opposition, pawn promotion, Lucena, Philidor, square rule, wrong bishop, two bishops vs king, and more
 
-A **🎲 Random Challenge** button loads one of 100 additional curated positions at random, spanning Sicilian middlegames, Ruy López structures, Indian defences, and pure endgames.
+A **🎲 Random Challenge** button loads one of **30 curated tactical puzzles** at random. Each puzzle includes a specific theme (Mate in 1, Fork, Pin, Skewer, Discovered Attack, Promotion, Sacrifice) and a bilingual description explaining the challenge. A **🎲 Another** button inside the challenge modal lets you cycle to a new puzzle without returning to the library.
 
 ### Full Support for Playing as Black
 
