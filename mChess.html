@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 Monolith Chess v2.11.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -2813,7 +2813,7 @@ limitations under the License.
           let settled = false;
           const t = setTimeout(() => {
             console.log("⚠️ Safety timer triggered.");
-            if (!settled) { settled = true; worker.terminate(); resolve([]); }
+            if (!settled) { settled = true; worker.terminate(); resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
           }, timeoutRes + 15000);
 
           worker.onmessage = function (e) {
