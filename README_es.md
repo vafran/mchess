@@ -84,8 +84,9 @@ Profundidad 9 · 0% de errores · 10s de tiempo · libro completo · evaluación
 | 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
 | 🔥 Difícil | ~1400 | 6 | 5% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~1900 | 9 | 0% | ninguno | ✅ completo | ✅ |
+| 👑 Rey Sabio | ~1900 | * | 0% | ninguno | ✅ completo | ✅ |
 
+Nota: la profundidad del Rey Sabio depende del tiempo límite (30s).
 ---
 
 ## El Profesor

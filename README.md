@@ -82,8 +82,9 @@ That is everything. The game handles the rest.
 | 🐣 Easy | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medium | ~1010 | 4 | 20% | ±6 cp | first 2 moves | ✅ |
 | 🔥 Hard | ~1400 | 6 | 5% | none | ✅ full | ✅ |
-| 👑 Wise King | ~1900 | 9 | 0% | none | ✅ full | ✅ |
-
+| 👑 Wise King | ~1900 | * | 0% | none | ✅ full | ✅ |
+ 
+ Note: Wise King depth dependes on time limit (30s).
 ---
 
 ## The Coach
