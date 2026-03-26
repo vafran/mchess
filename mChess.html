@@ -8499,6 +8499,7 @@ limitations under the License.
             let bestMovesHistory = []; // To track confidence
             let lastDepthTime = 0; // ⚡ EBF brake: tracks how long the last depth took
             const EBF_FACTOR = 3.5; // Branching factor estimate — conservative to avoid over-cutting
+            let completedDepth = 0; // 📊 Real depth actually completed (vs maxDepth = target)
 
             for (let d = 1; d <= maxDepth; d++) {
               if (Date.now() >= deadline) { analysisPartial = true; break; }
@@ -8653,6 +8654,7 @@ limitations under the License.
               if (!depthPartial && currentDepthScores.length > 0) {
                 currentDepthScores.sort((a, b) => b.score - a.score);
                 prevBestScore = currentDepthScores[0].score; // Track for aspiration windows
+                completedDepth = d; // 📊 Track the deepest fully-completed iteration
 
                 scoredRoot.forEach(sr => {
                   const found = currentDepthScores.find(cs =>
@@ -8715,8 +8717,8 @@ limitations under the License.
             const _totalN = searchNodes + qSearchNodes;
             const _ms = Date.now() - searchStartTime;
             const _nps = _ms > 0 ? Math.floor((_totalN / _ms) * 1000) : 0;
-            console.log(`🧠 Prof: ${maxDepth} | Nodos: ${_totalN} (${qSearchNodes} en Q) | NPS: ${_nps} | TT Hits: ${ttHitsCount}`);
-            postMessage({ action: 'result', moves: finalOptions, isPartial: analysisPartial, nps: _nps, nodes: _totalN, depth: maxDepth });
+            console.log(`🧠 Prof real: ${completedDepth}/${maxDepth} | Nodos: ${_totalN} (${qSearchNodes} en Q) | NPS: ${_nps} | TT: ${ttHitsCount}`);
+            postMessage({ action: 'result', moves: finalOptions, isPartial: analysisPartial, nps: _nps, nodes: _totalN, depth: maxDepth, completedDepth });
 
           } catch (err) {
             postMessage({ action: 'error', error: String(err) });
