@@ -1,5 +1,5 @@
-﻿<!--
-Monolith Chess v2.11.0
+<!--
+Monolith Chess v2.1.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.11.0</title>
+  <title>Monolith Chess v2.1.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.11.0 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.1.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.11.0</div>
+        v2.1.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3760,7 +3760,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.11.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.1.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7465,17 +7465,6 @@ limitations under the License.
           const wIni = matDiff < -200 ? 1.10 : 1.0;
           const bIni = matDiff > 200 ? 1.10 : 1.0;
 
-          // 🪓 INCENTIVO DE SIMPLIFICACIÓN (Trading)
-          // Cuando el bando ganador (ventaja > 150cp) intercambia piezas, 'eg' sube
-          // acercándose a 1. Premiamos ese movimiento inflando la ventaja * eg * 0.4.
-          // Guía al motor a buscar cambios matemáticamente: acorta la partida y ahoga
-          // el contrajuego. Equivale a ~+60cp de incentivo extra cuando se va muy ganando.
-          if (matDiff > 150) {
-            s += (matDiff * eg) * 0.4;   // Blancas ganando: premiar simplificación
-          } else if (matDiff < -150) {
-            s -= (Math.abs(matDiff) * eg) * 0.4; // Negras ganando: premiar simplificación
-          }
-
           let wUndevelopedMinors = 0;
           if (b[7][1] === 'N') wUndevelopedMinors++;
           if (b[7][2] === 'B') wUndevelopedMinors++;
@@ -7600,24 +7589,6 @@ limitations under the License.
                     }
                   }
                 }
-
-                // 🛡️ KING ESCORT (Endgame)
-                // Reward the King who walks next to the passed pawn to escort it.
-                // Chebyshev distance ≤ 2 = King physically supporting the advance.
-                if (eg > 0.65) {
-                  const myKing = isW ? state.wKing : state.bKing;
-                  if (myKing) {
-                    const kDist = Math.max(Math.abs(myKing[0] - r), Math.abs(myKing[1] - c));
-                    if (kDist <= 2) {
-                      bonus += Math.round(150 * eg); // Massive bonus for escorting (+97cp in pure endgame)
-                    }
-                  }
-                  // Penalize if the enemy king physically blocks the square in front
-                  const eKing2 = isW ? state.bKing : state.wKing;
-                  if (eKing2 && eKing2[0] === r + (isW ? -1 : 1) && eKing2[1] === c) {
-                    bonus -= Math.round(100 * eg); // Enemy king blocking the pawn
-                  }
-                }
               }
               const backRow = r + (isW ? 1 : -1);
               if (backRow >= 0 && backRow <= 7) {
@@ -7645,17 +7616,17 @@ limitations under the License.
                 if (b[_er][_ec] === (isW ? 'k' : 'K')) { _eKing = [_er, _ec]; break; }
               if (_eKing) { const _fd = Math.abs(c - _eKing[1]); if (_fd <= 1) { bonus += 35; if (epPawns[c] === 0) bonus += 25; } else if (_fd <= 2) bonus += 15; }
 
-              // 🌪️ STRATEGY: Tarrasch Rule (Rook behind passed pawn)
+              // 🌪️ ESTRATEGIA: Regla de Tarrasch (Torre detrás de peón pasado)
               const myPawnChar = isW ? 'P' : 'p';
               const enemyPawnChar = isW ? 'p' : 'P';
               const pushDir = isW ? -1 : 1;
               for (let scanR = r + pushDir; isW ? scanR >= 0 : scanR <= 7; scanR += pushDir) {
                 const pieceInFront = b[scanR][c];
                 if (pieceInFront === myPawnChar) {
-                  if (epPawns[c] === 0) bonus += 25; // Rook pushing its own passed pawn
+                  if (epPawns[c] === 0) bonus += 25; // Torre empujando su propio peón libre
                   break;
                 } else if (pieceInFront === enemyPawnChar) {
-                  if (myPawns[c] === 0) bonus += 15; // Rook braking from behind the enemy pawn
+                  if (myPawns[c] === 0) bonus += 15; // Torre frenando desde atrás al peón enemigo
                   break;
                 }
               }
@@ -7729,14 +7700,14 @@ limitations under the License.
               // Previously (+21 vs -18) = 39cp — barely visible vs 300cp piece value.
               bonus += (mob - 6) * 8;
             }
-            // Anti Opening Shuffle now evaluated globally via wUndevelopedMinors
+            // Anti-Baile de Apertura now evaluated globally via wUndevelopedMinors
 
             // ── King activity in endgame ──────────────────────────────────
-            if (u === 'K' && eg > 0.4) { // 🎯 TOURNAMENT IMPROVEMENT: activate earlier (was: 0.5)
-              // 👑 CRITICAL IMPROVEMENT: King must activate in endgames
-              // Bonus for centralization (squares d4, d5, e4, e5)
+            if (u === 'K' && eg > 0.4) { // 🎯 MEJORA TORNEO: activar antes (antes: 0.5)
+              // 👑 MEJORA CRÍTICA: Rey debe activarse en finales
+              // Bonus por centralización (casillas d4, d5, e4, e5)
               const centerDist = Math.abs(3.5 - r) + Math.abs(3.5 - c);
-              bonus += Math.round((7 - centerDist) * 15 * eg); // Up to +105 in center in pure endgame
+              bonus += Math.round((7 - centerDist) * 15 * eg); // Hasta +105 en centro en endgame puro
 
               // Bonus adicional por avanzar hacia peones enemigos
               const enemyPawns = isW ? bP : wP;
@@ -7750,7 +7721,7 @@ limitations under the License.
                 }
               }
               if (closestEnemyPawn < 999) {
-                // King near enemy pawns in endgame = good for attacking them
+                // Rey cerca de peones enemigos en endgame = bueno para atacarlos
                 bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
               }
             }
@@ -7774,7 +7745,7 @@ limitations under the License.
                 if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) continue;
                 for (let fr2 = 0; fr2 < 8; fr2++) for (let fc2 = 0; fc2 < 8; fc2++) {
                   if (clr(b[fr2][fc2]) === enemyClr && atk(b, fr2, fc2, nr, nc)) {
-                    attackersSet.add(fr2 * 8 + fc2); // We save the coordinate
+                    attackersSet.add(fr2 * 8 + fc2); // Guardamos la coordenada
                   }
                 }
               }
@@ -7793,7 +7764,7 @@ limitations under the License.
 
               let attackers = attackWeight; // Replaced simple count with real weight
 
-              // Shield Bonus (30 centipawns per 1st row pawn + 15 per 2nd row pawn)
+              // Shield Bonus (30 centipeones per 1st row pawn + 15 per 2nd row pawn)
               let shield = 0;
               const shieldRow = isW ? r - 1 : r + 1;
               if (shieldRow >= 0 && shieldRow < 8) {
@@ -7816,7 +7787,7 @@ limitations under the License.
               // ✨ Improvement 3: Naked King penalty.
               const hasCastle = isW ? (state.castleRights.K || state.castleRights.Q) : (state.castleRights.k || state.castleRights.q);
 
-              // 🛡️ FIX: Don't sacrifice yourself like crazy. We only penalize the naked king if the opponent has already developed their pieces
+              // 🛡️ FIX: No te sacrifiques a lo loco. Solo castigamos al rey desnudo si el rival ya ha desarrollado sus piezas
               const attackerUndeveloped = isW ? bUndevelopedMinors : wUndevelopedMinors;
               if (!hasCastle && shield < 0.5 && eg < 0.4 && attackerUndeveloped <= 1) {
                 // Count enemy major pieces (Q/R/B/N) to scale the danger
@@ -7832,8 +7803,8 @@ limitations under the License.
                 bonus -= enemyMajors * 22; // -22 cp per active enemy piece near exposed king
               }
 
-              // 🔒 3. ZONE DISCIPLINE (New Fix)
-              // We only penalize if the king is on a flank (already castled or almost)
+              // 🔒 3. DISCIPLINA DE ZONA (Nuevo Fix)
+              // Solo castigamos si el rey está en un flanco (ya enrocado o casi)
               if (c >= 5 || c <= 2) {
                 const startRank = isW ? 6 : 1;
                 const dir = isW ? -1 : 1;
@@ -7843,23 +7814,23 @@ limitations under the License.
                   const nc = c + dc;
                   if (nc < 0 || nc > 7) continue;
 
-                  // If the pawn in that column has advanced, there is "storm"
+                  // Si el peón de esa columna ha avanzado, hay "tormenta"
                   if (b[startRank][nc] !== (isW ? 'P' : 'p')) {
-                    // If it advanced 1 square, we add 1 point. If it advanced more, we add 2.
+                    // Si avanzó 1 casilla, sumamos 1 punto. Si avanzó más, sumamos 2.
                     if (b[startRank + dir][nc] === (isW ? 'P' : 'p')) stormPoints += 1;
                     else stormPoints += 2;
                   }
                 }
-                // Penalty: Recklessness (stormPoints) x Enemy Pressure (attackers)
-                // If there are 2 attackers and we have moved 2 pawns, that's -60 additional points.
+                // Penalización: Imprudencia (stormPoints) x Presión Enemiga (attackers)
+                // Si hay 2 atacantes y hemos movido 2 peones, son -60 puntos adicionales.
                 bonus -= stormPoints * (attackers * 15);
               }
 
-              // 4. Maximum Dynamic Penalty (Capped at 500)
+              // 4. Penalización Dinámica Máxima (Cerrada en 500)
               const kPenalty = Math.min(250, attackers * attackers * 15);
               bonus -= kPenalty * (1 - eg);
 
-              // 5. Fear of Open Files over the Castled King
+              // 5. Miedo a las Columnas Abiertas sobre el Rey Enrocado
               if (c >= 5 || c <= 2) {
                 const filesToCheck = c >= 5 ? [5, 6, 7] : [0, 1, 2];
                 let openFilesThreat = 0;
@@ -7885,20 +7856,6 @@ limitations under the License.
             }
 
             const _ini = isW ? wIni : bIni; s += sign * (val + pst + (bonus * _ini));
-          }
-
-          // ⏰ THE CLOCK OF FEAR (Anti-Shuffling / Endgame Conversion)
-          // If we have gone more than 40 half-moves without captures or pawns and we are
-          // winning, sinking the score towards 0 forces the engine to force a change
-          // or a pawn advance — CONVERTS instead of shuffling indefinitely.
-          const hmc = state.halfMoveClock || 0;
-          if (hmc > 40) {
-            const urgencyFactor = Math.max(0, (100 - hmc)) / 60; // 1.0 at ply 40 → 0 at ply 100
-            if (s > 200) {
-              s = s * urgencyFactor; // White winning: force closure
-            } else if (s < -200) {
-              s = s * urgencyFactor; // Black winning: force closure
-            }
           }
 
           return s;
@@ -8026,8 +7983,7 @@ limitations under the License.
             rookFrom: null, rookTo: null, rookPiece: null,
             oldEP: state.enPassantTarget,
             oldCR: { ...state.castleRights },
-            oldWK: state.wKing, oldBK: state.bKing,
-            oldHMC: state.halfMoveClock
+            oldWK: state.wKing, oldBK: state.bKing,  // king cache snapshot
           };
           // En passant: pawn captures diagonally to an empty square → remove captured pawn
           if (u === 'P' && m.tc !== m.fc && b[m.tr][m.tc] === ' ') {
@@ -8055,12 +8011,6 @@ limitations under the License.
           if (m.tr === 0 && m.tc === 7) state.castleRights.k = false; if (m.tr === 0 && m.tc === 0) state.castleRights.q = false;
           // Update en passant target
           state.enPassantTarget = (u === 'P' && Math.abs(m.tr - m.fr) === 2) ? [(m.fr + m.tr) / 2, m.fc] : null;
-          // ⏰ RELOJ DEL MIEDO: resetear si es peón o captura, incrementar si no
-          if (u === 'P' || save.captured !== ' ' || save.epCapture) {
-            state.halfMoveClock = 0;
-          } else {
-            state.halfMoveClock = (state.halfMoveClock || 0) + 1;
-          }
           state.turn = opp(state.turn);
           return save;
         }
@@ -8076,7 +8026,6 @@ limitations under the License.
           state.castleRights = save.oldCR;
           // Restore king position cache in O(1)
           state.wKing = save.oldWK; state.bKing = save.oldBK;
-          state.halfMoveClock = save.oldHMC; // ⏰ RELOJ DEL MIEDO: restaurar
         }
         // ─────────────────────────────────────────────────────────────────────
 
@@ -8354,13 +8303,7 @@ limitations under the License.
                 v = minimax(state, depth - 1 + ext, alpha, beta, !maximizing, deadline);
               } else if (doLMR && ext === 0) {
                 // LMR: reduced window search first — null window in correct space
-                // 🧠 HISTORY CONFIDENCE: moves with strong scores get smaller reductions
-                const historyConfidence = histTable[m.fr * 8 + m.fc] ? (histTable[m.fr * 8 + m.fc][m.tr * 8 + m.tc] || 0) : 0;
-                let reduction = moveCount >= 6 ? 2 : 1;
-                // Deep + late + low-confidence quiet move → reduce aggressively
-                if (moveCount >= 10 && depth >= 4 && historyConfidence < 2000) reduction = 3;
-                // High-confidence move (proven good historically) → reduce less
-                if (historyConfidence >= 5000) reduction = Math.max(1, reduction - 1);
+                const reduction = moveCount >= 6 ? 2 : 1;
                 if (maximizing) {
                   v = minimax(state, depth - 1 - reduction + ext, alpha, alpha + 1, false, deadline);
                   if (v > alpha && v < beta) v = minimax(state, depth - 1 + ext, alpha, beta, false, deadline);
@@ -8421,7 +8364,6 @@ limitations under the License.
               enPassantTarget: msg.enPassantTarget || null,
               wKing: findKing(msg.board, 'w'),  // king position cache
               bKing: findKing(msg.board, 'b'),
-              halfMoveClock: msg.halfMoveClock || 0
             };
 
             // Load position history
@@ -8497,34 +8439,10 @@ limitations under the License.
             const softDeadline = Date.now() + Math.floor(timeout * 0.50);
 
             let bestMovesHistory = []; // To track confidence
-            let lastDepthTime = 0; // ⚡ EBF brake: tracks how long the last depth took
-            const EBF_FACTOR = 2.5; // Expected branching factor — used to predict next depth cost
 
             for (let d = 1; d <= maxDepth; d++) {
               if (Date.now() >= deadline) { analysisPartial = true; break; }
-              if (d > 3 && Date.now() >= softDeadline) { break; } // soft limit
-
-              // ⚡ FRENO PREDICTIVO (EBF): Estimate cost of next depth and skip if it won't finish
-              if (d > 2 && lastDepthTime > 0) {
-                const timeRemaining = deadline - Date.now();
-                const estimatedNext = lastDepthTime * EBF_FACTOR;
-                if (estimatedNext > timeRemaining) break; // Clean predictive stop
-              }
-
-              // 📉 DECAIMIENTO DEL HISTORIAL (History Decay)
-              // Gently halve history scores each iteration to prevent stale heuristics
-              // from drowning out fresh evidence gathered at the new depth.
-              if (d > 1) {
-                for (let _hi = 0; _hi < 64; _hi++) {
-                  for (let _hj = 0; _hj < 64; _hj++) {
-                    if (histTable[_hi][_hj] > 0) {
-                      histTable[_hi][_hj] -= Math.floor(histTable[_hi][_hj] / 8);
-                    }
-                  }
-                }
-              }
-
-              const _depthStart = Date.now();
+              if (d > 3 && Date.now() >= softDeadline) { break; } // soft limit: don't start unfinishable depth
 
               scoredRoot.sort((a, b) => b.score - a.score);
 
@@ -8590,15 +8508,6 @@ limitations under the License.
                 // Check if we failed outside the aspiration window — widen and retry
                 if (currentDepthScores.length > 0) {
                   const best = currentDepthScores.reduce((a, b) => b.score > a.score ? b : a).score;
-
-                  // 🪂 PARACAÍDAS DE ASPIRACIÓN: Under 15% budget → full window immediately,
-                  // no point wasting precious milliseconds on retry loops.
-                  const timeLeft = deadline - Date.now();
-                  if (timeLeft < timeout * 0.15) {
-                    aspAlpha = -Infinity; aspBeta = Infinity;
-                    continue;
-                  }
-
                   if (best <= aspAlpha) { aspAlpha -= ASPIRATION_DELTA * (attempt + 2); continue; }
                   if (best >= aspBeta) { aspBeta += ASPIRATION_DELTA * (attempt + 2); continue; }
                 }
@@ -8643,9 +8552,6 @@ limitations under the License.
                   }
                 }
               }
-
-              // ⏱️ Record time taken at this depth for EBF brake prediction
-              lastDepthTime = Date.now() - _depthStart;
 
               // Save results only if depth completed without timeout
               if (!depthPartial && currentDepthScores.length > 0) {
@@ -8812,8 +8718,7 @@ limitations under the License.
           enPassantTarget: enPassantTarget ? [...enPassantTarget] : null,
           depth, multiPV, timeout: timeoutMs,
           positionHashes: [...positionHashes],
-          forcedMove: forcedMove,
-          halfMoveClock: halfMoveClock  
+          forcedMove: forcedMove
         });
       });
     }
