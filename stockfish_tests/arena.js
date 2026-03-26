@@ -5,7 +5,7 @@ const path = require('path');
 const readline = require('readline');
 
 async function runMatch() {
-    console.log("🏟️ Iniciando el Coliseo: mChess vs Stockfish");
+    console.log("🏟️ Starting the Colosseum: mChess vs Stockfish");
     
     const htmlPath = 'file://' + path.join(__dirname, '../mChess.html');
     
@@ -21,20 +21,20 @@ async function runMatch() {
     // Ask user which mChess level to use
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const ask = (q) => new Promise(res => rl.question(q, ans => res(ans)));
-    console.log('\nSelecciona nivel de mChess:');
-    console.log('  1) Pollito (easy)');
-    console.log('  2) Estudiante (medium)');
-    console.log('  3) Mago (hard)');
-    console.log('  4) Rey Sabio (grandmaster)');
-    const ans = (await ask('Elige 1-4 (enter=4): ')).trim();
+    console.log('\nSelect mChess level:');
+    console.log('  1) Chick (easy)');
+    console.log('  2) Student (medium)');
+    console.log('  3) Wizard (hard)');
+    console.log('  4) Wise King (grandmaster)');
+    const ans = (await ask('Choose 1-4 (enter=4): ')).trim();
     rl.close();
     const MAP = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
     const selectedLevel = MAP[ans] || 'grandmaster';
-    console.log(`\nUsando nivel mChess: ${selectedLevel}`);
+    console.log(`\nUsing mChess level: ${selectedLevel}`);
 
-    console.log(`📂 Cargando archivo: ${htmlPath}`);
+    console.log(`📂 Loading file: ${htmlPath}`);
     await page.goto(htmlPath);
-    console.log("✅ HTML cargado correctamente.");
+    console.log("✅ HTML loaded correctly.");
 
     // Inject selected level into the page so mChess starts with that difficulty
     try {
@@ -42,10 +42,10 @@ async function runMatch() {
         // allow the page to show the intro and start the game
         await new Promise(r => setTimeout(r, 1800));
     } catch (e) {
-        console.log('⚠️ Warning: no se pudo iniciar el nivel en la página:', e.message);
+        console.log('⚠️ Warning: could not start the level in the page:', e.message);
     }
 
-    console.log("⏳ Esperando a que el motor se inicialice...");
+    console.log("⏳ Waiting for the engine to initialize...");
     await new Promise(r => setTimeout(r, 2000)); 
 
     const game = new Chess();
@@ -73,43 +73,43 @@ async function runMatch() {
 
     while (!game.isGameOver()) {
         const fen = game.fen();
-        console.log(`\n-------------------\n🎲 TURNO: ${turn === 'w' ? '👑 mChess' : '🐟 Stockfish'}`);
+        console.log(`\n-------------------\n🎲 TURN: ${turn === 'w' ? '👑 mChess' : '🐟 Stockfish'}`);
         
         let move;
         if (turn === 'w') {
-            process.stdout.write("🧠 mChess pensando...\n");
+            process.stdout.write("🧠 mChess thinking...\n");
             const historyObj = game.history();
             move = await page.evaluate(async (f, h) => {
                 return await window.askWiseKing(f, h);
             }, fen, historyObj);
         } else {
-            process.stdout.write("🐟 Stockfish pensando...\n");
+            process.stdout.write("🐟 Stockfish thinking...\n");
             move = await askStockfish(fen);
         }
 
-        console.log(`🚀 Movimiento: ${move}`);
+        console.log(`🚀 Move: ${move}`);
         
-        // LA GUARDIA DE CLAUDE
+        // CLAUDE'S GUARD
         if (!move || move === 'null' || move.trim() === '') {
-            console.log(`🏳️ Motor sin jugadas — fin`);
+            console.log(`🏳️ No moves available — end`);
             break;
         }
 
         try {
-            // El formato robusto de chess.js propuesto por Claude
+            // The robust format of chess.js proposed by Claude
             game.move({ 
                 from: move.slice(0,2), 
                 to: move.slice(2,4), 
-                promotion: move.length === 5 ? move[4] : 'q' // Por defecto 'q' si hay promoción sin especificar
+                promotion: move.length === 5 ? move[4] : 'q' // Default 'q' if promotion is not specified
             });
             turn = turn === 'w' ? 'b' : 'w';
         } catch (e) {
-            console.error(`❌ Jugada ILEGAL intentada: ${move}`);
+            console.error(`❌ Illegal move attempted: ${move}`);
             break;
         }
     }
 
-    console.log("\n🏁 RESULTADO FINAL:\n" + game.pgn());
+    console.log("\n🏁 FINAL RESULT:\n" + game.pgn());
     await browser.close();
     sf.kill();
 }

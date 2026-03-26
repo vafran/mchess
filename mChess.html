@@ -1,4 +1,4 @@
-<!--
+﻿<!--
 Monolith Chess v2.11.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -2736,7 +2736,7 @@ limitations under the License.
   <script>
     // Variable global única y aislada para el Coliseo
     window.askWiseKing = async function (fen, historyArr = []) {
-      console.log("🏟️ Recibida petición de FEN:", fen);
+      console.log("🏟️ Received FEN request:", fen);
       try {
         const parts = fen.split(' ');
         const rows = parts[0].split('/');
@@ -2787,7 +2787,7 @@ limitations under the License.
                 }
                 const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
                 if (bookMove) {
-                  console.log("📖 Jugada seleccionada del libro:", chosenEntry.m);
+                  console.log("📖 Move selected from the book:", chosenEntry.m);
                   const cols = 'abcdefgh';
                   const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
                   const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
@@ -2796,7 +2796,7 @@ limitations under the License.
                 }
               }
             } else {
-              console.log("🎲 Exploración: ignorando libro de aperturas para buscar variedad...");
+              console.log("🎲 Exploration: ignoring opening book to find variety...");
             }
           }
         }
@@ -2807,12 +2807,12 @@ limitations under the License.
           : DIFF_SETTINGS['grandmaster'];
         const _depth = _diff.depth;
         const timeoutRes = _diff.timeLimit;
-        console.log(`🧠 Motor pensando (Profundidad ${_depth}, ${timeoutRes / 1000}s max)...`);
+        console.log(`🧠 Thinking (Depth ${_depth}, ${timeoutRes / 1000}s max)...`);
         const results = await new Promise(resolve => {
           const worker = createEngineWorker();
           let settled = false;
           const t = setTimeout(() => {
-            console.log("⚠️ Timer de seguridad disparado.");
+            console.log("⚠️ Safety timer triggered.");
             if (!settled) { settled = true; worker.terminate(); resolve([]); }
           }, timeoutRes + 15000);
 
@@ -2843,15 +2843,15 @@ limitations under the License.
         });
 
         if (!results || !results.moves || results.moves.length === 0) {
-          console.log("❌ Motor devolvió array vacío.");
-          // ⚠️ FALLBACK: Devolver movimiento legal aleatorio
+          console.log("❌ Motor returned empty array.");
+          // ⚠️ FALLBACK: Return random legal move
           const legalMvs = getLegalMovesForColorInPlace(color);
           if (legalMvs && legalMvs.length > 0) {
             const fallbackMove = legalMvs[0];
             const cols = 'abcdefgh';
             const promotion = (fallbackMove.tr === 0 || fallbackMove.tr === 7) && board[fallbackMove.fr][fallbackMove.fc].toUpperCase() === 'P' ? 'q' : '';
             const uci = cols[fallbackMove.fc] + (8 - fallbackMove.fr) + cols[fallbackMove.tc] + (8 - fallbackMove.tr) + promotion;
-            console.log("⚠️ Usando movimiento de fallback:", uci);
+            console.log("⚠️ Using fallback move:", uci);
             window._lastSearchDepth = { completedDepth: 0, maxDepth: _depth, isPartial: true };
             return uci;
           }
@@ -2866,7 +2866,7 @@ limitations under the License.
         window._lastSearchDepth = { completedDepth: results.completedDepth, maxDepth: results.maxDepth, isPartial: results.isPartial };
         return uci;
       } catch (e) {
-        console.log("❌ ERROR EN ASKWISEKING:", e);
+        console.log("❌ ERROR IN ASKWISEKING:", e);
         return null;
       }
     };
@@ -3179,7 +3179,7 @@ limitations under the License.
     let aiTimeLimit = 800; // Default time limit (Chick/Easy level)
     let currentDifficulty = 'easy';
 
-    // LA NUEVA ESCALERA DE DIFICULTAD
+    // THE NEW DIFFICULTY SCALE
     const DIFF_SETTINGS = {
       easy: { depth: 2, mistakes: 0.50, timeLimit: 800 },
       medium: { depth: 4, mistakes: 0.20, timeLimit: 2000 },
