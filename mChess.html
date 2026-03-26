@@ -2819,7 +2819,16 @@ limitations under the License.
           worker.onmessage = function (e) {
             if (e.data.action === 'result') {
               clearTimeout(t);
-              if (!settled) { settled = true; worker.terminate(); resolve(e.data.moves || []); }
+              if (!settled) {
+                settled = true;
+                // 📊 Log real depth for arena.js (forwarded via page.on('console'))
+                const cd = e.data.completedDepth || 0;
+                const md = e.data.depth || _depth;
+                const partial = e.data.isPartial ? ' ⚠️partial' : '';
+                console.log(`🧠 Prof real: ${cd}/${md}${partial} | NPS: ${e.data.nps || 0}`);
+                worker.terminate();
+                resolve(e.data.moves || []);
+              }
             }
           };
           worker.postMessage({
