@@ -3184,7 +3184,7 @@ limitations under the License.
       easy: { depth: 2, mistakes: 0.50, timeLimit: 800 },
       medium: { depth: 4, mistakes: 0.20, timeLimit: 2000 },
       hard: { depth: 7, mistakes: 0.05, timeLimit: 5000 },
-      grandmaster: { depth: 9, mistakes: 0, timeLimit: 30000 },
+      grandmaster: { depth: 15, mistakes: 0, timeLimit: 30000 },
     };
 
     // Piece values used by the Profesor for trade evaluation and hanging-piece detection.
@@ -8728,7 +8728,7 @@ limitations under the License.
             const _totalN = searchNodes + qSearchNodes;
             const _ms = Date.now() - searchStartTime;
             const _nps = _ms > 0 ? Math.floor((_totalN / _ms) * 1000) : 0;
-            console.log(`🧠 Prof real: ${completedDepth}/${maxDepth} | Nodos: ${_totalN} (${qSearchNodes} en Q) | NPS: ${_nps} | TT: ${ttHitsCount}`);
+            console.log(`🧠 Real depth: ${completedDepth}/${maxDepth} | Nodos: ${_totalN} (${qSearchNodes} en Q) | NPS: ${_nps} | TT: ${ttHitsCount}`);
             postMessage({ action: 'result', moves: finalOptions, isPartial: analysisPartial, nps: _nps, nodes: _totalN, depth: maxDepth, completedDepth });
 
           } catch (err) {
