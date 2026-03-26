@@ -8591,10 +8591,14 @@ limitations under the License.
                 if (currentDepthScores.length > 0) {
                   const best = currentDepthScores.reduce((a, b) => b.score > a.score ? b : a).score;
 
-                  // 🪂 PARACAÍDAS: Under 15% budget → accept what we have, stop retrying.
+                  // 🪂 PARACAÍDAS: Under 15% budget → abort cleanly.
+                  // IMPORTANT: mark depthPartial=true BEFORE break so the Failsafe block below
+                  // (!depthPartial check) does NOT trigger a costly full-window re-search.
                   const timeLeft = deadline - Date.now();
                   if (timeLeft < timeout * 0.15) {
-                    break; // ✅ FIX: was `continue` = triggered wasteful full re-search at low time!
+                    depthPartial = true;    // prevents Failsafe from firing
+                    analysisPartial = true; // exits the depth loop too
+                    break;
                   }
 
                   if (best <= aspAlpha) { aspAlpha -= ASPIRATION_DELTA * (attempt + 2); continue; }
