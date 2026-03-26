@@ -2821,13 +2821,13 @@ limitations under the License.
               clearTimeout(t);
               if (!settled) {
                 settled = true;
-                // 📊 Log real depth for arena.js (forwarded via page.on('console'))
-                const cd = e.data.completedDepth || 0;
-                const md = e.data.depth || _depth;
-                const partial = e.data.isPartial ? ' ⚠️partial' : '';
-                console.log(`🧠 Prof real: ${cd}/${md}${partial} | NPS: ${e.data.nps || 0}`);
                 worker.terminate();
-                resolve(e.data.moves || []);
+                resolve({
+                  moves: e.data.moves || [],
+                  completedDepth: e.data.completedDepth || 0,
+                  maxDepth: e.data.depth || _depth,
+                  isPartial: !!e.data.isPartial
+                });
               }
             }
           };
@@ -2842,7 +2842,7 @@ limitations under the License.
           });
         });
 
-        if (!results || results.length === 0) {
+        if (!results || !results.moves || results.moves.length === 0) {
           console.log("❌ Motor devolvió array vacío.");
           // ⚠️ FALLBACK: Devolver movimiento legal aleatorio
           const legalMvs = getLegalMovesForColorInPlace(color);
@@ -2852,16 +2852,18 @@ limitations under the License.
             const promotion = (fallbackMove.tr === 0 || fallbackMove.tr === 7) && board[fallbackMove.fr][fallbackMove.fc].toUpperCase() === 'P' ? 'q' : '';
             const uci = cols[fallbackMove.fc] + (8 - fallbackMove.fr) + cols[fallbackMove.tc] + (8 - fallbackMove.tr) + promotion;
             console.log("⚠️ Usando movimiento de fallback:", uci);
+            window._lastSearchDepth = { completedDepth: 0, maxDepth: _depth, isPartial: true };
             return uci;
           }
           return null;
         }
 
-        const m = results[0].move;
+        const m = results.moves[0].move;
         const cols = 'abcdefgh';
         const promotion = (m.tr === 0 || m.tr === 7) && board[m.fr][m.fc].toUpperCase() === 'P' ? (m.promo ? m.promo.toLowerCase() : 'q') : '';
         const uci = cols[m.fc] + (8 - m.fr) + cols[m.tc] + (8 - m.tr) + promotion;
-        console.log("✅ Jugada encontrada (Motor):", uci);
+        // Expose depth info so arena_tournament.js can read it via page.evaluate
+        window._lastSearchDepth = { completedDepth: results.completedDepth, maxDepth: results.maxDepth, isPartial: results.isPartial };
         return uci;
       } catch (e) {
         console.log("❌ ERROR EN ASKWISEKING:", e);

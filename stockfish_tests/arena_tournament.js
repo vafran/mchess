@@ -142,13 +142,18 @@ async function playMatch(matchNumber, stats, aiLevel, browser) {
             
             let move;
             let timeTaken = 0;
+            let depthInfo = null;
 
             if (turn === 'w') {
                 const thinkStart = Date.now();
                 move = await page.evaluate(async (f, h) => {
                     return await window.askWiseKing(f, h);
                 }, fen, historyObj);
-                timeTaken = (Date.now() - thinkStart) / 1000; // Segundos
+                timeTaken = (Date.now() - thinkStart) / 1000;
+                // Read real depth achieved from window._lastSearchDepth
+                try {
+                    depthInfo = await page.evaluate(() => window._lastSearchDepth || null);
+                } catch(_) { depthInfo = null; }
             } else {
                 move = await askStockfish(fen);
             }
@@ -169,7 +174,8 @@ async function playMatch(matchNumber, stats, aiLevel, browser) {
                 // ✨ FIX: Imprimir cada movimiento con el tiempo de cálculo
                 if (turn === 'w') {
                     const alert = timeTaken >= 30.0 ? ' ⚠️ (Time limit)' : '';
-                    console.log(`   👑 mChess plays ${move} (⏱️ ${timeTaken.toFixed(1)}s)${alert}`);
+                    const depthStr = depthInfo ? ` [d:${depthInfo.completedDepth}/${depthInfo.maxDepth}${depthInfo.isPartial ? '~' : ''}]` : '';
+                    console.log(`   👑 mChess plays ${move} (⏱️ ${timeTaken.toFixed(1)}s)${alert}${depthStr}`);
                 } else {
                     console.log(`   🐟 Stockfish plays ${move}`);
                 }
