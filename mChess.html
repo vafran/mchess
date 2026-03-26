@@ -8358,9 +8358,9 @@ limitations under the License.
                 const historyConfidence = histTable[m.fr * 8 + m.fc] ? (histTable[m.fr * 8 + m.fc][m.tr * 8 + m.tc] || 0) : 0;
                 let reduction = moveCount >= 6 ? 2 : 1;
                 // Deep + late + low-confidence quiet move → reduce aggressively
-                if (moveCount >= 10 && depth >= 4 && historyConfidence < 2000) reduction = 3;
+                if (moveCount >= 10 && depth >= 4 && historyConfidence < 50) reduction = 3;
                 // High-confidence move (proven good historically) → reduce less
-                if (historyConfidence >= 5000) reduction = Math.max(1, reduction - 1);
+                if (historyConfidence >= 200) reduction = Math.max(1, reduction - 1);
                 if (maximizing) {
                   v = minimax(state, depth - 1 - reduction + ext, alpha, alpha + 1, false, deadline);
                   if (v > alpha && v < beta) v = minimax(state, depth - 1 + ext, alpha, beta, false, deadline);
