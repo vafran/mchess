@@ -76,18 +76,33 @@ async function runMatch() {
         console.log(`\n-------------------\n🎲 TURN: ${turn === 'w' ? '👑 mChess' : '🐟 Stockfish'}`);
         
         let move;
+        let timeTaken = 0, depthInfo = null;
         if (turn === 'w') {
             process.stdout.write("🧠 mChess thinking...\n");
-            const historyObj = game.history();
-            move = await page.evaluate(async (f, h) => {
+            const positionHistory = game.history({ verbose: true }).map(m => m.after);
+            const t0 = Date.now();
+            const result = await page.evaluate(async (f, h) => {
                 return await window.askWiseKing(f, h);
-            }, fen, historyObj);
+            }, fen, positionHistory);
+            timeTaken = (Date.now() - t0) / 1000;
+            depthInfo = await page.evaluate(() => window._lastSearchDepth);
+            move = typeof result === 'object' ? result.move || result : result;
         } else {
             process.stdout.write("🐟 Stockfish thinking...\n");
             move = await askStockfish(fen);
         }
 
         console.log(`🚀 Move: ${move}`);
+        if (turn === 'w') {
+            const alert = timeTaken >= 30.0 ? ' ⚠️ (Time limit)' : '';
+            let depthStr = '';
+            if (depthInfo) {
+                depthStr = depthInfo.completedDepth === 'book'
+                    ? ' [book]'
+                    : ` [d:${depthInfo.completedDepth}/${depthInfo.maxDepth}${depthInfo.isPartial ? '~' : ''}]`;
+            }
+            console.log(`   ⏱️ ${timeTaken.toFixed(1)}s${alert}${depthStr}`);
+        }
         
         // CLAUDE'S GUARD
         if (!move || move === 'null' || move.trim() === '') {
