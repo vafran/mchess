@@ -8237,9 +8237,7 @@ limitations under the License.
 
         function quiesce(state, alpha, beta, maximizing, deadline, qd = 0) {
           qSearchNodes++; // 📊
-          // ⚡ Throttle: only check Date.now() every 512 Q-nodes to avoid JS timer overhead
-          if ((qSearchNodes & 511) === 0 && Date.now() >= deadline) return evaluate(state);
-          if (qd > 8) return evaluate(state);
+          if (Date.now() >= deadline || qd > 8) return evaluate(state);
           const sp = evaluate(state);
           if (maximizing) { if (sp >= beta) return beta; if (sp > alpha) alpha = sp; }
           else { if (sp <= alpha) return alpha; if (sp < beta) beta = sp; }
