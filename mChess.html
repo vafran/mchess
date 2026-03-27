@@ -8564,13 +8564,16 @@ limitations under the License.
                   const child = applyMove(state, m);
                   const reps = gameHashCount.get(stringHash(child)) || 0;
 
-                  // ✨ FIX Anti-rep: If the move leads to an already seen position,
-                  // its exact value is 0 (FIDE draw). No blind penalty is used:
-                  // - If the engine is winning (+200), 0 < +200 → chooses another move. ✓
-                  // - If losing (-300), 0 > -300 → accepts the draw valiantly. ✓
+                  // 🔄 Anti-repetition scoring at root:
+                  // reps=1 → 2nd visit → score 0 (draw candidate, engine picks if losing)
+                  // reps>=2 → 3rd visit → INSTANT draw, strongly avoid unless already losing badly
                   let scoreForMe;
-                  if (reps >= 1) {
-                    scoreForMe = 0; // Draw by repetition — exact value, not a penalty
+                  if (reps >= 2) {
+                    // Block 3rd repetition (immediate draw) unless engine is already losing badly
+                    // prevBestScore < -500 means we are down >5 pawns — accept the lifeline
+                    scoreForMe = prevBestScore < -500 ? 0 : -9000;
+                  } else if (reps === 1) {
+                    scoreForMe = 0; // 2nd repetition — treat as draw, engine decides contextually
                   } else {
                     let rawScore;
                     try {
@@ -8636,9 +8639,11 @@ limitations under the License.
                     if (Date.now() >= deadline) { depthPartial = true; analysisPartial = true; break; }
                     const child = applyMove(state, m);
                     const reps = gameHashCount.get(stringHash(child)) || 0;
-                    // ✨ FIX Anti-rep: Draw = exact 0 (see aspiration loop above)
+                    // 🔄 Same anti-repetition logic as aspiration loop
                     let scoreForMe;
-                    if (reps >= 1) {
+                    if (reps >= 2) {
+                      scoreForMe = prevBestScore < -500 ? 0 : -9000;
+                    } else if (reps === 1) {
                       scoreForMe = 0;
                     } else {
                       let rawScore;
