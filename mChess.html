@@ -10036,9 +10036,19 @@ limitations under the License.
         if (delta >= 200) isBrilliant = true;
       }
 
+
       // 🎓 SCHOLAR'S MATE AVERTED: Black defends against Qh5/Bc4 attack
       // Only fires for the Qh5 line (queen goes to h5), because Qf3 attacks f7 directly
       // and g6 does NOT defend against it. Qf3 line ends with Qxf7# specialComment instead.
+      // ⚠️ NOTE: normalizedHistory/lastNorm MUST be declared before this block to avoid TDZ errors
+      const normalizedHistory = currentHistory.map(m => m.replace(/[+#?!]/g, '').trim());
+      const lastNorm = normalizedHistory.length ? normalizedHistory[normalizedHistory.length - 1] : '';
+      const endsWithSequence = (seq) => {
+        if (normalizedHistory.length < seq.length) return false;
+        const tail = normalizedHistory.slice(-seq.length);
+        return seq.every((mv, idx) => tail[idx] === mv);
+      };
+
       let isScholarAverted = false;
       if (isOpening && colorWhoMoved === 'b') {
         const hasQh5Threat = normalizedHistory.some(m => m === 'Qh5'); // Only h5 line
@@ -10048,14 +10058,6 @@ limitations under the License.
           isScholarAverted = true;
         }
       }
-
-      const normalizedHistory = currentHistory.map(m => m.replace(/[+#?!]/g, '').trim());
-      const lastNorm = normalizedHistory.length ? normalizedHistory[normalizedHistory.length - 1] : '';
-      const endsWithSequence = (seq) => {
-        if (normalizedHistory.length < seq.length) return false;
-        const tail = normalizedHistory.slice(-seq.length);
-        return seq.every((mv, idx) => tail[idx] === mv);
-      };
 
       let specialComment = null;
       let specialTone = 'funny';
