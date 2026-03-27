@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 Monolith Chess v2.11.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -7339,7 +7339,7 @@ limitations under the License.
       if (chessEngineWorker) { try { chessEngineWorker.terminate(); } catch (e) { } }
 
       const workerCode = function () {
-        const PV = { P: 100, N: 300, B: 300, R: 500, Q: 900, K: 20000 }; // kept for moveScore/quiesce (no interpolation overhead)
+        const PV = { P: 100, N: 325, B: 335, R: 500, Q: 900, K: 20000 }; // aligned with mgPV for accurate MVV-LVA capture ordering
         const PIECE_VALUES = PV;
         // ── Tapered piece values (Kaufman-inspired, Phase 1) ──
         const mgPV = { P: 100, N: 325, B: 335, R: 500, Q: 900 }; // Middlegame: minors stronger
