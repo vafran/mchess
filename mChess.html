@@ -7901,6 +7901,46 @@ limitations under the License.
             const _ini = isW ? wIni : bIni; s += sign * (val + pst + (bonus * _ini));
           }
 
+          // ♟️ PASSED PAWN BONUS
+          // A pawn is "passed" if no enemy pawn is on the same or adjacent columns ahead of it.
+          // Bonus is tapered: scales with endgame phase (eg) so it matters more when pieces are off.
+          // Rank bonus: the further advanced, the more dangerous the passer.
+          //   Rank 2 (one step from promotion for White) → x4 multiplier
+          //   Rank 5 (halfway) → x1
+          const PASS_BASE = 20; // cp at rank 5, middlegame eg=0
+          for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+              const p = b[r][c];
+              if (!p || p === ' ') continue;
+              if (p === 'P') {
+                // White pawn — checks rows 0..r-1 for black pawns on cols c-1,c,c+1
+                let passed = true;
+                for (let rr = 0; rr < r && passed; rr++) {
+                  if (c > 0 && b[rr][c - 1] === 'p') passed = false;
+                  if (b[rr][c] === 'p') passed = false;
+                  if (c < 7 && b[rr][c + 1] === 'p') passed = false;
+                }
+                if (passed) {
+                  // r=1 → rankFactor=4, r=4 → rankFactor=1.5, r=6 → rankFactor=0.5
+                  const rankFactor = Math.max(0.5, (7 - r) * 0.6);
+                  s += PASS_BASE * rankFactor * (0.3 + 0.7 * eg);
+                }
+              } else if (p === 'p') {
+                // Black pawn — checks rows r+1..7 for white pawns on cols c-1,c,c+1
+                let passed = true;
+                for (let rr = r + 1; rr < 8 && passed; rr++) {
+                  if (c > 0 && b[rr][c - 1] === 'P') passed = false;
+                  if (b[rr][c] === 'P') passed = false;
+                  if (c < 7 && b[rr][c + 1] === 'P') passed = false;
+                }
+                if (passed) {
+                  const rankFactor = Math.max(0.5, r * 0.6); // r=6 → 3.6, r=3 → 1.8
+                  s -= PASS_BASE * rankFactor * (0.3 + 0.7 * eg);
+                }
+              }
+            }
+          }
+
           // ⏰ THE CLOCK OF FEAR (Anti-Shuffling / Endgame Conversion)
           // If we have gone more than 40 half-moves without captures or pawns and we are
           // winning, sinking the score towards 0 forces the engine to force a change
