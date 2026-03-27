@@ -109,7 +109,36 @@ async function runMatch() {
         }
     }
 
-    console.log("\n🏁 FINAL RESULT:\n" + game.pgn());
+    // Determine final result
+    let result = '1/2-1/2';
+    let reason = 'unknown';
+    let winner = '🤝 Draw';
+
+    if (game.isCheckmate()) {
+        // turn was already swapped after the last move, so the player now to move got mated
+        result = turn === 'w' ? '0-1' : '1-0';
+        reason = 'checkmate';
+        winner = result === '1-0' ? '👑 mChess wins! (White)' : '🐟 Stockfish wins! (Black)';
+    } else if (game.isStalemate()) {
+        reason = 'stalemate'; winner = '🤝 Draw (stalemate)';
+    } else if (game.isThreefoldRepetition()) {
+        reason = 'threefold repetition'; winner = '🤝 Draw (repetition)';
+    } else if (game.isInsufficientMaterial()) {
+        reason = 'insufficient material'; winner = '🤝 Draw (material)';
+    } else if (game.isDraw()) {
+        reason = '50-move rule'; winner = '🤝 Draw (50 moves)';
+    } else {
+        reason = 'engine resigned / no legal moves';
+        winner = turn === 'w' ? '🐟 Stockfish wins! (no mChess moves)' : '👑 mChess wins! (no Stockfish moves)';
+        result = turn === 'w' ? '0-1' : '1-0';
+    }
+
+    const totalMoves = game.history().length;
+    console.log('\n' + '═'.repeat(55));
+    console.log(`🏁  ${winner}`);
+    console.log(`📋  Result: ${result}  |  Reason: ${reason}  |  Moves: ${totalMoves}`);
+    console.log('═'.repeat(55));
+    console.log('\n📜 PGN:\n' + game.pgn());
     await browser.close();
     sf.kill();
 }

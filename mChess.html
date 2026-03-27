@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 Monolith Chess v2.11.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -2792,6 +2792,7 @@ limitations under the License.
                   const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
                   const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
                   console.log("🎯 UCI:", uci);
+                  window._lastSearchDepth = { completedDepth: 'book', maxDepth: 'book', isPartial: false };
                   return uci;
                 }
               }
@@ -3184,7 +3185,7 @@ limitations under the License.
       easy: { depth: 2, mistakes: 0.50, timeLimit: 800 },
       medium: { depth: 4, mistakes: 0.20, timeLimit: 2000 },
       hard: { depth: 7, mistakes: 0.05, timeLimit: 5000 },
-      grandmaster: { depth: 99, mistakes: 0, timeLimit: 30000 },
+      grandmaster: { depth: 12, mistakes: 0, timeLimit: 30000 },
     };
 
     // Piece values used by the Profesor for trade evaluation and hanging-piece detection.

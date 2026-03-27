@@ -174,7 +174,12 @@ async function playMatch(matchNumber, stats, aiLevel, browser) {
                 // ✨ FIX: Imprimir cada movimiento con el tiempo de cálculo
                 if (turn === 'w') {
                     const alert = timeTaken >= 30.0 ? ' ⚠️ (Time limit)' : '';
-                    const depthStr = depthInfo ? ` [d:${depthInfo.completedDepth}/${depthInfo.maxDepth}${depthInfo.isPartial ? '~' : ''}]` : '';
+                    let depthStr = '';
+                    if (depthInfo) {
+                        depthStr = depthInfo.completedDepth === 'book'
+                            ? ' [book]'
+                            : ` [d:${depthInfo.completedDepth}/${depthInfo.maxDepth}${depthInfo.isPartial ? '~' : ''}]`;
+                    }
                     console.log(`   👑 mChess plays ${move} (⏱️ ${timeTaken.toFixed(1)}s)${alert}${depthStr}`);
                 } else {
                     console.log(`   🐟 Stockfish plays ${move}`);
