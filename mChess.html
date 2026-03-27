@@ -7576,16 +7576,15 @@ limitations under the License.
                 if (b[rr][c] === (isW ? 'p' : 'P') || (c > 0 && b[rr][c - 1] === (isW ? 'p' : 'P')) || (c < 7 && b[rr][c + 1] === (isW ? 'p' : 'P'))) { ok = false; break; }
               }
               if (ok) {
-                const distanceToPromotion = isW ? (7 - r) : r;
-                bonus = distanceToPromotion * 25;
-                bonus = Math.round(bonus * (1 + eg * 4.5));
-                if (eg > 0.6 && distanceToPromotion >= 5) bonus += 70;
+                // ✅ NOTE: Passed pawn bonus is now handled by the PASS_OWN / PASS_DANGER block
+                // below in evaluate(). The old distanceToPromotion*25 is REMOVED to avoid
+                // double-counting. Only the Tarrasch rook-behind bonus and Rule of Square remain.
 
                 // ── Phase 3: Path scanner ──
                 // Check the square directly ahead: if attacked by enemy, reduce bonus
                 const nextR = r + (isW ? -1 : 1);
                 if (nextR >= 0 && nextR < 8) {
-                  // Only a 20% reduction: contested paths still valuable (55% was too harsh)
+                  // Only a 20% reduction: contested paths still valuable
                   if (isAtk(state, nextR, c, isW ? 'b' : 'w')) bonus = Math.round(bonus * 0.80);
                 }
                 // Tarrasch from pawn perspective: friendly rook directly behind the pawn
@@ -7717,7 +7716,7 @@ limitations under the License.
                 if (supported && !enemyCanAttack) isOutpost = true;
               }
               if (isOutpost) {
-                bonus += 140;
+                bonus += 65;
               } else if (isAdvanced) {
                 bonus -= 40; // Penalize blindly jumping ahead without pawn support
               }
@@ -7841,7 +7840,7 @@ limitations under the License.
                     if (eu === 'Q' || eu === 'R' || eu === 'B' || eu === 'N') enemyMajors++;
                   }
                 }
-                bonus -= enemyMajors * 22; // -22 cp per active enemy piece near exposed king
+                bonus -= enemyMajors * 12; // -12 cp per active enemy piece near exposed king (was 22 — reduced to avoid Greek Gift overvaluation)
               }
 
               // 🔒 3. ZONE DISCIPLINE (New Fix)
@@ -7867,10 +7866,10 @@ limitations under the License.
                 bonus -= stormPoints * (attackers * 15);
               }
 
-              // 4. Maximum Dynamic Penalty (capped at 150cp — reduced to avoid Greek Gift overvaluation)
-              // Was: attackers² × 15 (max 250) — too aggressive, caused piece sacrifices at d:5
-              // Now: attackers × 25 (max 150) — linear, proportional without quadratic explosion
-              const kPenalty = Math.min(150, attackers * 25);
+              // 4. Maximum Dynamic Penalty (capped at 100cp — reduced from 150 to prevent piece sacrifices)
+              // Was: min(150, attackers×25) — too tempting to sacrifice a bishop for +143 king attack
+              // Now: min(100, attackers×20) — still dangerous but no longer worth a piece
+              const kPenalty = Math.min(100, attackers * 20);
               bonus -= kPenalty * (1 - eg);
 
               // 5. Fear of Open Files over the Castled King
@@ -7894,7 +7893,7 @@ limitations under the License.
                     if (enemyMajorOnFile) openFilesThreat += 1;
                   }
                 }
-                bonus -= openFilesThreat * 35;
+                bonus -= openFilesThreat * 15; // was 35 — reduced to avoid overvaluing open file threats
               }
             }
 
