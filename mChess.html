@@ -10019,11 +10019,14 @@ limitations under the License.
         if (delta >= 200) isBrilliant = true;
       }
 
+      // 🎓 SCHOLAR'S MATE AVERTED: Black defends against Qh5/Bc4 attack
+      // Detect by move pattern (not raw board coords) so it works regardless of board orientation
       let isScholarAverted = false;
       if (isOpening && colorWhoMoved === 'b') {
-        const queenThreat = board[3][7] === 'Q' || board[5][5] === 'Q';
-        const bishopThreat = board[4][2] === 'B';
-        if (queenThreat && bishopThreat && (targetSq === 'g6' || targetSq === 'e7')) {
+        const hasQueenThreat = normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3');
+        const hasBishopThreat = normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5');
+        const lastDefense = targetSq === 'g6' || targetSq === 'e6' || targetSq === 'e7' || targetSq === 'd5' || targetSq === 'Nf6';
+        if (hasQueenThreat && hasBishopThreat && lastDefense) {
           isScholarAverted = true;
         }
       }
@@ -10043,11 +10046,14 @@ limitations under the License.
         specialComment = lang === 'en'
           ? getRnd(["🧠 Classic checkmate! That's the Fool's Mate pattern.", "⚡ Fast finish! Fool's Mate lands on h4."], 'special_fools_mate')
           : getRnd(["🧠 ¡Mate clásico! Ese es el patrón del Mate del Loco.", "⚡ ¡Final relámpago! El Mate del Loco cayó en h4."], 'special_fools_mate');
-      } else if (lastMove.includes('#') && endsWithSequence(['e4', 'e5', 'Qh5', 'Nc6', 'Bc4', 'Nf6', 'Qxf7'])) {
+      } else if (lastMove.includes('#') && (lastNorm === 'Qxf7' || lastNorm === 'Qxf2') &&
+                 normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5' || m === 'Qh5' || m === 'Qf3') &&
+                 normalizedHistory.length <= 12) {
+        // Scholar's Mate: any Qxf7#/Qxf2# with a bishop developed and few moves played
         specialComment = lang === 'en'
-          ? getRnd(["🔥 Scholar's Mate on the board! Quick and precise.", "🎬 Clean finale: Scholar's Mate lands without mercy."], 'special_scholar_mate')
-          : getRnd(["🔥 ¡Jaque Pastor en el tablero! Rápido y preciso.", "🎬 Final limpio: el Jaque Pastor entró sin perdón."], 'special_scholar_mate');
-      } else if (isOpening && lastNorm === 'Qh5' && normalizedHistory.includes('Bc4')) {
+          ? getRnd(["🔥 Scholar's Mate lands! Quick queen and bishop combo.", "🎬 Classic Scholar's Mate: Qxf7 ends it early.", "⚡ Fast finish! The f7 weakness sealed the deal."], 'special_scholar_mate')
+          : getRnd(["🔥 ¡Jaque Pastor consumado! Dama y alfil, combinación letal.", "🎬 Jaque Pastor clásico: Qxf7 cierra la partida.", "⚡ ¡Final exprés! La debilidad en f7 fue decisiva."], 'special_scholar_mate');
+      } else if (isOpening && (lastNorm === 'Qh5' || lastNorm === 'Qf3') && normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5')) {
         specialComment = lang === 'en'
           ? getRnd(["👀 Queen on h5: Scholar's Mate idea is in the air.", "🚨 Alarm: Pastor pattern spotted. Defend f7 now."], 'special_scholar_threat')
           : getRnd(["👀 Dama en h5: huele a idea de Jaque Pastor.", "🚨 Alarma: patrón Pastor detectado. Defiende f7 ya."], 'special_scholar_threat');
