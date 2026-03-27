@@ -83,7 +83,7 @@ Profundidad 12 · 0% de errores · 10s de tiempo · libro completo · evaluació
 |---|---|---|---|---|---|---|
 | 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
-| 🔥 Difícil | ~1400 | 6 | 5% | ninguno | ✅ completo | ✅ |
+| 🔥 Difícil | ~1400 | 6 | 0% | ninguno | ✅ completo | ✅ |
 | 👑 Rey Sabio | ~1900 | 12 | 0% | ninguno | ✅ completo | ✅ |
 
 ---
