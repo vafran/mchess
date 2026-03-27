@@ -3185,7 +3185,7 @@ limitations under the License.
       easy: { depth: 2, mistakes: 0.50, timeLimit: 800 },
       medium: { depth: 4, mistakes: 0.20, timeLimit: 2000 },
       hard: { depth: 7, mistakes: 0, timeLimit: 10000 },
-      grandmaster: { depth: 12, mistakes: 0, timeLimit: 30000 },
+      grandmaster: { depth: 30, mistakes: 0, timeLimit: 30000 }, // Time is the real cap; 30 allows deep endgame mates (killers array is Array(64) → safe)
     };
 
     // Piece values used by the Profesor for trade evaluation and hanging-piece detection.

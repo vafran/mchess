@@ -23,11 +23,11 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 - **Zero friction.** No installation, no account, no internet required after the first download. Works on a 10-year-old laptop and a modern phone equally.
 - **Real chess, not a simplified version.** Full FIDE rules — en passant, castling, threefold repetition, the 50-move rule, all of it.
 - **Forgiving at the bottom, challenging at the top.** Easy and Medium let beginners feel what winning feels like. Hard and Wise King exist for when they are ready for a real test.
-- **Monolithic mastery.** Everything — engine, coach, opening book, training library, animations, sounds — lives in a single `.html` file of ~604 KB. Zero dependencies.
+- **Monolithic mastery.** Everything — engine, coach, opening book, training library, animations, sounds — lives in a single `.html` file of ~676 KB. Zero dependencies.
 
 ### Non-Goals
 
-- **Defeating titled players.** This is not Stockfish. The engine peaks around **~1900 ELO**.
+- **Defeating titled players.** This is not Stockfish. The engine peaks around **~1818 ELO** (benchmark vs Stockfish depth 10).
 - **Online multiplayer.** Local play only.
 - **Advanced preparation tools.** The opening book is curated for teaching, not professional preparation.
 - **Benchmark performance.** Clean, readable JavaScript takes priority over micro-optimised techniques, though v2.1.0 introduced critical low-level bottlenecks fixes.
@@ -66,11 +66,11 @@ That is everything. The game handles the rest.
 
 6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Master — *Wise King* (~1700 ELO)
+### 👑 Master — *Wise King* (~1818 ELO)
 
 **Target:** Strong club players and advanced amateurs.
 
-12-ply depth · 0% mistakes · 10s time budget · full book · full evaluation · Training Mode auto-disabled
+Up to 30-ply depth (time-capped at 30s) · 0% mistakes · full book · full evaluation · Training Mode auto-disabled
 
 <img src="screenshots/EN/characters.png" alt="Characters" width="300" />
 
@@ -82,7 +82,7 @@ That is everything. The game handles the rest.
 | 🐣 Easy | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medium | ~1010 | 4 | 20% | ±6 cp | first 2 moves | ✅ |
 | 🔥 Hard | ~1400 | 6 | 0% | none | ✅ full | ✅ |
-| 👑 Wise King | ~1900 | 12 | 0% | none | ✅ full | ✅ |
+| 👑 Wise King | ~1818 | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
  
 ---
 
@@ -170,6 +170,28 @@ Three styles, with labels now visible under the slider:
 | Sound | On / Off |
 | Training Mode | On / Off |
 
+
+---
+
+## What's new in v2.11.0
+
+This release, **The Bug Fix & Evaluation Edition**, adds +130 ELO over v2.10 (benchmark: ~1818 vs Stockfish depth 10, 10 games), fixes 5 correctness bugs, and unlocks deeper endgame search.
+
+### Engine
+- **En Passant in quiescence** — EP captures are now visible to the quietness filter, MVV-LVA, and delta pruning.
+- **50-move rule in minimax** — engine now returns 0 (draw) when `halfMoveClock ≥ 100`.
+- **Wise King depth 12 → 30** — time (30s) is the real cap. In endgames, d:12 was the bottleneck; now iterative deepening goes as far as the clock allows.
+- **Q-search limit** — non-check quiescence capped at 5 (was 8). Average NPS increased ~56% (18K → 28K).
+
+### Evaluation
+- Enemy passed pawn danger: exponential penalty by rank (rank 7 = 270 cp extra — engine blocks).
+- King centralisation bonus in endgame (`eg > 0.4`).
+- Positional bonus deflation: outpost, king safety, open files, early queen penalty all reduced to prevent material sacrifices.
+
+### UI / Rules
+- Draw detection order fixed: K vs K no longer reported as stalemate.
+- Scholar's Mate commentary covers Qf3 and Bc5 variants.
+- Professor correctly values en passant captures.
 
 ---
 
@@ -284,11 +306,11 @@ Several bugs in the search engine were identified and corrected post-release. Th
 
 ### Single-file design
 
-~604 KB. One `.html` file. No external dependencies, no CDN calls, no cookies, no network requests after load.
+~676 KB. One `.html` file. No external dependencies, no CDN calls, no cookies, no network requests after load.
 
 ### Search
 
-Web Worker + main-thread fallback. Alpha-beta stack: Iterative Deepening, PVS, NMP (R=2/3), LMR, Futility Pruning (depth ≤ 3, margins 150/300/500 cp), Aspiration Windows (±75 cp, guaranteed full-window fallback), Quiescence Search (max depth 8, delta pruning), Check Extensions.
+Web Worker + main-thread fallback. Alpha-beta stack: Iterative Deepening, PVS, NMP (R=2/3), LMR, Futility Pruning (depth ≤ 3, margins 150/300/500 cp), Aspiration Windows (±75 cp, guaranteed full-window fallback), Quiescence Search (max depth 5 non-check / 8 in-check, delta pruning), Check Extensions.
 
 200K-entry Zobrist transposition table in the Worker with depth-aware eviction. Each entry stores the **best move** for ordering in the next iteration.
 
@@ -298,7 +320,7 @@ Move ordering: TT move (priority 1,000,000) → MVV-LVA captures → promotions 
 
 PeSTO-style PST tables, tapered king evaluation (middlegame ↔ endgame), pawn structure (doubled −15, isolated −20, passed pawn rank×15 scaled ×4.5 in endgame), bishop pair (+40), rook activity (open file +25, 7th rank +20), dynamic king safety (quadratic penalty per attacking piece, capped at 80 cp).
 
-Piece values: N=305, B=333, R=500, Q=900 (bishop correctly valued above knight by 28 cp).
+Piece values: N=325, B=335, R=500, Q=900 (bishop correctly valued above knight by 10 cp). Tapered middlegame/endgame interpolation (mgPV/egPV).
 
 ### Opening Book
 
@@ -384,4 +406,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.1.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~628 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.11.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~676 KB. Zero dependencies. Open the file and play.*

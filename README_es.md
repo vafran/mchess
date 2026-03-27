@@ -25,11 +25,11 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 - **Cero fricción.** Sin instalación, sin cuenta, sin internet tras la primera descarga. Funciona en un portátil de diez años igual que en un teléfono moderno.
 - **Ajedrez real, no una versión simplificada.** Reglas FIDE completas: al paso, enroque, triple repetición, regla de los 50 movimientos, todo.
 - **Indulgente abajo, desafiante arriba.** Fácil y Medio existen para que los principiantes sepan lo que es ganar. Difícil y Rey Sabio existen para cuando estén listos.
-- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~604 KB. Cero dependencias.
+- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~676 KB. Cero dependencias.
 
 ### No-objetivos
 
-- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza picos de **~1900 ELO**.
+- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza picos de **~1818 ELO** (benchmark vs Stockfish profundidad 10).
 - **Multijugador en línea.** Solo juego local.
 - **Herramientas avanzadas de preparación.** El libro de aperturas está curado para enseñar, no para preparación profesional.
 - **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad, aunque la v2.1.0 introdujo correcciones críticas en cuellos de botella de bajo nivel.
@@ -68,11 +68,11 @@ Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimien
 
 Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técnicas activas
 
-### 👑 Maestro — *Rey Sabio* (~1900 ELO)
+### 👑 Maestro — *Rey Sabio* (~1818 ELO)
 
 **Para:** Jugadores de club fuertes y amateurs avanzados.
 
-Profundidad 12 · 0% de errores · 10s de tiempo · libro completo · evaluación completa · Modo Entrenamiento desactivado automáticamente
+Hasta 30 semijugadas de profundidad (tope de 30s) · 0% de errores · libro completo · evaluación completa · Modo Entrenamiento desactivado automáticamente
 
 <img src="screenshots/ES/characters.png" alt="Personajes" width="300" />
 
@@ -84,7 +84,7 @@ Profundidad 12 · 0% de errores · 10s de tiempo · libro completo · evaluació
 | 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
 | 🔥 Difícil | ~1400 | 6 | 0% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~1900 | 12 | 0% | ninguno | ✅ completo | ✅ |
+| 👑 Rey Sabio | ~1818 | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
 
 ---
 
@@ -173,6 +173,28 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | Estilo del comentarista | Serio · Mixto · Divertido |
 | Sonido | Activado / Desactivado |
 | Modo Entrenamiento | Activado / Desactivado |
+
+---
+
+## Novedades en v2.11.0
+
+Esta versión, la **Edición de Bugfixes y Evaluación**, añade +130 ELO sobre v2.10 (benchmark: ~1818 vs Stockfish profundidad 10, 10 partidas), corrige 5 bugs de correctitud y desbloquea búsqueda más profunda en finales.
+
+### Motor
+- **Captura al paso en quiescence** — El EP ahora es visible para el filtro de quietud, MVV-LVA y poda delta.
+- **Regla de los 50 movimientos en minimax** — el motor devuelve 0 (tablas) cuando `halfMoveClock ≥ 100`.
+- **Profundidad Rey Sabio 12 → 30** — el tiempo (30s) es el límite real. En finales, d:12 era el cuello de botella; ahora la ID llega tan lejos como el reloj permita.
+- **Límite Q-search** — quietud sin jaque tope en 5 (antes 8). NPS medio +56% (18K → 28K).
+
+### Evaluación
+- Peligro de peón pasado enemigo: penalización exponencial por rango (rango 7 = 270 cp extra — el motor bloquea).
+- Bonus de centralización del rey en el final (`eg > 0.4`).
+- Deflación de bonus posicionales: outpost, seguridad del rey, columnas abiertas, penalización dama temprana, todos reducidos para evitar sacrificios de material.
+
+### UI / Reglas
+- Orden de detección de tablas corregido: K vs K ya no se declara como ahogado.
+- Comentarista del Jaque Pastor cubre variantes con Qf3 y Bc5.
+- El Profesor valora correctamente las capturas al paso.
 
 ---
 
@@ -285,11 +307,11 @@ Combinado con una implementación corregida de **Zobrist Hashing** que rastrea l
 
 ### Diseño monolítico
 
-~604 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
+~676 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
 
 ### Motor de búsqueda
 
-Web Worker + motor de respaldo en el hilo principal. Pila alpha-beta: Profundización Iterativa, PVS, NMP (R=2/3), LMR, Poda de Futilidad (profundidad ≤ 3, márgenes 150/300/500 cp), Ventanas de Aspiración (±75 cp con failsafe garantizado), Búsqueda de Quietud (profundidad máxima 8, poda delta), Extensiones de Jaque.
+Web Worker + motor de respaldo en el hilo principal. Pila alpha-beta: Profundización Iterativa, PVS, NMP (R=2/3), LMR, Poda de Futilidad (profundidad ≤ 3, márgenes 150/300/500 cp), Ventanas de Aspiración (±75 cp con failsafe garantizado), Búsqueda de Quietud (máx. 5 sin jaque / 8 en jaque, poda delta), Extensiones de Jaque.
 
 Tabla de transposición de 200K entradas con hashing Zobrist y desalojo por profundidad. Cada entrada guarda la mejor jugada para ordenación en la siguiente iteración.
 
@@ -299,7 +321,7 @@ Ordenación de jugadas: jugada TT (prioridad 1.000.000) → capturas MVV-LVA →
 
 Tablas PST estilo PeSTO, evaluación cónica del rey (interpolación mediojuego ↔ final), estructura de peones (doblados −15, aislados −20, pasados rango×15 escalado ×4.5 en final), pareja de alfiles (+40), actividad de torres (columna abierta +25, séptima fila +20), seguridad dinámica del rey (penalización cuadrática, tope en 80 cp).
 
-Valores de piezas: C=305, A=333, T=500, D=900 (el alfil vale más que el caballo por 28 cp).
+Valores de piezas: C=325, A=335, T=500, D=900. Interpolación tapered mediojuego/final (mgPV/egPV).
 
 ### Libro de aperturas
 
@@ -382,4 +404,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.1.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~628 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.11.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~676 KB. Cero dependencias. Abre el archivo y juega.*

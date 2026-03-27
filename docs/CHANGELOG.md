@@ -7,6 +7,32 @@ Format: version · size · what changed.
 
 ---
 
+## v2.11.0 — Bug Fixes & Evaluation / Benchmarks
+**~13,800 lines · ~676 KB**
+
+Tournament results: **ELO ~1818** (vs Stockfish d:10, 10 games) — previous: ~1688 → **+130 ELO**.  
+Average game length: 142 moves (was 110). Average NPS: ~28K (was ~18K). **2 draws** by repetition.
+
+### Bug Fixes — Engine (Worker)
+- **En Passant blind spot in quiescence** — EP captures were invisible to the quietness filter, MVV-LVA sort, and delta pruning. Now correctly treated as pawn captures (`PV['P']`).
+- **50-move rule missing in minimax** — Engine ignored the FIDE rule and kept evaluating drawn positions as wins. Added `if (halfMoveClock >= 100) return 0`.
+- **Q-search explosion (NPS collapse)** — Non-check quiescence reached 8 levels deep, collapsing NPS from 18K to ~100–750. Limit reduced to 5 (non-check) and 8 (in check). Average NPS +56%.
+- **Wise King depth: 12 → 30** — Time (30s) is the real constraint. In endgames with few pieces, d:12 was the bottleneck (3–8s per move, hitting the ceiling not the clock). d:30 lets iterative deepening go as far as the budget allows. `killers = Array(64)` → no overflow risk.
+
+### Bug Fixes — UI / Game Logic
+- **Draw detection order (K vs K, insufficient material)** — `halfMoveClock` and `isInsufficientMaterial` ran *after* the `!hasMove` return, incorrectly declaring "stalemate" in King-only endings. Both checks now run before the no-moves block.
+- **Scholar's Mate commentary broken** — `isScholarAverted` used hardcoded board coordinates (broke on flipped board and variations). Rewritten with SAN move history. Detects any `Qxf7#` / `Qxf2#` with a bishop developed within 12 moves.
+- **Professor blind to En Passant** — `getMoveSafetyProfile()` and `getTacticalMoveAdjustment()` valued EP captures as 0. Fixed by assigning `PIECE_VALUES['P']`.
+
+### Evaluation Improvements
+- **Enemy passed pawn — exponential danger** — Extra penalty for rival passers at rank ≥ 4: ×1/×4/×9 scaled by endgame phase. Rank 7 → 270 cp extra (more than a bishop → engine blocks).
+- **King activity in endgame** — Centralisation bonus `8×eg` cp per step closer to centre when `eg > 0.4`. Reduces g1↔h2 shuffling.
+- **Double passed pawn evaluation removed** — Old `distanceToPromotion × 25` per-piece loop removed; the `PASS_OWN / PASS_DANGER` block at the end of `evaluate()` already covers it.
+- **Positional bonus deflation** — Outpost: 140→65 · `enemyMajors`: ×22→×12 · `openFilesThreat`: ×35→×15 · `kPenalty`: min(150,×25)→min(100,×20) · Early queen penalty: 150→60 cp. Maximum theoretical king-attack reward: 343 → ~193 cp (sacrificing a bishop is no longer "profitable").
+- **MVV-LVA aligned with mgPV** — `PV = { N:325, B:335 }` instead of `{N:300, B:300}`. Capture ordering in quiescence now correctly prefers bishops over knights.
+
+---
+
 ## v2.1.0 — The Performance & Heuristics Edition
 **12,850+ lines · 653 KB**
 

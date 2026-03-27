@@ -66,7 +66,7 @@ async function runMatch() {
             };
             sf.stdout.on('data', listener);
             sf.stdin.write(`position fen ${fen}\n`);
-            const depth = process.env.STOCKFISH_DEPTH || '10';
+            const depth = process.env.STOCKFISH_DEPTH || '5';
             sf.stdin.write(`go depth ${depth}\n`);
         });
     };

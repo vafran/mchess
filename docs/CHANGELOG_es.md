@@ -7,6 +7,32 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.11.0 — Bugfix & Evaluación / Benchmarks
+**~13.800 líneas · ~676 KB**
+
+Resultados del torneo: **ELO ~1818** (vs Stockfish d:10, 10 partidas) — anterior: ~1688 → **+130 ELO**.  
+Partidas promedio: 142 movimientos (antes 110). NPS promedio: ~28K (antes ~18K). **2 tablas** por repetición.
+
+### Bugs corregidos — Motor (Worker)
+- **En Passant ciego en quiescence** — Las capturas al paso eran invisibles para el filtro de quietud, MVV-LVA y delta pruning. Ahora se detectan correctamente como capturas de peón (`PV['P']`).
+- **Regla de los 50 movimientos en minimax** — El motor ignoraba esta regla y seguía calculando en posiciones técnicamente tablas. Añadido `if (halfMoveClock >= 100) return 0`.
+- **Explosión de Q-search (caída de NPS)** — La quiescencia sin jaque llegaba a 8 niveles y al explotar reducía el NPS de 18K a ~100-750. Límite reducido a 5 (sin jaque) y 8 (en jaque). NPS medio: +56%.
+- **Profundidad Rey Sabio: 12 → 30** — El tiempo es el límite real (30s). En finales con pocas piezas el motor alcanzaba el techo d:12 en 3-8s sin poder profundizar más. Con d:30 la ID puede llegar tan lejos como el reloj permita. `killers = Array(64)` → sin riesgo de overflow.
+
+### Bugs corregidos — UI / Lógica
+- **Orden de tablas (K vs R, material insuficiente)** — `halfMoveClock` e `isInsufficientMaterial` se comprobaban *tras* el `return` del bloque `!hasMove`, declarando erróneamente "ahogado" en finales de reyes. Movidos antes del bloque.
+- **Comentarista: Jaque Pastor** — `isScholarAverted` usaba coordenadas de tablero hardcodeadas (rompía con tablero volteado y variantes). Reescrito con historial SAN. Detecta cualquier `Qxf7#` / `Qxf2#` con alfil desarrollado en ≤ 12 movs.
+- **Profesor ciego al En Passant** — `getMoveSafetyProfile()` y `getTacticalMoveAdjustment()` valoraban capturas al paso como 0. Corregido asignando `PIECE_VALUES['P']`.
+
+### Mejoras de evaluación
+- **Peón pasado enemigo — peligro exponencial** — Penalización extra para peones pasados rivales en rango ≥ 4: ×1/×4/×9 factored por fase final. Rango 7 → 270cp extra (más que un alfil → el motor bloquea).
+- **Actividad del rey en el final** — Bonus de centralización `8×eg` cp por paso del rey hacia el centro cuando `eg > 0.4`. Reduce shuffling g1↔h2.
+- **Doble evaluación de peones pasados eliminada** — `distanceToPromotion × 25` (bucle por pieza) eliminado; el bloque `PASS_OWN / PASS_DANGER` al final de `evaluate()` ya lo cubre.
+- **Deflación de bonus posicionales** — Outpost: 140→65 · `enemyMajors`: ×22→×12 · `openFilesThreat`: ×35→×15 · `kPenalty`: min(150,×25)→min(100,×20) · Penalización dama temprana: 150→60 cp. Recompensa máxima teórica por destruir el enroque: 343 → ~193 cp (sacrificar un alfil ya no es "rentable").
+- **MVV-LVA alineado con mgPV** — `PV = { N:325, B:335 }` en lugar de `{N:300, B:300}`. El ordenamiento de capturas en quiescence ahora prefiere correctamente el alfil sobre el caballo.
+
+---
+
 ## v2.1.0 — Edición de Rendimiento y Heurística
 **12.850+ líneas · 653 KB**
 
