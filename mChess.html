@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 Monolith Chess v2.11.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -7907,13 +7907,18 @@ limitations under the License.
           // Rank bonus: the further advanced, the more dangerous the passer.
           //   Rank 2 (one step from promotion for White) → x4 multiplier
           //   Rank 5 (halfway) → x1
-          const PASS_BASE = 20; // cp at rank 5, middlegame eg=0
+          // ♟️ PASSED PAWN EVALUATION
+          // Own passers: small bonus scaled by rank and endgame phase.
+          // Enemy passers: DANGER penalty — scaled exponentially at rank 5+ to force blocking.
+          //   rank 5 (3 from promo) → high danger; rank 6 → very high; rank 7 → critical.
+          const PASS_OWN = 18;  // cp bonus at rank 5 in pure endgame
+          const PASS_DANGER = 30; // cp base danger for enemy passer
           for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
               const p = b[r][c];
               if (!p || p === ' ') continue;
               if (p === 'P') {
-                // White pawn — checks rows 0..r-1 for black pawns on cols c-1,c,c+1
+                // White pawn — check rows 0..r-1 for black sentinels
                 let passed = true;
                 for (let rr = 0; rr < r && passed; rr++) {
                   if (c > 0 && b[rr][c - 1] === 'p') passed = false;
@@ -7921,12 +7926,13 @@ limitations under the License.
                   if (c < 7 && b[rr][c + 1] === 'p') passed = false;
                 }
                 if (passed) {
-                  // r=1 → rankFactor=4, r=4 → rankFactor=1.5, r=6 → rankFactor=0.5
-                  const rankFactor = Math.max(0.5, (7 - r) * 0.6);
-                  s += PASS_BASE * rankFactor * (0.3 + 0.7 * eg);
+                  // Own bonus: gentle, tapered
+                  const ownFactor = Math.max(0.5, (7 - r) * 0.55);
+                  s += PASS_OWN * ownFactor * (0.25 + 0.75 * eg);
+                  // Danger penalty if the enemy king is far (no blocker): not here, handled via evaluate king dist
                 }
               } else if (p === 'p') {
-                // Black pawn — checks rows r+1..7 for white pawns on cols c-1,c,c+1
+                // Black pawn — check rows r+1..7 for white sentinels
                 let passed = true;
                 for (let rr = r + 1; rr < 8 && passed; rr++) {
                   if (c > 0 && b[rr][c - 1] === 'P') passed = false;
@@ -7934,11 +7940,32 @@ limitations under the License.
                   if (c < 7 && b[rr][c + 1] === 'P') passed = false;
                 }
                 if (passed) {
-                  const rankFactor = Math.max(0.5, r * 0.6); // r=6 → 3.6, r=3 → 1.8
-                  s -= PASS_BASE * rankFactor * (0.3 + 0.7 * eg);
+                  // r=6 (rank 2 for black → one step from promo), r=5 (rank 3), r=4 (rank 4)
+                  const ownFactor = Math.max(0.5, r * 0.55);
+                  s -= PASS_OWN * ownFactor * (0.25 + 0.75 * eg);
+                  // 🚨 DANGER: exponential penalty for advanced enemy passers (rank 4 and beyond)
+                  // r=4 (rank 4 promo distance 3): moderate; r=5: high; r=6: critical
+                  if (r >= 4) {
+                    const dangerRank = r - 3; // 1, 2, 3 for r=4,5,6
+                    const dangerFactor = dangerRank * dangerRank; // 1, 4, 9 — exponential
+                    s -= PASS_DANGER * dangerFactor * (0.4 + 0.6 * eg);
+                  }
                 }
               }
             }
+          }
+
+          // 👑 KING ACTIVITY IN ENDGAME
+          // When endgame phase is high, centralize the king and approach enemy pawns.
+          // This prevents shuffling in corners and forces active king play.
+          if (eg > 0.4) {
+            const [wKr, wKc] = findKing(b, 'w');
+            const [bKr, bKc] = findKing(b, 'b');
+            // Distance from center (0=center, 3.5=corner)
+            const wDist = Math.abs(wKr - 3.5) + Math.abs(wKc - 3.5);
+            const bDist = Math.abs(bKr - 3.5) + Math.abs(bKc - 3.5);
+            const kingCenterBonus = 8 * eg; // up to 8cp per center-step in pure endgame
+            s += kingCenterBonus * (bDist - wDist); // white benefits if its king is closer to center
           }
 
           // ⏰ THE CLOCK OF FEAR (Anti-Shuffling / Endgame Conversion)
@@ -8235,9 +8262,11 @@ limitations under the License.
           return sc;
         }
 
-        function quiesce(state, alpha, beta, maximizing, deadline, qd = 0) {
+        function quiesce(state, alpha, beta, maximizing, deadline, qd = 0, inCheck = false) {
           qSearchNodes++; // 📊
-          if (Date.now() >= deadline || qd > 8) return evaluate(state);
+          // ⚡ FIX: Limit non-check quiescence to 5 levels (prevents NPS explosion).
+          // In-check positions need deeper search to find the only legal escape.
+          if (Date.now() >= deadline || qd > (inCheck ? 8 : 5)) return evaluate(state);
           const sp = evaluate(state);
           if (maximizing) { if (sp >= beta) return beta; if (sp > alpha) alpha = sp; }
           else { if (sp <= alpha) return alpha; if (sp < beta) beta = sp; }
@@ -8270,7 +8299,8 @@ limitations under the License.
               if (!isP && sp + tv + DELTA < alpha) continue;
               const save = makeMove(state, m);
               let s;
-              try { s = quiesce(state, alpha, beta, false, deadline, qd + 1); }
+              const oppInCheck = inChk(state, opp(color));
+              try { s = quiesce(state, alpha, beta, false, deadline, qd + 1, oppInCheck); }
               finally { unmakeMove(state, m, save); }
               if (s >= beta) return beta; if (s > alpha) alpha = s;
             }
@@ -8282,7 +8312,8 @@ limitations under the License.
               if (!isP && sp - tv - DELTA > beta) continue;
               const save = makeMove(state, m);
               let s;
-              try { s = quiesce(state, alpha, beta, true, deadline, qd + 1); }
+              const oppInCheck = inChk(state, opp(color));
+              try { s = quiesce(state, alpha, beta, true, deadline, qd + 1, oppInCheck); }
               finally { unmakeMove(state, m, save); }
               if (s <= alpha) return alpha; if (s < beta) beta = s;
             }
