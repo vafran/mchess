@@ -4977,6 +4977,10 @@ limitations under the License.
       }
 
       // 13. FIN DE PARTIDA O IA
+      // ★ FIX 3: Draw conditions BEFORE !hasMove so K vs K etc. don't reach !hasMove as stalemate
+      if (halfMoveClock >= 100) { setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? '50-move rule.' : 'Regla de los 50 movimientos.'), 400); return; }
+      if (isInsufficientMaterial(board)) { setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Insufficient material.' : 'Falta de material.'), 400); return; }
+
       if (!hasMove) {
         if (isCheckOnNext) {
           // Checkmate — determine who won
@@ -5019,8 +5023,6 @@ limitations under the License.
         }
         return;
       }
-      if (halfMoveClock >= 100) { setTimeout(() => showStatus('🤝 ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? '50-move rule.' : 'Regla de los 50 movimientos.'), 400); return; }
-      if (isInsufficientMaterial(board)) { setTimeout(() => showStatus('🤝 ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Insufficient material.' : 'Falta de material.'), 400); return; }
       const cHash = positionHashes[positionHashes.length - 1];
       // La detección ya es correcta porque ahora positionHashes incluye castleRights y EP
       if (positionHashes.filter(h => h === cHash).length >= 3) { setTimeout(() => { const m = document.getElementById('drawClaimModal'), en = currentLanguage === 'en'; document.getElementById('drawClaimTitle').innerHTML = en ? '⚖️ Threefold Repetition!' : '⚖️ ¡Triple Repetición!'; document.getElementById('drawClaimDesc').innerHTML = en ? 'The exact same position has occurred 3 times. You can claim a draw right now.' : 'La misma posición exacta se ha repetido 3 veces. Puedes reclamar un empate ahora mismo.'; document.getElementById('btnIgnoreDraw').innerHTML = en ? 'Keep playing' : 'Continuar'; document.getElementById('btnAcceptDraw').innerHTML = en ? 'Claim Draw' : 'Reclamar Tablas'; m.classList.add('show'); }, 400); return; }
@@ -7558,7 +7560,9 @@ limitations under the License.
               if (r !== homeR || c !== 3) {
                 const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
                 bonus -= undeveloped * 70;
-                if ((isW && r <= 4) || (!isW && r >= 3)) bonus -= 150;
+                // ★ FIX 4: Reduced from 150 to 60 — still discourages mindless early queen sally
+                // but allows centralisation when there is a tactical reason (e.g. Scholar's Mate, Qxf7)
+                if ((isW && r <= 4) || (!isW && r >= 3)) bonus -= 60;
               }
             }
 
@@ -8275,6 +8279,8 @@ limitations under the License.
           // If not, we only look at captures/promotions.
           const caps = inCheckNow ? legalMoves(state, color) : legalMoves(state, color).filter(m => {
             if (state.board[m.tr][m.tc] !== ' ') return true;
+            // ★ FIX 1: En Passant — pawn moves diagonally to empty square
+            if (state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ') return true;
             if (state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
             if (qd < 2) {
               const save2 = makeMove(state, m);
@@ -8284,16 +8290,20 @@ limitations under the License.
             }
             return false;
           });
-          // ⚡ MVV-LVA puro: Víctima alta - Atacante bajo (sin overhead de killers/history)
+          // ⚡ MVV-LVA: victim value higher = sorted first. En passant target is always a pawn.
           caps.sort((a, b) => {
-            const valA = (PV[state.board[a.tr][a.tc].toUpperCase()] || 0) * 10 - (PV[state.board[a.fr][a.fc].toUpperCase()] || 0);
-            const valB = (PV[state.board[b.tr][b.tc].toUpperCase()] || 0) * 10 - (PV[state.board[b.fr][b.fc].toUpperCase()] || 0);
+            const epValA = (state.board[a.fr][a.fc].toUpperCase() === 'P' && a.fc !== a.tc && state.board[a.tr][a.tc] === ' ') ? PV['P'] : 0;
+            const epValB = (state.board[b.fr][b.fc].toUpperCase() === 'P' && b.fc !== b.tc && state.board[b.tr][b.tc] === ' ') ? PV['P'] : 0;
+            const valA = ((PV[state.board[a.tr][a.tc].toUpperCase()] || 0) || epValA) * 10 - (PV[state.board[a.fr][a.fc].toUpperCase()] || 0);
+            const valB = ((PV[state.board[b.tr][b.tc].toUpperCase()] || 0) || epValB) * 10 - (PV[state.board[b.fr][b.fc].toUpperCase()] || 0);
             return valB - valA;
           });
           const DELTA = 250;
           if (maximizing) {
             for (const m of caps) {
-              const tv = PV[state.board[m.tr][m.tc].toUpperCase()] || 0;
+              // En passant: captured pawn value is PV['P'], not 0
+              const isEP = state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ';
+              const tv = isEP ? PV['P'] : (PV[state.board[m.tr][m.tc].toUpperCase()] || 0);
               const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
               if (!isP && sp + tv + DELTA < alpha) continue;
               const save = makeMove(state, m);
@@ -8306,7 +8316,8 @@ limitations under the License.
             return alpha;
           } else {
             for (const m of caps) {
-              const tv = PV[state.board[m.tr][m.tc].toUpperCase()] || 0;
+              const isEP = state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ';
+              const tv = isEP ? PV['P'] : (PV[state.board[m.tr][m.tc].toUpperCase()] || 0);
               const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
               if (!isP && sp - tv - DELTA > beta) continue;
               const save = makeMove(state, m);
@@ -8347,6 +8358,8 @@ limitations under the License.
           const bk = zob(state);
           // Anti-repetition check — use Zobrist hash (already encodes board+turn+castling+EP)
           if ((gameHashCount.get(stringHash(state)) || 0) >= 2) return 0;
+          // ★ FIX 2: 50-move rule — draw if no pawn move or capture in 100 half-moves
+          if ((state.halfMoveClock || 0) >= 100) return 0;
           // TT lookup + Hash Move
           const alphaOrig = alpha;
           let hashMove = null;
@@ -9131,7 +9144,9 @@ limitations under the License.
 
       const target = board[move.tr][move.tc];
       const myVal = PIECE_VALUES[movingPiece.toUpperCase()] || 0;
-      const targetVal = target === ' ' ? 0 : (PIECE_VALUES[target.toUpperCase()] || 0);
+      // ★ FIX 5a: En passant — pawn captures diagonally to empty square
+      const isEnPassantUI = movingPiece.toUpperCase() === 'P' && move.fc !== move.tc && target === ' ';
+      const targetVal = isEnPassantUI ? PIECE_VALUES['P'] : (target === ' ' ? 0 : (PIECE_VALUES[target.toUpperCase()] || 0));
 
       const riskLevel = getMoveRiskLevel(move, color);
       const hanging = getImmediateHangingAfterMove(move, color);
@@ -9362,7 +9377,9 @@ limitations under the License.
       if (!movingPiece || movingPiece === ' ') return 0;
 
       const myVal = PIECE_VALUES[movingPiece.toUpperCase()] || 0;
-      const targetVal = targetPiece === ' ' ? 0 : (PIECE_VALUES[targetPiece.toUpperCase()] || 0);
+      // ★ FIX 5b: En passant in getTacticalMoveAdjustment
+      const isEnPassantAdj = movingPiece.toUpperCase() === 'P' && move.fc !== move.tc && targetPiece === ' ';
+      const targetVal = isEnPassantAdj ? PIECE_VALUES['P'] : (targetPiece === ' ' ? 0 : (PIECE_VALUES[targetPiece.toUpperCase()] || 0));
       const after = simulateMove(brd, move);
       const enemyColor = color === 'w' ? 'b' : 'w';
 
