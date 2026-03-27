@@ -72,7 +72,7 @@ Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técn
 
 **Para:** Jugadores de club fuertes y amateurs avanzados.
 
-Profundidad 9 · 0% de errores · 10s de tiempo · libro completo · evaluación completa · Modo Entrenamiento desactivado automáticamente
+Profundidad 12 · 0% de errores · 10s de tiempo · libro completo · evaluación completa · Modo Entrenamiento desactivado automáticamente
 
 <img src="screenshots/ES/characters.png" alt="Personajes" width="300" />
 

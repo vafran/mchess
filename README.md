@@ -70,7 +70,7 @@ That is everything. The game handles the rest.
 
 **Target:** Strong club players and advanced amateurs.
 
-9-ply depth · 0% mistakes · 10s time budget · full book · full evaluation · Training Mode auto-disabled
+12-ply depth · 0% mistakes · 10s time budget · full book · full evaluation · Training Mode auto-disabled
 
 <img src="screenshots/EN/characters.png" alt="Characters" width="300" />
 
