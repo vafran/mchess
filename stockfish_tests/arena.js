@@ -138,6 +138,7 @@ async function runMatch() {
     console.log(`🏁  ${winner}`);
     console.log(`📋  Result: ${result}  |  Reason: ${reason}  |  Moves: ${totalMoves}`);
     console.log('═'.repeat(55));
+    game.header('Result', result);
     console.log('\n📜 PGN:\n' + game.pgn());
     await browser.close();
     sf.kill();
