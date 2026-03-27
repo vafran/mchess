@@ -7867,8 +7867,10 @@ limitations under the License.
                 bonus -= stormPoints * (attackers * 15);
               }
 
-              // 4. Maximum Dynamic Penalty (Capped at 500)
-              const kPenalty = Math.min(250, attackers * attackers * 15);
+              // 4. Maximum Dynamic Penalty (capped at 150cp — reduced to avoid Greek Gift overvaluation)
+              // Was: attackers² × 15 (max 250) — too aggressive, caused piece sacrifices at d:5
+              // Now: attackers × 25 (max 150) — linear, proportional without quadratic explosion
+              const kPenalty = Math.min(150, attackers * 25);
               bonus -= kPenalty * (1 - eg);
 
               // 5. Fear of Open Files over the Castled King
@@ -8195,7 +8197,9 @@ limitations under the License.
 
         function quiesce(state, alpha, beta, maximizing, deadline, qd = 0) {
           qSearchNodes++; // 📊
-          if (Date.now() >= deadline || qd > 8) return evaluate(state);
+          // ⚡ Throttle: only check Date.now() every 512 Q-nodes to avoid JS timer overhead
+          if ((qSearchNodes & 511) === 0 && Date.now() >= deadline) return evaluate(state);
+          if (qd > 8) return evaluate(state);
           const sp = evaluate(state);
           if (maximizing) { if (sp >= beta) return beta; if (sp > alpha) alpha = sp; }
           else { if (sp <= alpha) return alpha; if (sp < beta) beta = sp; }
