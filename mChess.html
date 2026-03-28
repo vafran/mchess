@@ -5908,6 +5908,92 @@ limitations under the License.
       "Nf3,d5,g3,c6,Bg2,Nf6,O-O,Bg4": [
         { m: "c4", w: 10, name: "Reti Eslava: presión central", desc: "El blanco desafía el control negro." },
         { m: "d3", w: 8, name: "Ataque Indio de Rey: esquema sólido", desc: "El blanco prepara el desarrollo de su flanco de dama." }
+      ],
+
+      // ── QGD: tras d4,Nf6,c4,e6,Nf3,d5 ──────────────────────────────────────────
+      "d4,Nf6,c4,e6,Nf3,d5": [
+        { m: "Nc3",  w: 9, name: "QGD: variante principal", desc: "Desarrollo clásico. Puede continuar con Bg5 o Bf4." },
+        { m: "cxd5", w: 8, name: "QGD Exchange", desc: "Cambia en d5 para obtener ventaja de espacio." },
+        { m: "b3",   w: 4, name: "Apertura Catalana", desc: "Prepara el fianchetto del alfil con plan tranquilo." }
+      ],
+      "d4,Nf6,c4,e6,Nf3,d5,cxd5": [
+        { m: "exd5", w: 10, name: "QGD Exchange: recaptura natural", desc: "Recaptura equilibrando el centro." }
+      ],
+      "d4,Nf6,c4,e6,Nf3,d5,cxd5,exd5": [
+        { m: "Nc3",  w: 10, name: "QGD Exchange: variante principal", desc: "Desarrolla el caballo hacia el centro." },
+        { m: "Bf4",  w: 6,  name: "QGD Exchange: Sistema de Londres", desc: "Alfil activo fuera antes de consolidar." }
+      ],
+      "d4,Nf6,c4,e6,Nf3,d5,cxd5,exd5,Nc3": [
+        { m: "Be7",  w: 9, name: "QGD Exchange: desarrollo tranquilo", desc: "El negro se desarrolla sólidamente." },
+        { m: "c6",   w: 8, name: "QGD Exchange: Eslava transpuesta", desc: "Refuerza d5 con el peón." }
+      ],
+      "d4,Nf6,c4,e6,Nf3,d5,cxd5,exd5,Nc3,c6": [
+        { m: "Bf4",  w: 10, name: "QGD Exchange: alfil activo", desc: "Buen desarrollo; prepara e3 y Be2." },
+        { m: "Bg5",  w: 6,  name: "QGD Exchange: clavada", desc: "Clava el caballo f6 creando presión." }
+      ],
+      "d4,Nf6,c4,e6,Nf3,d5,Nc3": [
+        { m: "Be7",  w: 9, name: "QGD: variante ortodoxa", desc: "El negro se prepara para enrocar." },
+        { m: "c6",   w: 7, name: "Semi-Eslava", desc: "Refuerza d5. Puede derivar en Meran." },
+        { m: "dxc4", w: 5, name: "QGD Aceptado", desc: "El negro acepta el gambito." }
+      ],
+      "d4,Nf6,c4,e6,Nf3,d5,Nc3,Be7": [
+        { m: "Bg5",  w: 10, name: "QGD Ortodoxa: variante Botvinnik", desc: "Clava el caballo. La línea más rica." },
+        { m: "Bf4",  w: 7,  name: "QGD Ortodoxa: sin clavada", desc: "Desarrollo limpio; evita complicaciones." },
+        { m: "e3",   w: 5,  name: "QGD Ortodoxa: plan tranquilo", desc: "El blanco consolida antes de desarrollar." }
+      ],
+      "d4,Nf6,c4,e6,Nf3,d5,Nc3,Be7,Bg5": [
+        { m: "O-O",  w: 10, name: "QGD Ortodoxa: enroque negro", desc: "Seguridad del rey antes de la lucha central." },
+        { m: "h6",   w: 7,  name: "QGD Ortodoxa: expulsa el alfil", desc: "Fuerza a la pieza blanca a retroceder." }
+      ],
+
+      // ── QGD desde el orden d4,d5,c4,e6 ─────────────────────────────────────────
+      "d4,d5,c4,e6,Nc3": [
+        { m: "Nf6",  w: 10, name: "QGD: continuación principal", desc: "Desarrollo natural del caballo." },
+        { m: "c6",   w: 4,  name: "Semi-Eslava desde QGD", desc: "Refuerza d5; puede derivar en Meran." }
+      ],
+      "d4,d5,c4,e6,Nc3,Nf6": [
+        { m: "Bg5",  w: 10, name: "QGD Ortodoxa", desc: "La línea más rica. Clava el caballo negro." },
+        { m: "Bf4",  w: 7,  name: "QGD: sin clavada", desc: "Desarrollo limpio sin presión inmediata sobre f6." },
+        { m: "Nf3",  w: 5,  name: "QGD: plan tranquilo", desc: "El blanco se desarrolla tranquilamente." }
+      ],
+      "d4,d5,c4,e6,Nc3,Nf6,Bg5": [
+        { m: "Be7",  w: 10, name: "QGD Ortodoxa: línea principal", desc: "El negro se prepara para enrocar." },
+        { m: "h6",   w: 7,  name: "QGD: expulsa el alfil", desc: "El negro decide cuándo quiere que el alfil se retire." }
+      ],
+      "d4,d5,c4,e6,Nc3,Nf6,Bg5,Be7": [
+        { m: "e3",   w: 10, name: "QGD Ortodoxa: consolidación", desc: "Plan sólido. Prepara Bd3 y O-O." },
+        { m: "Nf3",  w: 6,  name: "QGD Ortodoxa: desarrollo del caballo", desc: "Otro caballo en play." }
+      ],
+      "d4,d5,c4,e6,Nc3,Nf6,Bg5,Be7,e3": [
+        { m: "O-O",  w: 10, name: "QGD Ortodoxa: enroque negro", desc: "El negro lleva su rey a seguridad." },
+        { m: "Nbd7", w: 6,  name: "QGD Ortodoxa: plan Tartakower", desc: "El negro desarrolla el otro caballo." }
+      ],
+      "d4,d5,c4,e6,Nc3,Nf6,Bg5,Be7,e3,O-O": [
+        { m: "Nf3",  w: 10, name: "QGD Ortodoxa: completa desarrollo", desc: "El blanco se desarrolla antes de comprometerse." },
+        { m: "Bd3",  w: 8,  name: "QGD Ortodoxa: apunta a h7", desc: "Alfil activo en d3 apuntando al enroque." }
+      ],
+
+      // ── Defensa Eslava: líneas más profundas ─────────────────────────────────────
+      "d4,d5,c4,c6,Nf3,Nf6": [
+        { m: "Nc3",  w: 10, name: "Eslava: variante principal", desc: "Desarrollo clásico del caballo hacia el centro." },
+        { m: "e3",   w: 6,  name: "Eslava: variante tranquila", desc: "Plan sólido sin complicaciones inmediatas." }
+      ],
+      "d4,d5,c4,c6,Nf3,Nf6,Nc3": [
+        { m: "Bf5",  w: 10, name: "Eslava: variante principal con Bf5", desc: "Desarrollo activo del alfil antes de e6." },
+        { m: "dxc4", w: 8,  name: "Eslava Aceptada", desc: "El negro acepta el gambito." },
+        { m: "e6",   w: 6,  name: "Semi-Eslava: plan Meran", desc: "El negro adopta la estructura Semi-Eslava." }
+      ],
+      "d4,d5,c4,c6,Nf3,Nf6,Nc3,Bf5": [
+        { m: "e3",   w: 10, name: "Eslava: plan posicional", desc: "Consolida el centro y prepara el desarrollo del alfil." },
+        { m: "cxd5", w: 6,  name: "Eslava Exchange", desc: "El blanco simplifica con cambio de peones." }
+      ],
+      "d4,d5,c4,c6,Nf3,Nf6,Nc3,dxc4": [
+        { m: "e4",   w: 10, name: "Eslava Aceptada: gambito central", desc: "El blanco busca compensación en el centro." },
+        { m: "a4",   w: 7,  name: "Eslava Aceptada: previene b5", desc: "Evita que el negro consolide el peón extra con b5." }
+      ],
+      "d4,d5,c4,c6,Nf3,Nf6,Nc3,e6": [
+        { m: "Bg5",  w: 10, name: "Semi-Eslava: línea principal", desc: "Clava el caballo. Posición muy compleja." },
+        { m: "e3",   w: 8,  name: "Semi-Eslava: Anti-Meran", desc: "Plan sólido que evita complicaciones del Meran." }
       ]
 
     };
