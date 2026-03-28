@@ -8065,7 +8065,8 @@ limitations under the License.
           return {
             board: s.board.map(r => r.slice()), turn: s.turn,
             castleRights: { ...s.castleRights },
-            enPassantTarget: Array.isArray(s.enPassantTarget) ? [...s.enPassantTarget] : null
+            enPassantTarget: Array.isArray(s.enPassantTarget) ? [...s.enPassantTarget] : null,
+            halfMoveClock: s.halfMoveClock || 0
           };
         }
         function applyMove(state, m) {
@@ -8241,10 +8242,10 @@ limitations under the License.
 
         let killers = Array(64).fill(null).map(() => [null, null]);
         let histTable = Array(64).fill(null).map(() => Array(64).fill(0));
-        // 📝 Zobrist Search Stack: tracks hashes along the CURRENT search path (O(depth)
-        // integer comparisons) to detect draw-by-repetition INSIDE the tree (perpetual checks,
-        // piece shuffling). Much faster than stringHash O(64) per node.
+        // 📝 Zobrist Search Stack: tracks hashes along the CURRENT search path.
+        // searchSet gives O(1) repetition lookup; searchStack keeps insertion order for pop.
         let searchStack = [];
+        let searchSet = new Set();
 
         // 📊 TELEMETRÍA
         let searchNodes = 0;
@@ -8364,7 +8365,7 @@ limitations under the License.
           const bk = zob(state);
           // 📝 Repetition in current line? O(depth) integer check.
           // Detects perpetual checks, king shuffling, etc. without string ops.
-          if (searchStack.includes(bk)) return 0;
+          if (searchSet.has(bk)) return 0;
           // ★ 50-move rule — draw if no pawn move or capture in 100 half-moves
           if ((state.halfMoveClock || 0) >= 100) return 0;
           // TT lookup + Hash Move
@@ -8401,13 +8402,13 @@ limitations under the License.
               const savedTurn = state.turn; const savedEP = state.enPassantTarget;
               state.turn = opp(color); state.enPassantTarget = null;
               const nullBk = zob(state);  // hash AFTER passing the turn
-              searchStack.push(nullBk);
+              searchStack.push(nullBk); searchSet.add(nullBk);
               try {
                 const nullScore = minimax(state, depth - 1 - R, alpha, beta, !maximizing, deadline, false);
                 if (maximizing && nullScore >= beta) { return beta; }
                 if (!maximizing && nullScore <= alpha) { return alpha; }
               } catch (e) { if (String(e) === 'TIMEOUT') throw e; }
-              finally { searchStack.pop(); state.turn = savedTurn; state.enPassantTarget = savedEP; }
+              finally { searchSet.delete(nullBk); searchStack.pop(); state.turn = savedTurn; state.enPassantTarget = savedEP; }
             }
           }
 
@@ -8428,7 +8429,7 @@ limitations under the License.
           const staticEval = !checked && depth <= 2 ? evaluate(state) : null;
           const canFutility = staticEval !== null && !checked;
 
-          searchStack.push(bk); // 📝 Push current node onto the search path
+          searchStack.push(bk); searchSet.add(bk); // 📝 Push current node onto the search path
           try {
           for (let idx = 0; idx < moves.length; idx++) {
             // ── Selection Sort: swap best remaining to front (lazy — stops at first cutoff) ──
@@ -8499,7 +8500,7 @@ limitations under the License.
               break;
             }
           }
-          } finally { searchStack.pop(); } // 📝 Always pop — even on TIMEOUT or break
+          } finally { searchSet.delete(bk); searchStack.pop(); } // 📝 Always pop — even on TIMEOUT or break
           const flag = best <= alphaOrig ? TT_UPPER : best >= beta ? TT_LOWER : TT_EXACT;
           // ☣️ ANTI-TT POLLUTION: solo sobrescribimos si aportamos valor real
           const _existing = tt.get(bk);
@@ -8548,7 +8549,8 @@ limitations under the License.
             if (tt.size > MAX_TT / 2) ttEvict();
             killers = Array(64).fill(null).map(() => [null, null]);
             histTable = Array(64).fill(null).map(() => Array(64).fill(0));
-            searchStack = [zob(state)]; // 📝 init with root position
+            const _rootBk = zob(state);
+            searchStack = [_rootBk]; searchSet = new Set([_rootBk]); // 📝 init with root position
 
             let rootMoves = legalMoves(state, color);
             if (!rootMoves.length) {
@@ -8678,7 +8680,8 @@ limitations under the License.
                     scoreForMe = 0; // 2nd repetition — treat as draw, engine decides contextually
                   } else {
                     let rawScore;
-                    searchStack.push(zob(child)); // 📝 track child in search path
+                    const _aspChildBk = zob(child);
+                    searchStack.push(_aspChildBk); searchSet.add(_aspChildBk); // 📝 track child
                     try {
                       // ✨ FIX: Aspiration window bounds are in scoreForMe space.
                       // minimax() always returns rawScore (White's perspective).
@@ -8693,7 +8696,7 @@ limitations under the License.
                     } catch (err) {
                       if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
                       throw err;
-                    } finally { searchStack.pop(); }
+                    } finally { searchSet.delete(_aspChildBk); searchStack.pop(); }
                     scoreForMe = color === 'w' ? rawScore : -rawScore;
                   }
 
@@ -8750,7 +8753,8 @@ limitations under the License.
                       scoreForMe = 0;
                     } else {
                       let rawScore;
-                      searchStack.push(zob(child)); // 📝 track child in search path
+                      const _fsChildBk = zob(child);
+                      searchStack.push(_fsChildBk); searchSet.add(_fsChildBk); // 📝 track child
                       try {
                         const engAlpha = color === 'w' ? alpha : -beta;
                         const engBeta = color === 'w' ? beta : -alpha;
@@ -8760,7 +8764,7 @@ limitations under the License.
                       } catch (err) {
                         if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
                         throw err;
-                      } finally { searchStack.pop(); }
+                      } finally { searchSet.delete(_fsChildBk); searchStack.pop(); }
                       scoreForMe = color === 'w' ? rawScore : -rawScore;
                     }
                     currentDepthScores.push({ move: m, score: scoreForMe });
