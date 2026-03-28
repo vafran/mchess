@@ -9264,8 +9264,8 @@ limitations under the License.
               if (!depthPartial && currentDepthScores.length > 0) {
                 currentDepthScores.sort((a, b) => b.score - a.score);
                 prevBestScore = currentDepthScores[0].score; // Track for aspiration windows
-                if (Math.abs(prevBestScore) > 90000) break; // 🏆 Mate found — stop iterating immediately
                 completedDepth = d; // 📊 Track the deepest fully-completed iteration
+                if (Math.abs(prevBestScore) > 90000) break; // 🏆 Mate found — stop iterating immediately
 
                 scoredRoot.forEach(sr => {
                   const found = currentDepthScores.find(cs =>
