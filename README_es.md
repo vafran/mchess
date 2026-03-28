@@ -29,7 +29,7 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 
 ### No-objetivos
 
-- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza picos de **~1818 ELO** (benchmark vs Stockfish profundidad 10).
+- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza picos de **~1700 ELO** (benchmark vs Stockfish profundidad 6, torneo de 5 partidas).
 - **Multijugador en línea.** Solo juego local.
 - **Herramientas avanzadas de preparación.** El libro de aperturas está curado para enseñar, no para preparación profesional.
 - **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad, aunque la v2.1.0 introdujo correcciones críticas en cuellos de botella de bajo nivel.
@@ -68,7 +68,7 @@ Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimien
 
 Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técnicas activas
 
-### 👑 Maestro — *Rey Sabio* (~1818 ELO)
+### 👑 Maestro — *Rey Sabio* (~1700 ELO)
 
 **Para:** Jugadores de club fuertes y amateurs avanzados.
 
@@ -84,7 +84,7 @@ Hasta 30 semijugadas de profundidad (tope de 30s) · 0% de errores · libro comp
 | 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
 | 🔥 Difícil | ~1400 | 6 | 0% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~1818 | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
+| 👑 Rey Sabio | ~1700 | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
 
 ---
 
@@ -173,6 +173,16 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | Estilo del comentarista | Serio · Mixto · Divertido |
 | Sonido | Activado / Desactivado |
 | Modo Entrenamiento | Activado / Desactivado |
+
+---
+
+## Novedades en v2.13.0 — *The Memory Update*
+
+- **Fix crítico — Amnesia del Worker TT**: La tabla de transposición (200K entradas), jugadas asesinas e historial se borraban en cada turno en modo torneo. Corregido reutilizando el Web Worker durante toda la partida. La profundidad de búsqueda en finales saltó de d:8–10 a **d:14–18**, con picos en **d:30**. Primeros empates significativos de la historia: **3 tablas en 4 partidas vs Stockfish profundidad 6 (~1700 ELO)**.
+- **Libro — Variante de Cambio del Ruy López**: Tras `Axc6 dxc6`, el motor ahora juega `d3` desde el libro en vez de encontrar `Cxe5??` por sí solo (pierde contra `Dd4!`).
+- **Libro — Apertura Inglesa Alekhine Invertida**: Tras `c4 e5 Cf3 e4`, el motor juega `Cd4` desde el libro. Antes se derrumbaba en 40 jugadas.
+- **Libro — Sistema KIA con g3**: 13 entradas nuevas para el sistema `g3 Ag2 Cf3 d3 0-0` contra todas las respuestas negras principales.
+- **Calibración del arena**: `arena_tournament.js` ahora permite elegir la profundidad de Stockfish al inicio, con ELOs calibrados por nivel.
 
 ---
 
@@ -413,4 +423,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.12.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~685 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.13.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~687 KB. Cero dependencias. Abre el archivo y juega.*

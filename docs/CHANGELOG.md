@@ -7,6 +7,31 @@ Format: version · size · what changed.
 
 ---
 
+## v2.13.0 — The Memory Update
+**~14,100 lines · ~687 KB**
+
+Tournament benchmark: **ELO ~1700** (3 draws / 1 loss in 4 games vs Stockfish d:6) — first meaningful draws in tournament history.  
+Average game length: **234 moves**. Max depth reached: **d:30** (simplified endgame, Match 2).
+
+### Bug Fixes — Engine (Critical)
+- **Worker TT Amnesia fix** — `askWiseKing()` was calling `createEngineWorker()` + `worker.terminate()` on every single move, wiping the entire 200K-entry transposition table, all killer moves, and history heuristics at the start of each turn. The worker is now reused for the entire game. A safety timer handles crash recovery without destroying TT state. Impact: endgame search depth jumped from d:8–10 to **d:14–18**, with peaks at d:30.
+- **Pawn Storm `distToPromo` formula corrected** — The distance-to-promotion formula in the Enemy Pawn Storm evaluator was inverted, causing the engine to fear its own pawns advancing toward the opponent. Fixed to `isW ? (7 - fr) : fr`.
+- **Mate early-exit depth reporting** — `completedDepth = d` is now assigned before the `break` that exits the iterative deepening loop when a forced mate is found. Previously logged as `[d:0/30]`.
+
+### Features — Opening Book
+- **King's Indian Attack (g3 system)** — 13 new entries covering `g3 → Bg2 → Nf3 → d3 → O-O` against `e5`, `d5`, `Nf6`, and `Nc6` responses. Previously only 1 book move after `g3`.
+- **Ruy López Exchange Variation** — After `Bxc6 dxc6`, the engine now plays `d3` from the book instead of searching independently and finding `Nxe5??` (which loses to `Qd4!`). Added for both `dxc6` and `bxc6` recaptures.
+- **English Opening — Reversed Alekhine** — After `c4 e5 Nf3 e4`, the engine now plays `Nd4` from the book. Previously had zero coverage here and collapsed in 40 moves.
+- **Bilingual translations** — All new entries include ES/EN translations in `localizeOpeningName()` and `localizeOpeningDescription()`.
+
+### Features — Arena Tournament
+- **Selectable Stockfish depth** — `arena_tournament.js` now prompts for Stockfish depth (d1–d20) at startup with calibrated ELO labels per level.
+- **Calibrated ELO formula** — Replaced the hardcoded `2200 − 600 = 1600` floor with a proper per-depth ELO table. When score = 0, shows calibrated lower-bound with contextual advice instead of a misleading fixed number.
+- **Move stability exit (20% threshold)** — Iterative deepening now exits when the best move is identical for 3 consecutive depths and 20%+ of the time budget is spent (was 40%). Saves 6–12 seconds per move in stable positions.
+- **Big-gap early exit** — If the best move leads the 2nd-best by > 200 centipawns at depth ≥ 6 (after 15%+ of time spent), the engine trusts the result and stops searching. Saves 15–20 seconds in clearly decided positions and after decisive tactics.
+
+---
+
 ## v2.12.0 — Opening Theory & Commentator Update
 **~14,000 lines · ~685 KB**
 

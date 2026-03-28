@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 Monolith Chess v2.13.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -9211,7 +9211,8 @@ limitations under the License.
             // we don't start another depth that almost certainly won't finish.
             const softDeadline = Date.now() + Math.floor(timeout * 0.50);
 
-            let bestMovesHistory = []; // To track confidence
+            let bestMovesHistory = [];  // Track best move per completed depth
+            let bestScoresHistory = []; // Track best score per completed depth (for stability check)
             let lastDepthTime = 0; // ⚡ EBF brake: tracks how long the last depth took
             const EBF_FACTOR = 3.5; // Branching factor estimate — conservative to avoid over-cutting
             let completedDepth = 0; // 📊 Real depth actually completed (vs maxDepth = target)
@@ -9392,17 +9393,32 @@ limitations under the License.
 
                 // ⏱️ SOFT DEADLINE REAL
                 bestMovesHistory.push(bestOptions[0].move);
+                bestScoresHistory.push(bestOptions[0].score);
                 let timeSpent = Date.now() - (deadline - timeout);
 
-                if (timeSpent > timeout * 0.40 && bestMovesHistory.length >= 3) {
+                if (d >= 6 && timeSpent > timeout * 0.20 && bestMovesHistory.length >= 3) {
                   let m1 = bestMovesHistory[bestMovesHistory.length - 1];
                   let m2 = bestMovesHistory[bestMovesHistory.length - 2];
                   let m3 = bestMovesHistory[bestMovesHistory.length - 3];
+                  let s1 = bestScoresHistory[bestScoresHistory.length - 1];
+                  let s2 = bestScoresHistory[bestScoresHistory.length - 2];
+                  let s3 = bestScoresHistory[bestScoresHistory.length - 3];
 
-                  if (m1.fr === m2.fr && m1.fc === m2.fc && m1.tr === m2.tr && m1.tc === m2.tc &&
-                    m2.fr === m3.fr && m2.fc === m3.fc && m2.tr === m3.tr && m2.tc === m3.tc) {
-                    break; // ¡Ahora sí! Rompe el bucle for(let d=1...) correctamente
+                  // Same best move AND score stable within 20cp for 3 consecutive depths
+                  const moveStable = m1.fr === m2.fr && m1.fc === m2.fc && m1.tr === m2.tr && m1.tc === m2.tc &&
+                    m2.fr === m3.fr && m2.fc === m3.fc && m2.tr === m3.tr && m2.tc === m3.tc;
+                  const scoreStable = Math.abs(s1 - s2) <= 20 && Math.abs(s2 - s3) <= 20;
+                  if (moveStable && scoreStable) {
+                    break; // Move + score both stable for 3 depths — exit early and save the clock
                   }
+                }
+
+                // ⚡ BIG-GAP EARLY EXIT: if the best move has a >200cp lead over the 2nd best
+                // at depth >= 6, the position is clearly decided — no need to keep burning clock.
+                // Saves 15-20 seconds in winning/losing positions and after decisive tactics.
+                if (d >= 6 && currentDepthScores.length >= 2 && timeSpent > timeout * 0.15) {
+                  const gap = currentDepthScores[0].score - currentDepthScores[1].score;
+                  if (gap > 200) break;
                 }
               }
 

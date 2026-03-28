@@ -27,7 +27,7 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 
 ### Non-Goals
 
-- **Defeating titled players.** This is not Stockfish. The engine peaks around **~1818 ELO** (benchmark vs Stockfish depth 10).
+- **Defeating titled players.** This is not Stockfish. The engine peaks around **~1700 ELO** (benchmark vs Stockfish depth 6, 5-game tournament).
 - **Online multiplayer.** Local play only.
 - **Advanced preparation tools.** The opening book is curated for teaching, not professional preparation.
 - **Benchmark performance.** Clean, readable JavaScript takes priority over micro-optimised techniques, though v2.1.0 introduced critical low-level bottlenecks fixes.
@@ -66,7 +66,7 @@ That is everything. The game handles the rest.
 
 6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Master — *Wise King* (~1818 ELO)
+### 👑 Master — *Wise King* (~1700 ELO)
 
 **Target:** Strong club players and advanced amateurs.
 
@@ -82,7 +82,7 @@ Up to 30-ply depth (time-capped at 30s) · 0% mistakes · full book · full eval
 | 🐣 Easy | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medium | ~1010 | 4 | 20% | ±6 cp | first 2 moves | ✅ |
 | 🔥 Hard | ~1400 | 6 | 0% | none | ✅ full | ✅ |
-| 👑 Wise King | ~1818 | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
+| 👑 Wise King | ~1700 | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
  
 ---
 
@@ -170,6 +170,16 @@ Three styles, with labels now visible under the slider:
 | Sound | On / Off |
 | Training Mode | On / Off |
 
+
+---
+
+## What's new in v2.13.0 — *The Memory Update*
+
+- **Worker TT Amnesia Fix (critical)**: The engine's transposition table, killer moves, and history heuristics were wiped on every single move in tournament/Arena mode. Fixed by reusing the Web Worker across moves. Endgame search depth jumped from d:8–10 to **d:14–18**, with peaks at **d:30**. First meaningful tournament draws achieved: **2 draws in 3 games vs Stockfish depth 6 (~1700 ELO)**.
+- **Opening Book — Ruy López Exchange**: Added book coverage after `Bxc6 dxc6`, preventing the engine from finding `Nxe5??` on its own (which loses to `Qd4!`).
+- **Opening Book — English Reversed Alekhine**: After `c4 e5 Nf3 e4`, the engine now plays `Nd4` from the book. Previously had no coverage and collapsed in 40 moves.
+- **Opening Book — King's Indian Attack**: 13 new entries for the `g3 Bg2 Nf3 d3 O-O` system vs all major Black responses.
+- **Arena calibration**: `arena_tournament.js` now lets you choose Stockfish depth at runtime, with calibrated ELO labels. ELO formula no longer hardcoded to 1600.
 
 ---
 
@@ -415,4 +425,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.12.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~685 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.13.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~687 KB. Zero dependencies. Open the file and play.*
