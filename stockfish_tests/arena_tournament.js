@@ -11,10 +11,30 @@ const readline = require('readline');
 
 const CONFIG = {
     numPartidas: 5,             
-    stockfishDepth:10,         
+    stockfishDepth: 10,        // overridden at runtime by user input
     timePerGame: 3600000,
     logFile: path.join(__dirname, 'tournament_results.json')
 };
+
+// Calibrated ELO per Stockfish depth (approximate Lichess equivalents)
+const STOCKFISH_ELO_BY_DEPTH = {
+    1: 900,  2: 1100, 3: 1300, 4: 1450, 5: 1600,
+    6: 1750, 7: 1900, 8: 2000, 9: 2100, 10: 2200,
+    12: 2350, 15: 2500, 18: 2700, 20: 2800
+};
+function stockfishELOForDepth(d) {
+    if (STOCKFISH_ELO_BY_DEPTH[d]) return STOCKFISH_ELO_BY_DEPTH[d];
+    // interpolate for unlisted depths
+    const keys = Object.keys(STOCKFISH_ELO_BY_DEPTH).map(Number).sort((a,b)=>a-b);
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (d > keys[i] && d < keys[i+1]) {
+            const t = (d - keys[i]) / (keys[i+1] - keys[i]);
+            return Math.round(STOCKFISH_ELO_BY_DEPTH[keys[i]] * (1-t) + STOCKFISH_ELO_BY_DEPTH[keys[i+1]] * t);
+        }
+    }
+    return 2200;
+}
+
 
 class TournamentStats {
     constructor() {
@@ -46,11 +66,11 @@ class TournamentStats {
         const total = this.wins + this.losses + this.draws;
         if (total === 0) return 'N/A';
         const score = (this.wins + 0.5 * this.draws) / total;
-        const stockfishELO = 2200; // ELO base de Stockfish a depth 10
-        if (score === 0) return stockfishELO - 600;
-        if (score === 1) return stockfishELO + 600;
+        const sfELO = stockfishELOForDepth(CONFIG.stockfishDepth);
+        if (score === 0) return `~${sfELO - 400} (0 wins — test lower depth for precision)`;
+        if (score === 1) return sfELO + 600;
         const eloDiff = -400 * Math.log10((1 - score) / score);
-        return Math.round(stockfishELO + eloDiff);
+        return Math.round(sfELO + eloDiff);
     }
 
     printReport() {
@@ -234,9 +254,18 @@ async function runTournament() {
     console.log('  3) Wizard (hard)');
     console.log('  4) Wise King (grandmaster)');
     const ans = (await ask('Choose 1-4 (enter=4): ')).trim();
-    rl.close();
     const MAP = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
     const selectedLevel = MAP[ans] || 'grandmaster';
+
+    console.log('\nSelect Stockfish depth (lower = weaker = more accurate ELO for ~1600-2000):');
+    console.log('  d5  → ~1600 ELO  (good if mChess wins some games)');
+    console.log('  d6  → ~1750 ELO  (recommended first test)');
+    console.log('  d7  → ~1900 ELO  (if mChess is strong)');
+    console.log('  d10 → ~2200 ELO  (current default — too strong for precision)');
+    const depthAns = (await ask('Enter depth 1-20 (enter=6): ')).trim();
+    CONFIG.stockfishDepth = parseInt(depthAns) || 6;
+    console.log(`🔧 Stockfish depth: ${CONFIG.stockfishDepth} (~ELO ${stockfishELOForDepth(CONFIG.stockfishDepth)})`);
+    rl.close();
     
     // ✨ FIX: Lanzamos Puppeteer UNA SOLA VEZ para todo el torneo
     console.log(`\n🚀 Initializing base browser...`);
