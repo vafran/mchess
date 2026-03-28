@@ -13,10 +13,13 @@ Formato: versión · tamaño · qué cambió.
 Esta actualización refuerza significativamente el juego temprano del motor mediante una expansión masiva del libro de aperturas y pule la conciencia táctica del comentarista.
 
 ### Características — Libro de Aperturas
-- **Expansión Masiva del Libro (~60+ entradas)** — Añadidas líneas teóricas profundas para:
+- **Expansión Masiva del Libro (~120+ entradas)** — Duplicado el conocimiento de apertura para manejar transposiciones comunes y trampas tácticas:
   - **Gambito de Dama y Defensa Eslava**: Rutas detalladas para sistemas Exchange, Ortodoxa y Merano (hasta 7-8 movimientos).
   - **Apertura Italiana / Giuoco Piano**: Cobertura profunda de las líneas `c3-d4` y `Ng5` (Fegatello).
   - **Defensa Francesa y Caro-Kann**: Añadidas las variantes más comunes de Avance, Intercambio y Clásica.
+  - **Lógica de Transposición**: Soporte amplio para órdenes de movimientos **Nf3 primero**, **c4 primero** y **g3 primero**, alcanzando mediojuegos teóricos incluso con inicios no canónicos.
+  - **Corrección del Gambito de Rey**: Corregida la respuesta crítica `e4 e5 f4 exf4` (Nf3) para evitar el error de activación temprana del rey `Ke2??`.
+  - **Apertura Bird**: Añadido soporte estructural básico para `1.f4 d5`.
   - *Resultado*: El motor ahora alcanza el mediojuego con una ventaja significativa de tiempo y mejor coordinación posicional.
 
 ### Bugs Corregidos — UI / Comentarista

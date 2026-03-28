@@ -178,9 +178,9 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ## Novedades en v2.12.0
 
-- **Expansión Masiva del Libro de Aperturas**: ~60+ entradas nuevas para QGD, Eslava, Italiana, Francesa y Caro-Kann.
+- **Expansión Masiva del Libro de Aperturas**: ~120+ entradas nuevas cubriendo QGD, Eslava, Italiana, Francesa y Caro-Kann, con soporte de transposiciones (Nf3/c4/g3-primero) y parches tácticos para el Gambito de Rey.
 - **Optimización NPS de Seguridad del Rey**: Ray-casting inverso que multiplica el NPS en apertura de ~500 a ~10.000+.
-- **Mejoras en Jaque Pastor**: El comentarista ahora detecta amenazas de f7 con mayor precisión y reconoce defensas con f6/Nc6.
+- **Mejoras en Jaque Pastor**: El comentarista ahora detecta amenazas de f7 con mayor precisión e independientemente del orden de jugadas.
 - **Estabilidad del Motor**: Corregidos bugs críticos de TDZ y repeticiones Zobrist.
 
 ---

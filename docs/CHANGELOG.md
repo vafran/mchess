@@ -13,10 +13,13 @@ Format: version · size · what changed.
 This update significantly strengthens the engine's early game via a massive opening book expansion and polishes the commentator's tactical awareness.
 
 ### Features — Opening Book
-- **Massive Book Expansion (~60+ entries)** — Added deep theoretical lines for:
+- **Massive Book Expansion (~120+ entries)** — Doubled the opening knowledge to handle common transpositions and tactical traps:
   - **QGD & Slav Defense**: Detailed paths for Exchange, Orthodox, and Meran systems (up to 7-8 moves).
   - **Italian Game / Giuoco Piano**: Deep coverage of `c3-d4` and `Ng5` (Fried Liver) lines.
   - **French & Caro-Kann**: Added the most common Advance, Exchange, and Classical variations.
+  - **Transposition Logic**: Broad support for **Nf3-first**, **c4-first**, and **g3-first** move orders to reach theoretical middlegames even when starting non-canonically.
+  - **King's Gambit Correction**: Fixed the critical `e4 e5 f4 exf4` response (Nf3) to prevent the `Ke2??` early king-activation blunder.
+  - **Bird Opening**: Added basic structural support for `1.f4 d5`.
   - *Result*: The engine now reaches the middlegame with a significant time advantage and better positional coordination.
 
 ### Bug Fixes — UI / Commentator

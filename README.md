@@ -175,9 +175,9 @@ Three styles, with labels now visible under the slider:
 
 ## What's new in v2.12.0
 
-- **Massive Opening Book Expansion**: Added ~60+ new entries covering QGD, Slav, Italian, French, and Caro-Kann deeper lines.
+- **Massive Opening Book Expansion**: Added ~120+ new entries covering QGD, Slav, Italian, French, and Caro-Kann, plus extensive transposition support (Nf3/c4/g3-first) and King's Gambit tactical fixes.
 - **King Safety NPS Optimization**: Replaced quadratic scans with ray-casting, increasing opening NPS from ~500 to ~10,000+.
-- **Scholar's Mate Detection**: Improved the commentator's ability to recognize and warn about f7 threats.
+- **Scholar's Mate Detection**: Improved the commentator's ability to recognize and warn about f7 threats even with non-standard move orders.
 - **Engine Stability**: Fixed Temporal Dead Zone (TDZ) and Zobrist repetition bugs.
 
 ---
