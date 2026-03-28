@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 Monolith Chess v2.12.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -6114,6 +6114,81 @@ limitations under the License.
       ],
       "e4,c6,d4,d5,exd5": [
         { m: "cxd5", w: 10, name: "Caro-Kann Exchange: estructura simétrica", desc: "El negro recaptura con el peón." }
+      ],
+
+      // ── Gambito de Rey: continuación tras exf4 ────────────────────────────────
+      // CRÍTICO: sin esto el motor jugó Ke2?? en torneos
+      "e4,e5,f4,exf4": [
+        { m: "Nf3",  w: 10, name: "Gambito de Rey Aceptado: variante Cunningham", desc: "Desarrolla el caballo y previene Qh4+. La continuación más sólida." },
+        { m: "Bc4",  w: 7,  name: "Gambito de Rey Aceptado: variante clásica", desc: "Presión inmediata sobre f7. Plan agresivo clásico." },
+        { m: "d4",   w: 5,  name: "Gambito de Rey Aceptado: variante moderna", desc: "Ocupa el centro antes de recuperar el peón." }
+      ],
+      "e4,e5,f4,exf4,Nf3": [
+        { m: "g5",   w: 10, name: "Gambito de Rey: defensa Kieseritzky idea", desc: "El negro intenta retener el peón con g5." },
+        { m: "Nf6",  w: 7,  name: "Gambito de Rey: desarrollo rápido", desc: "El negro se desarrolla en lugar de retener el peón." },
+        { m: "d6",   w: 5,  name: "Gambito de Rey: variante Fischer", desc: "El negro prepara un contrajuego sólido con d6-g5." }
+      ],
+      "e4,e5,f4,exf4,Nf3,d6": [
+        { m: "d4",   w: 10, name: "Gambito de Rey: contra Fischer Defense", desc: "El blanco ocupa el centro. Plan estándar contra d6." },
+        { m: "Bc4",  w: 6,  name: "Gambito de Rey: alfil activo", desc: "El blanco desarrolla el alfil apuntando a f7." }
+      ],
+      "e4,e5,f4,exf4,Bc4": [
+        { m: "Nf6",  w: 10, name: "Gambito de Rey Clásico: desarrollo negro", desc: "El negro desarrolla el caballo antes de preocuparse por el peón." },
+        { m: "d5",   w: 7,  name: "Gambito de Rey Clásico: contragolpe central", desc: "El negro ataca el centro inmediatamente." }
+      ],
+
+      // ── Nf3-first transpositions: cubren orden 1.Nf3 → 2.d4 ──────────────────
+      // Match 2 del torneo salió de libro en movida 3 por esto
+      "Nf3,Nf6,d4": [
+        { m: "e6",   w: 10, name: "India de Dama (orden Nf3)", desc: "El negro consolida con e6. Puede que transponga a Nimzoindia o QGD." },
+        { m: "g6",   w: 8,  name: "India de Rey (orden Nf3)", desc: "Comienza el fianchetto. Transpone a la India de Rey." },
+        { m: "d5",   w: 7,  name: "QGD (orden Nf3)", desc: "El negro ocupa el centro. Puede transponer al Gambito de Dama." },
+        { m: "c5",   w: 5,  name: "Defensa Benoni (orden Nf3)", desc: "El negro presiona el peón d4 inmediatamente." }
+      ],
+      "Nf3,Nf6,d4,e6": [
+        { m: "c4",   w: 10, name: "India/QGD: transposición con c4", desc: "Transpone a QGD o Nimzoindia según la respuesta negra." },
+        { m: "Bg5",  w: 7,  name: "Khan System: clavada temprana", desc: "El blanco clava el caballo. Plan agresivo." },
+        { m: "e3",   w: 5,  name: "Plan tranquilo con e3", desc: "Desarrollo sólido antes de comprometerse con c4." }
+      ],
+      "Nf3,Nf6,d4,g6": [
+        { m: "c4",   w: 10, name: "India de Rey (orden Nf3)", desc: "El blanco transpone a la India de Rey con c4." },
+        { m: "g3",   w: 6,  name: "Doble fianchetto", desc: "El blanco también prepara fianchetto. Plan sólido y simétrico." }
+      ],
+      "Nf3,Nf6,d4,d5": [
+        { m: "c4",   w: 10, name: "QGD (orden Nf3+d4)", desc: "Transpone al Gambito de Dama." },
+        { m: "Bf4",  w: 7,  name: "Sistema de Londres (orden Nf3)", desc: "Plan sólido del Sistema de Londres." },
+        { m: "e3",   w: 5,  name: "Colle System", desc: "Plan tranquilo de desarrollo." }
+      ],
+      "Nf3,d5,d4": [
+        { m: "Nf6",  w: 10, name: "QGD/Peón de Dama (orden Nf3+d4)", desc: "Desarrollo natural. Puede transponer a muchas aperturas." },
+        { m: "e6",   w: 8,  name: "Francesa/QGD transpuesta", desc: "El negro se desarrolla sólidamente." },
+        { m: "c5",   w: 5,  name: "Benoni (orden Nf3+d4)", desc: "El negro ataca el centro." }
+      ],
+      "Nf3,d5,d4,Nf6": [
+        { m: "c4",   w: 10, name: "QGD (Nf3 order)", desc: "Transpone al Gambito de Dama clásico." },
+        { m: "Bf4",  w: 8,  name: "Sistema de Londres", desc: "Desarrollo del alfil antes del cierre de centro." },
+        { m: "e3",   w: 5,  name: "Colle System", desc: "Plan tranquilo de desarrollo." }
+      ],
+      "Nf3,d5,d4,Nf6,c4": [
+        { m: "e6",   w: 10, name: "QGD (orden Reti/Nf3)", desc: "Transpone al GDR. Posición sólida." },
+        { m: "c6",   w: 8,  name: "Eslava (orden Nf3+d4+c4)", desc: "Transpone a la Defensa Eslava." },
+        { m: "dxc4", w: 5,  name: "GDA (orden Nf3)", desc: "El negro acepta el gambito." }
+      ],
+      "Nf3,e6,d4": [
+        { m: "d5",   w: 10, name: "QGD/Francesa (orden Nf3+d4)", desc: "El negro ocupa el centro. Transposición común." },
+        { m: "Nf6",  w: 8,  name: "India de Dama (orden Nf3)", desc: "Desarrollo natural del caballo." },
+        { m: "c5",   w: 6,  name: "Siciliana inversa (orden Nf3)", desc: "El negro presiona d4 con c5." }
+      ],
+      "Nf3,e6,d4,d5": [
+        { m: "c4",   w: 10, name: "QGD (orden Nf3+e6+d4)", desc: "Transpone al Gambito de Dama Rehusado." },
+        { m: "Bf4",  w: 7,  name: "Sistema de Londres vs e6+d5", desc: "Plan sólido del Sistema de Londres." }
+      ],
+      "Nf3,c5,d4": [
+        { m: "cxd4", w: 10, name: "Siciliana abierta (orden Nf3)", desc: "El negro acepta la apertura. Transpone a la Siciliana Abierta." },
+        { m: "Nf6",  w: 7,  name: "Siciliana: plan flexible (orden Nf3)", desc: "El negro se desarrolla antes de capturar." }
+      ],
+      "Nf3,c5,d4,cxd4": [
+        { m: "Nxd4", w: 10, name: "Siciliana Abierta (orden Nf3)", desc: "Recaptura con el caballo. Transpone a la Siciliana Abierta estándar." }
       ]
 
     };
