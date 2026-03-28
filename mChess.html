@@ -2810,11 +2810,18 @@ limitations under the License.
         const timeoutRes = _diff.timeLimit;
         console.log(`🧠 Thinking (Depth ${_depth}, ${timeoutRes / 1000}s max)...`);
         const results = await new Promise(resolve => {
-          const worker = createEngineWorker();
+          // ✅ FIX: Reuse Worker to preserve TT (200k entries), killers, and history between moves.
+          // Previously a new Worker was created+terminated each turn, wiping all learned data.
+          let worker;
+          if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
+            worker = chessEngineWorker;
+          } else {
+            worker = createEngineWorker();
+          }
           let settled = false;
           const t = setTimeout(() => {
             console.log("⚠️ Safety timer triggered.");
-            if (!settled) { settled = true; worker.terminate(); resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+            if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
           }, timeoutRes + 15000);
 
           worker.onmessage = function (e) {
@@ -2822,7 +2829,7 @@ limitations under the License.
               clearTimeout(t);
               if (!settled) {
                 settled = true;
-                worker.terminate();
+                // ✅ FIX: Do NOT terminate — keep the TT alive for the next move
                 resolve({
                   moves: e.data.moves || [],
                   completedDepth: e.data.completedDepth || 0,
@@ -2834,14 +2841,14 @@ limitations under the License.
               // Worker hit an uncaught exception — resolve fast instead of waiting 45s
               console.log('⚠️ Worker error (resolved fast):', e.data.error);
               clearTimeout(t);
-              if (!settled) { settled = true; worker.terminate(); resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+              if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
             }
           };
           worker.onerror = function (ev) {
             // Catches uncaught worker exceptions that don’t go through onmessage
             console.log('⚠️ Uncaught worker error:', ev.message);
             clearTimeout(t);
-            if (!settled) { settled = true; worker.terminate(); resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+            if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
           };
           worker.postMessage({
             action: 'search',
