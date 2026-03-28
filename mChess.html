@@ -8664,19 +8664,42 @@ limitations under the License.
         function moveScore(state, m, depth) {
           const p = state.board[m.fr][m.fc];
           const t = state.board[m.tr][m.tc];
-          const pv = p && p !== ' ' ? (PV[p.toUpperCase()] || 0) : 0;
-          const tv = t && t !== ' ' ? (PV[t.toUpperCase()] || 0) : 0;
-          if (tv > 0) return 100000 + (tv * 10) - pv; // MVV-LVA
-          if (p && p.toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return 90000;
+          const u = p.toUpperCase();
+
+          // 1. Detect En Passant (it's a capture even if the target square is empty)
+          const isEP = (u === 'P' && m.fc !== m.tc && t === ' ');
+          const tv = isEP ? PV['P'] : (t && t !== ' ' ? (PV[t.toUpperCase()] || 0) : 0);
+          const pv = PV[u] || 0;
+
+          // 🔴 TIER 1: CAPTURES (Level 1,000,000+) - Strict MVV-LVA
+          if (tv > 0) {
+            return 1000000 + (tv * 10) - pv;
+          }
+
+          // 🟠 TIER 2: PROMOTIONS (Level 900,000)
+          if (u === 'P' && (m.tr === 0 || m.tr === 7)) {
+            return 900000;
+          }
+
+          // 🟡 TIER 3: KILLER MOVES (Level 800,000)
           const k = killers[depth];
-          if (k && k[0] && k[0].fr === m.fr && k[0].fc === m.fc && k[0].tr === m.tr && k[0].tc === m.tc) return 50000;
-          if (k && k[1] && k[1].fr === m.fr && k[1].fc === m.fc && k[1].tr === m.tr && k[1].tc === m.tc) return 49000;
+          if (k) {
+            if (k[0] && k[0].fr === m.fr && k[0].fc === m.fc && k[0].tr === m.tr && k[0].tc === m.tc) return 800000;
+            if (k[1] && k[1].fr === m.fr && k[1].fc === m.fc && k[1].tr === m.tr && k[1].tc === m.tc) return 700000;
+          }
+
+          // 🟢 TIER 4: HISTORY & POSITION (0 - 100,000 max)
           let sc = histTable[m.fr * 8 + m.fc][m.tr * 8 + m.tc] || 0;
-          // Instinto asesino: priorizar jugadas cerca del rey enemigo
+          // Security CAP: Ensure history never overlaps with Killer tiers
+          if (sc > 50000) sc = 50000;
+
+          // Killer Instinct: Prioritize moves near the enemy king
           const pc = clr(p);
           const ek = findKing(state.board, opp(pc));
-          if (ek && Math.abs(m.tr - ek[0]) <= 2 && Math.abs(m.tc - ek[1]) <= 2) sc += 20000;
-          return sc;
+          if (ek && Math.abs(m.tr - ek[0]) <= 2 && Math.abs(m.tc - ek[1]) <= 2) {
+            sc += 20000;
+          }
+          return sc; // Theoretical max: 70,000 (Never overlaps with 700,000)
         }
 
         function quiesce(state, alpha, beta, maximizing, deadline, qd = 0, inCheck = false) {
@@ -8704,18 +8727,31 @@ limitations under the License.
             }
             return false;
           });
-          // ⚡ MVV-LVA: victim value higher = sorted first. En passant target is always a pawn.
-          caps.sort((a, b) => {
-            const epValA = (state.board[a.fr][a.fc].toUpperCase() === 'P' && a.fc !== a.tc && state.board[a.tr][a.tc] === ' ') ? PV['P'] : 0;
-            const epValB = (state.board[b.fr][b.fc].toUpperCase() === 'P' && b.fc !== b.tc && state.board[b.tr][b.tc] === ' ') ? PV['P'] : 0;
-            const valA = ((PV[state.board[a.tr][a.tc].toUpperCase()] || 0) || epValA) * 10 - (PV[state.board[a.fr][a.fc].toUpperCase()] || 0);
-            const valB = ((PV[state.board[b.tr][b.tc].toUpperCase()] || 0) || epValB) * 10 - (PV[state.board[b.fr][b.fc].toUpperCase()] || 0);
-            return valB - valA;
-          });
+          // ⚡ Optimized Quiescence Sorting: pre-calculate scores once to avoid N·logN string lookups
+          const scores = new Int32Array(caps.length);
+          for (let i = 0; i < caps.length; i++) {
+            const mi = caps[i];
+            const p = state.board[mi.fr][mi.fc];
+            const t = state.board[mi.tr][mi.tc];
+            const u = p.toUpperCase();
+            const isEP = (u === 'P' && mi.fc !== mi.tc && t === ' ');
+            const tv = isEP ? PV['P'] : (t !== ' ' ? (PV[t.toUpperCase()] || 0) : 0);
+            const pv = PV[u] || 0;
+            scores[i] = (tv * 10) - pv; // Standard MVV-LVA
+          }
+
           const DELTA = 250;
           if (maximizing) {
-            for (const m of caps) {
-              // En passant: captured pawn value is PV['P'], not 0
+            for (let idx = 0; idx < caps.length; idx++) {
+              // Selection Sort: swap best remaining to front (lazy cutoff)
+              let bestIdx = idx, bestSc = scores[idx];
+              for (let j = idx + 1; j < caps.length; j++) { if (scores[j] > bestSc) { bestSc = scores[j]; bestIdx = j; } }
+              if (bestIdx !== idx) {
+                const tm = caps[bestIdx]; caps[bestIdx] = caps[idx]; caps[idx] = tm;
+                const ts = scores[bestIdx]; scores[bestIdx] = scores[idx]; scores[idx] = ts;
+              }
+              const m = caps[idx];
+
               const isEP = state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ';
               const tv = isEP ? PV['P'] : (PV[state.board[m.tr][m.tc].toUpperCase()] || 0);
               const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
@@ -8729,7 +8765,15 @@ limitations under the License.
             }
             return alpha;
           } else {
-            for (const m of caps) {
+            for (let idx = 0; idx < caps.length; idx++) {
+              let bestIdx = idx, bestSc = scores[idx];
+              for (let j = idx + 1; j < caps.length; j++) { if (scores[j] > bestSc) { bestSc = scores[j]; bestIdx = j; } }
+              if (bestIdx !== idx) {
+                const tm = caps[bestIdx]; caps[bestIdx] = caps[idx]; caps[idx] = tm;
+                const ts = scores[bestIdx]; scores[bestIdx] = scores[idx]; scores[idx] = ts;
+              }
+              const m = caps[idx];
+
               const isEP = state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ';
               const tv = isEP ? PV['P'] : (PV[state.board[m.tr][m.tc].toUpperCase()] || 0);
               const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
