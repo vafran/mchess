@@ -2830,7 +2830,18 @@ limitations under the License.
                   isPartial: !!e.data.isPartial
                 });
               }
+            } else if (e.data.action === 'error') {
+              // Worker hit an uncaught exception — resolve fast instead of waiting 45s
+              console.log('⚠️ Worker error (resolved fast):', e.data.error);
+              clearTimeout(t);
+              if (!settled) { settled = true; worker.terminate(); resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
             }
+          };
+          worker.onerror = function (ev) {
+            // Catches uncaught worker exceptions that don’t go through onmessage
+            console.log('⚠️ Uncaught worker error:', ev.message);
+            clearTimeout(t);
+            if (!settled) { settled = true; worker.terminate(); resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
           };
           worker.postMessage({
             action: 'search',
