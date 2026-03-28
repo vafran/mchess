@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 Monolith Chess v2.11.1
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -8563,6 +8563,8 @@ limitations under the License.
             const _rootBk = zob(state);
             searchStack = [_rootBk]; searchSet = new Set([_rootBk]); // 📝 init with root position
 
+            const maxDepth = Math.max(1, msg.depth || 3);
+
             let rootMoves = legalMoves(state, color);
             if (!rootMoves.length) {
               postMessage({ action: 'result', moves: [], isPartial: false });
@@ -8586,8 +8588,6 @@ limitations under the License.
                 m.tr === forcedMove.tr && m.tc === forcedMove.tc
               );
             }
-
-            const maxDepth = Math.max(1, msg.depth || 3);
 
             // ── Initial root move ordering (MVV-LVA + promotions) ─────────────
             // Ensures depth-1 iteration benefits from good ordering immediately,
