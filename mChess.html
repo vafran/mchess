@@ -3818,6 +3818,8 @@ limitations under the License.
         }
         const savedCommentaryStyle = localStorage.getItem(COMMENTARY_STYLE_STORAGE_KEY);
         if (savedCommentaryStyle !== null) commentaryStyleLevel = Math.max(0, Math.min(2, parseInt(savedCommentaryStyle, 10) || 1));
+        const savedTheme = localStorage.getItem('mchess_theme');
+        if (savedTheme) { setTheme(savedTheme); highlightOptionTheme(savedTheme); }
       } catch (_) { }
 
       board = deepCopy(INITIAL);
@@ -5064,6 +5066,7 @@ limitations under the License.
 
     // ── Theme Selection ──────────────────────
     function setTheme(theme) {
+      localStorage.setItem('mchess_theme', theme); // 💾 Persist theme across sessions
       document.body.className = '';
       if (theme !== 'magic') {
         document.body.classList.add('theme-' + theme);
