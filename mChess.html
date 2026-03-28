@@ -5495,6 +5495,18 @@ limitations under the License.
         { m: "Ba4", w: 10, name: "Ruy López: variante principal", desc: "El alfil mantiene la presión desde a4." },
         { m: "Bxc6", w: 5, name: "Ruy López: variante de cambio", desc: "El blanco cambia el alfil por el caballo para crear debilidades de peones." }
       ],
+      // ── Ruy López: Variante de Cambio — después de Bxc6 ──────────────────
+      // CRITICAL: After Bxc6 dxc6, do NOT play Nxe5?? — falls into Qd4! fork
+      // Correct plan: d3 (solid) or 0-0 then d4
+      "e4,e5,Nf3,Nc6,Bb5,a6,Bxc6,dxc6": [
+        { m: "d3", w: 10, name: "Ruy López: cambio sólido", desc: "Plan sólido tras el cambio. Prepara enroque y Nbd2 sin caer en Nxe5 Qd4!." },
+        { m: "O-O", w: 7, name: "Ruy López: enroque rápido", desc: "Enroque antes de decidir el plan central. Mantiene la tensión." },
+        { m: "Nc3", w: 5, name: "Ruy López: cambio con Nc3", desc: "Desarrollo del caballo. Prepara una estructura sólida." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Bxc6,bxc6": [
+        { m: "d3", w: 10, name: "Ruy López: recaptura lateral", desc: "Con el rey negro en el centro, d3 mantiene la tensión positivamente." },
+        { m: "Nc3", w: 7, name: "Ruy López: desarrollo rápido", desc: "Desarrollo centralizador. El rey negro en el centro es una ventaja estratégica." }
+      ],
       "e4,e5,Nf3,Nc6,Bc4": [
         { m: "Bc5", w: 10, name: "Italiana: variante Giuoco Piano", desc: "El negro desarrolla el alfil simétricamente. Posición equilibrada." },
         { m: "Nf6", w: 8, name: "Italiana: variante de los dos caballos", desc: "El negro ataca e4. Muy táctico." },
@@ -6600,6 +6612,13 @@ limitations under the License.
         'KIA vs d5,Nf6': 'KIA vs d5,Nf6',
         'KIA vs Grünfeld invertido': 'KIA vs Reversed Grünfeld',
         'Salto de Caballo': 'Knight Jump',
+        'Ruy López: cambio sólido': 'Ruy Lopez: Solid Exchange',
+        'Ruy López: enroque rápido': 'Ruy Lopez: Quick Castling',
+        'Ruy López: cambio con Nc3': 'Ruy Lopez: Exchange with Nc3',
+        'Ruy López: recaptura lateral': 'Ruy Lopez: Lateral Recapture',
+        'Ruy López: desarrollo rápido': 'Ruy Lopez: Quick Development',
+        'Ruy López: enroque tras d3': 'Ruy Lopez: Castling after d3',
+        'Ruy López: Nbd2 desarrollo': 'Ruy Lopez: Nbd2 Development',
         'Apertura Española (Ruy López)': 'Ruy Lopez',
         'Apertura Italiana': 'Italian Opening',
         'Apertura Escocesa': 'Scotch Opening',
@@ -6894,6 +6913,13 @@ limitations under the License.
         'Desarrollo estándar. La posición es similar a la Defensa Nimzo-Indiana a la inversa.': 'Standard development. The position resembles the Nimzo-Indian Defense in reverse.',
         'Construcción sólida. Evita complicaciones tácticas tempranas.': 'Solid construction. Avoids early tactical complications.',
         'El caballo busca una casilla central segura en lugar de arriesgarse con capturas dudosas.': 'The knight seeks a safe central square instead of risking dubious captures.',
+        'Plan sólido tras el cambio. Prepara enroque y Nbd2 sin caer en Nxe5 Qd4!.': 'Solid plan after the exchange. Prepares castling and Nbd2 without falling into Nxe5 Qd4!.',
+        'Enroque antes de decidir el plan central. Mantiene la tensión.': 'Castle before deciding the central plan. Keeps tension.',
+        'Desarrollo del caballo. Prepara una estructura sólida.': 'Knight development. Prepares a solid structure.',
+        'Con el rey negro en el centro, d3 mantiene la tensión positivamente.': 'With Black\'s king in the center, d3 keeps positive tension.',
+        'Desarrollo centralizador. El rey negro en el centro es una ventaja estratégica.': 'Centralizing development. Black\'s king in the center is a strategic advantage.',
+        'El enroque consolida la posición antes del ataque central.': 'Castling consolidates the position before the central attack.',
+        'Desarrollo tranquilo. El caballo irá a f1-g3 o e3.': 'Quiet development. The knight will go to f1-g3 or e3.',
         'Un avance agresivo del peón de flanco para controlar el centro.': 'An aggressive flank-pawn advance to fight for central control.',
         'Una salida poco común para ganar espacio en el flanco de dama.': 'An uncommon setup to gain queenside space.',
         'Una elección muy creativa y arriesgada desde la primera jugada.': 'A very creative and risky choice from move one.',
