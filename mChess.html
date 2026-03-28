@@ -5806,6 +5806,28 @@ limitations under the License.
         { m: "g3", w: 7, name: "Inglesa: fianchetto", desc: "Plan posicional. El blanco controla diagonales largas con Bg2." },
         { m: "Nf3", w: 5, name: "Inglesa: desarrollo tranquilo", desc: "El blanco desarrolla el caballo de rey. Flexible." }
       ],
+      // ── Inglesa: c4 e5 Nf3 — línea crítica ––––––––––––––––––––––––––––––
+      // After Nf3, Black can push e4 (Reversed Alekhine). Engine must handle it.
+      "c4,e5,Nf3": [
+        { m: "Nc3", w: 10, name: "Inglesa: refuerzo de e4", desc: "Desarrollo que previene e4 o lo responde con solidez." },
+        { m: "g3", w: 7, name: "Inglesa: fianchetto tras Nf3", desc: "Fianchetto. Si negro juega e4, el alfil en g2 presiona el peón avanzado." }
+      ],
+      // After c4 e5 Nf3 e4 — CRITICAL: engine was collapsing here (40-move loss)
+      // Nd4 is the main move (similar to Alekhine Defense), retreating to a safe central square
+      "c4,e5,Nf3,e4": [
+        { m: "Nd4", w: 10, name: "Inglesa: caballo a d4", desc: "El caballo retrocede a la casilla central d4. Plan sólido que mantiene la tensión." }
+      ],
+      "c4,e5,Nf3,e4,Nd4": [
+        { m: "Nc3", w: 10, name: "Inglesa: doble caballo", desc: "Desarrollo del segundo caballo. Prepara d3 o e3 para desafiar el peón negro en e4." },
+        { m: "d3", w: 7, name: "Inglesa: desafío central", desc: "Ataque inmediato al peón de e4. La línea más directa." }
+      ],
+      "c4,e5,Nf3,e4,Nd4,Nc6": [
+        { m: "Nc2", w: 10, name: "Inglesa: Nc2 sólido", desc: "El caballo se retira a c2 manteniendo el control. Evita cambios prematuros." },
+        { m: "d3", w: 8, name: "Inglesa: d3 desafío", desc: "Desafío directo al centro negro. El motor recupera la iniciativa." }
+      ],
+      "c4,e5,Nf3,e4,Nd4,Nf6": [
+        { m: "Nc3", w: 10, name: "Inglesa: doble desarrollo", desc: "Ambos caballos en posición activa. Presión sobre e4 desde dos frentes." }
+      ],
       "c4,e5,Nc3": [
         { m: "Nf6", w: 10, name: "Inglesa: variante Botvinnik inversa", desc: "El negro desarrolla el caballo. Juego muy dinámico." },
         { m: "Nc6", w: 8, name: "Inglesa: variante cuatro caballos", desc: "Ambos desarrollan caballos rápidamente." },
