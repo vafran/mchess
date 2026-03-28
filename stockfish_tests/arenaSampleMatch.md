@@ -3,7 +3,7 @@
 | | Engine | Config |
 |---|---|---|
 | 👑 | **mChess** (Wise King) | depth 30 · 30s/move |
-| 🐟 | **Stockfish** | depth 10 |
+| 🐟 | **Stockfish** | depth 5 |
 
 **Result: 🤝 Draw — Threefold Repetition · 118 moves**
 
@@ -46,7 +46,7 @@
 
 ```pgn
 [White "mChess Wise King (d30/30s)"]
-[Black "Stockfish (d10)"]
+[Black "Stockfish (d5)"]
 [Result "1/2-1/2"]
 
 1. c4 c5 2. Nf3 g6 3. Nc3 Bg7 4. e3 Bxc3 5. dxc3 d6 6. Bd3 Nc6 7. e4 Bg4
@@ -68,4 +68,4 @@
 - mChess accepted a **pawn sacrifice** on b2 (Qxb2 → Rb7) and activated the rook aggressively
 - The engine correctly identified the **threefold repetition** in the K+Q endgame and claimed the draw at move 118
 - NPS peaked at **70K** in the simplified endgame — confirming the benefit of depth 30 (would have capped at d:12 in v2.10)
-- Match shows mChess is **competitive** at Stockfish depth 10 level in complex open games
+- Match shows mChess is **competitive** at Stockfish depth 5 level in complex open games
