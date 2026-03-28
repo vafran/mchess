@@ -17,6 +17,8 @@ Focuses on resolving catastrophic tree collapses in deep endgames caused by Zobr
 - **Catastrophic Tree Collapse (d:0/30)** — Fixed a fatal logical flaw where the root loops pushed the child's hash *before* calling `minimax`, causing `minimax` to see its own hash upon entry and instantly return 0. The tree was returning 0 for every legal move without actually searching them.
 - **Quiescence Search Timeout Leak** — Fixed the `[empty array / 45s hang]` bug. `quiesce` dropped the `deadline` check in extremely sharp tactical positions, causing the worker to hang until the UI safety timer triggered. The fallback `engineSearchSync` now catches all worker-thrown errors immediately.
 - **50-Move Rule Inheritance** — The `cloneS` function now correctly copies the `halfMoveClock` property so root child-nodes have the correct clock for FIDE draw evaluation.
+- **King Safety Loop Optimization (NPS Fix)** — Replaced the O(576 × `atk()`) nested loops in `evaluate()` with an O(9-zones × rays) approach using reverse ray-casting. This significantly improves NPS in complex positions, jumping from ~500 to ~10,000+ in the opening.
+- **ReferenceError: maxDepth TDZ Fix** — Resolved a crash where the engine returned an empty array when exactly one legal move was available, caused by accessing `maxDepth` before its declaration.
 
 ---
 

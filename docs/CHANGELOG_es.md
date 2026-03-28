@@ -17,6 +17,8 @@ Centrado en resolver colapsos catastróficos del árbol de búsqueda en finales 
 - **Colapso Catastrófico del Árbol (d:0/30)** — Corregido un fallo lógico fatal donde los bucles raíz empujaban el hash del hijo *antes* de llamar a `minimax`, haciendo que `minimax` viera su propio hash al entrar y devolviera 0 al instante. El árbol devolvía 0 para cada jugada legal sin llegar a explorarlas.
 - **Fuga de Timeout en Quiescence** — Corregido el bug de `[array vacío / cuelgue de 45s]`. `quiesce` carecía de comprobación de `deadline` en posiciones extremadamente tácticas, causando que el worker se colgara hasta que el temporizador de seguridad de la UI se disparaba. El fallback `engineSearchSync` ahora captura todos los errores lanzados por el worker inmediatamente.
 - **Herencia de la Regla de 50 Movimientos** — La función `cloneS` ahora copia correctamente la propiedad `halfMoveClock` para que los nodos hijo raíz tengan el reloj correcto para la evaluación de tablas de la FIDE.
+- **Optimización del Bucle de Seguridad del Rey (Fix de NPS)** — Reemplazados los bucles anidados O(576 × `atk()`) en `evaluate()` por un enfoque de O(9-zonas × rayos) mediante ray-casting inverso. Esto mejora significativamente el NPS en posiciones complejas, pasando de ~500 a más de 10.000 en la apertura.
+- **Error de Referencia: Fix de TDZ en maxDepth** — Resuelto un fallo donde el motor devolvía un array vacío cuando solo había una jugada legal disponible, causado por acceder a `maxDepth` antes de su declaración.
 
 ---
 
