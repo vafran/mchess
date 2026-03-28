@@ -5363,6 +5363,45 @@ limitations under the License.
       "g3,e5,Nc3,d5,e3,h5,Nf3,e4": [
         { m: "Nd4", w: 10, name: "Salto de Caballo", desc: "El caballo busca una casilla central segura en lugar de arriesgarse con capturas dudosas." }
       ],
+
+      // ── g3: Apertura Benko / King's Indian Attack ──────────────────────────
+      // After 1.g3 — opponent plays e5 (most common aggressive reply)
+      "g3,e5": [
+        { m: "Bg2", w: 10, name: "Fianchetto", desc: "Desarrollo del alfil a la gran diagonal. La idea principal del sistema Benko." }
+      ],
+      "g3,Nf6": [
+        { m: "Bg2", w: 10, name: "Fianchetto vs Nf6", desc: "El fianchetto es correcto independientemente de la respuesta negra." }
+      ],
+      "g3,d5": [
+        { m: "Bg2", w: 10, name: "Fianchetto vs d5", desc: "Fianchetto del alfil para presionar la diagonal larga contra el centro negro." }
+      ],
+      "g3,e5,Bg2": [
+        { m: "Nf3", w: 10, name: "KIA 2.Nf3", desc: "Desarrollo del caballo atacando e5. La transposición más común al King's Indian Attack." }
+      ],
+      "g3,e5,Bg2,Nf6": [
+        { m: "Nf3", w: 10, name: "KIA 2.Nf3", desc: "Caballo a f3 atacando e5, manteniendo la flexibilidad del sistema." }
+      ],
+      "g3,e5,Bg2,d5": [
+        { m: "d3", w: 10, name: "KIA sólido", desc: "Construcción sólida. Prepara Nd2, Nf3 y e4 para luchar por el centro." }
+      ],
+      "g3,e5,Bg2,Nc6": [
+        { m: "Nf3", w: 10, name: "KIA 2.Nf3 vs Nc6", desc: "Desarrollo normal. Las blancas preparan d3, Nbd2 y enroque." }
+      ],
+      "g3,e5,Bg2,Nf6,Nf3,Nc6": [
+        { m: "d3", w: 10, name: "KIA estructura clásica", desc: "Estructura característica del King's Indian Attack. Sigue Nbd2, 0-0 y e4." }
+      ],
+      "g3,e5,Bg2,Nf6,Nf3,Nc6,d3": [
+        { m: "O-O", w: 10, name: "KIA enroque", desc: "Enroque rápido. Después vendrá Nbd2, Re1 y preparación del avance e4." }
+      ],
+      "g3,e5,Bg2,Nf6,Nf3,d5": [
+        { m: "d3", w: 10, name: "KIA vs d5", desc: "Construcción central. Prepara Nbd2, 0-0 y la lucha por e4." }
+      ],
+      "g3,d5,Bg2,Nf6": [
+        { m: "Nf3", w: 10, name: "KIA vs d5,Nf6", desc: "Desarrollo estándar. La posición es similar a la Defensa Nimzo-Indiana a la inversa." }
+      ],
+      "g3,d5,Bg2,c5": [
+        { m: "d3", w: 10, name: "KIA vs Grünfeld invertido", desc: "Construcción sólida. Evita complicaciones tácticas tempranas." }
+      ],
       "e4,c5,Nf3,Nc6,d4,cxd4,Nxd4,e5": [
         { m: "Nb5", w: 10, name: "Variante Pelikan/Sveshnikov", desc: "Presiona d6 inmediatamente aprovechando que el negro ha debilitado esa casilla." }
       ],
