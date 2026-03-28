@@ -8401,14 +8401,14 @@ limitations under the License.
               const R = depth >= 8 ? 3 : 2;
               const savedTurn = state.turn; const savedEP = state.enPassantTarget;
               state.turn = opp(color); state.enPassantTarget = null;
-              const nullBk = zob(state);  // hash AFTER passing the turn
-              searchStack.push(nullBk); searchSet.add(nullBk);
+              // Note: minimax will push its own hash via its internal push-before-move-loop.
+              // Do NOT push here — minimax's entry check would see its own hash and return 0.
               try {
                 const nullScore = minimax(state, depth - 1 - R, alpha, beta, !maximizing, deadline, false);
                 if (maximizing && nullScore >= beta) { return beta; }
                 if (!maximizing && nullScore <= alpha) { return alpha; }
               } catch (e) { if (String(e) === 'TIMEOUT') throw e; }
-              finally { searchSet.delete(nullBk); searchStack.pop(); state.turn = savedTurn; state.enPassantTarget = savedEP; }
+              finally { state.turn = savedTurn; state.enPassantTarget = savedEP; }
             }
           }
 
@@ -8680,8 +8680,8 @@ limitations under the License.
                     scoreForMe = 0; // 2nd repetition — treat as draw, engine decides contextually
                   } else {
                     let rawScore;
-                    const _aspChildBk = zob(child);
-                    searchStack.push(_aspChildBk); searchSet.add(_aspChildBk); // 📝 track child
+                    // Note: do NOT push child hash here — minimax's internal push handles it.
+                    // Pushing before calling minimax causes minimax to see its own hash → return 0.
                     try {
                       // ✨ FIX: Aspiration window bounds are in scoreForMe space.
                       // minimax() always returns rawScore (White's perspective).
@@ -8696,7 +8696,7 @@ limitations under the License.
                     } catch (err) {
                       if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
                       throw err;
-                    } finally { searchSet.delete(_aspChildBk); searchStack.pop(); }
+                    }
                     scoreForMe = color === 'w' ? rawScore : -rawScore;
                   }
 
@@ -8753,8 +8753,7 @@ limitations under the License.
                       scoreForMe = 0;
                     } else {
                       let rawScore;
-                      const _fsChildBk = zob(child);
-                      searchStack.push(_fsChildBk); searchSet.add(_fsChildBk); // 📝 track child
+                      // Note: do NOT push child hash here — minimax's internal push handles it.
                       try {
                         const engAlpha = color === 'w' ? alpha : -beta;
                         const engBeta = color === 'w' ? beta : -alpha;
@@ -8764,7 +8763,7 @@ limitations under the License.
                       } catch (err) {
                         if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
                         throw err;
-                      } finally { searchSet.delete(_fsChildBk); searchStack.pop(); }
+                      }
                       scoreForMe = color === 'w' ? rawScore : -rawScore;
                     }
                     currentDepthScores.push({ move: m, score: scoreForMe });
