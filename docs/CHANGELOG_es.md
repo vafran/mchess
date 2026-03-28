@@ -7,6 +7,19 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.11.1 — Actualización de Estabilidad del Motor
+**~13.800 líneas · ~677 KB**
+
+Centrado en resolver colapsos catastróficos del árbol de búsqueda en finales largos causados por la mala gestión del hash Zobrist y fugas de timeout en la búsqueda de quietud.
+
+### Bugs Corregidos — Motor (Worker)
+- **Check de Repetición Zobrist O(1)** — Eliminado `searchStack.includes(hash)` O(depth). Añadido un `searchSet` paralelo para detección en O(1) de jaques perpetuos y bailes de piezas. Ahorra ~15-20 comparaciones de string por nodo en finales tardíos.
+- **Colapso Catastrófico del Árbol (d:0/30)** — Corregido un fallo lógico fatal donde los bucles raíz empujaban el hash del hijo *antes* de llamar a `minimax`, haciendo que `minimax` viera su propio hash al entrar y devolviera 0 al instante. El árbol devolvía 0 para cada jugada legal sin llegar a explorarlas.
+- **Fuga de Timeout en Quiescence** — Corregido el bug de `[array vacío / cuelgue de 45s]`. `quiesce` carecía de comprobación de `deadline` en posiciones extremadamente tácticas, causando que el worker se colgara hasta que el temporizador de seguridad de la UI se disparaba. El fallback `engineSearchSync` ahora captura todos los errores lanzados por el worker inmediatamente.
+- **Herencia de la Regla de 50 Movimientos** — La función `cloneS` ahora copia correctamente la propiedad `halfMoveClock` para que los nodos hijo raíz tengan el reloj correcto para la evaluación de tablas de la FIDE.
+
+---
+
 ## v2.11.0 — Bugfix & Evaluación / Benchmarks
 **~13.800 líneas · ~676 KB**
 

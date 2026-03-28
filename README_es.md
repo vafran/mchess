@@ -176,6 +176,12 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
+## Novedades en v2.11.1
+
+Esta versión, la **Actualización de Estabilidad del Motor**, corrige colapsos catastróficos del árbol de búsqueda en finales largos causados por una mala gestión del hash Zobrist, añade un sistema O(1) basado en Sets para detección de repeticiones (ahorra ~15 operaciones de texto por nodo) y previene fugas del timeout en la búsqueda de quietud. El motor ahora puede explorar finales complejos con seguridad hasta profundidad 30 sin colgarse o devolver `d:0/30`.
+
+---
+
 ## Novedades en v2.11.0
 
 Esta versión, la **Edición de Bugfixes y Evaluación**, añade +130 ELO sobre v2.10 (benchmark: ~1818 vs Stockfish profundidad 10, 10 partidas), corrige 5 bugs de correctitud y desbloquea búsqueda más profunda en finales.
@@ -404,4 +410,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.11.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~676 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.11.1 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~677 KB. Cero dependencias. Abre el archivo y juega.*

@@ -7,6 +7,19 @@ Format: version · size · what changed.
 
 ---
 
+## v2.11.1 — Engine Stability Update
+**~13,800 lines · ~677 KB**
+
+Focuses on resolving catastrophic tree collapses in deep endgames caused by Zobrist hash mismanagement and timeout leaks in quiescence search.
+
+### Bug Fixes — Engine (Worker)
+- **O(1) Zobrist Repetition Check** — `searchStack.includes(hash)` O(depth) removed. Added a parallel `searchSet` for O(1) perpetual check and piece-shuffling detection. Saves ~15-20 string-comparisons per node in late endgames.
+- **Catastrophic Tree Collapse (d:0/30)** — Fixed a fatal logical flaw where the root loops pushed the child's hash *before* calling `minimax`, causing `minimax` to see its own hash upon entry and instantly return 0. The tree was returning 0 for every legal move without actually searching them.
+- **Quiescence Search Timeout Leak** — Fixed the `[empty array / 45s hang]` bug. `quiesce` dropped the `deadline` check in extremely sharp tactical positions, causing the worker to hang until the UI safety timer triggered. The fallback `engineSearchSync` now catches all worker-thrown errors immediately.
+- **50-Move Rule Inheritance** — The `cloneS` function now correctly copies the `halfMoveClock` property so root child-nodes have the correct clock for FIDE draw evaluation.
+
+---
+
 ## v2.11.0 — Bug Fixes & Evaluation / Benchmarks
 **~13,800 lines · ~676 KB**
 
