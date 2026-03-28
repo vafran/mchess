@@ -8311,6 +8311,29 @@ limitations under the License.
                 }
                 bonus -= openFilesThreat * 15; // was 35 — reduced to avoid overvaluing open file threats
               }
+
+              // 6. 🌊 ENEMY PAWN STORM THREAT (h5-h4-h3 pattern)
+              // If enemy pawns are storming the flank where our king sits, penalize heavily.
+              // This forces the engine to play defensive pawn moves (e.g. h4 to stop h5-h4) early.
+              if (c >= 5 || c <= 2) {
+                const flankCols = c >= 5 ? [5, 6, 7] : [0, 1, 2];
+                const enemyPawn = isW ? 'p' : 'P';
+                // Storm: enemy pawns should be on OUR side of the board (ranks 3-5 for white, 2-4 for black)
+                // The closer they are to our king row, the higher the danger.
+                let stormThreat = 0;
+                for (const fc of flankCols) {
+                  for (let fr = 0; fr < 8; fr++) {
+                    if (b[fr][fc] !== enemyPawn) continue;
+                    // Distance from promotion for the enemy pawn (closer = more dangerous)
+                    const distToPromo = isW ? fr : (7 - fr); // rows until it promotes
+                    // Only count pawns that are actively storming (past midfield)
+                    if (distToPromo <= 4) {
+                      stormThreat += (5 - distToPromo) * 8; // +8cp at rank5, +24cp at rank3
+                    }
+                  }
+                }
+                bonus -= Math.min(80, stormThreat); // cap at 80cp to avoid overreaction
+              }
             }
 
             const _ini = isW ? wIni : bIni; s += sign * (val + pst + (bonus * _ini));
