@@ -8241,6 +8241,10 @@ limitations under the License.
 
         let killers = Array(64).fill(null).map(() => [null, null]);
         let histTable = Array(64).fill(null).map(() => Array(64).fill(0));
+        // 📝 Zobrist Search Stack: tracks hashes along the CURRENT search path (O(depth)
+        // integer comparisons) to detect draw-by-repetition INSIDE the tree (perpetual checks,
+        // piece shuffling). Much faster than stringHash O(64) per node.
+        let searchStack = [];
 
         // 📊 TELEMETRÍA
         let searchNodes = 0;
@@ -8358,9 +8362,9 @@ limitations under the License.
           searchNodes++; // 📊
           if (Date.now() >= deadline) throw 'TIMEOUT';
           const bk = zob(state);
-          // 🔴 FIX: Anti-repetition is handled at the ROOT (lines above in onmessage).
-          // Calling stringHash(state) on every node creates 1M+ string ops → immediate timeout → d:0/30.
-          // DO NOT re-check stringHash inside minimax — it is catastrophically slow at depth 30.
+          // 📝 Repetition in current line? O(depth) integer check.
+          // Detects perpetual checks, king shuffling, etc. without string ops.
+          if (searchStack.includes(bk)) return 0;
           // ★ 50-move rule — draw if no pawn move or capture in 100 half-moves
           if ((state.halfMoveClock || 0) >= 100) return 0;
           // TT lookup + Hash Move
@@ -8396,12 +8400,14 @@ limitations under the License.
               const R = depth >= 8 ? 3 : 2;
               const savedTurn = state.turn; const savedEP = state.enPassantTarget;
               state.turn = opp(color); state.enPassantTarget = null;
+              const nullBk = zob(state);  // hash AFTER passing the turn
+              searchStack.push(nullBk);
               try {
                 const nullScore = minimax(state, depth - 1 - R, alpha, beta, !maximizing, deadline, false);
-                if (maximizing && nullScore >= beta) { state.turn = savedTurn; state.enPassantTarget = savedEP; return beta; }
-                if (!maximizing && nullScore <= alpha) { state.turn = savedTurn; state.enPassantTarget = savedEP; return alpha; }
+                if (maximizing && nullScore >= beta) { return beta; }
+                if (!maximizing && nullScore <= alpha) { return alpha; }
               } catch (e) { if (String(e) === 'TIMEOUT') throw e; }
-              finally { state.turn = savedTurn; state.enPassantTarget = savedEP; }
+              finally { searchStack.pop(); state.turn = savedTurn; state.enPassantTarget = savedEP; }
             }
           }
 
@@ -8422,6 +8428,8 @@ limitations under the License.
           const staticEval = !checked && depth <= 2 ? evaluate(state) : null;
           const canFutility = staticEval !== null && !checked;
 
+          searchStack.push(bk); // 📝 Push current node onto the search path
+          try {
           for (let idx = 0; idx < moves.length; idx++) {
             // ── Selection Sort: swap best remaining to front (lazy — stops at first cutoff) ──
             let bestIdx = idx, bestSc = scores[idx];
@@ -8491,6 +8499,7 @@ limitations under the License.
               break;
             }
           }
+          } finally { searchStack.pop(); } // 📝 Always pop — even on TIMEOUT or break
           const flag = best <= alphaOrig ? TT_UPPER : best >= beta ? TT_LOWER : TT_EXACT;
           // ☣️ ANTI-TT POLLUTION: solo sobrescribimos si aportamos valor real
           const _existing = tt.get(bk);
@@ -8539,6 +8548,7 @@ limitations under the License.
             if (tt.size > MAX_TT / 2) ttEvict();
             killers = Array(64).fill(null).map(() => [null, null]);
             histTable = Array(64).fill(null).map(() => Array(64).fill(0));
+            searchStack = [zob(state)]; // 📝 init with root position
 
             let rootMoves = legalMoves(state, color);
             if (!rootMoves.length) {
@@ -8668,6 +8678,7 @@ limitations under the License.
                     scoreForMe = 0; // 2nd repetition — treat as draw, engine decides contextually
                   } else {
                     let rawScore;
+                    searchStack.push(zob(child)); // 📝 track child in search path
                     try {
                       // ✨ FIX: Aspiration window bounds are in scoreForMe space.
                       // minimax() always returns rawScore (White's perspective).
@@ -8682,7 +8693,7 @@ limitations under the License.
                     } catch (err) {
                       if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
                       throw err;
-                    }
+                    } finally { searchStack.pop(); }
                     scoreForMe = color === 'w' ? rawScore : -rawScore;
                   }
 
@@ -8739,6 +8750,7 @@ limitations under the License.
                       scoreForMe = 0;
                     } else {
                       let rawScore;
+                      searchStack.push(zob(child)); // 📝 track child in search path
                       try {
                         const engAlpha = color === 'w' ? alpha : -beta;
                         const engBeta = color === 'w' ? beta : -alpha;
@@ -8748,7 +8760,7 @@ limitations under the License.
                       } catch (err) {
                         if (String(err) === 'TIMEOUT') { depthPartial = true; analysisPartial = true; break; }
                         throw err;
-                      }
+                      } finally { searchStack.pop(); }
                       scoreForMe = color === 'w' ? rawScore : -rawScore;
                     }
                     currentDepthScores.push({ move: m, score: scoreForMe });
