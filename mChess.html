@@ -1,5 +1,5 @@
-<!--
-Monolith Chess v2.11.1
+﻿<!--
+Monolith Chess v2.12.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.11.1</title>
+  <title>Monolith Chess v2.12.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.11.1 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.12.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.11.1</div>
+        v2.12.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3784,7 +3784,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.11.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.12.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -5994,6 +5994,126 @@ limitations under the License.
       "d4,d5,c4,c6,Nf3,Nf6,Nc3,e6": [
         { m: "Bg5",  w: 10, name: "Semi-Eslava: línea principal", desc: "Clava el caballo. Posición muy compleja." },
         { m: "e3",   w: 8,  name: "Semi-Eslava: Anti-Meran", desc: "Plan sólido que evita complicaciones del Meran." }
+      ],
+
+      // ── Italiana / Giuoco Piano: tras c3 (profundización) ────────────────────────
+      "e4,e5,Nf3,Nc6,Bc4,Bc5,c3": [
+        { m: "Nf6",  w: 10, name: "Italiana: variante de los dos caballos", desc: "Desarrolla y ataca e4. Plan muy activo." },
+        { m: "d5",   w: 8,  name: "Italiana: ruptura central", desc: "El negro ataca el centro inmediatamente." },
+        { m: "d6",   w: 5,  name: "Italiana: plan lento", desc: "Plan sólido pero pasivo." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Bc5,c3,Nf6": [
+        { m: "d4",   w: 10, name: "Giuoco Piano: ataque central", desc: "El blanco abre el centro para explotar su desarrollo." },
+        { m: "d3",   w: 6,  name: "Italiana: sistema London", desc: "Plan tranquilo; desarrollo antes de comprometerse." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Bc5,c3,Nf6,d4": [
+        { m: "exd4", w: 10, name: "Giuoco Piano: apertura del centro", desc: "El negro acepta la apertura del juego." },
+        { m: "Bb6",  w: 5,  name: "Giuoco Piano: retira el alfil", desc: "El negro evita la tensión central." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Bc5,c3,Nf6,d4,exd4": [
+        { m: "cxd4", w: 10, name: "Giuoco Piano: centro blanco", desc: "El blanco recupera con el peón y domina el centro." },
+        { m: "e5",   w: 5,  name: "Giuoco Piano: avance central", desc: "El blanco avanza el peón central creando espacio." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Bc5,c3,d5": [
+        { m: "exd5", w: 10, name: "Italiana: intercambio central", desc: "El blanco captura el peón d5 abriendo el juego." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Bc5,c3,d5,exd5": [
+        { m: "Nxd5", w: 10, name: "Italiana: recaptura de caballo", desc: "El negro recaptura centralizando el caballo." },
+        { m: "Qxd5", w: 6,  name: "Italiana: recaptura de dama", desc: "El negro recaptura con la dama." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Nf6": [
+        { m: "Ng5",  w: 10, name: "Italiana: ataque sobre f7", desc: "El caballo ataca f7 directamente. Línea Fried Liver." },
+        { m: "d4",   w: 6,  name: "Italiana: variante Max Lange", desc: "El blanco abre el centro inmediatamente." },
+        { m: "d3",   w: 5,  name: "Italiana: plan tranquilo", desc: "Plan sólido de desarrollo." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5": [
+        { m: "d5",   w: 10, name: "Italiana: defensa correcta", desc: "Contrataque central. La única respuesta que lucha por el equilibrio." },
+        { m: "Bc5",  w: 5,  name: "Italiana: defensa con alfil", desc: "El negro trata de atacar el caballo." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5": [
+        { m: "exd5", w: 10, name: "Fried Liver: apertura principal", desc: "El blanco abre el centro y mantiene la presión." }
+      ],
+
+      // ── Defensa Francesa ─────────────────────────────────────────────────────────
+      "e4,e6": [
+        { m: "d4",   w: 10, name: "Defensa Francesa: entrada principal", desc: "El blanco ocupa el centro. La forma más popular de continuar." },
+        { m: "Nf3",  w: 4,  name: "Defensa Francesa: plan tranquilo", desc: "El blanco desarrolla antes de comprometerse con d4." }
+      ],
+      "e4,e6,d4": [
+        { m: "d5",   w: 10, name: "Francesa: estructura normal", desc: "El negro establece la estructura central clásica de la Francesa." }
+      ],
+      "e4,e6,d4,d5": [
+        { m: "Nc3",  w: 10, name: "Francesa: variante Winawer/Clásica", desc: "Desarrollo natural del caballo. Muchas variantes posibles." },
+        { m: "e5",   w: 7,  name: "Francesa: variante de avance", desc: "El blanco gana espacio en el flanco de rey." },
+        { m: "Nd2",  w: 6,  name: "Francesa: variante Tarrasch", desc: "Más flexible; el caballo apoya e4 sin bloquear el alfil." },
+        { m: "exd5", w: 4,  name: "Francesa: variante de intercambio", desc: "Simplificación inmediata. Posición muy simétrica." }
+      ],
+      "e4,e6,d4,d5,Nc3": [
+        { m: "Bb4",  w: 10, name: "Francesa: variante Winawer", desc: "El negro clava el caballo. Posición muy desequilibrada." },
+        { m: "Nf6",  w: 8,  name: "Francesa: variante clásica", desc: "Desarrollo natural del caballo atacando e4." },
+        { m: "dxe4", w: 5,  name: "Francesa: variante Rubinstein", desc: "El negro simplifica inmediatamente." }
+      ],
+      "e4,e6,d4,d5,Nc3,Bb4": [
+        { m: "e5",   w: 10, name: "Francesa Winawer: avance de peón", desc: "El blanco gana espacio cerrando el centro. Línea más agresiva." },
+        { m: "Bd3",  w: 7,  name: "Francesa Winawer: sistema Nimzovich", desc: "El blanco desarrolla el alfil a d3. Plan sólido." },
+        { m: "a3",   w: 5,  name: "Francesa Winawer: fuerza el cambio", desc: "El blanco fuerza al alfil a tomar el caballo." }
+      ],
+      "e4,e6,d4,d5,Nc3,Nf6": [
+        { m: "e5",   w: 10, name: "Francesa Clásica: variante de avance", desc: "El blanco gana espacio. Posición cerrada estratégica." },
+        { m: "Bg5",  w: 8,  name: "Francesa Clásica: clavada", desc: "El blanco clava el caballo f6. Ataque sobre d8." }
+      ],
+      "e4,e6,d4,d5,Nd2": [
+        { m: "Nf6",  w: 10, name: "Francesa Tarrasch: desarrollo natural", desc: "El negro desarrolla el caballo atacando e4." },
+        { m: "c5",   w: 7,  name: "Francesa Tarrasch: contragolpe", desc: "El negro contraataca el centro blanco inmediatamente." }
+      ],
+      "e4,e6,d4,d5,e5": [
+        { m: "c5",   w: 10, name: "Francesa Advance: contragolpe central", desc: "El negro ataca la base del centro blanco." },
+        { m: "Bd7",  w: 5,  name: "Francesa Advance: plan pasivo", desc: "El negro prepara Bb5 para intercambiar el alfil malo." }
+      ],
+      "e4,e6,d4,d5,e5,c5": [
+        { m: "c3",   w: 10, name: "Francesa Advance: variante principal", desc: "El blanco apoya el centro firmemente." },
+        { m: "Nf3",  w: 7,  name: "Francesa Advance: desarrollo del caballo", desc: "El blanco desarrolla el caballo a f3." }
+      ],
+
+      // ── Defensa Caro-Kann ────────────────────────────────────────────────────────
+      "e4,c6": [
+        { m: "d4",   w: 10, name: "Caro-Kann: entrada principal", desc: "El blanco ocupa el centro. La línea más directa." },
+        { m: "Nc3",  w: 5,  name: "Caro-Kann: variante dos caballos", desc: "Desarrollo del caballo. Plan flexible." }
+      ],
+      "e4,c6,d4": [
+        { m: "d5",   w: 10, name: "Caro-Kann: estructura principal", desc: "El negro establece el centro. Plan sólido y clásico." }
+      ],
+      "e4,c6,d4,d5": [
+        { m: "Nc3",  w: 10, name: "Caro-Kann: variante clásica", desc: "Desarrollo natural del caballo. Muchas variantes." },
+        { m: "e5",   w: 7,  name: "Caro-Kann: variante de avance", desc: "El blanco gana espacio en el flanco de rey." },
+        { m: "exd5", w: 6,  name: "Caro-Kann: variante de intercambio", desc: "Simplificación inmediata. Posición simétrica." },
+        { m: "Nd2",  w: 4,  name: "Caro-Kann: variante Tarrasch", desc: "Plan flexible apoyando e4 sin bloquear el alfil." }
+      ],
+      "e4,c6,d4,d5,Nc3": [
+        { m: "dxe4", w: 10, name: "Caro-Kann: variante clásica", desc: "El negro simplifica el centro. Plan más sólido." },
+        { m: "g6",   w: 5,  name: "Caro-Kann: variante Gurgenidze", desc: "El negro prepara el fianchetto. Línea agresiva." }
+      ],
+      "e4,c6,d4,d5,Nc3,dxe4": [
+        { m: "Nxe4", w: 10, name: "Caro-Kann: recaptura principal", desc: "El blanco recupera el peón centralizando el caballo." }
+      ],
+      "e4,c6,d4,d5,Nc3,dxe4,Nxe4": [
+        { m: "Bf5",  w: 10, name: "Caro-Kann Clásica: desarrollo del alfil", desc: "El negro desarrollo el alfil antes de jugar Nd7." },
+        { m: "Nf6",  w: 7,  name: "Caro-Kann: variante activa", desc: "El negro desarrolla el caballo atacando e4." }
+      ],
+      "e4,c6,d4,d5,Nc3,dxe4,Nxe4,Bf5": [
+        { m: "Ng3",  w: 10, name: "Caro-Kann Clásica: retira el caballo", desc: "El blanco retira el caballo para atacar el alfil." },
+        { m: "Bd3",  w: 6,  name: "Caro-Kann Clásica: no toma el cambio", desc: "El blanco ignora el alfil y desarrolla." }
+      ],
+      "e4,c6,d4,d5,e5": [
+        { m: "Bf5",  w: 10, name: "Caro-Kann Advance: desarrollo activo", desc: "El negro desarrolla el alfil fuera de la cadena de peones." },
+        { m: "c5",   w: 6,  name: "Caro-Kann Advance: contragolpe", desc: "El negro contraataca el centro inmediatamente." }
+      ],
+      "e4,c6,d4,d5,e5,Bf5": [
+        { m: "Nf3",  w: 10, name: "Caro-Kann Advance: desarrollo normal", desc: "El blanco desarrolla el caballo. Plan sólido." },
+        { m: "Bd3",  w: 7,  name: "Caro-Kann Advance: ataca el alfil", desc: "El blanco provoca un cambio o retroceso del alfil." }
+      ],
+      "e4,c6,d4,d5,exd5": [
+        { m: "cxd5", w: 10, name: "Caro-Kann Exchange: estructura simétrica", desc: "El negro recaptura con el peón." }
       ]
 
     };
