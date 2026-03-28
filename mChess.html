@@ -8337,18 +8337,19 @@ limitations under the License.
         let gameHashCount = new Map();
 
         // Depth-aware TT eviction: instead of clearing everything when the table is
-        // full, remove only entries with depth <= 2 (shallow, least reusable).
-        // This preserves deep results from earlier iterations and gives the engine
-        // roughly half a ply extra reach for free.
+        // full, remove only entries with depth <= 3 (shallow, least reusable).
+        // In long endgames (150+ moves) the table fills with deep entries that won't
+        // be hit again — so we evict more aggressively to avoid OOM and d:0 crashes.
         function ttEvict() {
           let evicted = 0;
           for (const [k, v] of tt) {
-            if (v.depth <= 2) { tt.delete(k); evicted++; if (evicted >= 30000) break; }
+            if (v.depth <= 3) { tt.delete(k); evicted++; if (evicted >= 40000) break; }
           }
-          // If nothing shallow to evict, fall back to clearing the oldest quarter
-          if (evicted === 0) {
-            let n = 0; const quarter = Math.floor(tt.size / 4);
-            for (const k of tt.keys()) { tt.delete(k); if (++n >= quarter) break; }
+          // If not enough shallow to evict, fall back to clearing the oldest HALF
+          // (endgames have deep entries that are no longer reachable — purge more)
+          if (evicted < 5000) {
+            let n = 0; const half = Math.floor(tt.size / 2);
+            for (const k of tt.keys()) { tt.delete(k); if (++n >= half) break; }
           }
         }
 
@@ -8356,9 +8357,10 @@ limitations under the License.
           searchNodes++; // 📊
           if (Date.now() >= deadline) throw 'TIMEOUT';
           const bk = zob(state);
-          // Anti-repetition check — use Zobrist hash (already encodes board+turn+castling+EP)
-          if ((gameHashCount.get(stringHash(state)) || 0) >= 2) return 0;
-          // ★ FIX 2: 50-move rule — draw if no pawn move or capture in 100 half-moves
+          // 🔴 FIX: Anti-repetition is handled at the ROOT (lines above in onmessage).
+          // Calling stringHash(state) on every node creates 1M+ string ops → immediate timeout → d:0/30.
+          // DO NOT re-check stringHash inside minimax — it is catastrophically slow at depth 30.
+          // ★ 50-move rule — draw if no pawn move or capture in 100 half-moves
           if ((state.halfMoveClock || 0) >= 100) return 0;
           // TT lookup + Hash Move
           const alphaOrig = alpha;
@@ -8531,6 +8533,9 @@ limitations under the License.
             // Note: tt is intentionally NOT cleared here — positions evaluated while the
             // human was thinking are still valid and speed up the next search.
             // ttEvict() handles capacity management when tt.size >= MAX_TT.
+            // In very long games (100+ moves) the TT can get huge — proactively evict
+            // if we're over half the limit before starting a new search.
+            if (tt.size > MAX_TT / 2) ttEvict();
             killers = Array(64).fill(null).map(() => [null, null]);
             histTable = Array(64).fill(null).map(() => Array(64).fill(0));
 
