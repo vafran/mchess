@@ -2839,7 +2839,8 @@ limitations under the License.
             castleRights,
             enPassantTarget,
             depth: _depth, multiPV: 1, timeout: timeoutRes,
-            positionHashes: [...positionHashes]
+            positionHashes: [...positionHashes],
+            halfMoveClock: parts[4] ? (parseInt(parts[4]) || 0) : 0
           });
         });
 
@@ -8545,9 +8546,10 @@ limitations under the License.
               return;
             }
 
-            // 🚀 IMMEDIATE EXIT: If there is only 1 legal move, move in 1 millisecond
+            // 🚀 IMMEDIATE EXIT: If there is only 1 legal move, respond instantly
+            // Include completedDepth:'forced' so the arena log shows [forced] not [d:0/30]
             if (rootMoves.length === 1) {
-              postMessage({ action: 'result', moves: [{ move: rootMoves[0], score: 0 }], isPartial: false });
+              postMessage({ action: 'result', moves: [{ move: rootMoves[0], score: 0 }], isPartial: false, completedDepth: 'forced', depth: maxDepth });
               return;
             }
 
