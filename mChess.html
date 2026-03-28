@@ -6189,6 +6189,94 @@ limitations under the License.
       ],
       "Nf3,c5,d4,cxd4": [
         { m: "Nxd4", w: 10, name: "Siciliana Abierta (orden Nf3)", desc: "Recaptura con el caballo. Transpone a la Siciliana Abierta estándar." }
+      ],
+
+      // ── Transposiciones c4-first: respuestas no cubiertas ─────────────────────
+      // Match 1 torneo: 1.c4 e5 2.g3 d5 → salió de libro en 3
+      "c4,e5,g3,d5": [
+        { m: "cxd5", w: 10, name: "Inglesa: captura central", desc: "El blanco simplifica el centro. Respuesta más natural." },
+        { m: "d4",   w: 6,  name: "Inglesa: avance central", desc: "El blanco avanza d4 manteniendo la tensión." }
+      ],
+      "c4,e5,g3,d5,cxd5": [
+        { m: "Qxd5", w: 10, name: "Inglesa: recaptura con dama", desc: "El negro recaptura. Posición dinámica asimétrica." },
+        { m: "Nxd5", w: 6,  name: "Inglesa: recaptura con caballo", desc: "El negro centralizando el caballo." }
+      ],
+      "c4,e5,g3,Nf6": [
+        { m: "Bg2",  w: 10, name: "Inglesa: fianchetto natural", desc: "El blanco completa el fianchetto. Plan clásico." },
+        { m: "Nc3",  w: 7,  name: "Inglesa: desarrollo del caballo", desc: "Desarrollo normal antes de completar el fianchetto." }
+      ],
+      "c4,e5,g3,Nc6": [
+        { m: "Bg2",  w: 10, name: "Inglesa: fianchetto natural", desc: "El blanco completa el fianchetto." },
+        { m: "Nc3",  w: 7,  name: "Inglesa cuatro caballos", desc: "El blanco también desarrolla el caballo." }
+      ],
+      // 1.c4 Nf6 2.d4: transpone a sistemas de damas pero con c4 primero
+      "c4,Nf6,d4": [
+        { m: "e6",   w: 10, name: "QGD/Nimzo (orden c4+d4)", desc: "Transpone a India de Dama o QGD según continúe." },
+        { m: "g6",   w: 8,  name: "India de Rey (orden c4+d4)", desc: "El negro comienza el fianchetto. India de Rey clásica." },
+        { m: "d5",   w: 6,  name: "QGD (orden c4+d4)", desc: "El negro ocupa el centro. Transpone al GDR." },
+        { m: "c5",   w: 5,  name: "Benoni (orden c4+d4)", desc: "El negro presiona d4 con c5." }
+      ],
+      "c4,Nf6,d4,e6": [
+        { m: "Nc3",  w: 10, name: "Nimzoindia/QGD (orden c4+d4)", desc: "Desarrollo natural. Negro puede clavar con Bb4." },
+        { m: "Nf3",  w: 8,  name: "India de Dama (orden c4+d4)", desc: "Desarrollo del caballo. Plan tranquilo." },
+        { m: "g3",   w: 5,  name: "Catalana (orden c4+d4)", desc: "El blanco prepara el fianchetto catalan." }
+      ],
+      "c4,Nf6,d4,g6": [
+        { m: "Nc3",  w: 10, name: "India de Rey (orden c4+d4)", desc: "Desarrollo principal. El negro puede seguir con Bg7." },
+        { m: "Nf3",  w: 7,  name: "India de Rey: variante tranquila", desc: "Desarrollo natural. Sin comprometerse con Nc3 aún." }
+      ],
+      "c4,Nf6,d4,d5": [
+        { m: "Nc3",  w: 10, name: "QGD (orden c4+d4)", desc: "Transpone al Gambito de Dama. Continuación natural." },
+        { m: "Nf3",  w: 8,  name: "QGD: plan tranquilo", desc: "Desarrollo del caballo de rey." }
+      ],
+      "c4,d5,d4": [
+        { m: "Nf6",  w: 10, name: "QGD/Eslava (orden c4+d4)", desc: "Desarrollo natural. Puede transponer a QGD o Eslava." },
+        { m: "e6",   w: 8,  name: "QGD (orden c4+d4)", desc: "El negro consolida con e6. Transposición al GDR." },
+        { m: "c6",   w: 6,  name: "Eslava (orden c4+d4)", desc: "El negro refuerza d5. Defensa Eslava transpuesta." }
+      ],
+
+      // ── Transposiciones g3-first: continuaciones tras 1.g3 y 2.d4 ─────────────
+      "g3,d5,d4": [
+        { m: "Nf6",  w: 10, name: "Reti → QGD (orden g3+d4)", desc: "Desarrollo natural del caballo." },
+        { m: "e6",   w: 8,  name: "Reti → Francesa (orden g3+d4)", desc: "El negro consolida el centro." },
+        { m: "c5",   w: 6,  name: "Reti → Benoni (orden g3+d4)", desc: "El negro presiona d4 con c5." }
+      ],
+      "g3,d5,d4,Nf6": [
+        { m: "Bg2",  w: 10, name: "Reti-QGD: fianchetto",    desc: "El blanco completa el fianchetto apuntando al centro." },
+        { m: "Nf3",  w: 7,  name: "Reti-QGD: desarrollo normal", desc: "Desarrollo del caballo antes del fianchetto." }
+      ],
+      "g3,e5,d4": [
+        { m: "exd4", w: 10, name: "Reti vs e5: captura central", desc: "El negro acepta el intercambio y abre el juego." },
+        { m: "Nf6",  w: 7,  name: "Reti vs e5: plan indio", desc: "El negro mantiene la tensión central." }
+      ],
+      "g3,Nf6,d4": [
+        { m: "d5",   w: 10, name: "Reti → GDR (orden g3+d4)", desc: "El negro ocupa el centro. Puede transponer al GDR." },
+        { m: "g6",   w: 8,  name: "Reti → India de Rey (orden g3+d4)", desc: "El negro prepara el fianchetto." },
+        { m: "e6",   w: 6,  name: "Reti → India de Dama (orden g3+d4)", desc: "Desarrollo tranquilo." }
+      ],
+      "g3,c5,d4": [
+        { m: "cxd4", w: 10, name: "Reti vs Siciliana: captura", desc: "El negro acepta la apertura. Posición abierta." },
+        { m: "Nf6",  w: 7,  name: "Reti vs Siciliana: desarrollo", desc: "El negro se desarrolla manteniendo la tensión." }
+      ],
+
+      // ── Apertura Bird (1.f4): continuaciones ─────────────────────────────────
+      "f4,d5": [
+        { m: "Nf3",  w: 10, name: "Bird: variante principal", desc: "El blanco desarrolla el caballo. Plan más sólido." },
+        { m: "e3",   w: 7,  name: "Bird: plan sólido", desc: "Consolida antes de desarrollar las piezas." },
+        { m: "b3",   w: 5,  name: "Bird: fianchetto de alfil", desc: "El blanco prepara el fianchetto del alfil de dama." }
+      ],
+      "f4,d5,Nf3": [
+        { m: "Nf6",  w: 10, name: "Bird vs d5: desarrollo natural", desc: "El negro desarrolla el caballo." },
+        { m: "g6",   w: 7,  name: "Bird vs d5: fianchetto negro", desc: "El negro prepara el fianchetto." }
+      ],
+      "f4,e5": [
+        { m: "fxe5", w: 8,  name: "Bird: acepta el gambito inverso", desc: "El blanco acepta el gambito de rey inverso." },
+        { m: "Nf3",  w: 7,  name: "Bird: rechaza e5", desc: "El blanco desarrolla sin capturar." },
+        { m: "d3",   w: 5,  name: "Bird: plan sólido vs e5", desc: "El blanco consolida con d3." }
+      ],
+      "f4,Nf6": [
+        { m: "Nf3",  w: 10, name: "Bird vs Nf6: simetría de caballos", desc: "Ambos desarrollan caballos." },
+        { m: "e3",   w: 7,  name: "Bird vs Nf6: plan sólido", desc: "El blanco consolida antes de desarrollar." }
       ]
 
     };
