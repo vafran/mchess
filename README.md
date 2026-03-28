@@ -173,9 +173,12 @@ Three styles, with labels now visible under the slider:
 
 ---
 
-## What's new in v2.11.1
+## What's new in v2.12.0
 
-This release, **The Engine Stability Update**, fixes catastrophic tree collapses in deep endgames caused by Zobrist hash mismanagement, adds an O(1) set-based repetition detection that saves ~15 string comparisons per node, and prevents timeout leaks in the quiescence search. The engine can now securely search complex endgames up to depth 30 without hanging or returning `d:0/30`.
+- **Massive Opening Book Expansion**: Added ~60+ new entries covering QGD, Slav, Italian, French, and Caro-Kann deeper lines.
+- **King Safety NPS Optimization**: Replaced quadratic scans with ray-casting, increasing opening NPS from ~500 to ~10,000+.
+- **Scholar's Mate Detection**: Improved the commentator's ability to recognize and warn about f7 threats.
+- **Engine Stability**: Fixed Temporal Dead Zone (TDZ) and Zobrist repetition bugs.
 
 ---
 
@@ -412,4 +415,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.11.1 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~677 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.12.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~685 KB. Zero dependencies. Open the file and play.*

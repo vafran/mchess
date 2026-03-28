@@ -7,6 +7,25 @@ Format: version · size · what changed.
 
 ---
 
+## v2.12.0 — Opening Theory & Commentator Update
+**~14,000 lines · ~685 KB**
+
+This update significantly strengthens the engine's early game via a massive opening book expansion and polishes the commentator's tactical awareness.
+
+### Features — Opening Book
+- **Massive Book Expansion (~60+ entries)** — Added deep theoretical lines for:
+  - **QGD & Slav Defense**: Detailed paths for Exchange, Orthodox, and Meran systems (up to 7-8 moves).
+  - **Italian Game / Giuoco Piano**: Deep coverage of `c3-d4` and `Ng5` (Fried Liver) lines.
+  - **French & Caro-Kann**: Added the most common Advance, Exchange, and Classical variations.
+  - *Result*: The engine now reaches the middlegame with a significant time advantage and better positional coordination.
+
+### Bug Fixes — UI / Commentator
+- **Scholar's Mate Detection Fix** — The `isScholarAverted` logic now correctly identifies `Qf3` as a threat (previously only tracked `Qh5`).
+- **Enhanced Scholar's Defense recognition** — Added `f6` and `Nc6` as recognized defensive responses in the commentator alerts.
+- **Improved Threat Sequencing** — The "Scholar's Mate threat" alert now correctly triggers even if the Bishop (`Bc4`) is played after the Queen (`Qf3`), covering the most common amateur move order.
+
+---
+
 ## v2.11.1 — Engine Stability Update
 **~13,800 lines · ~677 KB**
 

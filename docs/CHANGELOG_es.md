@@ -7,6 +7,25 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.12.0 — Teoría de Aperturas y Mejora del Comentarista
+**~14.000 líneas · ~685 KB**
+
+Esta actualización refuerza significativamente el juego temprano del motor mediante una expansión masiva del libro de aperturas y pule la conciencia táctica del comentarista.
+
+### Características — Libro de Aperturas
+- **Expansión Masiva del Libro (~60+ entradas)** — Añadidas líneas teóricas profundas para:
+  - **Gambito de Dama y Defensa Eslava**: Rutas detalladas para sistemas Exchange, Ortodoxa y Merano (hasta 7-8 movimientos).
+  - **Apertura Italiana / Giuoco Piano**: Cobertura profunda de las líneas `c3-d4` y `Ng5` (Fegatello).
+  - **Defensa Francesa y Caro-Kann**: Añadidas las variantes más comunes de Avance, Intercambio y Clásica.
+  - *Resultado*: El motor ahora alcanza el mediojuego con una ventaja significativa de tiempo y mejor coordinación posicional.
+
+### Bugs Corregidos — UI / Comentarista
+- **Fix de Detección de Jaque Pastor** — La lógica de `isScholarAverted` ahora identifica correctamente `Qf3` como amenaza (antes solo rastreaba `Qh5`).
+- **Reconocimiento de Defensas mejorado** — Añadidas `f6` y `Nc6` como respuestas defensivas reconocidas en las alertas del comentarista.
+- **Mejora en Secuencia de Amenazas** — La alerta de "amenaza de Jaque Pastor" ahora se activa correctamente incluso si el Alfil (`Bc4`) se juega después de la Dama (`Qf3`), cubriendo el orden de movimientos más común.
+
+---
+
 ## v2.11.1 — Actualización de Estabilidad del Motor
 **~13.800 líneas · ~677 KB**
 

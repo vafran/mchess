@@ -176,9 +176,12 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
-## Novedades en v2.11.1
+## Novedades en v2.12.0
 
-Esta versión, la **Actualización de Estabilidad del Motor**, corrige colapsos catastróficos del árbol de búsqueda en finales largos causados por una mala gestión del hash Zobrist, añade un sistema O(1) basado en Sets para detección de repeticiones (ahorra ~15 operaciones de texto por nodo) y previene fugas del timeout en la búsqueda de quietud. El motor ahora puede explorar finales complejos con seguridad hasta profundidad 30 sin colgarse o devolver `d:0/30`.
+- **Expansión Masiva del Libro de Aperturas**: ~60+ entradas nuevas para QGD, Eslava, Italiana, Francesa y Caro-Kann.
+- **Optimización NPS de Seguridad del Rey**: Ray-casting inverso que multiplica el NPS en apertura de ~500 a ~10.000+.
+- **Mejoras en Jaque Pastor**: El comentarista ahora detecta amenazas de f7 con mayor precisión y reconoce defensas con f6/Nc6.
+- **Estabilidad del Motor**: Corregidos bugs críticos de TDZ y repeticiones Zobrist.
 
 ---
 
@@ -410,4 +413,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.11.1 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~677 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.12.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~685 KB. Cero dependencias. Abre el archivo y juega.*
