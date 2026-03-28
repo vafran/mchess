@@ -8325,7 +8325,8 @@ limitations under the License.
                   for (let fr = 0; fr < 8; fr++) {
                     if (b[fr][fc] !== enemyPawn) continue;
                     // Distance from promotion for the enemy pawn (closer = more dangerous)
-                    const distToPromo = isW ? fr : (7 - fr); // rows until it promotes
+                    // Black pawns promote at row 7, White pawns promote at row 0.
+                    const distToPromo = isW ? (7 - fr) : fr; // 🔴 FIX: was isW ? fr : (7-fr)
                     // Only count pawns that are actively storming (past midfield)
                     if (distToPromo <= 4) {
                       stormThreat += (5 - distToPromo) * 8; // +8cp at rank5, +24cp at rank3
