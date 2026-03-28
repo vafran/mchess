@@ -10198,10 +10198,11 @@ limitations under the License.
 
       let isScholarAverted = false;
       if (isOpening && colorWhoMoved === 'b') {
-        const hasQh5Threat = normalizedHistory.some(m => m === 'Qh5'); // Only h5 line
+        const hasQThreat = normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3'); // Qh5 and Qf3 Scholar lines
         const hasBishopThreat = normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5');
-        const lastDefense = targetSq === 'g6' || targetSq === 'e6' || targetSq === 'e7' || targetSq === 'd5' || lastNorm === 'Nf6';
-        if (hasQh5Threat && hasBishopThreat && lastDefense) {
+        const lastDefense = targetSq === 'g6' || targetSq === 'e6' || targetSq === 'e7' || targetSq === 'd5'
+          || targetSq === 'f6' || lastNorm === 'Nf6' || lastNorm === 'Nc6'; // f6/Nf6/Nc6 all protect f7
+        if (hasQThreat && hasBishopThreat && lastDefense) {
           isScholarAverted = true;
         }
       }
@@ -10220,10 +10221,15 @@ limitations under the License.
         specialComment = lang === 'en'
           ? getRnd(["🔥 Scholar's Mate lands! Quick queen and bishop combo.", "🎬 Classic Scholar's Mate: Qxf7 ends it early.", "⚡ Fast finish! The f7 weakness sealed the deal."], 'special_scholar_mate')
           : getRnd(["🔥 ¡Jaque Pastor consumado! Dama y alfil, combinación letal.", "🎬 Jaque Pastor clásico: Qxf7 cierra la partida.", "⚡ ¡Final exprés! La debilidad en f7 fue decisiva."], 'special_scholar_mate');
-      } else if (isOpening && (lastNorm === 'Qh5' || lastNorm === 'Qf3' || lastNorm === 'Qf6') && normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5')) {
+      } else if (isOpening && (
+          // Queen last, bishop already in play
+          ((lastNorm === 'Qh5' || lastNorm === 'Qf3' || lastNorm === 'Qf6') && normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5')) ||
+          // Bishop last (Bc4), queen (Qf3/Qh5) already in play (most common order: e4→Qf3→Bc4)
+          ((lastNorm === 'Bc4' || lastNorm === 'Bc5') && normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3' || m === 'Qf6'))
+        )) {
         specialComment = lang === 'en'
-          ? getRnd(["👀 Queen on the attack: Scholar's Mate idea is in the air.", "🚨 Alarm: Pastor pattern spotted. Defend f7 now."], 'special_scholar_threat')
-          : getRnd(["👀 Dama al ataque: huele a idea de Jaque Pastor.", "🚨 Alarma: patrón Pastor detectado. Defiende f7 ya."], 'special_scholar_threat');
+          ? getRnd(["👀 Queen + Bishop combo: Scholar's Mate is in the air! Defend f7.", "🚨 Scholar's Mate setup spotted! The f7 square is under fire.", "⚠️ Watch out: Qf3 + Bc4 is the Scholar's Mate recipe."], 'special_scholar_threat')
+          : getRnd(["👀 Dama + Alfil apuntan a f7: ¡huele a Jaque Pastor! Defiende ya.", "🚨 ¡Patrón de Jaque Pastor detectado! La casilla f7 está bajo fuego.", "⚠️ Cuidado: Qf3 + Bc4 es la receta del Jaque Pastor."], 'special_scholar_threat');
       } else if (lastNorm === 'Bxh7' || lastNorm === 'Bxh2') {
         specialComment = lang === 'en'
           ? getRnd(["🎁 Greek Gift sacrifice spotted! King safety is under fire."], 'special_greek_gift')
