@@ -9379,7 +9379,7 @@ limitations under the License.
                 currentDepthScores.sort((a, b) => b.score - a.score);
                 prevBestScore = currentDepthScores[0].score; // Track for aspiration windows
                 completedDepth = d; // 📊 Track the deepest fully-completed iteration
-                if (Math.abs(prevBestScore) > 90000) break; // 🏆 Mate found — stop iterating immediately
+                if (Math.abs(prevBestScore) > 90000 && d >= 5) break; // 🏆 Verified mate — stop iterating (d>=5 prevents stale TT mate scores at d:1 causing blunders)
 
                 scoredRoot.forEach(sr => {
                   const found = currentDepthScores.find(cs =>
@@ -9451,6 +9451,21 @@ limitations under the License.
                 unmakeMove(state, o.move, save);
                 return r === minReps;
               });
+            }
+
+            // 🚨 STALEMATE SAFETY: Never play a move that immediately stalemates the opponent
+            // in a winning position. Filters out moves leading to 0 legal moves + not in check.
+            // Prevents the classic queen+pawns stalemate trap (e.g., Rh7 with Qg6 = stalemate).
+            if (prevBestScore > 500 && finalOptions.length > 0) {
+              const oppColor = color === 'w' ? 'b' : 'w';
+              const safeMoves = finalOptions.filter(opt => {
+                const save = makeMove(state, opt.move);
+                const oppLegal = legalMoves(state, oppColor);
+                const oppInCheck = isInCheck(state, oppColor);
+                unmakeMove(state, opt.move, save);
+                return !(oppLegal.length === 0 && !oppInCheck); // exclude stalemate moves
+              });
+              if (safeMoves.length > 0) finalOptions = safeMoves;
             }
 
             // 📊 SIGNOS VITALES
