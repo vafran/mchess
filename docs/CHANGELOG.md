@@ -7,6 +7,15 @@ Format: version · size · what changed.
 
 ---
 
+## v2.13.1 — Hotfix
+**~14,100 lines · ~687 KB**
+
+### Bug Fixes — Engine (Critical)
+- **d:1 blunder fix** — The iterative deepening loop could stop at depth 1 if a stale TT entry returned a mate score (> 90000 cp) from a previous move's analysis. This caused the engine to play queen sacrifices and other blunders in endgames. The mate-score early break now requires `d >= 5` before trusting and acting on a mate-level score.
+- **Stalemate safety filter** — Added a post-search root filter: when the engine is clearly winning (score > 500 cp), any move that immediately stalemates the opponent (0 legal moves, not in check) is excluded from the candidate list. Prevents the classic queen+pawns stalemate trap (e.g., Qg6 + h7 with Black king on h8).
+
+---
+
 ## v2.13.0 — The Memory Update
 **~14,100 lines · ~687 KB**
 

@@ -7,6 +7,40 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.13.1 — Hotfix
+**~14.100 líneas · ~687 KB**
+
+### Bugs Corregidos — Motor (Críticos)
+- **Fix de jugadas a d:1** — El bucle de profundización iterativa podía detenerse en profundidad 1 si una entrada de la TT (de un análisis anterior) devolvía una puntuación de mate (> 90.000 cp). Esto provocaba que el motor hiciera sacrificios de dama y otros errores graves en finales. La salida anticipada por puntuación de mate ahora exige `d >= 5` antes de actuar sobre ese score.
+- **Filtro de seguridad contra ahogado** — Añadido un filtro post-búsqueda en la raíz: cuando el motor va claramente ganando (puntuación > 500 cp), cualquier movimiento que deje al rival en ahogado (0 jugadas legales, sin jaque) queda excluido de los candidatos. Evita la trampa clásica de ahogado con dama + peones (ej. Dg6 + h7 con rey negro en h8).
+
+---
+
+## v2.13.0 — The Memory Update
+**~14.100 líneas · ~687 KB**
+
+Benchmark del torneo: **ELO ~1700** (3 tablas / 1 derrota en 4 partidas vs Stockfish d:6) — primeros empates significativos de la historia del motor.  
+Partidas promedio: **234 movimientos**. Profundidad máxima alcanzada: **d:30** (final simplificado, Partida 2).
+
+### Bugs Corregidos — Motor (Críticos)
+- **Fix de Amnesia del Worker TT** — `askWiseKing()` creaba y terminaba el `chessEngineWorker` en cada turno, borrando las 200K entradas de la tabla de transposición, todas las jugadas asesinas y el historial. El worker ahora se reutiliza durante toda la partida. Un temporizador de seguridad gestiona la recuperación ante fallos sin destruir el estado de la TT. Impacto: la profundidad en finales saltó de d:8–10 a **d:14–18**, con picos en d:30.
+- **Fix de fórmula distToPromo** — Corregida una inversión lógica en el evaluador de tormenta de peones que producía evaluaciones incorrectas en ciertos finales.
+
+### Características — Libro de Aperturas
+- **Variante de Cambio del Ruy López** — Tras `Axc6 dxc6`, el motor juega `d3` desde el libro en vez de encontrar `Cxe5??` por sí solo (pierde ante `Dd4!`).
+- **Apertura Inglesa — Reversed Alekhine** — Tras `c4 e5 Cf3 e4`, el motor juega `Cd4` desde el libro. Antes no tenía cobertura y se derrumbaba en 40 jugadas.
+- **Sistema KIA con g3** — 13 entradas nuevas para el sistema `g3 Ag2 Cf3 d3 0-0` contra todas las respuestas negras principales.
+
+### Características — Gestión del Tiempo
+- **Salida por estabilidad (umbral 20%)** — La profundización iterativa ahora sale cuando el mejor movimiento es idéntico en 3 profundidades consecutivas, el score varía menos de 20 cp y se ha gastado el 20%+ del tiempo (antes 40%). Requiere `d >= 6` para evitar salidas precipitadas. Ahorra 6–12 segundos por movimiento en posiciones estables.
+- **Salida por brecha grande** — Si el mejor movimiento supera al 2º en más de 200 cp a profundidad ≥ 6 (tras el 15%+ de tiempo), el motor confía y para. Ahorra 15–20 segundos en posiciones claramente decididas.
+
+### Características — Arena de Torneo
+- **Profundidad de Stockfish seleccionable** — `arena_tournament.js` muestra un menú al inicio para elegir la profundidad de Stockfish (d1–d20) con etiquetas de ELO calibradas por nivel.
+- **Fórmula ELO calibrada** — Reemplazado el suelo fijo `2200 − 600 = 1600` por una tabla de ELO por profundidad. Si la puntuación es 0, muestra el límite inferior calibrado con consejo contextual.
+
+---
+
 ## v2.12.0 — Teoría de Aperturas y Mejora del Comentarista
 **~14.000 líneas · ~685 KB**
 
