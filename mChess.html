@@ -9453,20 +9453,6 @@ limitations under the License.
               });
             }
 
-            // 🚨 STALEMATE SAFETY: Never play a move that immediately stalemates the opponent
-            // in a winning position. Filters out moves leading to 0 legal moves + not in check.
-            // Prevents the classic queen+pawns stalemate trap (e.g., Rh7 with Qg6 = stalemate).
-            if (prevBestScore > 500 && finalOptions.length > 0) {
-              const oppColor = color === 'w' ? 'b' : 'w';
-              const safeMoves = finalOptions.filter(opt => {
-                const save = makeMove(state, opt.move);
-                const oppLegal = legalMoves(state, oppColor);
-                const oppInCheck = isInCheck(state, oppColor);
-                unmakeMove(state, opt.move, save);
-                return !(oppLegal.length === 0 && !oppInCheck); // exclude stalemate moves
-              });
-              if (safeMoves.length > 0) finalOptions = safeMoves;
-            }
 
             // 📊 SIGNOS VITALES
             const _totalN = searchNodes + qSearchNodes;
