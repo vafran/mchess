@@ -174,6 +174,13 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | Sonido | Activado / Desactivado |
 | Modo Entrenamiento | Activado / Desactivado |
 
+
+## Problemas conocidos
+
+| # | Gravedad | Descripción | Fix previsto |
+|---|---|---|---|
+| 1 | Baja | **Ahogado en posiciones ganadas (solo Rey Sabio)** — En finales simplificados muy poco frecuentes (dama + peones vs rey solo), el motor puede hacer un movimiento que ahogue al rey rival en lugar de darle jaque mate, convirtiendo una victoria en tablas. Causa: la búsqueda de quietud evalúa la posición final con `evaluate()` sin comprobar si el rival tiene jugadas legales. Ocurre aproximadamente 1 de cada 50 finales ganados con rey enemigo solo. | v2.14.0 — fix en la quiescence search |
+
 ---
 
 ## Novedades en v2.13.0 — *The Memory Update*

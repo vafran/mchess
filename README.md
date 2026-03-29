@@ -171,6 +171,12 @@ Three styles, with labels now visible under the slider:
 | Training Mode | On / Off |
 
 
+## Known Issues
+
+| # | Severity | Description | Planned fix |
+|---|---|---|---|
+| 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()` without first checking if the opponent has any legal moves. Affects roughly 1 in 50 won endgames with a lone enemy king. | v2.14.0 — fix in quiescence search |
+
 ---
 
 ## What's new in v2.13.0 — *The Memory Update*
