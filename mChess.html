@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.0
+Monolith Chess v2.18.1
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.0</title>
+  <title>Monolith Chess v2.18.1</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.0 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.1 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.0</div>
+        v2.18.1</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3828,7 +3828,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -6644,6 +6644,26 @@ limitations under the License.
 
     function escapeRegExp(text) {
       return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // ── perspectiveName ────────────────────────────────────────────────────────
+    // Openings in the book are named from the perspective of the side that CHOSE them.
+    // "Defensa Francesa" is Black's choice; but when White plays d4 in response,
+    // the book entry still says "Defensa Francesa: entrada principal".
+    // This function rewrites the name from the moving side's perspective so the
+    // Professor never tells a White player that their own move is a "Defensa".
+    function perspectiveName(name, colorWhoMoved) {
+      if (!name || !colorWhoMoved) return name;
+      const en = currentLanguage === 'en';
+      // Detect if the name belongs to a defense (named from Black's perspective)
+      const isDefenseName = /[Dd]efensa|[Dd]efense|[Ss]icilian|[Ff]rench|[Cc]aro|[Pp]irc|[Aa]lekhine|[Ss]candinavian|[Hh]orwitz|[Rr]ubinstein|[Tt]arrasch|[Ww]inawer|[Kk]ing.s Indian|[Nn]imzo|[Gg]runfeld|[Bb]enoni|[Dd]utch/.test(name);
+      if (!isDefenseName || colorWhoMoved === 'b') return name; // Black chose the defense — name is correct
+      // White is playing INTO a defense — reframe as "vs X" or "contra X"
+      // Strip leading "Defensa " / "Defense " prefix from the base name
+      const cleaned = name
+        .replace(/^Defensa\s+/i, '')
+        .replace(/^Defense\s+/i, '');
+      return en ? `vs ${cleaned}` : `vs ${cleaned}`;
     }
 
     function localizeOpeningName(name) {
@@ -10856,7 +10876,7 @@ limitations under the License.
       let openingName = null, openingTechNote = '';
       const openingMatch = detectOpeningFromHistory(currentHistory, lastMove, board);
       if (isOpening && openingMatch && shouldAnnounceOpening(currentHistory, openingMatch, board)) {
-        openingName = localizeOpeningName(openingMatch.name);
+        openingName = perspectiveName(localizeOpeningName(openingMatch.name), colorWhoMoved);
         openingTechNote = localizeOpeningDescription(openingMatch.desc);
       }
       const historicalMotif = detectHistoricalMotifFromHistory(currentHistory);
@@ -11221,7 +11241,7 @@ limitations under the License.
             const lastMv = history[history.length - 1];
             const opening = detectOpeningFromHistory(history, lastMv, board);
             if (opening && opening.name) {
-              const localName = localizeOpeningName(opening.name);
+              const localName = perspectiveName(localizeOpeningName(opening.name), myColor);
               const histKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
               const hasNextBook = !!(OPENING_BOOK[histKey] && OPENING_BOOK[histKey].length > 0);
               // Also check if any book key starts with this position (broader theory detection)
@@ -11944,7 +11964,7 @@ limitations under the License.
               const lastMv = history[history.length - 1];
               const opening = detectOpeningFromHistory(history, lastMv, board);
               if (opening && opening.name) {
-                const localName = localizeOpeningName(opening.name);
+                const localName = perspectiveName(localizeOpeningName(opening.name), currentTurn);
                 const histKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
                 const hasNextBook = !!(OPENING_BOOK[histKey] && OPENING_BOOK[histKey].length > 0);
                 const bookCount = hasNextBook ? OPENING_BOOK[histKey].length : 0;
@@ -12174,7 +12194,7 @@ limitations under the License.
               if (!move) return null;
               return {
                 move,
-                name: localizeOpeningName(entry.name),
+                name: perspectiveName(localizeOpeningName(entry.name), currentTurn),
                 desc: localizeOpeningDescription(entry.desc),
                 notation: entry.m,
                 weight: entry.w || 0,
