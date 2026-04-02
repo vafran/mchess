@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.6
+Monolith Chess v2.18.7
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.6</title>
+  <title>Monolith Chess v2.18.7</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.6 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.7 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.6</div>
+        v2.18.7</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3171,17 +3171,6 @@ limitations under the License.
       } catch (_) { }
       console.log('Engine tests finished. Summary:', results);
       return results;
-    }
-
-    function exportEngineTestResults() {
-      try {
-        const data = localStorage.getItem('engine_test_results') || JSON.stringify([]);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url;
-        a.download = `engine_test_results_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      } catch (e) { console.error('Export failed', e); }
     }
     const TRAINING_MODE_STORAGE_KEY = 'te_training_mode_enabled';
     const TRAINING_TIP_MIN_PLY_GAP = 4;
@@ -3738,7 +3727,6 @@ limitations under the License.
     // ── Helpers ──────────────────────────────
     function deepCopy(b) { return b.map(r => [...r]); }
     function isWhite(p) { return p !== ' ' && p === p.toUpperCase(); }
-    function isBlack(p) { return p !== ' ' && p === p.toLowerCase(); }
     function colorOf(p) { return p === ' ' ? null : isWhite(p) ? 'w' : 'b'; }
     function colName(c) { return 'abcdefgh'[c]; }
     function rowName(r) { return String(8 - r); }
@@ -3902,7 +3890,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.6", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.7", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -4080,10 +4068,10 @@ limitations under the License.
               if (fastEval.blunder && fastEval.type === 'suicide') {
                 cell.classList.add('danger'); // Te la comen gratis
               } else {
-                const copy = simulateMove(board, move);
-                const attackerAfter = getLowestValueAttacker(r, c, enemyColor, copy);
-                if (attackerAfter) cell.classList.add('warning'); // Casilla defendida pero con intercambio
-                else cell.classList.add('safe'); // Casilla libre de amenazas
+                // Use SEE: if landing square has negative exchange, it's a warning (defended)
+                const landingSee = see(board, move.tr, move.tc, move.fr, move.fc);
+                if (landingSee < 0) cell.classList.add('warning'); // Casilla defendida — intercambio desfavorable
+                else cell.classList.add('safe'); // Casilla libre o intercambio ganador
               }
             }
           }
@@ -4607,40 +4595,6 @@ limitations under the License.
     }
 
     // ── Tactical Pattern Detector ────────────────────────
-    function detectTacticPattern(move, color) {
-      const copy = simulateMove(board, move);
-      const enemy = color === 'w' ? 'b' : 'w';
-      const en = currentLanguage === 'en';
-
-      // 1. Detectar DOBLE (Fork)
-      // Si la pieza enemiga que acaba de mover ataca a dos piezas valiosas a la vez
-      let attacks = 0;
-      const targetR = move.tr;
-      const targetC = move.tc;
-      const pieceType = copy[targetR][targetC].toUpperCase();
-
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-          const p = copy[r][c];
-          if (p !== ' ' && colorOf(p) === color) { // Mis piezas
-            if (pieceAttacksSquareIgnoringTarget(targetR, targetC, r, c, copy, enemy, pieceType)) {
-              const val = PIECE_VALUES[p.toUpperCase()];
-              if (val >= 30) attacks++;
-            }
-          }
-        }
-      }
-      if (attacks >= 2) return en ? "a Double Attack (Fork)" : "un Ataque Doble (Doble)";
-
-      // 2. Detectar CLAVADA (Pin)
-      // Check if a valuable piece can't move because it would expose the King or Queen
-      if (inCheck(color, copy)) return en ? "an absolute Pin (exposes the King)" : "una Clavada absoluta (expone al Rey)";
-
-      // 3. Detectar ENFILADA (Skewer)
-      // Like a pin but the valuable piece is in front
-      // (Simplificado: si el movimiento descubre un ataque sobre una pieza pesada)
-      return null;
-    }
 
     // ── Motor de Flechas Visuales ────────────────────────
     function drawArrow(fr, fc, tr, tc, type = 'good') {
@@ -7650,116 +7604,6 @@ limitations under the License.
         }
       }
       return majorMinorCount <= 4;
-    }
-
-    function evaluateAdvancedFeatures(brd) {
-      let b = 0;
-      const wP = Array(8).fill(0), bP = Array(8).fill(0);
-      let wK, bK, wBishops = 0, bBishops = 0;
-
-      // Pass 1: collect pawn counts, king positions, bishop counts
-      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-        const p = brd[r][c]; if (p === ' ') continue;
-        const isW = p === p.toUpperCase();
-        if (p === 'P') wP[c]++;
-        else if (p === 'p') bP[c]++;
-        else if (p === 'B') { wBishops++; }
-        else if (p === 'b') { bBishops++; }
-        if (p === 'K') wK = [r, c];
-        if (p === 'k') bK = [r, c];
-      }
-
-      // Pawn structure
-      for (let c = 0; c < 8; c++) {
-        if (wP[c] > 1) b -= 15 * wP[c];
-        if (bP[c] > 1) b += 15 * bP[c];
-        if (wP[c] > 0 && (c === 0 || wP[c - 1] === 0) && (c === 7 || wP[c + 1] === 0)) b -= 20;
-        if (bP[c] > 0 && (c === 0 || bP[c - 1] === 0) && (c === 7 || bP[c + 1] === 0)) b += 20;
-      }
-
-      // Bishop pair bonus
-      if (wBishops >= 2) b += 30;
-      if (bBishops >= 2) b -= 30;
-
-      // Pass 2: per-piece bonuses
-      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-        const p = brd[r][c]; if (p === ' ') continue;
-        const isW = p === p.toUpperCase();
-        const u = p.toUpperCase();
-        const sign = isW ? 1 : -1;
-
-        // Passed pawns
-        if (u === 'P') {
-          let ps = true;
-          const dir = isW ? -1 : 1;
-          for (let rr = r + dir; isW ? rr >= 0 : rr <= 7; rr += dir) {
-            if (brd[rr][c] === (isW ? 'p' : 'P') ||
-              (c > 0 && brd[rr][c - 1] === (isW ? 'p' : 'P')) ||
-              (c < 7 && brd[rr][c + 1] === (isW ? 'p' : 'P'))) { ps = false; break; }
-          }
-          if (ps) b += sign * (isW ? (7 - r) : r) * 15;
-        }
-
-        // Rook on open / semi-open file
-        if (u === 'R') {
-          if (wP[c] === 0 && bP[c] === 0) b += sign * 25;
-          else if ((isW && wP[c] === 0) || (!isW && bP[c] === 0)) b += sign * 12;
-          // Rook on 7th rank
-          if ((isW && r === 1) || (!isW && r === 6)) b += sign * 20;
-        }
-
-        // Knight mobility
-        if (u === 'N') {
-          let mob = 0;
-          for (const [dr, dc] of [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]) {
-            const nr = r + dr, nc = c + dc;
-            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-              const t = brd[nr][nc];
-              if (t === ' ' || colorOf(t) !== (isW ? 'w' : 'b')) mob++;
-            }
-          }
-          b += sign * (mob - 4) * 4;
-        }
-
-        // King pawn shield in middlegame
-        if (u === 'K' && !isEndgameCheck(brd)) {
-          let shield = 0;
-          const shieldRow = isW ? r - 1 : r + 1;
-          if (shieldRow >= 0 && shieldRow < 8) {
-            for (let dc = -1; dc <= 1; dc++) {
-              const nc = c + dc;
-              if (nc >= 0 && nc < 8 && brd[shieldRow][nc] === (isW ? 'P' : 'p')) shield++;
-            }
-          }
-          b += sign * shield * 10;
-        }
-      }
-
-      // ── Dynamic king safety (middlegame only) ────────────────────────────────
-      // Count how many squares adjacent to each king are attacked by enemy pieces.
-      // Penalty is quadratic: 1 attacker ≈ noise, 3+ attackers ≈ real danger.
-      // Capped to avoid over-penalising open positions with many sliding pieces.
-      if (!isEndgameCheck(brd)) {
-        for (const [kingPos, kingColor, enemyColor] of [[wK, 'w', 'b'], [bK, 'b', 'w']]) {
-          if (!kingPos) continue;
-          const [kr, kc] = kingPos;
-          let pressure = 0;
-          for (let dr = -1; dr <= 1; dr++) {
-            for (let dc = -1; dc <= 1; dc++) {
-              const nr = kr + dr, nc = kc + dc;
-              if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
-              if (isSquareAttacked(nr, nc, enemyColor, brd)) pressure++;
-            }
-          }
-          // Quadratic penalty: 0→0, 1→5, 2→20, 3→45, 4→80 (capped at 4 attackers)
-          const capped = Math.min(pressure, 4);
-          const penalty = capped * capped * 5;
-          if (kingColor === 'w') b -= penalty;
-          else b += penalty;
-        }
-      }
-
-      return b;
     }
 
     function quiesce(brd, alpha, beta, isMaximizing, diffLevel, qDepth = 0) {
@@ -14239,16 +14083,25 @@ limitations under the License.
         document.getElementById('igModePvP').classList.toggle('active', gameMode === 'pvp');
         document.getElementById('igModeAI').classList.toggle('active', gameMode === 'ai');
         const _bEl = document.getElementById('board');
-        if (_bEl && typeof boardFlipped !== 'undefined') _bEl.classList.toggle('flipped', !!boardFlipped);
+        // Set flip class BEFORE render — but defer render so layout is settled
+        if (_bEl) {
+          _bEl.classList.remove('flipped');
+          if (boardFlipped) _bEl.classList.add('flipped');
+        }
         try { updateStatusHUD(); } catch (_) {}
         setLanguage(currentLanguage);
-        render(); updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar();
-        commentaryLog = []; resetCommentaryStyleMemory();
-        const _cs = Math.max(0, history.length - 5);
-        for (let _ci = _cs; _ci < history.length; _ci++) addCommentaryEntry(history[_ci], history.slice(0, _ci + 1));
-        switchTab('commentary');
-        showToast(currentLanguage === 'en' ? '♟️ Game restored' : '♟️ Partida restaurada', 2000);
-        if (gameMode === 'ai' && turn !== playerColor && !aiThinking) setTimeout(triggerAI, 600);
+        // Defer render to next frame so CSS layout (widths, centering) is applied first
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            render(); updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar();
+            commentaryLog = []; resetCommentaryStyleMemory();
+            const _cs = Math.max(0, history.length - 5);
+            for (let _ci = _cs; _ci < history.length; _ci++) addCommentaryEntry(history[_ci], history.slice(0, _ci + 1));
+            switchTab('commentary');
+            showToast(currentLanguage === 'en' ? '♟️ Game restored' : '♟️ Partida restaurada', 2000);
+            if (gameMode === 'ai' && turn !== playerColor && !aiThinking) setTimeout(triggerAI, 400);
+          });
+        });
       } else {
         document.querySelector('h1').style.display = 'none';
         document.getElementById('topBar').classList.add('hidden');
