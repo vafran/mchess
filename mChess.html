@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.19.0
+Monolith Chess v2.19.1
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.19.0</title>
+  <title>Monolith Chess v2.19.1</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.19.0 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.19.1 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.19.0</div>
+        v2.19.1</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3891,7 +3891,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.19.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.19.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -9508,6 +9508,12 @@ limitations under the License.
                 const victim = MVV_LVA_SCORES[target.toUpperCase()] || 0;
                 const attacker = MVV_LVA_SCORES[mover.toUpperCase()] || 0;
                 s = 10 + victim * 10 - attacker;
+              } else {
+                // Quiet moves: penalize immediately if SEE < 0 (piece hangs on landing square).
+                // This ensures depth-1 doesn't search piece-hanging moves first and
+                // corrupt the alpha window for all other moves.
+                const quietSee = see(state.board, m.tr, m.tc, m.fr, m.fc);
+                if (quietSee < -100) s = -200 + quietSee; // push well below all other quiet moves
               }
               // Promotions ranked just below winning captures
               if (mover && mover.toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) s += 50;
@@ -9772,7 +9778,34 @@ limitations under the License.
             }
 
 
-            // 📊 SIGNOS VITALES
+            // ── ROOT-LEVEL SEE ANTI-BLUNDER FILTER ────────────────────────
+            // After all depth iterations, run a fast SEE check on the top move.
+            // If the chosen move immediately hangs a piece (SEE < -100cp on a quiet move),
+            // discard it and use the next-best from scoredRoot.
+            // This is a safety net against TT collisions, cold-start depth-1 stale scores,
+            // and any evaluation anomaly that slips through the main search.
+            // Cost: one SEE call (O(N) board scan) — negligible.
+            {
+              let _safeIdx = 0;
+              const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
+              for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
+                const _m = _sr[_i].move;
+                const _isCapture = state.board[_m.tr][_m.tc] !== ' ';
+                if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
+                const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
+                if (_moveSee >= -100) { _safeIdx = _i; break; } // move is safe
+                // Move hangs a piece for nothing — skip it and try next
+              }
+              if (_safeIdx > 0) {
+                // Best move was a blunder — use the safe alternative
+                const _safeMove = _sr[_safeIdx].move;
+                if (!bestOptions.some(o =>
+                  o.move.fr === _safeMove.fr && o.move.fc === _safeMove.fc &&
+                  o.move.tr === _safeMove.tr && o.move.tc === _safeMove.tc)) {
+                  bestOptions = [_sr[_safeIdx]];
+                }
+              }
+            }
             const _totalN = searchNodes + qSearchNodes;
             const _ms = Date.now() - searchStartTime;
             const _nps = _ms > 0 ? Math.floor((_totalN / _ms) * 1000) : 0;
