@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.4
+Monolith Chess v2.18.5
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.4</title>
+  <title>Monolith Chess v2.18.5</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.4 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.5 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.4</div>
+        v2.18.5</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3189,6 +3189,80 @@ limitations under the License.
     const LANGUAGE_STORAGE_KEY = 'te_language';
     const COMMENTARY_STYLE_STORAGE_KEY = 'te_commentary_style_level';
     let commentaryStyleLevel = 1; // 0=serio, 1=mixto, 2=divertido
+
+    // ── Game Autosave ─────────────────────────────────────────────────────────
+    const GAME_SAVE_KEY = 'mchess_saved_game';
+
+    function saveGameState() {
+      try {
+        if (!history || history.length === 0) { localStorage.removeItem(GAME_SAVE_KEY); return; }
+        const fen = boardToFEN(board);
+        if (!fen) return;
+        const state = {
+          v: 1,
+          fen,
+          history: [...history],
+          capturedByWhite: [...(capturedByWhite || [])],
+          capturedByBlack: [...(capturedByBlack || [])],
+          positionHashes: [...(positionHashes || [])],
+          halfMoveClock: halfMoveClock || 0,
+          gameMode: gameMode || 'ai',
+          currentDifficulty,
+          playerColor,
+          boardFlipped: !!boardFlipped,
+          ts: Date.now()
+        };
+        localStorage.setItem(GAME_SAVE_KEY, JSON.stringify(state));
+      } catch (_) { }
+    }
+
+    function clearSavedGame() {
+      try { localStorage.removeItem(GAME_SAVE_KEY); } catch (_) { }
+    }
+
+    function loadSavedGame() {
+      try {
+        const raw = localStorage.getItem(GAME_SAVE_KEY);
+        if (!raw) return false;
+        const s = JSON.parse(raw);
+        if (!s || s.v !== 1 || !s.fen || !Array.isArray(s.history) || s.history.length === 0) return false;
+        if (s.ts && Date.now() - s.ts > 86400000) { clearSavedGame(); return false; } // 24h expiry
+        // Parse FEN
+        const parts = s.fen.split(/\s+/);
+        if (parts.length < 4) return false;
+        const rows = parts[0].split('/');
+        if (rows.length !== 8) return false;
+        const newBoard = Array.from({ length: 8 }, () => Array(8).fill(' '));
+        for (let r = 0; r < 8; r++) {
+          let c = 0;
+          for (const ch of rows[r]) {
+            if (ch >= '1' && ch <= '8') { c += parseInt(ch); }
+            else { newBoard[r][c] = ch; c++; }
+          }
+        }
+        // Restore state
+        board = newBoard;
+        turn = parts[1] === 'b' ? 'b' : 'w';
+        const cr = parts[2];
+        castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
+        const epStr = parts[3];
+        enPassantTarget = (epStr && epStr !== '-') ? [8 - parseInt(epStr[1]), 'abcdefgh'.indexOf(epStr[0])] : null;
+        halfMoveClock = s.halfMoveClock || 0;
+        history = s.history;
+        capturedByWhite = s.capturedByWhite || [];
+        capturedByBlack = s.capturedByBlack || [];
+        positionHashes = s.positionHashes || [];
+        gameMode = s.gameMode || 'ai';
+        currentDifficulty = s.currentDifficulty || 'easy';
+        playerColor = s.playerColor || 'w';
+        boardFlipped = !!s.boardFlipped;
+        const diffCfg = DIFF_SETTINGS[currentDifficulty];
+        if (diffCfg) { aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit; }
+        undoStack = []; selected = null; legalMoves = []; animating = false;
+        aiThinking = false; professorThinking = false;
+        return true;
+      } catch (_) { return false; }
+    }
 
     // ── AI State ─────────────────────────────
     let gameMode = 'pvp'; // 'pvp' or 'ai'
@@ -3828,7 +3902,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.4", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.5", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -3914,6 +3988,36 @@ limitations under the License.
       updateHistory();
       updateCaptured();
       updateAdvantageBar();
+
+      // 💾 AUTORESTORE: if there's a saved game from a previous session, offer to resume it.
+      // Only triggers on the very first init() call (history.length === 0 means fresh board).
+      // On explicit resetGame() the save is already cleared before init() runs.
+      setTimeout(() => {
+        try {
+          const raw = localStorage.getItem(GAME_SAVE_KEY);
+          if (!raw) return;
+          const peek = JSON.parse(raw);
+          if (!peek || !peek.history?.length || peek.ts && Date.now() - peek.ts > 86400000) return;
+          const moves = peek.history.length;
+          const diff = peek.currentDifficulty || 'easy';
+          const diffLabels = { easy: 'Fácil', medium: 'Medio', hard: 'Difícil', grandmaster: 'Maestro' };
+          const diffLabel = diffLabels[diff] || diff;
+          const en = currentLanguage === 'en';
+          const msg = en
+            ? `Resume your last game? (${moves} move${moves !== 1 ? 's' : ''} · ${diffLabel})`
+            : `¿Reanudar la partida anterior? (${moves} jugada${moves !== 1 ? 's' : ''} · ${diffLabel})`;
+          // Show a persistent resume banner (not a toast — needs two buttons)
+          const banner = document.createElement('div');
+          banner.id = 'resumeBanner';
+          banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--card-bg,#1e1b2e);border:1px solid var(--primary,#a855f7);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.4);font-size:0.85rem;max-width:340px;';
+          banner.innerHTML = `<span style="flex:1;color:var(--text,#e2e8f0)">💾 ${msg}</span>
+            <button onclick="resumeSavedGame()" style="background:var(--primary,#a855f7);color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:0.8rem;white-space:nowrap">${en ? 'Resume' : 'Reanudar'}</button>
+            <button onclick="document.getElementById('resumeBanner')?.remove();clearSavedGame();" style="background:transparent;color:var(--text-light,#94a3b8);border:1px solid var(--border,#334155);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.8rem">${en ? 'New' : 'Nueva'}</button>`;
+          document.body.appendChild(banner);
+          // Auto-dismiss after 12s if no action taken
+          setTimeout(() => { try { if (document.getElementById('resumeBanner')) { document.getElementById('resumeBanner').remove(); } } catch (_) { } }, 12000);
+        } catch (_) { }
+      }, 600);
     }
 
     // ── Confirmation Dialog ──────────────────
@@ -5084,6 +5188,7 @@ limitations under the License.
       const cHash = positionHashes[positionHashes.length - 1];
       // La detección ya es correcta porque ahora positionHashes incluye castleRights y EP
       if (positionHashes.filter(h => h === cHash).length >= 3) { setTimeout(() => { const m = document.getElementById('drawClaimModal'), en = currentLanguage === 'en'; document.getElementById('drawClaimTitle').innerHTML = en ? '⚖️ Threefold Repetition!' : '⚖️ ¡Triple Repetición!'; document.getElementById('drawClaimDesc').innerHTML = en ? 'The exact same position has occurred 3 times. You can claim a draw right now.' : 'La misma posición exacta se ha repetido 3 veces. Puedes reclamar un empate ahora mismo.'; document.getElementById('btnIgnoreDraw').innerHTML = en ? 'Keep playing' : 'Continuar'; document.getElementById('btnAcceptDraw').innerHTML = en ? 'Claim Draw' : 'Reclamar Tablas'; m.classList.add('show'); }, 400); return; }
+      saveGameState(); // 💾 Autosave after every legal move
       if (gameMode === 'ai' && turn !== playerColor) triggerAI();
     }
     function ignoreDrawClaim() { document.getElementById('drawClaimModal').classList.remove('show'); if (gameMode === 'ai' && turn !== playerColor) triggerAI(); }
@@ -5239,7 +5344,41 @@ limitations under the License.
       rebuildCommentaryForLanguage();
     }
 
-    function resetGame() { init(); playMoveSound(); if (playerColor === 'b' && gameMode === 'ai') setTimeout(triggerAI, 500); }
+    function resetGame() { clearSavedGame(); init(); playMoveSound(); if (playerColor === 'b' && gameMode === 'ai') setTimeout(triggerAI, 500); }
+
+    function resumeSavedGame() {
+      try { document.getElementById('resumeBanner')?.remove(); } catch (_) { }
+      if (!loadSavedGame()) { showToast(currentLanguage === 'en' ? 'Could not restore the game.' : 'No se pudo restaurar la partida.', 3000); return; }
+      // Restore UI elements that depend on game state
+      try {
+        updateStatusHUD();
+        setLanguage(currentLanguage);
+        if (boardFlipped !== undefined) {
+          const bEl = document.getElementById('board');
+          if (bEl) bEl.classList.toggle('flipped', boardFlipped);
+        }
+        render();
+        updateTurnUI();
+        updateHistory();
+        updateCaptured();
+        updateAdvantageBar();
+        const pList = document.getElementById('professorList');
+        if (pList) pList.innerHTML = `<div class="hint-empty" id="professorEmptyMsg">${t('professorPrompt')}</div>`;
+        // Rebuild commentary from history (last 5 moves to avoid overwhelming)
+        commentaryLog = [];
+        resetCommentaryStyleMemory();
+        const start = Math.max(0, history.length - 5);
+        for (let i = start; i < history.length; i++) {
+          addCommentaryEntry(history[i], history.slice(0, i + 1));
+        }
+        const en = currentLanguage === 'en';
+        showToast(en ? '✅ Game restored!' : '✅ ¡Partida restaurada!', 2500);
+        // Resume AI turn if it's the AI's move
+        if (gameMode === 'ai' && turn !== playerColor && !aiThinking) {
+          setTimeout(triggerAI, 800);
+        }
+      } catch (e) { console.error('resumeSavedGame error:', e); }
+    }
 
     function updateStatusHUD() {
       const hud = document.getElementById('gameStatusHUD');
