@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.9
+Monolith Chess v2.18.9b
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.9</title>
+  <title>Monolith Chess v2.18.9b</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.9 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.9b · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.9</div>
+        v2.18.9b</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3890,7 +3890,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.9", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.9b", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -6729,16 +6729,12 @@ limitations under the License.
     // Professor never tells a White player that their own move is a "Defensa".
     function perspectiveName(name, colorWhoMoved) {
       if (!name || !colorWhoMoved) return name;
-      const en = currentLanguage === 'en';
       // Detect if the name belongs to a defense (named from Black's perspective)
       const isDefenseName = /[Dd]efensa|[Dd]efense|[Ss]icilian|[Ff]rench|[Cc]aro|[Pp]irc|[Aa]lekhine|[Ss]candinavian|[Hh]orwitz|[Rr]ubinstein|[Tt]arrasch|[Ww]inawer|[Kk]ing.s Indian|[Nn]imzo|[Gg]runfeld|[Bb]enoni|[Dd]utch/.test(name);
-      if (!isDefenseName || colorWhoMoved === 'b') return name; // Black chose the defense — name is correct
-      // White is playing INTO a defense — reframe as "vs X" or "contra X"
-      // Strip leading "Defensa " / "Defense " prefix from the base name
-      const cleaned = name
-        .replace(/^Defensa\s+/i, '')
-        .replace(/^Defense\s+/i, '');
-      return en ? `vs ${cleaned}` : `vs ${cleaned}`;
+      if (!isDefenseName || colorWhoMoved === 'b') return name;
+      // White playing into a defense: strip "Defensa/Defense " prefix only.
+      // Never add "vs" — the surrounding phrase already provides context.
+      return name.replace(/^Defensa\s+/i, '').replace(/^Defense\s+/i, '');
     }
 
     function localizeOpeningName(name) {
@@ -11075,10 +11071,10 @@ limitations under the License.
           const phrases = isWhiteMove
             ? [
               `The game enters the **${openingName}**. ${openingTechNote}`,
-              `White chooses the **${openingName}**. ${openingTechNote}`,
+              `White responds with the **${openingName}**. ${openingTechNote}`,
               `Opening confirmed: **${openingName}**. ${openingTechNote}`,
-              `Classic opening: **${openingName}**. ${openingTechNote}`,
-              `White sets up the **${openingName}**. ${openingTechNote}`,
+              `Classic **${openingName}** on the board. ${openingTechNote}`,
+              `White continues with the **${openingName}**. ${openingTechNote}`,
             ]
             : [
               `Black responds with the **${openingName}**. ${openingTechNote}`,
@@ -11090,10 +11086,10 @@ limitations under the License.
           const phrases = isWhiteMove
             ? [
               `Se plantea la **${openingName}**. ${openingTechNote}`,
-              `Las blancas eligen la **${openingName}**. ${openingTechNote}`,
+              `Las blancas responden con la **${openingName}**. ${openingTechNote}`,
               `Apertura confirmada: **${openingName}**. ${openingTechNote}`,
               `Clásica **${openingName}** en el tablero. ${openingTechNote}`,
-              `Las blancas configuran la **${openingName}**. ${openingTechNote}`,
+              `Las blancas continúan con la **${openingName}**. ${openingTechNote}`,
             ]
             : [
               `Las negras responden con la **${openingName}**. ${openingTechNote}`,
@@ -11297,6 +11293,8 @@ limitations under the License.
             const opening = detectOpeningFromHistory(history, lastMv, board);
             if (opening && opening.name) {
               const localName = perspectiveName(localizeOpeningName(opening.name), myColor);
+              // For "Tu rival eligió la..." context, use the full original name (with "Defensa")
+              const fullName = localizeOpeningName(opening.name);
               const histKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
               const hasNextBook = !!(OPENING_BOOK[histKey] && OPENING_BOOK[histKey].length > 0);
               const isInTheoryLine = hasNextBook ||
@@ -11307,11 +11305,11 @@ limitations under the License.
               if (vsAI && isDefense && myColor === 'w') {
                 openingText = isInTheoryLine
                   ? (en
-                    ? `<strong>Your opponent chose the ${localName}.</strong> You are still in theory — press <strong>What should I do?</strong> to see recommended responses.`
-                    : `<strong>Tu rival eligió la ${localName}.</strong> Sigues dentro de la teoría — pulsa <strong>¿Qué hago?</strong> para ver las respuestas recomendadas.`)
+                    ? `<strong>Your opponent chose the ${fullName}.</strong> You are still in theory — press <strong>What should I do?</strong> to see recommended responses.`
+                    : `<strong>Tu rival eligió la ${fullName}.</strong> Sigues dentro de la teoría — pulsa <strong>¿Qué hago?</strong> para ver las respuestas recomendadas.`)
                   : (en
-                    ? `<strong>Your opponent chose the ${localName}.</strong> End of my opening notes — from here on, rely on your positional principles.`
-                    : `<strong>Tu rival eligió la ${localName}.</strong> Fin de mis notas de apertura — a partir de aquí, confía en tus principios posicionales.`);
+                    ? `<strong>Your opponent chose the ${fullName}.</strong> End of my opening notes — from here on, rely on your positional principles.`
+                    : `<strong>Tu rival eligió la ${fullName}.</strong> Fin de mis notas de apertura — a partir de aquí, confía en tus principios posicionales.`);
               } else {
                 openingText = isInTheoryLine
                   ? (en
