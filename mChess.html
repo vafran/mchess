@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.17.3
+Monolith Chess v2.17.4
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.17.3</title>
+  <title>Monolith Chess v2.17.4</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.17.3 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.17.4 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.17.3</div>
+        v2.17.4</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3828,7 +3828,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.17.3", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.17.4", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -5894,6 +5894,21 @@ limitations under the License.
         { m: "Nf6", w: 10, name: "Inglesa Simétrica: desarrollo paralelo", desc: "Ambos desarrollan caballos. Batalla estratégica." },
         { m: "g6", w: 6, name: "Inglesa Simétrica: variante Botvinnik", desc: "El negro prepara el fianchetto." }
       ],
+      "c4,c5,Nf3,Nf6": [
+        { m: "Nc3", w: 10, name: "Inglesa Simétrica: variante con Nc3", desc: "Desarrollo del caballo de dama. Lo más sólido y teórico." },
+        { m: "g3", w: 8, name: "Inglesa Simétrica: fianchetto", desc: "El blanco prepara Bg2 y controla el largo." },
+        { m: "d4", w: 6, name: "Inglesa-Simétrica: transposición al centro", desc: "Ruptura central directa." }
+      ],
+      "c4,c5,Nf3,Nf6,Nc3": [
+        { m: "Nc6", w: 10, name: "Inglesa Simétrica: 4 caballos", desc: "Las negras desarrollan el caballo de dama. Partida simétrica." },
+        { m: "d5", w: 7, name: "Inglesa: ruptura central del negro", desc: "Las negras atacan el centro inmediatamente." },
+        { m: "e6", w: 5, name: "Inglesa: desarrollo sólido", desc: "Sólido. Las negras preparan d5 o Bb4." }
+      ],
+      "c4,c5,Nf3,Nf6,g3": [
+        { m: "Nc6", w: 10, name: "Inglesa-fianchetto: desarrollo paralelo", desc: "Las negras desarrollan. El blanco seguirá con Bg2." },
+        { m: "g6", w: 7, name: "Inglesa: doble fianchetto", desc: "Ambos preparan sus alfiles de rey en las grandes diagonales." },
+        { m: "d5", w: 5, name: "Inglesa-fianchetto: ataque central", desc: "Las negras atacan el centro antes del fianchetto blanco." }
+      ],
       "c4,d5": [
         { m: "cxd5", w: 10, name: "Inglesa: variante con d5", desc: "El blanco acepta el gambito de espacio." },
         { m: "Nc3", w: 7, name: "Inglesa: variante Slav", desc: "El blanco no captura. Posición flexible." }
@@ -7283,6 +7298,15 @@ limitations under the License.
       if (eg < 0.3) {
         score -= wUndevelopedMinors * 30; // FIX
         score += bUndevelopedMinors * 30; // FIX
+
+        // Flank pawn tempo penalty — same logic as worker evaluate
+        const _fp = [0, 1, 6, 7];
+        for (const fc of _fp) {
+          let wFM = false; for (let r = 0; r < 6; r++) { if (brd[r][fc] === 'P') { wFM = true; break; } }
+          if (wFM && brd[6][fc] !== 'P') score -= wUndevelopedMinors * 8;
+          let bFM = false; for (let r = 2; r < 8; r++) { if (brd[r][fc] === 'p') { bFM = true; break; } }
+          if (bFM && brd[1][fc] !== 'p') score += bUndevelopedMinors * 8;
+        }
       }
 
       for (let c = 0; c < 8; c++) {
@@ -8168,6 +8192,23 @@ limitations under the License.
             // INCREASED Undeveloped Penalty from 15 to 20
             s -= wUndevelopedMinors * 30;
             s += bUndevelopedMinors * 30;
+
+            // ── Flank pawn tempo penalty ─────────────────────────────────────
+            // Moving a/b/g/h pawns in the opening while pieces are undeveloped
+            // wastes tempos and delays development. Penalize each such pawn move
+            // proportionally to how many minors are still undeveloped.
+            // This prevents the engine from playing a3, h3, b3 instead of Nc3/g3.
+            const flankCols = [0, 1, 6, 7];
+            for (const fc of flankCols) {
+              // White flank pawn advanced (not on starting rank 6 or absent)
+              let wFlankMoved = false;
+              for (let r = 0; r < 6; r++) { if (b[r][fc] === 'P') { wFlankMoved = true; break; } }
+              if (wFlankMoved && b[6][fc] !== 'P') s -= wUndevelopedMinors * 8;
+              // Black flank pawn advanced (not on starting rank 1 or absent)
+              let bFlankMoved = false;
+              for (let r = 2; r < 8; r++) { if (b[r][fc] === 'p') { bFlankMoved = true; break; } }
+              if (bFlankMoved && b[1][fc] !== 'p') s += bUndevelopedMinors * 8;
+            }
           }
 
           // ── Phase 4: Pawn structure via pawn hash cache ──
@@ -12804,6 +12845,30 @@ limitations under the License.
           return en
             ? `♟️ You create a passed pawn! It has no enemy pawns ahead or to its sides. Advance it — it is your long-term winning plan.`
             : `♟️ ¡Creas un peón pasado! No tiene peones enemigos por delante ni en columnas adyacentes. Avánzalo — es tu plan ganador a largo plazo.`;
+        }
+        // Context-aware pawn description
+        const isFlankCol = m.tc === 0 || m.tc === 1 || m.tc === 6 || m.tc === 7;
+        const piecesCount = board.flat().filter(p => p !== ' ').length;
+        const isOpeningPhase = piecesCount >= 28 && history.length <= 14;
+        if (isFlankCol && isOpeningPhase) {
+          // Count undeveloped minors for the moving side
+          let undevelopedMinors = 0;
+          if (color === 'w') {
+            if (board[7][1] === 'N') undevelopedMinors++;
+            if (board[7][2] === 'B') undevelopedMinors++;
+            if (board[7][5] === 'B') undevelopedMinors++;
+            if (board[7][6] === 'N') undevelopedMinors++;
+          } else {
+            if (board[0][1] === 'n') undevelopedMinors++;
+            if (board[0][2] === 'b') undevelopedMinors++;
+            if (board[0][5] === 'b') undevelopedMinors++;
+            if (board[0][6] === 'n') undevelopedMinors++;
+          }
+          if (undevelopedMinors >= 2) {
+            return en
+              ? `⚠️ Flank pawn move with ${undevelopedMinors} pieces still at home. This wastes a tempo — consider developing a knight or bishop instead to fight for the center.`
+              : `⚠️ Peón de flanco con ${undevelopedMinors} piezas aún en casa. Esto pierde un tempo — considera desarrollar un caballo o alfil para luchar por el centro.`;
+          }
         }
         // Generic space gain
         return en
