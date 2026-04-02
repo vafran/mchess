@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.16.2
+Monolith Chess v2.16.3
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.16.2</title>
+  <title>Monolith Chess v2.16.3</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.16.2 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.16.3 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.16.2</div>
+        v2.16.3</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3791,7 +3791,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.16.2", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.16.3", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -9717,45 +9717,6 @@ limitations under the License.
             const legal = getLegalMovesForColorInPlace(aiColor);
             const ok = legal.some(mv => mv.fr === move.fr && mv.fc === move.fc && mv.tr === move.tr && mv.tc === move.tc);
             if (!ok) move = findBestMoveFor(aiColor, aiDepth, aiMistakeChance, SEARCH_TIME_LIMIT_MS) || null;
-          }
-        }
-
-        // 2.5 ANTI-REPETITION FILTER in main thread (guaranteed)
-        // Uses makeMoveOnBoard/unmakeMove so the generated hash includes
-        // castleRights and enPassantTarget — identical to positionHashes format.
-        if (move) {
-          const legal = getLegalMovesForColorInPlace(aiColor);
-
-          function _makeChildKey(m) {
-            const prev = makeMoveOnBoard(m);
-            // FIX: Since makeMoveOnBoard does not change the global turn, we calculate it manually
-            const childTurn = aiColor === 'w' ? 'b' : 'w';
-            let key = board.map(r => r.join('')).join('|') + '|' + childTurn;
-            key += '|' + (castleRights.K ? 'K' : '') + (castleRights.Q ? 'Q' : '') + (castleRights.k ? 'k' : '') + (castleRights.q ? 'q' : '');
-            if (enPassantTarget && enPassantTarget.length === 2) key += '|ep' + enPassantTarget[1];
-            unmakeMove(prev);
-            return key;
-          }
-
-          const childKey = _makeChildKey(move);
-          const timesSeenChild = positionHashes.filter(h => h === childKey).length;
-
-          if (timesSeenChild >= 1 && legal.length > 1) {
-            // This position already occurred — find non-repeated alternative
-            const nonRepMoves = legal.filter(m => {
-              const key = _makeChildKey(m);
-              return positionHashes.filter(h => h === key).length === 0;
-            });
-            if (nonRepMoves.length > 0) {
-              // Choose best non-repeated move by shallow score
-              nonRepMoves.sort((a, b) => {
-                const valA = board[a.tr][a.tc] !== ' ' ? (PIECE_VALUES[board[a.tr][a.tc].toUpperCase()] || 0) : 0;
-                const valB = board[b.tr][b.tc] !== ' ' ? (PIECE_VALUES[board[b.tr][b.tc].toUpperCase()] || 0) : 0;
-                return valB - valA;
-              });
-              console.log('🔁 Rep detectada! Cambiando a jugada alternativa');
-              move = nonRepMoves[0];
-            }
           }
         }
 
