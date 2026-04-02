@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.16.1
+Monolith Chess v2.16.2
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.16.1</title>
+  <title>Monolith Chess v2.16.2</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.16.1 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.16.2 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.16.1</div>
+        v2.16.2</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3791,7 +3791,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.16.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.16.2", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7665,6 +7665,11 @@ limitations under the License.
         const toIdx = m.tr * 8 + m.tc;
         if (historyTable[fromIdx] && historyTable[fromIdx][toIdx]) score += historyTable[fromIdx][toIdx];
 
+        // FIX: Centre-proximity bonus breaks 0-score ties in the sync fallback
+        // (main thread has no PST tables; extended centre captures the same intent)
+        const _dToCenter = Math.abs(m.tr - 3.5) + Math.abs(m.tc - 3.5);
+        score += Math.round((7 - _dToCenter) * 3); // +21 at centre, 0 at corner
+
         if (m.tr >= 3 && m.tr <= 4 && m.tc >= 3 && m.tc <= 4) score += 40;
       }
 
@@ -8881,6 +8886,13 @@ limitations under the License.
           // Security CAP: Ensure history never overlaps with Killer tiers
           if (sc > 50000) sc = 50000;
 
+          // FIX: PST bonus breaks 0-score ties at search start (empty histTable)
+          // so king-side development (Nf3, Bg7) is preferred over queen-side shuffling.
+          const isW = (u === p);
+          const pstIdx = isW ? (m.tr * 8 + m.tc) : ((7 - m.tr) * 8 + m.tc);
+          if (u === 'K') sc += PST.KMG[pstIdx];
+          else if (PST[u]) sc += PST[u][pstIdx];
+
           // Killer Instinct: Prioritize moves near the enemy king
           const pc = clr(p);
           const ek = findKing(state.board, opp(pc));
@@ -9741,7 +9753,7 @@ limitations under the License.
                 const valB = board[b.tr][b.tc] !== ' ' ? (PIECE_VALUES[board[b.tr][b.tc].toUpperCase()] || 0) : 0;
                 return valB - valA;
               });
-              dbg('🔁 Rep detectada! Cambiando a jugada alternativa');
+              console.log('🔁 Rep detectada! Cambiando a jugada alternativa');
               move = nonRepMoves[0];
             }
           }
