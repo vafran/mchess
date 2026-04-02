@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.16.3
+Monolith Chess v2.16.4
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.16.3</title>
+  <title>Monolith Chess v2.16.4</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.16.3 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.16.4 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.16.3</div>
+        v2.16.4</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3791,7 +3791,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.16.3", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.16.4", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -8627,19 +8627,29 @@ limitations under the License.
             board: s.board.map(r => r.slice()), turn: s.turn,
             castleRights: { ...s.castleRights },
             enPassantTarget: Array.isArray(s.enPassantTarget) ? [...s.enPassantTarget] : null,
-            halfMoveClock: s.halfMoveClock || 0
+            halfMoveClock: s.halfMoveClock || 0,
+            hashL: s.hashL || 0,
+            hashH: s.hashH || 0
           };
         }
         function applyMove(state, m) {
           const ns = cloneS(state);
           const b = ns.board; const p = b[m.fr][m.fc]; const u = p.toUpperCase();
-          if (u === 'P' && m.tc !== m.fc && b[m.tr][m.tc] === ' ') b[m.fr][m.tc] = ' ';
+          // Save pre-move state needed for incremental hash update
+          const _captured = b[m.tr][m.tc];
+          const _oldEP = ns.enPassantTarget;
+          const _oldCR = { ...ns.castleRights };
+          let _epCapturePiece = null, _epCapturePos = null;
+          let _rookPiece = null, _rookFrom = null, _rookTo = null;
+          if (u === 'P' && m.tc !== m.fc && b[m.tr][m.tc] === ' ') {
+            _epCapturePiece = b[m.fr][m.tc]; _epCapturePos = [m.fr, m.tc];
+            b[m.fr][m.tc] = ' ';
+          }
           if (u === 'K' && Math.abs(m.tc - m.fc) === 2) {
-            if (m.tc === 6) { b[m.fr][5] = b[m.fr][7]; b[m.fr][7] = ' '; }
-            else { b[m.fr][3] = b[m.fr][0]; b[m.fr][0] = ' '; }
+            if (m.tc === 6) { _rookFrom = [m.fr, 7]; _rookTo = [m.fr, 5]; _rookPiece = b[m.fr][7]; b[m.fr][5] = b[m.fr][7]; b[m.fr][7] = ' '; }
+            else { _rookFrom = [m.fr, 0]; _rookTo = [m.fr, 3]; _rookPiece = b[m.fr][0]; b[m.fr][3] = b[m.fr][0]; b[m.fr][0] = ' '; }
           }
           b[m.tr][m.tc] = p; b[m.fr][m.fc] = ' ';
-          // Promotion: use m.promo if specified, otherwise default to Queen
           if (p === 'P' && m.tr === 0) b[m.tr][m.tc] = m.promo || 'Q';
           if (p === 'p' && m.tr === 7) b[m.tr][m.tc] = (m.promo ? (m.promo.toLowerCase()) : 'q');
           if (u === 'K') { if (p === 'K') { ns.castleRights.K = false; ns.castleRights.Q = false; } else { ns.castleRights.k = false; ns.castleRights.q = false; } }
@@ -8647,14 +8657,28 @@ limitations under the License.
             if (m.fr === 7 && m.fc === 7) ns.castleRights.K = false; if (m.fr === 7 && m.fc === 0) ns.castleRights.Q = false;
             if (m.fr === 0 && m.fc === 7) ns.castleRights.k = false; if (m.fr === 0 && m.fc === 0) ns.castleRights.q = false;
           }
-          // Revoke castling rights when a rook on its original square is CAPTURED
-          // (any piece can capture a rook — this is independent of which piece moved)
           if (m.tr === 7 && m.tc === 7) ns.castleRights.K = false;
           if (m.tr === 7 && m.tc === 0) ns.castleRights.Q = false;
           if (m.tr === 0 && m.tc === 7) ns.castleRights.k = false;
           if (m.tr === 0 && m.tc === 0) ns.castleRights.q = false;
           ns.enPassantTarget = (u === 'P' && Math.abs(m.tr - m.fr) === 2) ? [(m.fr + m.tr) / 2, m.fc] : null;
           ns.turn = opp(state.turn);
+          // ── Incremental Zobrist hash update for applyMove ────────────────────
+          let hl = ns.hashL, hh = ns.hashH;
+          const _pi = pidx(p), _sq = m.fr * 8 + m.fc, _dq = m.tr * 8 + m.tc;
+          hl = (hl ^ ZL[_pi][_sq]) >>> 0; hh = (hh ^ ZH[_pi][_sq]) >>> 0;
+          if (_captured !== ' ') { const _ci = pidx(_captured); hl = (hl ^ ZL[_ci][_dq]) >>> 0; hh = (hh ^ ZH[_ci][_dq]) >>> 0; }
+          if (_epCapturePiece) { const _ei = pidx(_epCapturePiece), _es = _epCapturePos[0] * 8 + _epCapturePos[1]; hl = (hl ^ ZL[_ei][_es]) >>> 0; hh = (hh ^ ZH[_ei][_es]) >>> 0; }
+          if (_rookFrom) { const _ri = pidx(_rookPiece); hl = (hl ^ ZL[_ri][_rookFrom[0]*8+_rookFrom[1]]) >>> 0; hh = (hh ^ ZH[_ri][_rookFrom[0]*8+_rookFrom[1]]) >>> 0; hl = (hl ^ ZL[_ri][_rookTo[0]*8+_rookTo[1]]) >>> 0; hh = (hh ^ ZH[_ri][_rookTo[0]*8+_rookTo[1]]) >>> 0; }
+          const _fi = pidx(b[m.tr][m.tc]); hl = (hl ^ ZL[_fi][_dq]) >>> 0; hh = (hh ^ ZH[_fi][_dq]) >>> 0;
+          if (_oldEP) { hl = (hl ^ Z_EP_L[_oldEP[1]]) >>> 0; hh = (hh ^ Z_EP_H[_oldEP[1]]) >>> 0; }
+          if (ns.enPassantTarget) { hl = (hl ^ Z_EP_L[ns.enPassantTarget[1]]) >>> 0; hh = (hh ^ Z_EP_H[ns.enPassantTarget[1]]) >>> 0; }
+          if (_oldCR.K && !ns.castleRights.K) { hl = (hl ^ Z_CASTLE_L[0]) >>> 0; hh = (hh ^ Z_CASTLE_H[0]) >>> 0; }
+          if (_oldCR.Q && !ns.castleRights.Q) { hl = (hl ^ Z_CASTLE_L[1]) >>> 0; hh = (hh ^ Z_CASTLE_H[1]) >>> 0; }
+          if (_oldCR.k && !ns.castleRights.k) { hl = (hl ^ Z_CASTLE_L[2]) >>> 0; hh = (hh ^ Z_CASTLE_H[2]) >>> 0; }
+          if (_oldCR.q && !ns.castleRights.q) { hl = (hl ^ Z_CASTLE_L[3]) >>> 0; hh = (hh ^ Z_CASTLE_H[3]) >>> 0; }
+          hl = (hl ^ ZBL) >>> 0; hh = (hh ^ ZBH) >>> 0;
+          ns.hashL = hl; ns.hashH = hh;
           return ns;
         }
         // ─── Make / Unmake Move ───────────────────────────────────────────────
