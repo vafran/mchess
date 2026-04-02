@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.13.1
+Monolith Chess v2.16.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.13.1</title>
+  <title>Monolith Chess v2.16.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.13.1 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.16.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.13.1</div>
+        v2.16.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3791,7 +3791,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.13.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.16.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7899,26 +7899,27 @@ limitations under the License.
           }
           return [hl >>> 0, hh >>> 0];
         }
-        function zob(state) {
+        // ── computeZobFull: O(64) scan — called ONCE at search start ────────────
+        // Sets state.hashL (low 32-bit) and state.hashH (high 32-bit).
+        // After this, makeMove/unmakeMove update them incrementally in O(1).
+        function computeZobFull(state) {
           let hl = 0, hh = 0;
           for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
             const i = pidx(state.board[r][c]);
-            if (i !== -1) { hl ^= ZL[i][r * 8 + c]; hh ^= ZH[i][r * 8 + c]; }
+            if (i !== -1) { hl = (hl ^ ZL[i][r * 8 + c]) >>> 0; hh = (hh ^ ZH[i][r * 8 + c]) >>> 0; }
           }
-          if (state.turn === 'b') { hl ^= ZBL; hh ^= ZBH; }
-          // Incluir derechos de enroque en el hash
+          if (state.turn === 'b') { hl = (hl ^ ZBL) >>> 0; hh = (hh ^ ZBH) >>> 0; }
           if (state.castleRights) {
-            if (state.castleRights.K) { hl ^= Z_CASTLE_L[0]; hh ^= Z_CASTLE_H[0]; }
-            if (state.castleRights.Q) { hl ^= Z_CASTLE_L[1]; hh ^= Z_CASTLE_H[1]; }
-            if (state.castleRights.k) { hl ^= Z_CASTLE_L[2]; hh ^= Z_CASTLE_H[2]; }
-            if (state.castleRights.q) { hl ^= Z_CASTLE_L[3]; hh ^= Z_CASTLE_H[3]; }
+            if (state.castleRights.K) { hl = (hl ^ Z_CASTLE_L[0]) >>> 0; hh = (hh ^ Z_CASTLE_H[0]) >>> 0; }
+            if (state.castleRights.Q) { hl = (hl ^ Z_CASTLE_L[1]) >>> 0; hh = (hh ^ Z_CASTLE_H[1]) >>> 0; }
+            if (state.castleRights.k) { hl = (hl ^ Z_CASTLE_L[2]) >>> 0; hh = (hh ^ Z_CASTLE_H[2]) >>> 0; }
+            if (state.castleRights.q) { hl = (hl ^ Z_CASTLE_L[3]) >>> 0; hh = (hh ^ Z_CASTLE_H[3]) >>> 0; }
           }
-          // Incluir captura al paso en el hash
           if (state.enPassantTarget && state.enPassantTarget.length === 2) {
-            const col = state.enPassantTarget[1];
-            hl ^= Z_EP_L[col]; hh ^= Z_EP_H[col];
+            hl = (hl ^ Z_EP_L[state.enPassantTarget[1]]) >>> 0;
+            hh = (hh ^ Z_EP_H[state.enPassantTarget[1]]) >>> 0;
           }
-          return hl + '-' + hh;
+          state.hashL = hl; state.hashH = hh;
         }
 
         // Traductor para conectar con el historial en texto del hilo principal
@@ -8668,7 +8669,9 @@ limitations under the License.
             oldEP: state.enPassantTarget,
             oldCR: { ...state.castleRights },
             oldWK: state.wKing, oldBK: state.bKing,
-            oldHMC: state.halfMoveClock
+            oldHMC: state.halfMoveClock,
+            oldHashL: state.hashL,
+            oldHashH: state.hashH
           };
           // En passant: pawn captures diagonally to an empty square → remove captured pawn
           if (u === 'P' && m.tc !== m.fc && b[m.tr][m.tc] === ' ') {
@@ -8703,10 +8706,48 @@ limitations under the License.
             state.halfMoveClock = (state.halfMoveClock || 0) + 1;
           }
           state.turn = opp(state.turn);
+          // ── Incremental Zobrist update — O(1), full 64-bit ───────────────────
+          if (save.oldHashL !== undefined) {
+            let hl = save.oldHashL, hh = save.oldHashH;
+            const _pi = pidx(save.p), _sq = m.fr * 8 + m.fc, _dq = m.tr * 8 + m.tc;
+            // Remove moving piece from source
+            hl = (hl ^ ZL[_pi][_sq]) >>> 0; hh = (hh ^ ZH[_pi][_sq]) >>> 0;
+            // Remove captured piece from destination (normal capture)
+            if (save.captured !== ' ') {
+              const _ci = pidx(save.captured);
+              hl = (hl ^ ZL[_ci][_dq]) >>> 0; hh = (hh ^ ZH[_ci][_dq]) >>> 0;
+            }
+            // Remove en-passant captured pawn
+            if (save.epCapture) {
+              const _ei = pidx(save.epCapture), _es = save.epPos[0] * 8 + save.epPos[1];
+              hl = (hl ^ ZL[_ei][_es]) >>> 0; hh = (hh ^ ZH[_ei][_es]) >>> 0;
+            }
+            // Move rook (castling)
+            if (save.rookFrom) {
+              const _ri = pidx(save.rookPiece);
+              hl = (hl ^ ZL[_ri][save.rookFrom[0] * 8 + save.rookFrom[1]]) >>> 0; hh = (hh ^ ZH[_ri][save.rookFrom[0] * 8 + save.rookFrom[1]]) >>> 0;
+              hl = (hl ^ ZL[_ri][save.rookTo[0] * 8 + save.rookTo[1]])   >>> 0; hh = (hh ^ ZH[_ri][save.rookTo[0] * 8 + save.rookTo[1]])   >>> 0;
+            }
+            // Place piece at destination (handles promotion — b[m.tr][m.tc] already updated)
+            const _fi = pidx(b[m.tr][m.tc]);
+            hl = (hl ^ ZL[_fi][_dq]) >>> 0; hh = (hh ^ ZH[_fi][_dq]) >>> 0;
+            // En-passant key: remove old, add new
+            if (save.oldEP) { hl = (hl ^ Z_EP_L[save.oldEP[1]]) >>> 0; hh = (hh ^ Z_EP_H[save.oldEP[1]]) >>> 0; }
+            if (state.enPassantTarget) { hl = (hl ^ Z_EP_L[state.enPassantTarget[1]]) >>> 0; hh = (hh ^ Z_EP_H[state.enPassantTarget[1]]) >>> 0; }
+            // Castling rights: XOR out any rights that were lost
+            if (save.oldCR.K && !state.castleRights.K) { hl = (hl ^ Z_CASTLE_L[0]) >>> 0; hh = (hh ^ Z_CASTLE_H[0]) >>> 0; }
+            if (save.oldCR.Q && !state.castleRights.Q) { hl = (hl ^ Z_CASTLE_L[1]) >>> 0; hh = (hh ^ Z_CASTLE_H[1]) >>> 0; }
+            if (save.oldCR.k && !state.castleRights.k) { hl = (hl ^ Z_CASTLE_L[2]) >>> 0; hh = (hh ^ Z_CASTLE_H[2]) >>> 0; }
+            if (save.oldCR.q && !state.castleRights.q) { hl = (hl ^ Z_CASTLE_L[3]) >>> 0; hh = (hh ^ Z_CASTLE_H[3]) >>> 0; }
+            // Flip side-to-move bit
+            hl = (hl ^ ZBL) >>> 0; hh = (hh ^ ZBH) >>> 0;
+            state.hashL = hl; state.hashH = hh;
+          }
           return save;
         }
 
         function unmakeMove(state, m, save) {
+          state.hashL = save.oldHashL; state.hashH = save.oldHashH; // O(1) 64-bit restore
           state.turn = opp(state.turn);
           const b = state.board;
           b[m.fr][m.fc] = save.p;
@@ -8851,19 +8892,33 @@ limitations under the License.
 
         function quiesce(state, alpha, beta, maximizing, deadline, qd = 0, inCheck = false) {
           qSearchNodes++; // 📊
-          // ⚡ FIX: Limit non-check quiescence to 5 levels (prevents NPS explosion).
-          // In-check positions need deeper search to find the only legal escape.
           if (Date.now() >= deadline || qd > (inCheck ? 8 : 5)) return evaluate(state);
-          const sp = evaluate(state);
-          if (maximizing) { if (sp >= beta) return beta; if (sp > alpha) alpha = sp; }
-          else { if (sp <= alpha) return alpha; if (sp < beta) beta = sp; }
+
           const color = maximizing ? 'w' : 'b';
           const inCheckNow = inChk(state, color);
-          // If we are in check, we MUST look at all legal moves to save ourselves.
-          // If not, we only look at captures/promotions.
+
+          // ── Stand Pat — ONLY when not in check ──────────────────────────────
+          // Fix 1: stand-pat before inCheckNow check allowed cuts to prune forced
+          // recaptures after check-giving moves (e.g. Qxd2+ losing the queen).
+          let best, sp;
+          if (!inCheckNow) {
+            sp = evaluate(state);
+            best = sp;
+            if (maximizing) {
+              if (sp >= beta) return sp;   // fail-soft: return real score
+              if (sp > alpha) alpha = sp;
+            } else {
+              if (sp <= alpha) return sp;  // fail-soft: return real score
+              if (sp < beta) beta = sp;
+            }
+          } else {
+            best = maximizing ? -Infinity : Infinity;
+            sp = best; // sentinel — disables delta pruning when in check
+          }
+
+          // All moves when in check; captures/promos/near-checks otherwise
           const caps = inCheckNow ? legalMoves(state, color) : legalMoves(state, color).filter(m => {
             if (state.board[m.tr][m.tc] !== ' ') return true;
-            // ★ FIX 1: En Passant — pawn moves diagonally to empty square
             if (state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ') return true;
             if (state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
             if (qd < 2) {
@@ -8874,7 +8929,13 @@ limitations under the License.
             }
             return false;
           });
-          // ⚡ Optimized Quiescence Sorting: pre-calculate scores once to avoid N·logN string lookups
+
+          // Checkmate detection when in check with no legal moves
+          if (inCheckNow && caps.length === 0) {
+            return maximizing ? -99999 + qd : 99999 - qd;
+          }
+
+          // MVV-LVA pre-scoring
           const scores = new Int32Array(caps.length);
           for (let i = 0; i < caps.length; i++) {
             const mi = caps[i];
@@ -8883,102 +8944,103 @@ limitations under the License.
             const u = p.toUpperCase();
             const isEP = (u === 'P' && mi.fc !== mi.tc && t === ' ');
             const tv = isEP ? PV['P'] : (t !== ' ' ? (PV[t.toUpperCase()] || 0) : 0);
-            const pv = PV[u] || 0;
-            scores[i] = (tv * 10) - pv; // Standard MVV-LVA
+            scores[i] = (tv * 10) - (PV[u] || 0);
           }
 
           const DELTA = 250;
-          if (maximizing) {
-            for (let idx = 0; idx < caps.length; idx++) {
-              // Selection Sort: swap best remaining to front (lazy cutoff)
-              let bestIdx = idx, bestSc = scores[idx];
-              for (let j = idx + 1; j < caps.length; j++) { if (scores[j] > bestSc) { bestSc = scores[j]; bestIdx = j; } }
-              if (bestIdx !== idx) {
-                const tm = caps[bestIdx]; caps[bestIdx] = caps[idx]; caps[idx] = tm;
-                const ts = scores[bestIdx]; scores[bestIdx] = scores[idx]; scores[idx] = ts;
-              }
-              const m = caps[idx];
-
-              const isEP = state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ';
-              const tv = isEP ? PV['P'] : (PV[state.board[m.tr][m.tc].toUpperCase()] || 0);
-              const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
-              if (!isP && sp + tv + DELTA < alpha) continue;
-              const save = makeMove(state, m);
-              let s;
-              const oppInCheck = inChk(state, opp(color));
-              try { s = quiesce(state, alpha, beta, false, deadline, qd + 1, oppInCheck); }
-              finally { unmakeMove(state, m, save); }
-              if (s >= beta) return beta; if (s > alpha) alpha = s;
+          for (let idx = 0; idx < caps.length; idx++) {
+            // Lazy selection sort
+            let bestIdx = idx, bestSc = scores[idx];
+            for (let j = idx + 1; j < caps.length; j++) { if (scores[j] > bestSc) { bestSc = scores[j]; bestIdx = j; } }
+            if (bestIdx !== idx) {
+              const tm = caps[bestIdx]; caps[bestIdx] = caps[idx]; caps[idx] = tm;
+              const ts = scores[bestIdx]; scores[bestIdx] = scores[idx]; scores[idx] = ts;
             }
-            return alpha;
-          } else {
-            for (let idx = 0; idx < caps.length; idx++) {
-              let bestIdx = idx, bestSc = scores[idx];
-              for (let j = idx + 1; j < caps.length; j++) { if (scores[j] > bestSc) { bestSc = scores[j]; bestIdx = j; } }
-              if (bestIdx !== idx) {
-                const tm = caps[bestIdx]; caps[bestIdx] = caps[idx]; caps[idx] = tm;
-                const ts = scores[bestIdx]; scores[bestIdx] = scores[idx]; scores[idx] = ts;
-              }
-              const m = caps[idx];
+            const m = caps[idx];
+            const isEP = state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ';
+            const tv = isEP ? PV['P'] : (PV[state.board[m.tr][m.tc].toUpperCase()] || 0);
+            const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
 
-              const isEP = state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ';
-              const tv = isEP ? PV['P'] : (PV[state.board[m.tr][m.tc].toUpperCase()] || 0);
-              const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
-              if (!isP && sp - tv - DELTA > beta) continue;
-              const save = makeMove(state, m);
-              let s;
-              const oppInCheck = inChk(state, opp(color));
-              try { s = quiesce(state, alpha, beta, true, deadline, qd + 1, oppInCheck); }
-              finally { unmakeMove(state, m, save); }
-              if (s <= alpha) return alpha; if (s < beta) beta = s;
+            // ── Delta pruning — ONLY when not in check ───────────────────────
+            // Fix 2: delta pruning was pruning king evasions (tv=0), leaving the
+            // tree with no evaluated moves in check positions.
+            if (!inCheckNow && !isP) {
+              if (maximizing  && sp + tv + DELTA < alpha) continue;
+              if (!maximizing && sp - tv - DELTA > beta)  continue;
             }
-            return beta;
+
+            const save = makeMove(state, m);
+            const oppInCheck = inChk(state, opp(color));
+            let s;
+            try { s = quiesce(state, alpha, beta, !maximizing, deadline, qd + 1, oppInCheck); }
+            finally { unmakeMove(state, m, save); }
+
+            // ── Fail-Soft update ─────────────────────────────────────────────
+            // Fix 3: old code returned alpha/beta at cutoff, masking real losses
+            // (e.g. -315 knight sacrifice reported as -50 alpha boundary).
+            if (maximizing) {
+              if (s > best) best = s;
+              if (s >= beta) return best;
+              if (s > alpha) alpha = s;
+            } else {
+              if (s < best) best = s;
+              if (s <= alpha) return best;
+              if (s < beta) beta = s;
+            }
           }
+          return best;
         }
 
-        const tt = new Map();
-        const MAX_TT = 200000; // Larger table — depth-aware eviction keeps it useful
+        // ── Transposition Table — Int32Array, 5 slots × 1M entries = 20 MB ──────
+        // Layout: [hashL | hashH | score | (depth<<2)|flag | encodedMove]
+        // 64-bit key (hashL + hashH) prevents type-1 collision errors.
+        // Always-replace with depth preference — no eviction, no GC pressure.
+        const TT_SIZE = 1 << 20; // 1 048 576 entries
+        const TT_MASK = TT_SIZE - 1;
+        const ttData = new Int32Array(TT_SIZE * 5);
         const TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2;
         let gameHashCount = new Map();
 
-        // Depth-aware TT eviction: instead of clearing everything when the table is
-        // full, remove only entries with depth <= 3 (shallow, least reusable).
-        // In long endgames (150+ moves) the table fills with deep entries that won't
-        // be hit again — so we evict more aggressively to avoid OOM and d:0 crashes.
-        function ttEvict() {
-          let evicted = 0;
-          for (const [k, v] of tt) {
-            if (v.depth <= 3) { tt.delete(k); evicted++; if (evicted >= 40000) break; }
-          }
-          // If not enough shallow to evict, fall back to clearing the oldest HALF
-          // (endgames have deep entries that are no longer reachable — purge more)
-          if (evicted < 5000) {
-            let n = 0; const half = Math.floor(tt.size / 2);
-            for (const k of tt.keys()) { tt.delete(k); if (++n >= half) break; }
-          }
+        const _PC = { Q:1, R:2, B:3, N:4, q:1, r:2, b:3, n:4 };
+        const _PS = [null, 'Q', 'R', 'B', 'N'];
+        function encodeMove(m) {
+          if (!m) return 0;
+          return (m.fr << 12) | (m.fc << 9) | (m.tr << 6) | (m.tc << 3) | (_PC[m.promo] || 0);
+        }
+        function decodeMove(v) {
+          if (!v) return null;
+          return { fr: (v >> 12) & 7, fc: (v >> 9) & 7, tr: (v >> 6) & 7, tc: (v >> 3) & 7, promo: _PS[v & 7] };
+        }
+        function ttGet(bkL, bkH) {
+          const s = (bkL & TT_MASK) * 5;
+          if ((ttData[s] | 0) !== (bkL | 0) || (ttData[s + 1] | 0) !== (bkH | 0)) return null;
+          return { score: ttData[s + 2], depth: ttData[s + 3] >> 2, flag: ttData[s + 3] & 3, bestMove: decodeMove(ttData[s + 4]) };
+        }
+        function ttSet(bkL, bkH, score, depth, flag, bestMove) {
+          const s = (bkL & TT_MASK) * 5;
+          ttData[s] = bkL; ttData[s + 1] = bkH; ttData[s + 2] = score;
+          ttData[s + 3] = (depth << 2) | flag; ttData[s + 4] = encodeMove(bestMove);
         }
 
         function minimax(state, depth, alpha, beta, maximizing, deadline, nullOk = true) {
           searchNodes++; // 📊
           if (Date.now() >= deadline) throw 'TIMEOUT';
-          const bk = zob(state);
-          // 📝 Repetition in current line? O(depth) integer check.
-          // Detects perpetual checks, king shuffling, etc. without string ops.
-          if (searchSet.has(bk)) return 0;
-          // ★ 50-move rule — draw if no pawn move or capture in 100 half-moves
+          const bkL = state.hashL, bkH = state.hashH;
+          const bkS = (bkL ^ bkH) >>> 0; // XOR-fold for searchSet (repetition detection)
+          if (searchSet.has(bkS)) return 0;
           if ((state.halfMoveClock || 0) >= 100) return 0;
-          // TT lookup + Hash Move
+          // TT lookup — full 64-bit key prevents type-1 errors
           const alphaOrig = alpha;
           let hashMove = null;
-          if (tt.has(bk)) {
-            const e = tt.get(bk);
-            hashMove = e.bestMove || null; // 🚀 Recuperamos la mejor jugada anterior
-            if (e.depth >= depth) {
+          const _tte = ttGet(bkL, bkH);
+          if (_tte) {
+            hashMove = _tte.bestMove;
+            if (_tte.depth >= depth) {
               ttHitsCount++; // 📊
-              if (e.flag === TT_EXACT) return e.score;
-              if (e.flag === TT_LOWER && e.score > alpha) alpha = e.score;
-              if (e.flag === TT_UPPER && e.score < beta) beta = e.score;
-              if (alpha >= beta) return e.score;
+              if (_tte.flag === TT_EXACT) return _tte.score;
+              if (_tte.flag === TT_LOWER && _tte.score > alpha) alpha = _tte.score;
+              if (_tte.flag === TT_UPPER && _tte.score < beta) beta = _tte.score;
+              if (alpha >= beta) return _tte.score;
             }
           }
           if (depth <= 0) return quiesce(state, alpha, beta, maximizing, deadline);
@@ -8999,15 +9061,19 @@ limitations under the License.
             if (hasMajorOrMinor) {
               const R = depth >= 8 ? 3 : 2;
               const savedTurn = state.turn; const savedEP = state.enPassantTarget;
+              const savedHL = state.hashL, savedHH = state.hashH;
+              // Null move: flip turn bit + remove EP key
+              let nmL = state.hashL, nmH = state.hashH;
+              if (savedEP) { nmL = (nmL ^ Z_EP_L[savedEP[1]]) >>> 0; nmH = (nmH ^ Z_EP_H[savedEP[1]]) >>> 0; }
+              nmL = (nmL ^ ZBL) >>> 0; nmH = (nmH ^ ZBH) >>> 0;
+              state.hashL = nmL; state.hashH = nmH;
               state.turn = opp(color); state.enPassantTarget = null;
-              // Note: minimax will push its own hash via its internal push-before-move-loop.
-              // Do NOT push here — minimax's entry check would see its own hash and return 0.
               try {
                 const nullScore = minimax(state, depth - 1 - R, alpha, beta, !maximizing, deadline, false);
                 if (maximizing && nullScore >= beta) { return beta; }
                 if (!maximizing && nullScore <= alpha) { return alpha; }
               } catch (e) { if (String(e) === 'TIMEOUT') throw e; }
-              finally { state.turn = savedTurn; state.enPassantTarget = savedEP; }
+              finally { state.turn = savedTurn; state.enPassantTarget = savedEP; state.hashL = savedHL; state.hashH = savedHH; }
             }
           }
 
@@ -9028,7 +9094,7 @@ limitations under the License.
           const staticEval = !checked && depth <= 2 ? evaluate(state) : null;
           const canFutility = staticEval !== null && !checked;
 
-          searchStack.push(bk); searchSet.add(bk); // 📝 Push current node onto the search path
+          searchStack.push(bkS); searchSet.add(bkS); // 📝 Push XOR-fold key onto search path
           try {
           for (let idx = 0; idx < moves.length; idx++) {
             // ── Selection Sort: swap best remaining to front (lazy — stops at first cutoff) ──
@@ -9099,13 +9165,13 @@ limitations under the License.
               break;
             }
           }
-          } finally { searchSet.delete(bk); searchStack.pop(); } // 📝 Always pop — even on TIMEOUT or break
+          } finally { searchSet.delete(bkS); searchStack.pop(); } // 📝 Always pop — even on TIMEOUT or break
           const flag = best <= alphaOrig ? TT_UPPER : best >= beta ? TT_LOWER : TT_EXACT;
-          // ☣️ ANTI-TT POLLUTION: solo sobrescribimos si aportamos valor real
-          const _existing = tt.get(bk);
-          if (!_existing || depth >= _existing.depth || _existing.flag !== TT_EXACT) {
-            if (tt.size > MAX_TT) ttEvict();
-            tt.set(bk, { score: best, depth, flag, bestMove: bestMoveFound || moves[0] || null });
+          // Depth-preference overwrite: replace if slot is foreign or new entry is deeper
+          const _ws = (bkL & TT_MASK) * 5;
+          const _sameKey = (ttData[_ws] | 0) === (bkL | 0) && (ttData[_ws + 1] | 0) === (bkH | 0);
+          if (!_sameKey || depth >= (ttData[_ws + 3] >> 2) || (ttData[_ws + 3] & 3) !== TT_EXACT) {
+            ttSet(bkL, bkH, best, depth, flag, bestMoveFound || moves[0] || null);
           }
           return best;
         }
@@ -9140,15 +9206,12 @@ limitations under the License.
             }
 
 
-            // Note: tt is intentionally NOT cleared here — positions evaluated while the
-            // human was thinking are still valid and speed up the next search.
-            // ttEvict() handles capacity management when tt.size >= MAX_TT.
-            // In very long games (100+ moves) the TT can get huge — proactively evict
-            // if we're over half the limit before starting a new search.
-            if (tt.size > MAX_TT / 2) ttEvict();
+            // Note: ttData (flat Int32Array) persists across searches — positions evaluated while
+            // the human was thinking remain valid. Slots are overwritten in place by depth preference.
             killers = Array(64).fill(null).map(() => [null, null]);
             histTable = Array(64).fill(null).map(() => Array(64).fill(0));
-            const _rootBk = zob(state);
+            computeZobFull(state); // sets state.hashL and state.hashH (64-bit, O(64) once)
+            const _rootBk = (state.hashL ^ state.hashH) >>> 0; // XOR-fold for searchSet
             searchStack = [_rootBk]; searchSet = new Set([_rootBk]); // 📝 init with root position
 
             const maxDepth = Math.max(1, msg.depth || 3);
