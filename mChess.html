@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.2
+Monolith Chess v2.18.3
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.2</title>
+  <title>Monolith Chess v2.18.3</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.2 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.3 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.2</div>
+        v2.18.3</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3828,7 +3828,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.2", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.3", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -11751,6 +11751,15 @@ limitations under the License.
           if (!hanging.danger && !destAttacker && history.length <= 6 && (riskLevel === 'medium' || riskLevel === 'high')) riskLevel = 'low';
           if (hanging.danger) riskLevel = 'high';
 
+          // SEE check on the moving piece's destination:
+          // If the piece lands on a square where it's immediately captured for a net loss
+          // (e.g. Bc6 pinning d7 but pawn takes the bishop), add a heavy penalty.
+          const isQMove = board[move.fr][move.fc]?.toUpperCase() !== undefined;
+          const movePieceSee = isQMove && board[move.tr][move.tc] === ' '
+            ? see(board, move.tr, move.tc, move.fr, move.fc)
+            : null; // For captures, SEE is already handled by injected capture filter
+          const destSeeHeavyLoss = movePieceSee !== null && movePieceSee < -50;
+
           const reply = getImmediateReplyRisk(move, sideToAnalyze);
 
           const myPieceVal = PIECE_VALUES[board[move.fr][move.fc].toUpperCase()] || 0;
@@ -11788,6 +11797,8 @@ limitations under the License.
           }
 
           let tacticalPenalty = (isBook ? 0 : severeDrop) + hangingPenalty + abandonedPenalty;
+          // If the piece immediately loses material on landing (SEE < -50), add heavy penalty
+          if (destSeeHeavyLoss && !isMate) tacticalPenalty += Math.abs(movePieceSee);
 
           if (isMate) {
             riskLevel = 'low';
@@ -12823,6 +12834,16 @@ limitations under the License.
               pr += dr; pc += dc;
             }
             if (pinnedP && between === 1) {
+              // SEE check: if the pinning piece is immediately captured, it's not a real pin
+              const pinSee = see(board, m.tr, m.tc, m.fr, m.fc);
+              if (pinSee < 0) {
+                // Pinning piece will be taken for free — mention the tactic but warn about the cost
+                const pinnedName = getLocalizedPieceName(pinnedP);
+                const myPieceName = getLocalizedPieceName(movingPiece);
+                return en
+                  ? `⚠️ This move pins the enemy ${pinnedName}, but your ${myPieceName} will be immediately captured — the pin is not free.`
+                  : `⚠️ Este movimiento clava el ${pinnedName} enemigo, pero tu ${myPieceName} será capturada inmediatamente — la clavada no es gratis.`;
+              }
               const pinnedName = getLocalizedPieceName(pinnedP);
               const pinnedSq = sqName(pinnedR, pinnedC);
               const myPieceName = getLocalizedPieceName(movingPiece);
@@ -12874,6 +12895,18 @@ limitations under the License.
         }
       }
       if (highValueTargetsHit.size >= 2 && piece !== 'P') {
+        // Verify the forking piece is not immediately captured (SEE >= 0)
+        // A fork where your piece is immediately taken for free is not a fork — it's a blunder.
+        const forkSee = see(board, m.tr, m.tc, m.fr, m.fc);
+        const forkIsCapture = target !== ' ';
+        // For non-captures: if SEE on landing square < 0, the piece will be taken for nothing
+        // For captures: SEE already accounts for the capture chain
+        if (!forkIsCapture && forkSee < 0) {
+          // The forking piece lands on a square where it will be taken — not a real fork
+          return en
+            ? `⚠️ This move attacks multiple pieces, but your ${getLocalizedPieceName(movingPiece)} will be captured immediately after — check if the exchange is worth it.`
+            : `⚠️ Este movimiento ataca varias piezas, pero tu ${getLocalizedPieceName(movingPiece)} será capturada inmediatamente después — comprueba si el intercambio merece la pena.`;
+        }
         return en ? "🔱 Tactical strike! A fork attacking multiple valuable pieces." : "🔱 ¡Golpe maestro! Un ataque doble (tenedor) a piezas de gran valor.";
       }
 
@@ -13091,15 +13124,20 @@ limitations under the License.
     function getEducationalTip() {
       const moveCount = Math.ceil(history.length / 2);
       const piecesCount = board.flat().filter(p => p !== ' ').length;
+      const myColor = turn;
+      // Check if the current player has already castled
+      const alreadyCastled = myColor === 'w'
+        ? (!castleRights.K && !castleRights.Q && board[7].indexOf('K') !== 4)
+        : (!castleRights.k && !castleRights.q && board[0].indexOf('k') !== 4);
       const openingTips = currentLanguage === 'en'
         ? [
           "📘 <strong>Opening tip:</strong> move knights and bishops first.",
-          "📘 <strong>Opening tip:</strong> castle early to keep your king safe.",
+          ...(alreadyCastled ? [] : ["📘 <strong>Opening tip:</strong> castle early to keep your king safe."]),
           "📘 <strong>Opening tip:</strong> fight for the center with pawns and pieces."
         ]
         : [
           "📘 <strong>Tip de apertura:</strong> mueve primero caballos y alfiles.",
-          "📘 <strong>Tip de apertura:</strong> enrócate pronto para proteger a tu rey.",
+          ...(alreadyCastled ? [] : ["📘 <strong>Tip de apertura:</strong> enrócate pronto para proteger a tu rey."]),
           "📘 <strong>Tip de apertura:</strong> lucha por el centro con peones y piezas."
         ];
       const middlegameTips = currentLanguage === 'en'
