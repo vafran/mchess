@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.9b
+Monolith Chess v2.19.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.9b</title>
+  <title>Monolith Chess v2.19.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.9b · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.19.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.9b</div>
+        v2.19.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -2945,6 +2945,7 @@ limitations under the License.
     let playerColor = 'w';
     let boardFlipped = false;
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
+    let makeMoveGeneration = 0; // 🔴 RACE FIX: incremented on reset to abort stale async makeMove (promo modal race)
     let _currentEngineDone = null; // 🔴 RACE FIX: reference to active engineSearch resolve(), called by init() to unblock instantly
     // Character dialogs for intro and reactions (multilingual + emoji)
     const characterDialogs = {
@@ -3890,13 +3891,14 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.9b", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.19.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
       aiSearchGeneration++;
+      makeMoveGeneration++; // abort any async makeMove awaiting promo modal
       // 🔴 RACE FIX: Immediately unblock any pending engineSearch Promise.
       // Without this, the old triggerAI coroutine stays alive for up to 39s (timeoutMs+4000)
       // and both old and new triggerAI run concurrently, corrupting the board.
@@ -4934,7 +4936,10 @@ limitations under the License.
         } else {
           // Jugador humano elige pieza - MANTENER animating=true durante el modal
           render();
+          const _promoGen = makeMoveGeneration; // snapshot generation before await
           const promoPiece = await promptPromotion(color);
+          // If init() ran while the modal was open, abort — don't corrupt the new game
+          if (makeMoveGeneration !== _promoGen) { animating = false; return; }
           board[tr][tc] = promoPiece;
           animating = false; // ✨ Liberar DESPUÉS del modal
         }
@@ -12463,6 +12468,21 @@ limitations under the License.
 
             let tacticalPenalty = severeDrop + hangingPenalty + abandonedPenalty;
 
+            // 🚨 SEE CHECK for book moves: if the piece immediately loses material on its
+            // landing square (pawn advancing into an attacked square), add a heavy penalty.
+            // This catches suicidal book advances the hanging/reply system misses.
+            if (opt.isBook && !isMate) {
+              const isQuietBookMove = board[mv.tr][mv.tc] === ' '; // non-capture
+              if (isQuietBookMove) {
+                const landingSee = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
+                if (landingSee < -50) {
+                  // The piece will be taken at a loss — significant penalty regardless of book status
+                  tacticalPenalty += Math.abs(landingSee);
+                  if (riskLevel === 'low') riskLevel = 'high';
+                }
+              }
+            }
+
             if (isMate) {
               riskLevel = 'low';
               tacticalPenalty = 0;
@@ -14094,18 +14114,19 @@ limitations under the License.
         }
         try { updateStatusHUD(); } catch (_) {}
         setLanguage(currentLanguage);
-        // Defer render to next frame so CSS layout (widths, centering) is applied first
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            render(); updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar();
-            commentaryLog = []; resetCommentaryStyleMemory();
-            const _cs = Math.max(0, history.length - 5);
-            for (let _ci = _cs; _ci < history.length; _ci++) addCommentaryEntry(history[_ci], history.slice(0, _ci + 1));
-            switchTab('commentary');
-            showToast(currentLanguage === 'en' ? '♟️ Game restored' : '♟️ Partida restaurada', 2000);
-            if (gameMode === 'ai' && turn !== playerColor && !aiThinking) setTimeout(triggerAI, 400);
-          });
-        });
+        // Dispatch resize so the browser recalculates @media rules (flex→block on mobile)
+        // before render(). setTimeout 150ms > two rAFs and covers the browser's layout cycle.
+        window.dispatchEvent(new Event('resize'));
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize')); // second dispatch in case first was too early
+          render(); updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar();
+          commentaryLog = []; resetCommentaryStyleMemory();
+          const _cs = Math.max(0, history.length - 5);
+          for (let _ci = _cs; _ci < history.length; _ci++) addCommentaryEntry(history[_ci], history.slice(0, _ci + 1));
+          switchTab('commentary');
+          showToast(currentLanguage === 'en' ? '♟️ Game restored' : '♟️ Partida restaurada', 2000);
+          if (gameMode === 'ai' && turn !== playerColor && !aiThinking) setTimeout(triggerAI, 400);
+        }, 150);
       } else {
         document.querySelector('h1').style.display = 'none';
         document.getElementById('topBar').classList.add('hidden');
