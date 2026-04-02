@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.3
+Monolith Chess v2.18.4
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.3</title>
+  <title>Monolith Chess v2.18.4</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.3 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.4 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.3</div>
+        v2.18.4</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3828,7 +3828,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.3", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.4", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -12687,6 +12687,74 @@ limitations under the License.
       }
     }
 
+    // ── quickSearch ────────────────────────────────────────────────────────────
+    // Shallow depth-2 search on the main thread (max 80ms) to enrich move descriptions.
+    // Called by getStrategicIntent after making a move to detect:
+    //   - Mate in 2 threats the current side can create
+    //   - Material wins > 150cp that static analysis misses
+    //   - Enemy refutations > 200cp that make a move dangerous
+    // Returns { mateThreat, gainCp, refuteCp, bestFollowUp } or null on timeout.
+    function quickSearch(moveColor, boardAfterMove) {
+      // Don't run if the AI is thinking or another search is active
+      if (aiThinking || searchContext.active) return null;
+      try {
+        beginSearch(80); // 80ms hard cap
+        const enemyColor = moveColor === 'w' ? 'b' : 'w';
+
+        // Save global board, swap to the post-move board
+        const savedBoard = board;
+        const savedTurn = turn;
+        const savedEP = enPassantTarget;
+        board = boardAfterMove;
+        turn = enemyColor; // enemy moves next
+
+        let mateThreat = false;
+        let gainCp = 0;
+        let refuteCp = 0;
+        let bestFollowUp = null;
+
+        // 1. Scan for mate threats: can WE deliver checkmate in 1 from the new position?
+        //    (mate in 2 total: our move + the mating move)
+        const ourNextMoves = getLegalMovesForColorInPlace(moveColor);
+        // Temporarily swap turn to moveColor to check our follow-up moves
+        turn = moveColor;
+        for (const nx of ourNextMoves) {
+          if (isSearchTimedOut()) break;
+          const prev = makeMoveOnBoard(nx);
+          const givesMate = inCheck(enemyColor, board) && getLegalMovesForColorInPlace(enemyColor).length === 0;
+          unmakeMove(prev);
+          if (givesMate) { mateThreat = true; bestFollowUp = nx; break; }
+        }
+
+        // 2. Evaluate position after enemy's best reply (depth 2 from our side's perspective)
+        if (!isSearchTimedOut()) {
+          turn = enemyColor;
+          // Run a quick depth-2 search from enemy's perspective
+          const score = minimax(null, 2, -Infinity, Infinity, enemyColor === 'w', 'hard', false);
+          // score is from White's perspective; convert to moveColor's perspective
+          const scoreForMe = moveColor === 'w' ? score : -score;
+          // Compare to static eval of the post-move position
+          turn = enemyColor;
+          const staticScore = evaluateBoard(board, 'hard');
+          const staticForMe = moveColor === 'w' ? staticScore : -staticScore;
+
+          gainCp = scoreForMe - staticForMe;  // positive = we gain more than static
+          refuteCp = -gainCp;                  // positive refute = enemy gains vs our static
+        }
+
+        // 3. Restore global state
+        board = savedBoard;
+        turn = savedTurn;
+        enPassantTarget = savedEP;
+        endSearch();
+
+        return { mateThreat, gainCp, refuteCp, bestFollowUp };
+      } catch (_) {
+        endSearch();
+        return null;
+      }
+    }
+
     function getStrategicIntent(m, color = turn) {
       const movingPiece = board[m.fr][m.fc];
       if (!movingPiece || movingPiece === ' ') return "";
@@ -12696,6 +12764,34 @@ limitations under the License.
       const enemyColor = color === 'w' ? 'b' : 'w';
       const en = currentLanguage === 'en';
       const isEnd = isEndgameCheck(board);
+
+      // ── quickSearch enrichment ─────────────────────────────────────────────
+      // Run a shallow 2-ply search to detect tactics the static checks miss.
+      // Results are used to override or append to the description below.
+      const qs = quickSearch(color, copy);
+      // Helper: append a quickSearch note to any description string
+      const withQS = (base) => {
+        if (!qs) return base;
+        if (qs.mateThreat) {
+          const sq = qs.bestFollowUp ? sqName(qs.bestFollowUp.tr, qs.bestFollowUp.tc) : '';
+          return base + (en
+            ? ` <strong>💀 Mate threat on ${sq}!</strong> Your next move could be checkmate.`
+            : ` <strong>💀 ¡Amenaza de mate en ${sq}!</strong> Tu siguiente jugada puede ser jaque mate.`);
+        }
+        if (qs.refuteCp >= 250) {
+          // Enemy has a strong reply — warn the player
+          return base + (en
+            ? ` ⚠️ <em>Warning: the opponent has a strong response that wins ~${Math.round(qs.refuteCp / 100 * 10) / 10} pawns of material.</em>`
+            : ` ⚠️ <em>Atención: el rival tiene una respuesta fuerte que gana ~${Math.round(qs.refuteCp / 100 * 10) / 10} peones de material.</em>`);
+        }
+        if (qs.gainCp >= 200) {
+          // Move is tactically stronger than it looks
+          return base + (en
+            ? ` 📈 <em>This move creates a concrete advantage of ~${Math.round(qs.gainCp / 100 * 10) / 10} pawns after the best follow-up.</em>`
+            : ` 📈 <em>Este movimiento crea una ventaja concreta de ~${Math.round(qs.gainCp / 100 * 10) / 10} peones con la mejor continuación.</em>`);
+        }
+        return base;
+      };
 
       // 🏆 1. MAXIMUM PRIORITY: CHECKMATE AND CHECK
       if (inCheck(enemyColor, copy)) {
@@ -12717,9 +12813,9 @@ limitations under the License.
       if ((piece === 'Q' || piece === 'R') && isEnd) {
         const movesAfter = getAllMovesForColor(enemyColor, copy).length;
         if (movesAfter === 0 && !inCheck(enemyColor, copy)) {
-          return en ? "⚠️ Careful: this causes stalemate (draw). Give the king space!" : "⚠️ Cuidado: esto provoca tablas por ahogado. ¡El rey rival debe tener salida!";
+          return withQS(en ? "⚠️ Careful: this causes stalemate (draw). Give the king space!" : "⚠️ Cuidado: esto provoca tablas por ahogado. ¡El rey rival debe tener salida!");
         }
-        return en ? "It cuts off the enemy king and prepares the final attack." : "Corta el paso al rey rival en la jaula final.";
+        return withQS(en ? "It cuts off the enemy king and prepares the final attack." : "Corta el paso al rey rival en la jaula final.");
       }
 
       // 💀 3.5 MATE THREAT — one of our next moves would give checkmate
@@ -12730,9 +12826,9 @@ limitations under the License.
         const nx2 = simulateMove(copy, nx);
         if (inCheck(enemyColor, nx2) && getAllMovesForColor(enemyColor, nx2).length === 0) {
           const threatSq = sqName(nx.tr, nx.tc);
-          return en
+          return withQS(en
             ? `💀 Mate threat on ${threatSq}! The opponent must stop it immediately or the game is over.`
-            : `💀 ¡Amenaza de jaque mate en ${threatSq}! El rival debe pararla ahora o la partida termina.`;
+            : `💀 ¡Amenaza de jaque mate en ${threatSq}! El rival debe pararla ahora o la partida termina.`);
         }
       }
 
@@ -12769,40 +12865,40 @@ limitations under the License.
           // Case 1: Capture — counter-attack is better than retreating
           if (targetPieceVal > 0) {
             if (targetPieceVal >= myPieceVal) {
-              return en
+              return withQS(en
                 ? `⚔️ Counter-attack! Your ${pieceName} was under threat — you respond by capturing a piece of equal or greater value.`
-                : `⚔️ ¡Contraataque! Tu ${pieceName} estaba amenazada — respondes capturando una pieza de igual o mayor valor.`;
+                : `⚔️ ¡Contraataque! Tu ${pieceName} estaba amenazada — respondes capturando una pieza de igual o mayor valor.`);
             }
-            return en
+            return withQS(en
               ? `⚔️ Your ${pieceName} was under attack — you respond by capturing an enemy piece to avoid losing material.`
-              : `⚔️ Tu ${pieceName} estaba bajo ataque — respondes capturando una pieza enemiga para no perder material.`;
+              : `⚔️ Tu ${pieceName} estaba bajo ataque — respondes capturando una pieza enemiga para no perder material.`);
           }
 
           // Case 2: Pawn escape — distinguish advance from retreat
           if (piece === 'P') {
             const isAdvance = (color === 'w' && m.tr < m.fr) || (color === 'b' && m.tr > m.fr);
             if (isAdvance) {
-              return en
+              return withQS(en
                 ? `🚶 Space gain: the Pawn advances and escapes the attack, restricting enemy piece mobility.`
-                : `🚶 Ganancia de espacio: el Peón avanza y escapa del ataque, restringiendo la movilidad de las piezas enemigas.`;
+                : `🚶 Ganancia de espacio: el Peón avanza y escapa del ataque, restringiendo la movilidad de las piezas enemigas.`);
             }
             // Pawn can't actually retreat normally, so this covers diagonal captures (handled above)
-            return en
+            return withQS(en
               ? `🛡️ Your Pawn escapes the attack by moving to a safer square.`
-              : `🛡️ Tu Peón escapa del ataque moviéndose a una casilla más segura.`;
+              : `🛡️ Tu Peón escapa del ataque moviéndose a una casilla más segura.`);
           }
 
           // Case 3: Piece retreat with pin bonus
           if (createsPinDesc) {
-            return en
+            return withQS(en
               ? `🛡️ You rescue your ${pieceName} to a safe square${createsPinDesc}`
-              : `🛡️ Salvas tu ${pieceName} a una casilla segura${createsPinDesc}`;
+              : `🛡️ Salvas tu ${pieceName} a una casilla segura${createsPinDesc}`);
           }
 
           // Case 4: Generic piece retreat to safety
-          return en
+          return withQS(en
             ? `🛡️ Your ${pieceName} was under attack — you move it to a safe square to avoid losing it for free.`
-            : `🛡️ Tu ${pieceName} estaba atacada — la mueves a una casilla segura para no perderla gratis.`;
+            : `🛡️ Tu ${pieceName} estaba atacada — la mueves a una casilla segura para no perderla gratis.`);
         }
       }
 
@@ -12840,16 +12936,16 @@ limitations under the License.
                 // Pinning piece will be taken for free — mention the tactic but warn about the cost
                 const pinnedName = getLocalizedPieceName(pinnedP);
                 const myPieceName = getLocalizedPieceName(movingPiece);
-                return en
+                return withQS(en
                   ? `⚠️ This move pins the enemy ${pinnedName}, but your ${myPieceName} will be immediately captured — the pin is not free.`
-                  : `⚠️ Este movimiento clava el ${pinnedName} enemigo, pero tu ${myPieceName} será capturada inmediatamente — la clavada no es gratis.`;
+                  : `⚠️ Este movimiento clava el ${pinnedName} enemigo, pero tu ${myPieceName} será capturada inmediatamente — la clavada no es gratis.`);
               }
               const pinnedName = getLocalizedPieceName(pinnedP);
               const pinnedSq = sqName(pinnedR, pinnedC);
               const myPieceName = getLocalizedPieceName(movingPiece);
-              return en
+              return withQS(en
                 ? `📌 Pin! Your ${myPieceName} pins the enemy ${pinnedName} on ${pinnedSq} — it cannot move without exposing the King to capture.`
-                : `📌 ¡Clavada! Tu ${myPieceName} clava el ${pinnedName} enemigo en ${pinnedSq} — no puede moverse sin dejar al Rey expuesto.`;
+                : `📌 ¡Clavada! Tu ${myPieceName} clava el ${pinnedName} enemigo en ${pinnedSq} — no puede moverse sin dejar al Rey expuesto.`);
             }
           }
         }
@@ -12875,9 +12971,9 @@ limitations under the License.
               const hasSight = pieceAttacksSquareIgnoringTarget(sr, sc, eKr2, eKc2, copy, color, sType);
               if (!hadSight && hasSight) {
                 const friendName = getLocalizedPieceName(copy[sr][sc]);
-                return en
+                return withQS(en
                   ? `⚡ By moving, you open a direct attacking line for your ${friendName} toward the enemy king — dangerous threats are now possible.`
-                  : `⚡ Al moverte, abres una línea de ataque directa de tu ${friendName} hacia el rey enemigo — ahora son posibles amenazas peligrosas.`;
+                  : `⚡ Al moverte, abres una línea de ataque directa de tu ${friendName} hacia el rey enemigo — ahora son posibles amenazas peligrosas.`);
               }
             }
           }
@@ -12903,11 +12999,11 @@ limitations under the License.
         // For captures: SEE already accounts for the capture chain
         if (!forkIsCapture && forkSee < 0) {
           // The forking piece lands on a square where it will be taken — not a real fork
-          return en
+          return withQS(en
             ? `⚠️ This move attacks multiple pieces, but your ${getLocalizedPieceName(movingPiece)} will be captured immediately after — check if the exchange is worth it.`
-            : `⚠️ Este movimiento ataca varias piezas, pero tu ${getLocalizedPieceName(movingPiece)} será capturada inmediatamente después — comprueba si el intercambio merece la pena.`;
+            : `⚠️ Este movimiento ataca varias piezas, pero tu ${getLocalizedPieceName(movingPiece)} será capturada inmediatamente después — comprueba si el intercambio merece la pena.`);
         }
-        return en ? "🔱 Tactical strike! A fork attacking multiple valuable pieces." : "🔱 ¡Golpe maestro! Un ataque doble (tenedor) a piezas de gran valor.";
+        return withQS(en ? "🔱 Tactical strike! A fork attacking multiple valuable pieces." : "🔱 ¡Golpe maestro! Un ataque doble (tenedor) a piezas de gran valor.");
       }
 
       // 👻 5. TACTICAL MASTERY: DISCOVERED ATTACK
@@ -12927,12 +13023,12 @@ limitations under the License.
         }
       }
       if (isDiscoveredAttack) {
-        return en ? "👻 Sneaky! You unleash a powerful discovered attack." : "👻 ¡Magia táctica! Liberas una línea y creas un letal ataque a la descubierta.";
+        return withQS(en ? "👻 Sneaky! You unleash a powerful discovered attack." : "👻 ¡Magia táctica! Liberas una línea y creas un letal ataque a la descubierta.");
       }
 
       // 🌪️ 6. POSITIONAL MASTERY: ROOK ON SEVENTH RANK
       if (piece === 'R' && ((color === 'w' && m.tr === 1) || (color === 'b' && m.tr === 6))) {
-        return en ? "🌪️ Total domination! Rook on the 7th rank paralyzes the enemy." : "🌪️ ¡Dominio posicional! La torre en séptima fila paraliza el desarrollo rival.";
+        return withQS(en ? "🌪️ Total domination! Rook on the 7th rank paralyzes the enemy." : "🌪️ ¡Dominio posicional! La torre en séptima fila paraliza el desarrollo rival.");
       }
 
       // 🏗️ 6.5 DOUBLED ROOKS — two rooks on same file/rank with nothing between them
@@ -12947,9 +13043,9 @@ limitations under the License.
           for (let r = minR + 1; r < maxR; r++) if (copy[r][m.tc] !== ' ') { clear = false; break; }
           if (clear) {
             const fileLetter = 'abcdefgh'[m.tc];
-            return en
+            return withQS(en
               ? `🏗️ Excellent! Both rooks on the ${fileLetter}-file — doubled rooks press the position with maximum force.`
-              : `🏗️ ¡Excelente! Ambas torres en la columna ${fileLetter} — torres dobladas ejercen presión máxima sobre la posición.`;
+              : `🏗️ ¡Excelente! Ambas torres en la columna ${fileLetter} — torres dobladas ejercen presión máxima sobre la posición.`);
           }
         }
         // Check rank (row)
@@ -12961,9 +13057,9 @@ limitations under the License.
           for (let c = minC + 1; c < maxC; c++) if (copy[m.tr][c] !== ' ') { clear = false; break; }
           if (clear) {
             const rankNum = 8 - m.tr;
-            return en
+            return withQS(en
               ? `🏗️ Excellent! Both rooks on rank ${rankNum} — doubled rooks control the entire row.`
-              : `🏗️ ¡Excelente! Ambas torres en la fila ${rankNum} — torres dobladas controlan toda la fila.`;
+              : `🏗️ ¡Excelente! Ambas torres en la fila ${rankNum} — torres dobladas controlan toda la fila.`);
           }
         }
       }
@@ -12975,7 +13071,7 @@ limitations under the License.
         if (inBounds(m.tr + pDir, m.tc - 1) && copy[m.tr + pDir][m.tc - 1] === (color === 'w' ? 'P' : 'p')) defByPawn = true;
         if (inBounds(m.tr + pDir, m.tc + 1) && copy[m.tr + pDir][m.tc + 1] === (color === 'w' ? 'P' : 'p')) defByPawn = true;
         if (defByPawn) {
-          return en ? "🐙 Strong outpost! Your knight becomes a monster in enemy territory." : "🐙 ¡Puesto avanzado! Tu caballo se convierte en un monstruo apoyado en campo enemigo.";
+          return withQS(en ? "🐙 Strong outpost! Your knight becomes a monster in enemy territory." : "🐙 ¡Puesto avanzado! Tu caballo se convierte en un monstruo apoyado en campo enemigo.");
         }
       }
 
@@ -12983,13 +13079,13 @@ limitations under the License.
       if (piece === 'P' && (m.fc === 7 || m.fc === 6 || m.fc === 0 || m.fc === 1)) {
         const kPos = findKing(color, board);
         if (kPos && Math.abs(kPos[1] - m.fc) <= 2 && Math.abs(kPos[0] - m.fr) <= 1) {
-          return en ? "🌬️ Prophylaxis. Creating \"luft\" for the king to avoid back-rank mates." : "🌬️ Profilaxis pura. Haces \"aire\" para el rey evitando mates de pasillo en el futuro.";
+          return withQS(en ? "🌬️ Prophylaxis. Creating \"luft\" for the king to avoid back-rank mates." : "🌬️ Profilaxis pura. Haces \"aire\" para el rey evitando mates de pasillo en el futuro.");
         }
       }
 
       // ⚔️ 9. MATERIAL CAPTURES
       if (target !== ' ') {
-        return en ? `⚔️ You win material by capturing the ${getLocalizedPieceName(target)}.` : `⚔️ Lógica material: ganas ventaja al capturar su ${getLocalizedPieceName(target)}.`;
+        return withQS(en ? `⚔️ You win material by capturing the ${getLocalizedPieceName(target)}.` : `⚔️ Lógica material: ganas ventaja al capturar su ${getLocalizedPieceName(target)}.`);
       }
 
       // 🛡️ 10. ACTIVE DEFENSE (Rescue and Coverage)
@@ -12997,7 +13093,7 @@ limitations under the License.
       const wasHanging = !evaluateSquareSafety(m.fr, m.fc, color, board, enemyColor).isSafe;
       const isSafeNow = evaluateSquareSafety(m.tr, m.tc, color, copy, enemyColor).isSafe;
       if (wasHanging && isSafeNow) {
-        return en ? "🛡️ You rescue your piece moving it to a safe square." : "🛡️ Reacción crítica: rescatas tu pieza moviéndola a una casilla segura.";
+        return withQS(en ? "🛡️ You rescue your piece moving it to a safe square." : "🛡️ Reacción crítica: rescatas tu pieza moviéndola a una casilla segura.");
       }
       // Case B: this move shields another piece that was hanging
       // Guard: only claim "shield" if the threatened piece is genuinely safer after the move,
@@ -13015,9 +13111,9 @@ limitations under the License.
           const safetyAfter = evaluateSquareSafety(r, c, color, copy, enemyColor);
           // Require that the piece is now genuinely safe AND it has fewer attackers
           if (safetyAfter.isSafe && safetyAfter.attackers.length < safetyBefore.attackers.length) {
-            return en
+            return withQS(en
               ? `🛡️ This move shields your ${getLocalizedPieceName(p)}, reducing the threat against it.`
-              : `🛡️ Excelente defensa: esta jugada reduce la amenaza sobre tu ${getLocalizedPieceName(p)} vulnerable.`;
+              : `🛡️ Excelente defensa: esta jugada reduce la amenaza sobre tu ${getLocalizedPieceName(p)} vulnerable.`);
           }
         }
       }
@@ -13030,7 +13126,7 @@ limitations under the License.
             const vVal = PIECE_VALUES[victim.toUpperCase()] || 0;
             const mVal = PIECE_VALUES[piece] || 0;
             if (vVal > mVal || !evaluateSquareSafety(nextM.tr, nextM.tc, enemyColor, copy, color).isSafe) {
-              return en ? `🎯 It forces the opponent to react by attacking the ${getLocalizedPieceName(victim)}.` : `🎯 Ganas un tiempo al ejercer fuerte presión sobre su ${getLocalizedPieceName(victim)}.`;
+              return withQS(en ? `🎯 It forces the opponent to react by attacking the ${getLocalizedPieceName(victim)}.` : `🎯 Ganas un tiempo al ejercer fuerte presión sobre su ${getLocalizedPieceName(victim)}.`);
             }
           }
         }
@@ -13043,11 +13139,11 @@ limitations under the License.
 
       if (piece === 'N' || piece === 'B') {
         if (newMobility > oldMobility && !isEdgeOrCorner) {
-          return en ? "🌱 You develop the piece, maximizing its active diagonals/squares." : "🌱 Gran desarrollo: colocas la pieza en su máxima actividad radiante.";
+          return withQS(en ? "🌱 You develop the piece, maximizing its active diagonals/squares." : "🌱 Gran desarrollo: colocas la pieza en su máxima actividad radiante.");
         } else if (isEdgeOrCorner) {
-          return en ? "🔄 You maneuver the piece towards the flank." : "🔄 Maniobra cerrada: llevas la pieza hacia el flanco buscando otro ángulo.";
+          return withQS(en ? "🔄 You maneuver the piece towards the flank." : "🔄 Maniobra cerrada: llevas la pieza hacia el flanco buscando otro ángulo.");
         } else {
-          return en ? "🧭 You reposition the piece looking for a solid scheme." : "🧭 Reciclaje posicional: mueves la pieza buscando un esquema más sólido.";
+          return withQS(en ? "🧭 You reposition the piece looking for a solid scheme." : "🧭 Reciclaje posicional: mueves la pieza buscando un esquema más sólido.");
         }
       }
 
@@ -13055,7 +13151,7 @@ limitations under the License.
       const distOld = Math.abs(3.5 - m.fr) + Math.abs(3.5 - m.fc);
       const distNew = Math.abs(3.5 - m.tr) + Math.abs(3.5 - m.tc);
       if (distNew < distOld && !isEdgeOrCorner && piece !== 'P') {
-        return en ? "📍 Centralization! Your piece dominates from the heart of the board." : "📍 ¡Centralización! La pieza gobierna desde el corazón del tablero.";
+        return withQS(en ? "📍 Centralization! Your piece dominates from the heart of the board." : "📍 ¡Centralización! La pieza gobierna desde el corazón del tablero.");
       }
 
       // ♟️ 14. PAWNS — passed pawn advance or space gain
@@ -13074,18 +13170,18 @@ limitations under the License.
         if (isPassed) {
           const stepsLeft = color === 'w' ? m.tr : 7 - m.tr;
           if (stepsLeft <= 2) {
-            return en
+            return withQS(en
               ? `👑 Passed pawn almost there! Only ${stepsLeft} step${stepsLeft !== 1 ? 's' : ''} from becoming a Queen — the opponent must stop it now.`
-              : `👑 ¡Peón pasado casi en meta! Solo ${stepsLeft} paso${stepsLeft !== 1 ? 's' : ''} para coronar y convertirse en Dama — el rival debe pararlo ahora.`;
+              : `👑 ¡Peón pasado casi en meta! Solo ${stepsLeft} paso${stepsLeft !== 1 ? 's' : ''} para coronar y convertirse en Dama — el rival debe pararlo ahora.`);
           }
           if (stepsLeft <= 4) {
-            return en
+            return withQS(en
               ? `♟️ Passed pawn advancing! No enemy pawn can block it. Push it forward — it could become a Queen.`
-              : `♟️ ¡Peón pasado avanzando! Ningún peón enemigo puede bloquearlo. Empújalo hacia adelante — puede convertirse en Dama.`;
+              : `♟️ ¡Peón pasado avanzando! Ningún peón enemigo puede bloquearlo. Empújalo hacia adelante — puede convertirse en Dama.`);
           }
-          return en
+          return withQS(en
             ? `♟️ You create a passed pawn! It has no enemy pawns ahead or to its sides. Advance it — it is your long-term winning plan.`
-            : `♟️ ¡Creas un peón pasado! No tiene peones enemigos por delante ni en columnas adyacentes. Avánzalo — es tu plan ganador a largo plazo.`;
+            : `♟️ ¡Creas un peón pasado! No tiene peones enemigos por delante ni en columnas adyacentes. Avánzalo — es tu plan ganador a largo plazo.`);
         }
         // Context-aware pawn description
         const isFlankCol = m.tc === 0 || m.tc === 1 || m.tc === 6 || m.tc === 7;
@@ -13106,19 +13202,19 @@ limitations under the License.
             if (board[0][6] === 'n') undevelopedMinors++;
           }
           if (undevelopedMinors >= 2) {
-            return en
+            return withQS(en
               ? `⚠️ Flank pawn move with ${undevelopedMinors} pieces still at home. This wastes a tempo — consider developing a knight or bishop instead to fight for the center.`
-              : `⚠️ Peón de flanco con ${undevelopedMinors} piezas aún en casa. Esto pierde un tempo — considera desarrollar un caballo o alfil para luchar por el centro.`;
+              : `⚠️ Peón de flanco con ${undevelopedMinors} piezas aún en casa. Esto pierde un tempo — considera desarrollar un caballo o alfil para luchar por el centro.`);
           }
         }
         // Generic space gain
-        return en
+        return withQS(en
           ? "🧱 Space gain: the pawn advances and restricts the movement of enemy pieces."
-          : "🧱 Ganancia de espacio: el peón avanza y restringe la movilidad de las piezas enemigas.";
+          : "🧱 Ganancia de espacio: el peón avanza y restringe la movilidad de las piezas enemigas.");
       }
 
       // 15. SOLID GENERIC FALLBACK
-      return en ? "It improves your coordination and solidifies the position." : "Mejora la armonía de tus piezas y solidifica la posición general.";
+      return withQS(en ? "It improves your coordination and solidifies the position." : "Mejora la armonía de tus piezas y solidifica la posición general.");
     }
 
     function getEducationalTip() {
