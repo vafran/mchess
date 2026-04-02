@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.16.4
+Monolith Chess v2.17.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.16.4</title>
+  <title>Monolith Chess v2.17.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.16.4 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.17.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.16.4</div>
+        v2.17.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3791,7 +3791,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.16.4", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.17.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7959,6 +7959,121 @@ limitations under the License.
           return (c > 0 && b[er][c - 1] === pawn) || (c < 7 && b[er][c + 1] === pawn);
         }
 
+        // ── SEE (Static Exchange Evaluation) ────────────────────────────────
+        // Pre-allocated typed arrays — zero allocations inside the hot loop.
+        const _seeOcc     = new Uint8Array(64);   // marks squares removed during simulation
+        const _seeOccList = new Int32Array(32);   // tracks which squares to clear after call
+        const _seeGain    = new Int32Array(32);   // gain[d]: net material at depth d
+
+        // see(b, toR, toC, fromR, fromC)
+        //   Returns the net material gain for the side making the first capture
+        //   on square (toR,toC) from (fromR,fromC).
+        //   Positive = winning exchange, 0 = even, Negative = losing exchange.
+        //   Handles X-ray attacks correctly (removed pieces are transparent to rays).
+        function see(b, toR, toC, fromR, fromC) {
+          const SV = { P:100, N:325, B:335, R:500, Q:900, K:20000 };
+          let d = 0, nOcc = 0;
+
+          _seeGain[0] = SV[b[toR][toC].toUpperCase()] || 0;
+          _seeOcc[fromR*8+fromC] = 1; _seeOccList[nOcc++] = fromR*8+fromC;
+          let curPiece = b[fromR][fromC];
+          let side = clr(curPiece) === 'w' ? 'b' : 'w';
+
+          while (d < 30) {
+            d++;
+            _seeGain[d] = (SV[curPiece.toUpperCase()] || 0) - _seeGain[d-1];
+
+            let lR = -1, lC = -1, lV = 2e9;
+
+            // ── 1. Pawns ────────────────────────────────────────────────────
+            const pd = side === 'w' ? 1 : -1;
+            const pCh = side === 'w' ? 'P' : 'p';
+            for (const dc of [-1, 1]) {
+              const r2 = toR+pd, c2 = toC+dc;
+              if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2][c2] === pCh) {
+                lR = r2; lC = c2; lV = 100; break;
+              }
+            }
+
+            // ── 2. Knights ──────────────────────────────────────────────────
+            if (lV > 325) {
+              const nCh = side === 'w' ? 'N' : 'n';
+              for (const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+                const r2 = toR+dr, c2 = toC+dc;
+                if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2][c2] === nCh) {
+                  lR = r2; lC = c2; lV = 325; break;
+                }
+              }
+            }
+
+            // ── 3. Bishops + queens on diagonals (X-ray through used squares)
+            if (lV > 335) {
+              const bCh = side === 'w' ? 'B' : 'b', qCh = side === 'w' ? 'Q' : 'q';
+              for (const [dr,dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+                let r2 = toR+dr, c2 = toC+dc;
+                while (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8) {
+                  if (!_seeOcc[r2*8+c2]) {
+                    const p = b[r2][c2];
+                    if (p !== ' ') {
+                      if (p === bCh) { lR = r2; lC = c2; lV = 335; }
+                      else if (p === qCh && lV > 900) { lR = r2; lC = c2; lV = 900; }
+                      break;
+                    }
+                  }
+                  r2 += dr; c2 += dc;
+                }
+                if (lV === 335) break;
+              }
+            }
+
+            // ── 4. Rooks + queens on straights (X-ray through used squares) ─
+            if (lV > 500) {
+              const rCh = side === 'w' ? 'R' : 'r', qCh = side === 'w' ? 'Q' : 'q';
+              for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+                let r2 = toR+dr, c2 = toC+dc;
+                while (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8) {
+                  if (!_seeOcc[r2*8+c2]) {
+                    const p = b[r2][c2];
+                    if (p !== ' ') {
+                      if (p === rCh) { lR = r2; lC = c2; lV = 500; }
+                      else if (p === qCh && lV > 900) { lR = r2; lC = c2; lV = 900; }
+                      break;
+                    }
+                  }
+                  r2 += dr; c2 += dc;
+                }
+                if (lV === 500) break;
+              }
+            }
+
+            // ── 5. King ─────────────────────────────────────────────────────
+            if (lV === 2e9) {
+              const kCh = side === 'w' ? 'K' : 'k';
+              outerK: for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+                if (!dr && !dc) continue;
+                const r2 = toR+dr, c2 = toC+dc;
+                if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2][c2] === kCh) {
+                  lR = r2; lC = c2; lV = 20000; break outerK;
+                }
+              }
+            }
+
+            if (lR === -1) break; // No more attackers
+
+            _seeOcc[lR*8+lC] = 1; _seeOccList[nOcc++] = lR*8+lC;
+            curPiece = b[lR][lC];
+            side = side === 'w' ? 'b' : 'w';
+          }
+
+          // Negamax propagation — neither side is forced to make a losing capture
+          while (d > 0) { _seeGain[d-1] = -Math.max(-_seeGain[d-1], _seeGain[d]); d--; }
+
+          // Restore _seeOcc to all-zeros (no heap allocation, O(captures) cleanup)
+          for (let i = 0; i < nOcc; i++) _seeOcc[_seeOccList[i]] = 0;
+
+          return _seeGain[0];
+        }
+
         function evaluate(state) {
           const b = state.board;
           let s = 0, ph = 0;
@@ -8629,7 +8744,9 @@ limitations under the License.
             enPassantTarget: Array.isArray(s.enPassantTarget) ? [...s.enPassantTarget] : null,
             halfMoveClock: s.halfMoveClock || 0,
             hashL: s.hashL || 0,
-            hashH: s.hashH || 0
+            hashH: s.hashH || 0,
+            wKing: s.wKing ? [...s.wKing] : null,
+            bKing: s.bKing ? [...s.bKing] : null
           };
         }
         function applyMove(state, m) {
@@ -8652,6 +8769,8 @@ limitations under the License.
           b[m.tr][m.tc] = p; b[m.fr][m.fc] = ' ';
           if (p === 'P' && m.tr === 0) b[m.tr][m.tc] = m.promo || 'Q';
           if (p === 'p' && m.tr === 7) b[m.tr][m.tc] = (m.promo ? (m.promo.toLowerCase()) : 'q');
+          if (p === 'K') ns.wKing = [m.tr, m.tc];
+          if (p === 'k') ns.bKing = [m.tr, m.tc];
           if (u === 'K') { if (p === 'K') { ns.castleRights.K = false; ns.castleRights.Q = false; } else { ns.castleRights.k = false; ns.castleRights.q = false; } }
           if (u === 'R') {
             if (m.fr === 7 && m.fc === 7) ns.castleRights.K = false; if (m.fr === 7 && m.fc === 0) ns.castleRights.Q = false;
@@ -8736,7 +8855,7 @@ limitations under the License.
           }
           state.turn = opp(state.turn);
           // ── Incremental Zobrist update — O(1), full 64-bit ───────────────────
-          if (save.oldHashL !== undefined) {
+          if (save.oldHashL !== undefined && save.oldHashH !== undefined) {
             let hl = save.oldHashL, hh = save.oldHashH;
             const _pi = pidx(save.p), _sq = m.fr * 8 + m.fc, _dq = m.tr * 8 + m.tc;
             // Remove moving piece from source
@@ -8888,9 +9007,14 @@ limitations under the License.
           const tv = isEP ? PV['P'] : (t && t !== ' ' ? (PV[t.toUpperCase()] || 0) : 0);
           const pv = PV[u] || 0;
 
-          // 🔴 TIER 1: CAPTURES (Level 1,000,000+) - Strict MVV-LVA
+          // 🔴 TIER 1: CAPTURES — SEE-ordered
+          // Winning/equal captures (SEE ≥ 0): highest priority, sorted by gain.
+          // Losing captures (SEE < 0): deprioritised below quiet moves — tried last.
           if (tv > 0) {
-            return 1000000 + (tv * 10) - pv;
+            if (isEP) return 1000000 + (tv * 10) - pv; // EP: always a pawn gain, treat as winning
+            const seeVal = see(state.board, m.tr, m.tc, m.fr, m.fc);
+            if (seeVal >= 0) return 1000000 + seeVal;   // Winning/equal — sort by net SEE gain
+            return seeVal - 100000;                      // Losing — well below quiet moves
           }
 
           // 🟠 TIER 2: PROMOTIONS (Level 900,000)
@@ -8991,6 +9115,10 @@ limitations under the License.
             const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
 
             if (!inCheckNow && !isP) {
+              // SEE pruning: skip losing captures (e.g. BxN when N defended by P = -20cp)
+              // EP captures are always pawn-takes-pawn so SEE ≥ 0 — no special case needed.
+              if (!isEP && tv > 0 && see(state.board, m.tr, m.tc, m.fr, m.fc) < 0) continue;
+              // Delta pruning: skip captures that can't raise alpha even with full margin
               if (maximizing  && sp + tv + DELTA < alpha) continue;
               if (!maximizing && sp - tv - DELTA > beta)  continue;
             }
@@ -9038,7 +9166,8 @@ limitations under the License.
         }
         function decodeMove(v) {
           if (!v) return null;
-          return { fr: (v >> 12) & 7, fc: (v >> 9) & 7, tr: (v >> 6) & 7, tc: (v >> 3) & 7, promo: _PS[v & 7] };
+          const pr = v & 7;
+          return { fr: (v >> 12) & 7, fc: (v >> 9) & 7, tr: (v >> 6) & 7, tc: (v >> 3) & 7, promo: pr ? _PS[pr] : undefined };
         }
         function ttGet(bkL, bkH) {
           const s = (bkL & TT_MASK) * 5;
