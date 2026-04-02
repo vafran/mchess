@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.1
+Monolith Chess v2.18.2
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.1</title>
+  <title>Monolith Chess v2.18.2</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.1 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.2 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.1</div>
+        v2.18.2</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3828,7 +3828,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.2", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -11207,7 +11207,6 @@ limitations under the License.
       const isEndgame = piecesCount <= 12;
 
       // Before any move: show a brief welcome instead of strategic noise
-      // (Skip this for FEN-loaded positions — analyse the actual position instead)
       if (history.length === 0 && !fenPositionLoaded) {
         pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--primary); padding:10px; background:rgba(168,85,247,0.05); border-radius:4px;">
           <span class="hint-icon" style="margin-right:10px;">🦉</span>
@@ -11222,7 +11221,95 @@ limitations under the License.
 
       const notes = [];
 
-      // 1. 📚 Historical Logic + Opening Continuation
+      // ── 0. HONEST POSITION EVALUATION ─────────────────────────────────────
+      // This always comes first. It tells the player clearly who is winning and by how much.
+      {
+        const rawEval = evaluateBoard(board, 'hard'); // positive = white winning
+        const myEval = myColor === 'w' ? rawEval : -rawEval; // positive = I am winning
+        const absEval = Math.abs(myEval);
+
+        // Material count for each side
+        let myMat = 0, enemyMat = 0;
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+          const p = board[r][c];
+          if (!p || p === ' ') continue;
+          const v = PIECE_VALUES[p.toUpperCase()] || 0;
+          if (colorOf(p) === myColor) myMat += v;
+          else enemyMat += v;
+        }
+        const matDiff = myMat - enemyMat; // positive = I have more material
+
+        let evalIcon, evalColor, evalTitle, evalBody;
+
+        if (myEval >= 300) {
+          evalIcon = '✅';
+          evalColor = 'var(--success)';
+          evalTitle = en ? 'You are winning!' : '¡Vas ganando!';
+          if (myEval >= 800) {
+            evalBody = en
+              ? `You have a decisive advantage (~${(absEval/100).toFixed(1)} pawns). Convert carefully — avoid blunders.`
+              : `Tienes ventaja decisiva (~${(absEval/100).toFixed(1)} peones). Convierte con cuidado — evita errores.`;
+          } else {
+            evalBody = en
+              ? `Clear advantage (~${(absEval/100).toFixed(1)} pawns). Keep the pressure, don't let the opponent back in.`
+              : `Ventaja clara (~${(absEval/100).toFixed(1)} peones). Mantén la presión, no dejes volver al rival.`;
+          }
+        } else if (myEval <= -300) {
+          evalIcon = '⚠️';
+          evalColor = 'var(--danger)';
+          evalTitle = en ? 'You are losing.' : 'Vas perdiendo.';
+          if (myEval <= -800) {
+            evalBody = en
+              ? `You are in a very difficult position (~${(absEval/100).toFixed(1)} pawns behind). Look for complications or a fortress — straight play won't be enough.`
+              : `Estás en una posición muy difícil (~${(absEval/100).toFixed(1)} peones de desventaja). Busca complicaciones o una fortaleza — el juego directo no basta.`;
+          } else {
+            evalBody = en
+              ? `Significant disadvantage (~${(absEval/100).toFixed(1)} pawns). Focus on defence and counterplay — avoid further losses.`
+              : `Desventaja significativa (~${(absEval/100).toFixed(1)} peones). Céntrate en defenderte y crear contraataque — evita más pérdidas.`;
+          }
+          // Also tell them specifically what material they lost if the deficit is material-based
+          if (matDiff <= -300) {
+            const lost = Math.abs(matDiff);
+            const lostDesc = lost >= 900 ? (en ? 'a queen' : 'una dama')
+              : lost >= 490 ? (en ? 'a rook or more' : 'una torre o más')
+              : lost >= 290 ? (en ? 'a piece' : 'una pieza')
+              : (en ? 'some pawns' : 'algunos peones');
+            evalBody += en
+              ? ` You are down ${lostDesc} in material.`
+              : ` Estás abajo en material (${lostDesc}).`;
+          }
+        } else if (myEval >= 100) {
+          evalIcon = '📈';
+          evalColor = 'var(--primary)';
+          evalTitle = en ? 'Slight edge.' : 'Ligera ventaja.';
+          evalBody = en
+            ? `You have a small but real advantage. Consolidate and don't give it away.`
+            : `Tienes una pequeña pero real ventaja. Consolídala y no la regales.`;
+        } else if (myEval <= -100) {
+          evalIcon = '📉';
+          evalColor = 'var(--accent)';
+          evalTitle = en ? 'Slightly worse.' : 'Ligeramente peor.';
+          evalBody = en
+            ? `You are a little behind. Look for counterplay and don't let the position drift further.`
+            : `Vas un poco por detrás. Busca contraataque y no dejes que la posición empeore.`;
+        } else {
+          evalIcon = '⚖️';
+          evalColor = 'var(--primary)';
+          evalTitle = en ? 'Position is balanced.' : 'Posición equilibrada.';
+          evalBody = en
+            ? `Both sides have roughly equal chances. The player with the better plan will win.`
+            : `Ambos bandos tienen chances similares. Gana quien tenga el mejor plan.`;
+        }
+
+        notes.push({
+          icon: evalIcon,
+          color: evalColor,
+          text: `<strong>${evalTitle}</strong> ${evalBody}`,
+          isEval: true
+        });
+      }
+
+      // ── 1. OPENING THEORY ─────────────────────────────────────────────────
       if (history.length > 0) {
         const motif = detectHistoricalMotifFromHistory(history);
         if (motif) {
@@ -11234,8 +11321,6 @@ limitations under the License.
           });
         }
 
-        // If still in book theory, name the opening and say whether continuation exists.
-        // Defenses (named from black's perspective) are framed as "the opponent chose X".
         if (!fenPositionLoaded && history.length >= 2 && history.length <= 16) {
           try {
             const lastMv = history[history.length - 1];
@@ -11244,7 +11329,6 @@ limitations under the License.
               const localName = perspectiveName(localizeOpeningName(opening.name), myColor);
               const histKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
               const hasNextBook = !!(OPENING_BOOK[histKey] && OPENING_BOOK[histKey].length > 0);
-              // Also check if any book key starts with this position (broader theory detection)
               const isInTheoryLine = hasNextBook ||
                 (history.length <= 6 && Object.keys(OPENING_BOOK).some(k => k.startsWith(histKey + ',')));
               const isDefense = /[Dd]efensa|[Dd]efense|[Ss]icilian|[Ff]rench|[Cc]aro|[Pp]irc|[Aa]lekhine|[Ss]candinavian|[Hh]orwitz|[Bb]erlin/.test(localName);
@@ -11273,22 +11357,65 @@ limitations under the License.
         }
       }
 
-      // 2. 🏰 Central Control Analysis
-      if (!isEndgame) {
-        const centerSquares = [[3, 3], [3, 4], [4, 3], [4, 4]];
-        const myCenter = centerSquares.filter(([r, c]) => colorOf(board[r][c]) === myColor).length;
-        const enemyCenterCount = centerSquares.filter(([r, c]) => colorOf(board[r][c]) === enemyColor).length;
-
-        if (myCenter > enemyCenterCount) {
-          notes.push({ icon: '🏰', text: en ? 'Great! You control the center.' : '¡Genial! Tú controlas el centro.' });
-        } else if (enemyCenterCount > myCenter) {
-          notes.push({ icon: '🎯', text: en ? 'Your rival controls more center squares. Fight for them.' : 'Tu rival controla más centro. Intenta recuperarlo.' });
-        } else {
-          notes.push({ icon: '⚖️', text: en ? 'Center is balanced. Keep developing.' : 'El centro está igualado. Sigue desarrollando.' });
+      // ── 2. CENTER CONTROL — only show if position is not dramatically losing ──
+      // If you're down a rook, "you control the center" is misleading noise.
+      {
+        const rawEval = evaluateBoard(board, 'hard');
+        const myEval = myColor === 'w' ? rawEval : -rawEval;
+        if (myEval > -400 && !isEndgame) {
+          const centerSquares = [[3, 3], [3, 4], [4, 3], [4, 4]];
+          const myCenter = centerSquares.filter(([r, c]) => colorOf(board[r][c]) === myColor).length;
+          const enemyCenterCount = centerSquares.filter(([r, c]) => colorOf(board[r][c]) === enemyColor).length;
+          if (myCenter > enemyCenterCount) {
+            notes.push({ icon: '🏰', text: en ? 'You control the center — good foundation.' : 'Controlas el centro — buena base posicional.' });
+          } else if (enemyCenterCount > myCenter) {
+            notes.push({ icon: '🎯', text: en ? 'Your rival controls more center squares. Fight for them.' : 'Tu rival controla más centro. Intenta recuperarlo.' });
+          } else if (history.length <= 10) {
+            notes.push({ icon: '⚖️', text: en ? 'Center is balanced. Keep developing.' : 'El centro está igualado. Sigue desarrollando.' });
+          }
         }
       }
 
-      // 3. 🔭 X-Ray Threats — only after pieces have moved (avoids starting-position noise)
+      // ── 3. KING SAFETY — warn if own king is exposed ──────────────────────
+      {
+        const myKChar = myColor === 'w' ? 'K' : 'k';
+        let myKr = -1, myKc = -1;
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+          if (board[r][c] === myKChar) { myKr = r; myKc = c; }
+        }
+        const hasCastled = myColor === 'w'
+          ? !castleRights.K && !castleRights.Q && (myKc !== 4 || myKr !== 7)
+          : !castleRights.k && !castleRights.q && (myKc !== 4 || myKr !== 0);
+        const lostCastling = myColor === 'w'
+          ? (!castleRights.K && !castleRights.Q && !hasCastled)
+          : (!castleRights.k && !castleRights.q && !hasCastled);
+        const kingOnStartFile = (myColor === 'w' && myKc === 4 && myKr === 7) || (myColor === 'b' && myKc === 4 && myKr === 0);
+        if (lostCastling && kingOnStartFile && history.length >= 6 && !isEndgame) {
+          notes.push({
+            icon: '🚨',
+            text: en
+              ? `<strong>Your king has lost castling rights</strong> but is still in the center — this is dangerous. Prioritise king safety immediately.`
+              : `<strong>Tu rey ha perdido el derecho al enroque</strong> pero sigue en el centro — esto es peligroso. Prioriza la seguridad del rey de inmediato.`
+          });
+        } else if (!hasCastled && !isEndgame && history.length >= 8) {
+          const undeveloped = [];
+          if (myColor === 'w') {
+            if (board[7][5] === 'B' || board[7][6] === 'N') undeveloped.push(true);
+          } else {
+            if (board[0][5] === 'b' || board[0][6] === 'n') undeveloped.push(true);
+          }
+          if (undeveloped.length === 0) {
+            notes.push({
+              icon: '🏰',
+              text: en
+                ? `<strong>Consider castling!</strong> Your pieces are developed — castle now to protect your king.`
+                : `<strong>¡Considera enrocar!</strong> Tus piezas están desarrolladas — enroca ahora para proteger al rey.`
+            });
+          }
+        }
+      }
+
+      // ── 4. X-RAY THREATS ─────────────────────────────────────────────────
       if (history.length >= 4) {
         for (let r = 0; r < 8; r++) {
           for (let c = 0; c < 8; c++) {
@@ -11315,7 +11442,7 @@ limitations under the License.
         }
       }
 
-      // 4. ♟️ PASSED PAWNS — detect and explain their strategic importance
+      // ── 5. PASSED PAWNS ───────────────────────────────────────────────────
       const myPawnChar = myColor === 'w' ? 'P' : 'p';
       const enemyPawnChar = myColor === 'w' ? 'p' : 'P';
       const dir = myColor === 'w' ? -1 : 1;
@@ -11338,7 +11465,7 @@ limitations under the License.
         }
       }
       if (passedPawns.length > 0) {
-        passedPawns.sort((a, b) => a.stepsLeft - b.stepsLeft); // closest to promotion first
+        passedPawns.sort((a, b) => a.stepsLeft - b.stepsLeft);
         const best = passedPawns[0];
         const pawnSq = sqName(best.r, best.c);
         notes.push({
@@ -11349,47 +11476,80 @@ limitations under the License.
         });
       }
 
-      // 5. 🔥 ENEMY KING EXPOSURE — warn if our sliding pieces have open lines toward the enemy king
-      if (!isEndgame) {
-        const eKChar = enemyColor === 'w' ? 'K' : 'k';
-        let eKr = -1, eKc = -1;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-          if (board[r][c] === eKChar) { eKr = r; eKc = c; }
-        }
-        if (eKr >= 0) {
-          let attackLines = 0;
-          for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-              const p = board[r][c];
-              if (!p || p === ' ' || colorOf(p) !== myColor) continue;
-              const type = p.toUpperCase();
-              if (!['R', 'B', 'Q'].includes(type)) continue;
-              if (pieceAttacksSquareIgnoringTarget(r, c, eKr, eKc, board, myColor, type)) attackLines++;
-            }
+      // ── 6. ENEMY KING EXPOSURE (only if I'm not losing badly) ────────────
+      {
+        const rawEval = evaluateBoard(board, 'hard');
+        const myEval = myColor === 'w' ? rawEval : -rawEval;
+        if (myEval > -200 && !isEndgame) {
+          const eKChar = enemyColor === 'w' ? 'K' : 'k';
+          let eKr = -1, eKc = -1;
+          for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+            if (board[r][c] === eKChar) { eKr = r; eKc = c; }
           }
-          if (attackLines >= 2) {
-            notes.push({
-              icon: '🔥',
-              text: en
-                ? `<strong>Enemy king is exposed!</strong> You have ${attackLines} pieces with direct lines to the enemy king area. Look for attacking combinations — this is a great moment to press.`
-                : `<strong>¡El rey enemigo está expuesto!</strong> Tienes ${attackLines} piezas con líneas directas hacia el rey rival. Busca combinaciones de ataque — es un gran momento para presionar.`
-            });
+          if (eKr >= 0) {
+            let attackLines = 0;
+            for (let r = 0; r < 8; r++) {
+              for (let c = 0; c < 8; c++) {
+                const p = board[r][c];
+                if (!p || p === ' ' || colorOf(p) !== myColor) continue;
+                const type = p.toUpperCase();
+                if (!['R', 'B', 'Q'].includes(type)) continue;
+                if (pieceAttacksSquareIgnoringTarget(r, c, eKr, eKc, board, myColor, type)) attackLines++;
+              }
+            }
+            if (attackLines >= 2) {
+              notes.push({
+                icon: '🔥',
+                text: en
+                  ? `<strong>Enemy king is exposed!</strong> You have ${attackLines} pieces pointing at the enemy king. Look for attacking combinations.`
+                  : `<strong>¡El rey enemigo está expuesto!</strong> Tienes ${attackLines} piezas apuntando al rey rival. Busca combinaciones de ataque.`
+              });
+            }
           }
         }
       }
-      const tip = getEducationalTip();
-      notes.push({
-        icon: '🎓',
-        text: en ? `<strong>Pro Tip:</strong> ${simplifyForKids(tip)}` : `<strong>Consejo:</strong> ${simplifyForKids(tip)}`
-      });
 
-      // 5. Renderizado final
-      pList.innerHTML = notes.map(n => `
-        <div class="hint-item" style="border-left:4px solid var(--primary); padding:10px; margin-bottom:8px; background:rgba(168,85,247,0.05); border-radius:4px;">
-          <span class="hint-icon" style="margin-right:10px;">${n.icon}</span>
-          <span class="hint-text" style="font-size:0.9rem;">${n.text}</span>
-        </div>
-      `).join('');
+      // ── 7. TIP — context-aware ────────────────────────────────────────────
+      {
+        const rawEval = evaluateBoard(board, 'hard');
+        const myEval = myColor === 'w' ? rawEval : -rawEval;
+        if (myEval <= -400) {
+          // When losing badly, give actionable recovery advice, not generic tips
+          const recoveryTips = en ? [
+            'When behind in material, create complications — a simplified position favours the stronger side.',
+            'Look for counterattacking chances. Passive defence rarely saves a lost position.',
+            'Check for any tactical tricks: forks, pins, skewers — one shot can change the game.',
+            'Keep your pieces active. An active piece is worth more than a passive one even down material.',
+          ] : [
+            'Cuando vas perdido en material, crea complicaciones — una posición simplificada favorece al que tiene más.',
+            'Busca posibilidades de contraataque. La defensa pasiva raramente salva una posición perdida.',
+            'Busca trampas tácticas: bifurcaciones, clavadas, empalamientos — un golpe puede cambiarlo todo.',
+            'Mantén tus piezas activas. Una pieza activa vale más que una pasiva aunque vayas con desventaja.',
+          ];
+          const tip = recoveryTips[Math.floor(Math.random() * recoveryTips.length)];
+          notes.push({ icon: '💡', text: en ? `<strong>Recovery tip:</strong> ${tip}` : `<strong>Consejo de recuperación:</strong> ${tip}` });
+        } else {
+          const tip = getEducationalTip();
+          notes.push({ icon: '🎓', text: en ? `<strong>Pro Tip:</strong> ${simplifyForKids(tip)}` : `<strong>Consejo:</strong> ${simplifyForKids(tip)}` });
+        }
+      }
+
+      // ── Render ────────────────────────────────────────────────────────────
+      pList.innerHTML = notes.map(n => {
+        const borderColor = n.color || 'var(--primary)';
+        const bg = n.isEval
+          ? (n.color === 'var(--success)' ? 'rgba(34,197,94,0.07)'
+            : n.color === 'var(--danger)' ? 'rgba(239,68,68,0.07)'
+            : n.color === 'var(--accent)' ? 'rgba(244,114,182,0.07)'
+            : 'rgba(168,85,247,0.05)')
+          : 'rgba(168,85,247,0.05)';
+        return `
+          <div class="hint-item" style="border-left:4px solid ${borderColor}; padding:10px; margin-bottom:8px; background:${bg}; border-radius:4px;">
+            <span class="hint-icon" style="margin-right:10px;">${n.icon}</span>
+            <span class="hint-text" style="font-size:0.9rem;">${n.text}</span>
+          </div>
+        `;
+      }).join('');
     }
     function finishProfessorThinking() {
       professorThinking = false;
