@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.8
+Monolith Chess v2.18.9
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.8</title>
+  <title>Monolith Chess v2.18.9</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.8 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.9 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.8</div>
+        v2.18.9</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3890,7 +3890,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.8", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.9", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -12701,15 +12701,19 @@ limitations under the License.
           turn = enemyColor;
           // Run a quick depth-2 search from enemy's perspective
           const score = minimax(null, 2, -Infinity, Infinity, enemyColor === 'w', 'hard', false);
-          // score is from White's perspective; convert to moveColor's perspective
-          const scoreForMe = moveColor === 'w' ? score : -score;
-          // Compare to static eval of the post-move position
-          turn = enemyColor;
-          const staticScore = evaluateBoard(board, 'hard');
-          const staticForMe = moveColor === 'w' ? staticScore : -staticScore;
-
-          gainCp = scoreForMe - staticForMe;  // positive = we gain more than static
-          refuteCp = -gainCp;                  // positive refute = enemy gains vs our static
+          // Guard against Infinity, NaN, or mate scores (±99999) — clamp to ±2000cp
+          if (!isFinite(score) || Math.abs(score) > 2000) {
+            // Can't produce a meaningful cp estimate — skip gain/refute display
+          } else {
+            // score is from White's perspective; convert to moveColor's perspective
+            const scoreForMe = moveColor === 'w' ? score : -score;
+            // Compare to static eval of the post-move position
+            turn = enemyColor;
+            const staticScore = evaluateBoard(board, 'hard');
+            const staticForMe = moveColor === 'w' ? staticScore : -staticScore;
+            gainCp = scoreForMe - staticForMe;  // positive = we gain more than static
+            refuteCp = -gainCp;                  // positive refute = enemy gains vs our static
+          }
         }
 
         // 3. Restore global state
@@ -12961,14 +12965,11 @@ limitations under the License.
         }
       }
       if (highValueTargetsHit.size >= 2 && piece !== 'P') {
-        // Verify the forking piece is not immediately captured (SEE >= 0)
+        // Verify the forking piece is not immediately captured for a net loss.
         // A fork where your piece is immediately taken for free is not a fork — it's a blunder.
         const forkSee = see(board, m.tr, m.tc, m.fr, m.fc);
-        const forkIsCapture = target !== ' ';
-        // For non-captures: if SEE on landing square < 0, the piece will be taken for nothing
-        // For captures: SEE already accounts for the capture chain
-        if (!forkIsCapture && forkSee < 0) {
-          // The forking piece lands on a square where it will be taken — not a real fork
+        if (forkSee < 0) {
+          // The forking piece will be taken at a loss — warn instead of praising
           return withQS(en
             ? `⚠️ This move attacks multiple pieces, but your ${getLocalizedPieceName(movingPiece)} will be captured immediately after — check if the exchange is worth it.`
             : `⚠️ Este movimiento ataca varias piezas, pero tu ${getLocalizedPieceName(movingPiece)} será capturada inmediatamente después — comprueba si el intercambio merece la pena.`);
