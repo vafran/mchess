@@ -1,298 +1,440 @@
 const puppeteer = require('puppeteer');
-const { spawn } = require('child_process');
-const { Chess } = require('chess.js');
-const path = require('path');
-const fs = require('fs');
-const readline = require('readline');
+const { spawn }  = require('child_process');
+const { Chess }  = require('chess.js');
+const path       = require('path');
+const fs         = require('fs');
+const readline   = require('readline');
 
 // ═══════════════════════════════════════════════════════════════
-// 🏆 AUTOMATED TOURNAMENT: mChess vs Stockfish
+// 🏆 TOURNAMENT v2 — mChess vs Stockfish
+//    Fixes: color alternation, sample size, opening variety,
+//           multi-depth bracketing, phase tracking, CI output
 // ═══════════════════════════════════════════════════════════════
 
 const CONFIG = {
-    numPartidas: 5,             
-    stockfishDepth: 10,        // overridden at runtime by user input
-    timePerGame: 3600000,
-    logFile: path.join(__dirname, 'tournament_results.json')
+    numGames:      20,      // minimum for ±76 ELO precision
+    depths:        [7, 8],  // bracket with two depths (override at runtime)
+    htmlFile:      path.join(__dirname, '..', 'mChess.html'),
+    stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish'),
+    logFile:       path.join(__dirname, 'tournament_v2_results.json'),
+    moveTimeoutMs: 45000,   // 45s max per mChess move
+    gameTimeoutMs: 3600000, // 1h per game
 };
 
-// Calibrated ELO per Stockfish depth (approximate Lichess equivalents)
-const STOCKFISH_ELO_BY_DEPTH = {
-    1: 900,  2: 1100, 3: 1300, 4: 1450, 5: 1600,
-    6: 1750, 7: 1900, 8: 2000, 9: 2100, 10: 2200,
-    12: 2350, 15: 2500, 18: 2700, 20: 2800
+// ELO map (Lichess-calibrated approximations)
+const DEPTH_ELO = {
+    1:900, 2:1100, 3:1300, 4:1450, 5:1600,
+    6:1750, 7:1900, 8:2000, 9:2100, 10:2200,
+    12:2350, 15:2500, 18:2700, 20:2800
 };
-function stockfishELOForDepth(d) {
-    if (STOCKFISH_ELO_BY_DEPTH[d]) return STOCKFISH_ELO_BY_DEPTH[d];
-    // interpolate for unlisted depths
-    const keys = Object.keys(STOCKFISH_ELO_BY_DEPTH).map(Number).sort((a,b)=>a-b);
-    for (let i = 0; i < keys.length - 1; i++) {
+function sfELO(d) {
+    if (DEPTH_ELO[d]) return DEPTH_ELO[d];
+    const keys = Object.keys(DEPTH_ELO).map(Number).sort((a,b)=>a-b);
+    for (let i = 0; i < keys.length-1; i++) {
         if (d > keys[i] && d < keys[i+1]) {
-            const t = (d - keys[i]) / (keys[i+1] - keys[i]);
-            return Math.round(STOCKFISH_ELO_BY_DEPTH[keys[i]] * (1-t) + STOCKFISH_ELO_BY_DEPTH[keys[i+1]] * t);
+            const t = (d-keys[i])/(keys[i+1]-keys[i]);
+            return Math.round(DEPTH_ELO[keys[i]]*(1-t) + DEPTH_ELO[keys[i+1]]*t);
         }
     }
     return 2200;
 }
 
+// ── Opening book for variety ─────────────────────────────────
+// Each entry is a sequence of UCI moves to play before the engines start.
+// Covers the main ECO openings so we get a diverse sample.
+const OPENING_BOOK = [
+    [],             // Starting position (no forced moves)
+    ['e2e4'],       // 1.e4 (King's Pawn)
+    ['d2d4'],       // 1.d4 (Queen's Pawn)
+    ['c2c4'],       // 1.c4 (English)
+    ['g1f3'],       // 1.Nf3 (Reti)
+    ['e2e4','e7e5'],// 1.e4 e5 (Open Game)
+    ['e2e4','c7c5'],// 1.e4 c5 (Sicilian)
+    ['e2e4','e7e6'],// 1.e4 e6 (French)
+    ['e2e4','c7c6'],// 1.e4 c6 (Caro-Kann)
+    ['d2d4','d7d5'],// 1.d4 d5 (Closed)
+    ['d2d4','g8f6'],// 1.d4 Nf6 (Indian)
+    ['e2e4','e7e5','g1f3','b8c6'],      // Open, 2.Nf3 Nc6
+    ['e2e4','c7c5','g1f3','d7d6'],      // Sicilian Najdorf setup
+    ['d2d4','d7d5','c2c4'],             // Queen's Gambit
+    ['e2e4','e7e5','g1f3','g8f6'],      // Petrov
+    ['e2e4','e7e5','f1c4'],             // Italian
+    ['d2d4','g8f6','c2c4','e7e6'],      // Queen's Indian setup
+    ['e2e4','d7d6','d2d4','g8f6'],      // Pirc
+    ['c2c4','e7e5'],                    // Reversed Sicilian
+    ['g1f3','d7d5','g2g3'],             // Reti
+];
 
-class TournamentStats {
-    constructor() {
-        this.partidas = [];
-        this.wins = 0;
-        this.losses = 0;
-        this.draws = 0;
+// ── Stats per depth ──────────────────────────────────────────
+class DepthStats {
+    constructor(depth) {
+        this.depth   = depth;
+        this.sfELO   = sfELO(depth);
+        this.games   = [];
+        this.wW=0; this.wB=0; // wins as white / black
+        this.lW=0; this.lB=0; // losses
+        this.dW=0; this.dB=0; // draws
     }
-
-    addResult(result, moves, reason, pgn) {
-        this.partidas.push({ result, moves, reason, pgn, timestamp: new Date().toISOString() });
-        if (result === '1-0') this.wins++;
-        else if (result === '0-1') this.losses++;
-        else this.draws++;
+    add(result, mChessColor, moves, reason, pgn, phase) {
+        this.games.push({result, mChessColor, moves, reason, pgn, phase,
+                         ts: new Date().toISOString()});
+        const w = mChessColor === 'w';
+        if (result === 'mchess_win')  { if(w) this.wW++; else this.wB++; }
+        else if (result === 'sf_win') { if(w) this.lW++; else this.lB++; }
+        else                          { if(w) this.dW++; else this.dB++; }
     }
+    wins()   { return this.wW + this.wB; }
+    losses() { return this.lW + this.lB; }
+    draws()  { return this.dW + this.dB; }
+    total()  { return this.games.length; }
+    score()  { return this.total() > 0 ? (this.wins() + 0.5*this.draws()) / this.total() : 0; }
 
-    getWinRate() {
-        const total = this.wins + this.losses + this.draws;
-        return total > 0 ? (this.wins / total * 100).toFixed(1) : 0;
-    }
-
-    getAvgMoves() {
-        if (this.partidas.length === 0) return 0;
-        const totalMoves = this.partidas.reduce((sum, p) => sum + p.moves, 0);
-        return (totalMoves / this.partidas.length).toFixed(1);
+    // 95% confidence interval using Wilson score
+    wilsonCI() {
+        const n = this.total(); if (n === 0) return [0,0];
+        const p = this.score();
+        const z = 1.96;
+        const center = (p + z*z/(2*n)) / (1 + z*z/n);
+        const margin = z * Math.sqrt(p*(1-p)/n + z*z/(4*n*n)) / (1+z*z/n);
+        return [Math.max(0, center-margin), Math.min(1, center+margin)];
     }
 
     estimateELO() {
-        const total = this.wins + this.losses + this.draws;
-        if (total === 0) return 'N/A';
-        const score = (this.wins + 0.5 * this.draws) / total;
-        const sfELO = stockfishELOForDepth(CONFIG.stockfishDepth);
-        if (score === 0) return `~${sfELO - 400} (0 wins — test lower depth for precision)`;
-        if (score === 1) return sfELO + 600;
-        const eloDiff = -400 * Math.log10((1 - score) / score);
-        return Math.round(sfELO + eloDiff);
+        const p = this.score();
+        if (p === 0) return this.sfELO - 600;
+        if (p === 1) return this.sfELO + 600;
+        return Math.round(this.sfELO - 400 * Math.log10((1-p)/p));
     }
-
-    printReport() {
-        console.log('\n' + '═'.repeat(60));
-        console.log('🏆 FINAL TOURNAMENT REPORT');
-        console.log('═'.repeat(60));
-        console.log(`📊 Games played: ${this.partidas.length}`);
-        console.log(`✅ Wins (mChess): ${this.wins}`);
-        console.log(`❌ Losses: ${this.losses}`);
-        console.log(`🤝 Draws: ${this.draws}`);
-        console.log(`📈 Win Rate: ${this.getWinRate()}%`);
-        console.log(`📏 Average moves: ${this.getAvgMoves()}`);
-        console.log(`🎯 Estimated ELO: ${this.estimateELO()}`);
-        console.log('═'.repeat(60));
-
-        const reasons = {};
-        this.partidas.forEach(p => { reasons[p.reason] = (reasons[p.reason] || 0) + 1; });
-        console.log('\n📋 Reasons for completion:');
-        Object.entries(reasons).forEach(([reason, count]) => { console.log(`   ${reason}: ${count}`); });
-
-        fs.writeFileSync(CONFIG.logFile, JSON.stringify({
-            config: CONFIG,
-            stats: { wins: this.wins, losses: this.losses, draws: this.draws, winRate: this.getWinRate(), avgMoves: this.getAvgMoves(), estimatedELO: this.estimateELO() },
-            partidas: this.partidas
-        }, null, 2));
-        console.log(`\n💾 Results saved to ${CONFIG.logFile}`);
+    eloCI() {
+        const [lo, hi] = this.wilsonCI();
+        const eloLo = lo===0 ? this.sfELO-600 : Math.round(this.sfELO - 400*Math.log10((1-lo)/lo));
+        const eloHi = hi===1 ? this.sfELO+600 : Math.round(this.sfELO - 400*Math.log10((1-hi)/hi));
+        return [eloLo, eloHi];
+    }
+    print() {
+        const [elo_lo, elo_hi] = this.eloCI();
+        const phases = {};
+        this.games.forEach(g => { phases[g.phase] = (phases[g.phase]||0)+1; });
+        console.log(`\n  📊 Stockfish d${this.depth} (~${this.sfELO} ELO)`);
+        console.log(`     Games: ${this.total()} | W:${this.wins()} L:${this.losses()} D:${this.draws()}`);
+        console.log(`     As White  → W:${this.wW} L:${this.lW} D:${this.dW}`);
+        console.log(`     As Black  → W:${this.wB} L:${this.lB} D:${this.dB}`);
+        console.log(`     Score: ${(this.score()*100).toFixed(1)}%`);
+        console.log(`     ELO estimate: ~${this.estimateELO()}  [95%CI: ${elo_lo}..${elo_hi}]`);
+        console.log(`     Game phases: ${JSON.stringify(phases)}`);
     }
 }
 
-// ✨ FIX: Pasamos el 'browser' como parámetro para reutilizarlo
-async function playMatch(matchNumber, stats, aiLevel, browser) {
-    console.log(`\n${'─'.repeat(60)}`);
-    console.log(`🎮 MATCH ${matchNumber}/${CONFIG.numPartidas}`);
-    console.log('─'.repeat(60));
-    
-    const htmlPath = 'file://' + path.join(__dirname, '..', 'mChess.html');
-    
-    // ✨ FIX: Solo abrimos una pestaña nueva, no todo el navegador
+// ── Stockfish wrapper ────────────────────────────────────────
+function spawnSF() {
+    const sf = spawn(CONFIG.stockfishPath, { stdio: ['pipe','pipe','pipe'] });
+    sf.stdin.write('uci\n');
+    return sf;
+}
+function sfBestMove(sf, fen, depth) {
+    return new Promise((resolve, reject) => {
+        let buf = '';
+        const timeout = setTimeout(() => {
+            sf.stdout.removeListener('data', onData);
+            reject(new Error('Stockfish timeout'));
+        }, 30000);
+        function onData(data) {
+            buf += data.toString();
+            if (buf.includes('bestmove')) {
+                clearTimeout(timeout);
+                sf.stdout.removeListener('data', onData);
+                const m = buf.split('bestmove ')[1]?.split(' ')[0]?.trim();
+                resolve(m || null);
+            }
+        }
+        sf.stdout.on('data', onData);
+        sf.stdin.write(`position fen ${fen}\n`);
+        sf.stdin.write(`go depth ${depth}\n`);
+    });
+}
+
+// ── Detect game phase from move count + piece count ──────────
+function detectPhase(game) {
+    const m = game.history().length;
+    const board = game.board().flat().filter(Boolean);
+    const pieces = board.length - 2; // minus kings
+    if (m <= 16) return 'opening';
+    if (pieces <= 10) return 'endgame';
+    return 'middlegame';
+}
+
+// ── Play one game ─────────────────────────────────────────────
+async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, browser) {
+    const colorStr = mChessColor === 'w' ? '⬜White' : '⬛Black';
+    const openingStr = opening.length ? opening.join(' ') : 'start';
+    console.log(`\n${'─'.repeat(62)}`);
+    console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  Opening:[${openingStr}]  SF:d${depth}`);
+    console.log('─'.repeat(62));
+
     const page = await browser.newPage();
-    
     page.on('console', msg => {
-        if (msg.type() === 'error') console.log('🌐 Browser Error:', msg.text());
+        if (msg.type() === 'error') console.log('🌐 Error:', msg.text().slice(0,120));
     });
 
-    await page.goto(htmlPath);
-    await new Promise(r => setTimeout(r, 1500)); 
-
-    if (aiLevel) {
-        try {
-            await page.evaluate((level) => { if(typeof startAIGame==='function') startAIGame(level); }, aiLevel);
-            await new Promise(r => setTimeout(r, 1500));
-        } catch (e) {
-            console.log('⚠️ Warning: could not inject level:', e.message);
-        }
-    }
-
+    const sf = spawnSF();
     const game = new Chess();
-    let turn = 'w';
-    let moveCount = 0;
-    let reason = 'completed';
-
-    const stockfishPath = process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish.exe');
-    const sf = spawn(stockfishPath); 
-
-    const askStockfish = (fen) => {
-        return new Promise((resolve) => {
-            const listener = (data) => {
-                const output = data.toString();
-                if (output.includes('bestmove')) {
-                    sf.stdout.removeListener('data', listener);
-                    const move = output.split('bestmove ')[1].split(' ')[0];
-                    resolve(move);
-                }
-            };
-            sf.stdout.on('data', listener);
-            sf.stdin.write(`position fen ${fen}\n`);
-            sf.stdin.write(`go depth ${CONFIG.stockfishDepth}\n`);
-        });
-    };
-
-    const startTime = Date.now();
+    let reason = 'unknown';
+    let phase = 'opening';
 
     try {
+        await page.goto('file://' + CONFIG.htmlFile);
+        await new Promise(r => setTimeout(r, 1500));
+        // ✅ Set difficulty directly — do NOT call startAIGame().
+        // startAIGame() queues setTimeout(startNewGame, 1500) which calls init()
+        // and terminates the Worker mid-search, causing all moves to return null.
+        await page.evaluate((level) => {
+            try {
+                currentDifficulty = level;
+                const s = DIFF_SETTINGS && DIFF_SETTINGS[level];
+                if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
+                // Also clear any autosave so the Worker isn't busy with a restored game
+                if (typeof clearSavedGame === 'function') clearSavedGame();
+                // Kill any Worker that might be running from autosave restore
+                if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
+                    try { chessEngineWorker.terminate(); } catch(e) {}
+                    chessEngineWorker = null;
+                }
+            } catch(e) {}
+        }, CONFIG.selectedLevel || 'grandmaster');
+
+        // Apply forced opening moves
+        for (const uci of opening) {
+            const result = game.move({ from: uci.slice(0,2), to: uci.slice(2,4),
+                                       promotion: uci[4] || 'q' });
+            if (!result) { console.log(`⚠️ Opening move ${uci} illegal — skipping rest`); break; }
+        }
+
+        const gameStart = Date.now();
+
         while (!game.isGameOver()) {
-            if (Date.now() - startTime > CONFIG.timePerGame) { reason = 'timeout'; break; }
+            if (Date.now() - gameStart > CONFIG.gameTimeoutMs) { reason = 'game_timeout'; break; }
 
             const fen = game.fen();
-            const historyObj = game.history();
-            
-            let move;
-            let timeTaken = 0;
-            let depthInfo = null;
+            const currentColor = game.turn(); // 'w' or 'b'
+            const isMChess = (currentColor === mChessColor);
+            let move = null;
 
-            if (turn === 'w') {
-                const thinkStart = Date.now();
-                move = await page.evaluate(async (f, h) => {
-                    return await window.askWiseKing(f, h);
-                }, fen, historyObj);
-                timeTaken = (Date.now() - thinkStart) / 1000;
-                // Read real depth achieved from window._lastSearchDepth
-                try {
-                    depthInfo = await page.evaluate(() => window._lastSearchDepth || null);
-                } catch(_) { depthInfo = null; }
+            if (isMChess) {
+                // mChess moves
+                const t0 = Date.now();
+                const movePromise = page.evaluate(async (f, h) => {
+                    try { return await window.askWiseKing(f, h); } catch(e) { return null; }
+                }, fen, game.history());
+
+                const timeoutPromise = new Promise(r => setTimeout(() => r(null), CONFIG.moveTimeoutMs));
+                move = await Promise.race([movePromise, timeoutPromise]);
+
+                const elapsed = ((Date.now() - t0)/1000).toFixed(1);
+                let depth_info = null;
+                try { depth_info = await page.evaluate(() => window._lastSearchDepth || null); } catch(_){}
+                const dStr = depth_info
+                    ? (depth_info.completedDepth === 'book' ? '[book]'
+                        : ` [d${depth_info.completedDepth}/${depth_info.maxDepth}${depth_info.isPartial?'~':''}]`)
+                    : '';
+                console.log(`   👑 mChess ${move || 'null'} (${elapsed}s)${dStr}`);
             } else {
-                move = await askStockfish(fen);
+                // Stockfish moves
+                move = await sfBestMove(sf, fen, depth);
+                console.log(`   🐟 SF     ${move}`);
             }
 
-            if (!move || move === 'null' || move.trim() === '') {
-                console.log(`🏳️ ${turn === 'w' ? 'mChess' : 'Stockfish'} sin jugadas`);
-                reason = turn === 'w' ? 'rey_sabio_sin_jugadas' : 'stockfish_sin_jugadas';
+            if (!move || move === 'null') {
+                reason = isMChess ? 'mchess_no_move' : 'sf_no_move';
                 break;
             }
 
             try {
-                game.move({ 
-                    from: move.slice(0,2), 
-                    to: move.slice(2,4), 
-                    promotion: move.length === 5 ? move[4] : 'q'
-                });
-                
-                // ✨ FIX: Imprimir cada movimiento con el tiempo de cálculo
-                if (turn === 'w') {
-                    const alert = timeTaken >= 30.0 ? ' ⚠️ (Time limit)' : '';
-                    let depthStr = '';
-                    if (depthInfo) {
-                        depthStr = depthInfo.completedDepth === 'book'
-                            ? ' [book]'
-                            : ` [d:${depthInfo.completedDepth}/${depthInfo.maxDepth}${depthInfo.isPartial ? '~' : ''}]`;
-                    }
-                    console.log(`   👑 mChess plays ${move} (⏱️ ${timeTaken.toFixed(1)}s)${alert}${depthStr}`);
-                } else {
-                    console.log(`   🐟 Stockfish plays ${move}`);
-                }
-
-                turn = turn === 'w' ? 'b' : 'w';
-                moveCount++;
-            } catch (e) {
-                console.error(`❌ ILLEGAL MOVE: ${move} (${turn === 'w' ? 'mChess' : 'Stockfish'})`);
-                reason = turn === 'w' ? 'ilegal_rey_sabio' : 'ilegal_stockfish';
+                game.move({ from: move.slice(0,2), to: move.slice(2,4),
+                            promotion: move[4] || 'q' });
+                phase = detectPhase(game);
+            } catch(e) {
+                console.error(`❌ Illegal: ${move} (${isMChess ? 'mChess' : 'SF'})`);
+                reason = isMChess ? 'mchess_illegal' : 'sf_illegal';
                 break;
             }
         }
     } finally {
-        // ✨ FIX: Cerramos la pestaña y matamos a Stockfish SÍ O SÍ
-        try { await page.close(); } catch(e){}
-        try { sf.kill(); } catch(e){}
+        try { await page.close(); } catch(_) {}
+        try { sf.stdin.write('quit\n'); sf.kill(); } catch(_) {}
     }
 
-    let result = '1/2-1/2';
+    // Determine result
+    let result;
     if (game.isCheckmate()) {
-        result = turn === 'w' ? '0-1' : '1-0';
-        reason = 'mate';
+        result = (game.turn() !== mChessColor) ? 'mchess_win' : 'sf_win';
+        reason = 'checkmate';
     } else if (game.isDraw()) {
-        if (game.isStalemate()) reason = 'ahogado';
-        else if (game.isThreefoldRepetition()) reason = 'repeticion';
-        else if (game.isInsufficientMaterial()) reason = 'material_insuficiente';
-        else reason = '50_movimientos';
-    } else if (reason === 'completada') {
-        result = '1/2-1/2';
-    } else if (reason.includes('ilegal_rey_sabio') || reason === 'rey_sabio_sin_jugadas') {
-        result = '0-1';
-    } else if (reason.includes('ilegal_stockfish') || reason === 'stockfish_sin_jugadas') {
-        result = '1-0';
+        result = 'draw';
+        if (game.isStalemate())          reason = 'stalemate';
+        else if (game.isThreefoldRepetition()) reason = 'repetition';
+        else if (game.isInsufficientMaterial()) reason = 'insufficient_material';
+        else                             reason = '50_moves';
+    } else if (reason === 'mchess_illegal' || reason === 'mchess_no_move') {
+        result = 'sf_win';
+    } else if (reason === 'sf_illegal' || reason === 'sf_no_move') {
+        result = 'mchess_win';
+    } else {
+        result = 'draw';
     }
 
-    console.log(`\n✨ Result: ${result} (${reason}) - ${moveCount} moves`);
-    stats.addResult(result, moveCount, reason, game.pgn());
-    return result;
+    const resultStr = result === 'mchess_win' ? '✅ mChess wins'
+                    : result === 'sf_win'      ? '❌ Stockfish wins'
+                    : '🤝 Draw';
+    console.log(`\n${resultStr}  reason:${reason}  moves:${game.history().length}  phase:${phase}`);
+
+    stats.add(result, mChessColor, game.history().length, reason, game.pgn(), phase);
 }
 
+// ── Main tournament runner ────────────────────────────────────
 async function runTournament() {
-    console.log('╔' + '═'.repeat(58) + '╗');
-    console.log('║' + ' '.repeat(5) + '🏆 AUTOMATIC TOURNAMENT mChess vs Stockfish 🏆' + ' '.repeat(10) + '║');
-    console.log('╚' + '═'.repeat(58) + '╝');
-    
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const ask = (q) => new Promise(res => rl.question(q, ans => res(ans)));
-    console.log('\nSelect mChess level for Wise King:');
-    console.log('  1) Chick (easy)');
-    console.log('  2) Student (medium)');
-    console.log('  3) Wizard (hard)');
-    console.log('  4) Wise King (grandmaster)');
-    const ans = (await ask('Choose 1-4 (enter=4): ')).trim();
-    const MAP = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
-    const selectedLevel = MAP[ans] || 'grandmaster';
+    console.log('╔' + '═'.repeat(62) + '╗');
+    console.log('║       🏆 TOURNAMENT v2 — mChess vs Stockfish 🏆          ║');
+    console.log('╚' + '═'.repeat(62) + '╝');
 
-    console.log('\nSelect Stockfish depth (lower = weaker = more accurate ELO for ~1600-2000):');
-    console.log('  d5  → ~1600 ELO  (good if mChess wins some games)');
-    console.log('  d6  → ~1750 ELO  (recommended first test)');
-    console.log('  d7  → ~1900 ELO  (if mChess is strong)');
-    console.log('  d10 → ~2200 ELO  (current default — too strong for precision)');
-    const depthAns = (await ask('Enter depth 1-20 (enter=6): ')).trim();
-    CONFIG.stockfishDepth = parseInt(depthAns) || 6;
-    console.log(`🔧 Stockfish depth: ${CONFIG.stockfishDepth} (~ELO ${stockfishELOForDepth(CONFIG.stockfishDepth)})`);
+    const rl  = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ask = q => new Promise(r => rl.question(q, r));
+
+    // ── mChess level ─────────────────────────────────────────
+    console.log('\nSelect mChess level:');
+    console.log('  1) Chick       (easy)');
+    console.log('  2) Student     (medium)');
+    console.log('  3) Wizard      (hard)');
+    console.log('  4) Wise King   (grandmaster) ← recommended');
+    const levelAns = (await ask('Choose 1-4 (enter=4): ')).trim();
+    const LEVEL_MAP = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
+    const selectedLevel = LEVEL_MAP[levelAns] || 'grandmaster';
+    console.log(`✅ mChess level: ${selectedLevel}`);
+
+    // ── HTML file ─────────────────────────────────────────────
+    console.log('\nPath to mChess HTML file:');
+    console.log('  (leave blank to use default: ../mChess.html)');
+    const htmlAns = (await ask('HTML path: ')).trim();
+    if (htmlAns) CONFIG.htmlFile = path.resolve(__dirname, htmlAns);
+    console.log(`✅ File: ${CONFIG.htmlFile}`);
+
+    // ── Stockfish depths ──────────────────────────────────────
+    console.log('\nSelect Stockfish depth(s) — lower = weaker = more accurate ELO estimate:');
+    console.log('  d5  → ~1600 ELO  (if mChess wins too many at d7)');
+    console.log('  d6  → ~1750 ELO');
+    console.log('  d7  → ~1900 ELO  ← recommended baseline');
+    console.log('  d8  → ~2000 ELO  ← recommended for strong versions');
+    console.log('  d9  → ~2100 ELO');
+    console.log('  d10 → ~2200 ELO  (very strong, mostly losses)');
+    console.log('  You can enter multiple depths: e.g. 7,8');
+    const depthAns = (await ask('Depth(s) 1-15 (enter=8): ')).trim();
+    const depths = depthAns
+        ? depthAns.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20)
+        : [8];
+    depths.forEach(d => console.log(`✅ Stockfish d${d} → ~${sfELO(d)} ELO`));
+
+    // ── Number of games ───────────────────────────────────────
+    console.log('\nNumber of games per depth:');
+    console.log('  10 games → ±108 ELO precision  (~50-90 min on average PC)');
+    console.log('  20 games → ±76  ELO precision  (~2-3h)   ← recommended');
+    console.log('  30 games → ±62  ELO precision  (~3-4h)');
+    console.log('  50 games → ±48  ELO precision  (~5-7h)');
+    const nAns = (await ask('Games per depth (enter=10): ')).trim();
+    const n    = Math.max(2, parseInt(nAns) || 10);
+    console.log(`✅ ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
+
     rl.close();
-    
-    // ✨ FIX: Lanzamos Puppeteer UNA SOLA VEZ para todo el torneo
-    console.log(`\n🚀 Initializing base browser...`);
-    const browser = await puppeteer.launch({ 
-        headless: "new",
+
+    CONFIG.numGames = n;
+    CONFIG.depths   = depths;
+    CONFIG.selectedLevel = selectedLevel;
+
+    console.log(`\n🔧 Config: ${n} games × ${depths.length} depth(s) = ${n*depths.length} total games`);
+    depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
+
+    const htmlBase = path.basename(CONFIG.htmlFile, '.html');
+    CONFIG.logFile = path.join(__dirname, `tournament_${htmlBase}_d${depths.join('_')}_${n}g.json`);
+
+    const estMinPerGame = 6; // conservative estimate
+    const estTotal = n * depths.length * estMinPerGame;
+    console.log(`\n⏱️  Estimated time: ~${estTotal} min (~${(estTotal/60).toFixed(1)}h)`);
+    console.log(`💾 Results will save to: ${CONFIG.logFile}`);
+    console.log('\n🚀 Starting tournament...\n');
+    const statsMap = {};
+    depths.forEach(d => { statsMap[d] = new DepthStats(d); });
+
+    const browser = await puppeteer.launch({
+        headless: 'new',
         protocolTimeout: 120000,
-        args: ['--allow-file-access-from-files', '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] 
+        args: ['--allow-file-access-from-files','--no-sandbox',
+               '--disable-setuid-sandbox','--disable-dev-shm-usage'],
     });
 
-    const stats = new TournamentStats();
-    
     try {
-        for (let i = 1; i <= CONFIG.numPartidas; i++) {
-            try {
-                await playMatch(i, stats, selectedLevel, browser);
-            } catch (error) {
-                console.error(`\n💥 Critical error in match ${i}:`, error.message);
-                stats.addResult('1/2-1/2', 0, 'error', '');
+        // Build game list: alternate colors, rotate openings
+        const allGames = [];
+        for (const depth of depths) {
+            for (let i = 0; i < n; i++) {
+                allGames.push({
+                    depth,
+                    mChessColor: i % 2 === 0 ? 'w' : 'b',  // alternate every game
+                    opening: OPENING_BOOK[i % OPENING_BOOK.length],
+                });
             }
-            await new Promise(r => setTimeout(r, 2000));
+        }
+
+        const total = allGames.length;
+        for (let i = 0; i < allGames.length; i++) {
+            const { depth, mChessColor, opening } = allGames[i];
+            try {
+                await playGame(i+1, total, mChessColor, opening, depth, statsMap[depth], browser);
+            } catch(err) {
+                console.error(`\n💥 Game ${i+1} crashed:`, err.message);
+                statsMap[depth].add('draw', mChessColor, 0, 'crash', '', 'unknown');
+            }
+            await new Promise(r => setTimeout(r, 1500));
         }
     } finally {
-        console.log(`\n🛑 Closing base browser...`);
         await browser.close();
     }
-    
-    stats.printReport();
+
+    // ── Final report ────────────────────────────────────────
+    console.log('\n\n' + '═'.repeat(62));
+    console.log('🏆 FINAL TOURNAMENT REPORT');
+    console.log('═'.repeat(62));
+    depths.forEach(d => statsMap[d].print());
+
+    // Combined ELO estimate (weighted by game count)
+    const allGamesFlat = depths.flatMap(d => statsMap[d].games);
+    const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
+    const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
+    const totalL = allGamesFlat.filter(g => g.result === 'sf_win').length;
+    const totalN = allGamesFlat.length;
+    if (totalN > 0 && depths.length > 1) {
+        const score = (totalW + 0.5*totalD) / totalN;
+        const avgSfELO = depths.reduce((s,d) => s + sfELO(d) * statsMap[d].total(), 0) / totalN;
+        const combinedELO = score===0 ? avgSfELO-600 : score===1 ? avgSfELO+600
+            : Math.round(avgSfELO - 400*Math.log10((1-score)/score));
+        console.log(`\n  🎯 Combined ELO estimate: ~${combinedELO}  (${totalN} games total)`);
+    }
+
+    console.log('\n  📋 Breakdown by reason:');
+    const allReasons = {};
+    allGamesFlat.forEach(g => { allReasons[g.reason] = (allReasons[g.reason]||0)+1; });
+    Object.entries(allReasons).sort((a,b)=>b[1]-a[1]).forEach(([r,c]) => {
+        console.log(`     ${r}: ${c}`);
+    });
+
+    fs.writeFileSync(CONFIG.logFile, JSON.stringify({
+        timestamp: new Date().toISOString(),
+        config: { numGames: n, depths },
+        byDepth: Object.fromEntries(depths.map(d => [d, {
+            sfELO: sfELO(d), estimatedELO: statsMap[d].estimateELO(),
+            eloCI: statsMap[d].eloCI(), score: statsMap[d].score(),
+            wins: statsMap[d].wins(), losses: statsMap[d].losses(), draws: statsMap[d].draws(),
+            games: statsMap[d].games,
+        }])),
+    }, null, 2));
+    console.log(`\n💾 Results saved to: ${CONFIG.logFile}`);
 }
 
 runTournament().catch(console.error);
