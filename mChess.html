@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.17.2
+Monolith Chess v2.17.3
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.17.2</title>
+  <title>Monolith Chess v2.17.3</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.17.2 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.17.3 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.17.2</div>
+        v2.17.3</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3828,7 +3828,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.17.2", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.17.3", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -11050,6 +11050,13 @@ limitations under the License.
       else if (isCheck && isEndgame) {
         comment = lang === 'en' ? getRnd(["Check! Precision is absolutely required now."], 'end_check') : getRnd(["¡Jaque! Ahora la precisión es absolutamente vital."], 'end_check');
       }
+      else if (isCheck) {
+        // Check in middlegame — detect if it also creates a pin or discovered attack
+        const checkPhrases = lang === 'en'
+          ? ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately.", "🎯 A direct check forces the opponent's hand — use the tempo!", "🔥 Check! Good forcing move — keep the pressure on.", "⚡ Check! The king is under fire — watch for tactical follow-ups."]
+          : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato.", "🎯 ¡Jaque directo! Forzamos al rival — ¡aprovecha el tempo!", "🔥 ¡Jaque! Buena jugada forzante — mantén la presión.", "⚡ ¡Jaque! El rey está bajo fuego — atento a los seguimientos tácticos."];
+        comment = getRnd(checkPhrases, 'mid_check');
+      }
       else {
         comment = actionComment;
       }
@@ -11457,9 +11464,8 @@ limitations under the License.
         // Add AI move if not duplicated
         goodOptions.forEach(o => { if (!seen.has(formatMoveLabel(o.move))) merged.push({ ...o, isBook: false }); });
 
-        // 📌 PROFITABLE TRADE GUARANTEE: si el motor no incluyó una captura gratis o
-        // rentable (porque priorizó jugadas defensivas), la inyectamos aquí para que
-        // el Profesor siempre muestre al jugador que puede capturar una pieza colgada.
+        // 📌 SEE-BASED FREE CAPTURE GUARANTEE: if the engine missed a winning or equal capture
+        // (e.g. because it prioritised other lines), inject it so the Professor always shows it.
         try {
           const enemyForCapture = sideToAnalyze === 'w' ? 'b' : 'w';
           const allMyMoves = getAllMovesForColor(sideToAnalyze, board);
@@ -11467,19 +11473,14 @@ limitations under the License.
             const target = board[mv.tr][mv.tc];
             if (!target || target === ' ' || colorOf(target) !== enemyForCapture) return;
             const capLabel = formatMoveLabel(mv);
-            if (seen.has(capLabel)) return; // ya está en la lista
+            if (seen.has(capLabel)) return;
+            // Use SEE for accurate exchange evaluation (X-ray aware, king-as-defender aware)
+            const seeVal = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
+            if (seeVal < 0) return; // losing capture — don't inject
             const myVal = PIECE_VALUES[board[mv.fr][mv.fc].toUpperCase()] || 0;
             const tgtVal = PIECE_VALUES[target.toUpperCase()] || 0;
-            // Compute safety FIRST — a free capture is always worth injecting regardless of piece values
-            const afterCapture = simulateMove(board, mv);
-            const safeAfter = !getLowestValueAttacker(mv.tr, mv.tc, enemyForCapture, afterCapture);
-            const profitable = tgtVal > myVal;
-            // Skip only if it's neither free nor profitable (e.g. losing exchange)
-            if (!safeAfter && !profitable) return;
-            if (safeAfter || profitable) {
-              merged.push({ move: mv, score: tgtVal - myVal + 5, isBook: false, injectedCapture: true });
-              seen.add(capLabel);
-            }
+            merged.push({ move: mv, score: seeVal + 5, isBook: false, injectedCapture: true, seeFree: true });
+            seen.add(capLabel);
           });
         } catch (_) { }
 
@@ -11566,7 +11567,8 @@ limitations under the License.
         });
 
         // 🔥 FIX DEL PROFESOR EN APUROS: book moves always pass, others filtered by tacticalPenalty
-        let validatedOptions = mappedOptions.filter(opt => opt.isMate || opt.isBook || opt.tacticalPenalty < 20);
+        // SEE-injected free captures always pass (they were validated by SEE already)
+        let validatedOptions = mappedOptions.filter(opt => opt.isMate || opt.isBook || opt.seeFree || opt.tacticalPenalty < 20);
         if (validatedOptions.length === 0 && mappedOptions.length > 0) {
           validatedOptions = [...mappedOptions].sort((a, b) => (a.tacticalPenalty || 0) - (b.tacticalPenalty || 0));
         }
@@ -11620,25 +11622,32 @@ limitations under the License.
               const p = board[r][c];
               if (!p || p === ' ' || colorOf(p) !== sideToAnalyze) continue;
               const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-              if (pVal <= 10) continue; // pawns handled separately below to avoid double-counting
+              if (pVal < 100) continue; // skip anything below pawn
               const safety = evaluateSquareSafety(r, c, sideToAnalyze, board, enemyColor);
-              if (!safety.isSafe) {
-                hangingPieces.push({ p, r, c, pVal, sVal: strategicVal(p, r, c), attackers: safety.attackers });
+              if (!safety.isSafe && safety.attackers.length > 0) {
+                // SEE filter: only warn if the exchange is actually losing for us.
+                // This prevents false alarms like "N attacks P but P is defended by N"
+                // where the exchange Nxe4 Nxe4 is equal and not a real threat.
+                const seeLoss = -see(board, r, c, safety.attackers[0].r, safety.attackers[0].c);
+                if (seeLoss < 0) { // exchange is losing for us (SEE from enemy POV > 0)
+                  hangingPieces.push({ p, r, c, pVal, sVal: strategicVal(p, r, c), attackers: safety.attackers, seeLoss });
+                }
               }
             }
           }
-          // Pawns: only warn if completely undefended (avoids noise in contested pawn structures)
+          // Pawns: only warn if completely undefended
           for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
               const p = board[r][c];
               if (!p || p === ' ' || colorOf(p) !== sideToAnalyze) continue;
-              const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-              if (pVal !== 10) continue;
+              if (PIECE_VALUES[p.toUpperCase()] !== 100) continue; // pawns only
               const safety = evaluateSquareSafety(r, c, sideToAnalyze, board, enemyColor);
               if (!safety.isSafe && safety.attackers.length > 0) {
                 const defenders = getAttackersOfSquare(r, c, sideToAnalyze, board);
-                if (defenders.length === 0) {
-                  hangingPieces.push({ p, r, c, pVal, sVal: strategicVal(p, r, c), attackers: safety.attackers });
+                // SEE: if exchange is losing, warn
+                const seeLoss = -see(board, r, c, safety.attackers[0].r, safety.attackers[0].c);
+                if (defenders.length === 0 || seeLoss < 0) {
+                  hangingPieces.push({ p, r, c, pVal: 100, sVal: strategicVal(p, r, c), attackers: safety.attackers, seeLoss });
                 }
               }
             }
@@ -11669,16 +11678,36 @@ limitations under the License.
             }
 
             let msgText;
+            const seeLoss = worst.seeLoss || 0; // negative = cp we lose
+            const lossAbs = Math.abs(seeLoss);
             if (en) {
-              msgText = attackerName
-                ? `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under attack by an enemy ${attackerName} and has no defender — it can be captured for free!`
-                : `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under attack with no defender — protect it or move it!`;
+              if (attackerName) {
+                if (lossAbs >= 290) {
+                  // Losing a full piece
+                  msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under attack by an enemy ${attackerName} and will be lost — even if defended, the exchange loses material!`;
+                } else if (lossAbs >= 80) {
+                  // Losing a pawn or minor material
+                  msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is attacked by an enemy ${attackerName}. The exchange loses you about ${lossAbs} centipawns — consider moving it or blocking.`;
+                } else {
+                  msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under pressure from an enemy ${attackerName}. The resulting exchange slightly favours your opponent.`;
+                }
+              } else {
+                msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under attack with no good defence — protect it or move it!`;
+              }
               if (strategicNote) msgText += strategicNote;
               else if (hasMoreThanOne) msgText += ` (${hangingPieces.length} pieces are at risk — deal with the most important first.)`;
             } else {
-              msgText = attackerName
-                ? `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo ataque de un ${attackerName} enemigo y no tiene defensor — ¡puede ser capturada gratis!`
-                : `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo ataque sin defensor — ¡protégela o muévela!`;
+              if (attackerName) {
+                if (lossAbs >= 290) {
+                  msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo ataque de un ${attackerName} enemigo y se perderá — ¡aunque la defiendas, el intercambio pierde material!`;
+                } else if (lossAbs >= 80) {
+                  msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está atacada por un ${attackerName} enemigo. El intercambio te cuesta unos ${lossAbs} centipeones — considera moverla o bloquear.`;
+                } else {
+                  msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo presión de un ${attackerName} enemigo. El intercambio resultante favorece ligeramente al rival.`;
+                }
+              } else {
+                msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo ataque sin buena defensa — ¡protégela o muévela!`;
+              }
               if (strategicNote) msgText += strategicNote;
               else if (hasMoreThanOne) msgText += ` (${hangingPieces.length} piezas están en riesgo — ocúpate primero de la más importante.)`;
             }
