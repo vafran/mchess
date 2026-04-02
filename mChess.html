@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.18.5b
+Monolith Chess v2.18.6
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.18.5b</title>
+  <title>Monolith Chess v2.18.6</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.5b · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.18.6 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.18.5b</div>
+        v2.18.6</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3902,7 +3902,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.18.5b", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.18.6", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -14225,49 +14225,44 @@ limitations under the License.
     createBackground('magic');
     init();
 
-    // Boot into menu first
-    document.querySelector('h1').style.display = 'none';
-    document.getElementById('topBar').classList.add('hidden');
-    document.getElementById('gameMenuBtn').classList.add('hidden');
-    showScreen('screenMenu');
-    try { updateVsAiButton(); } catch (_) { }
-
-    // 💾 AUTORESTORE — show resume card inside the menu if a valid save exists
+    // 💾 BOOT: auto-resume saved game if one exists, otherwise show menu
     try {
       const _raw = localStorage.getItem(GAME_SAVE_KEY);
-      if (_raw) {
-        const _s = JSON.parse(_raw);
-        if (_s && _s.v === 1 && Array.isArray(_s.history) && _s.history.length > 0
-            && (!_s.ts || Date.now() - _s.ts < 86400000)) {
-          const _moves = _s.history.length;
-          const _diff = _s.currentDifficulty || 'easy';
-          const _diffLabels = { easy: currentLanguage==='en'?'Easy':'Fácil', medium: currentLanguage==='en'?'Medium':'Medio', hard: currentLanguage==='en'?'Hard':'Difícil', grandmaster: currentLanguage==='en'?'Master':'Maestro' };
-          const _en = currentLanguage === 'en';
-          const _label = _diffLabels[_diff] || _diff;
-          const _mode = _s.gameMode === 'pvp' ? (_en ? '2 Players' : '2 Jugadores') : (_en ? 'vs AI' : 'vs IA');
-          const _card = document.createElement('div');
-          _card.id = 'resumeCard';
-          _card.style.cssText = 'margin:0 auto 14px;max-width:380px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(168,85,247,0.05));border:1.5px solid var(--primary,#a855f7);display:flex;align-items:center;gap:12px;';
-          _card.innerHTML = `
-            <span style="font-size:1.6rem">💾</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:700;font-size:0.9rem;color:var(--text,#e2e8f0)">${_en ? 'Continue last game?' : '¿Continuar la última partida?'}</div>
-              <div style="font-size:0.78rem;color:var(--text-light,#94a3b8);margin-top:2px">${_moves} ${_en?'moves':'jugadas'} · ${_label} · ${_mode}</div>
-            </div>
-            <div style="display:flex;gap:8px;flex-shrink:0">
-              <button onclick="resumeSavedGame()" style="background:var(--primary,#a855f7);color:#fff;border:none;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:0.82rem;font-weight:600">${_en?'Resume':'Reanudar'}</button>
-              <button onclick="document.getElementById('resumeCard')?.remove();clearSavedGame();" style="background:transparent;color:var(--text-light,#94a3b8);border:1px solid var(--border,#334155);border-radius:10px;padding:8px 10px;cursor:pointer;font-size:0.82rem">✕</button>
-            </div>`;
-          // Insert at the top of screenMenu, before the first button row
-          const _menu = document.getElementById('screenMenu');
-          if (_menu) {
-            const _firstBtn = _menu.querySelector('.menu-buttons, .btn-row, button, .level-cards');
-            if (_firstBtn) _menu.insertBefore(_card, _firstBtn);
-            else _menu.prepend(_card);
-          }
-        }
+      const _s = _raw ? JSON.parse(_raw) : null;
+      const _valid = _s && _s.v === 1 && Array.isArray(_s.history) && _s.history.length > 0
+                     && (!_s.ts || Date.now() - _s.ts < 86400000);
+      if (_valid && loadSavedGame()) {
+        showScreen(null);
+        document.querySelector('h1').style.display = 'block';
+        document.getElementById('topBar').classList.remove('hidden');
+        document.getElementById('gameMenuBtn').classList.remove('hidden');
+        document.getElementById('igModePvP').classList.toggle('active', gameMode === 'pvp');
+        document.getElementById('igModeAI').classList.toggle('active', gameMode === 'ai');
+        const _bEl = document.getElementById('board');
+        if (_bEl && typeof boardFlipped !== 'undefined') _bEl.classList.toggle('flipped', !!boardFlipped);
+        try { updateStatusHUD(); } catch (_) {}
+        setLanguage(currentLanguage);
+        render(); updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar();
+        commentaryLog = []; resetCommentaryStyleMemory();
+        const _cs = Math.max(0, history.length - 5);
+        for (let _ci = _cs; _ci < history.length; _ci++) addCommentaryEntry(history[_ci], history.slice(0, _ci + 1));
+        switchTab('commentary');
+        showToast(currentLanguage === 'en' ? '♟️ Game restored' : '♟️ Partida restaurada', 2000);
+        if (gameMode === 'ai' && turn !== playerColor && !aiThinking) setTimeout(triggerAI, 600);
+      } else {
+        document.querySelector('h1').style.display = 'none';
+        document.getElementById('topBar').classList.add('hidden');
+        document.getElementById('gameMenuBtn').classList.add('hidden');
+        showScreen('screenMenu');
+        try { updateVsAiButton(); } catch (_) {}
       }
-    } catch (_) { }
+    } catch (_) {
+      document.querySelector('h1').style.display = 'none';
+      document.getElementById('topBar').classList.add('hidden');
+      document.getElementById('gameMenuBtn').classList.add('hidden');
+      showScreen('screenMenu');
+      try { updateVsAiButton(); } catch (_) {}
+    }
     // 🧩 LIBRERÍA DE POSICIONES (FEN) CLASIFICADAS
     const FEN_LIBRARY = [
       // ── TRAMPAS DE APERTURA ──────────────────────────────────────────────────
