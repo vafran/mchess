@@ -4,6 +4,9 @@
 stockfish
 stockfish.exe
 
+# No subimos los archivos HTML de las pruebas, que son artefactos generados
+stockfish_tests/*.html
+
 # === Dependencias de Node.js ===
 # Estos se instalan con 'npm install', no se suben al repo
 node_modules/
