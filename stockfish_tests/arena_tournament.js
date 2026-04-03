@@ -71,6 +71,7 @@ class DepthStats {
         this.depth   = depth;
         this.sfELO   = sfELO(depth);
         this.games   = [];
+        this.npsLog  = []; // NPS samples per move, for average
         this.wW=0; this.wB=0; // wins as white / black
         this.lW=0; this.lB=0; // losses
         this.dW=0; this.dB=0; // draws
@@ -122,6 +123,13 @@ class DepthStats {
         console.log(`     Score: ${(this.score()*100).toFixed(1)}%`);
         console.log(`     ELO estimate: ~${this.estimateELO()}  [95%CI: ${elo_lo}..${elo_hi}]`);
         console.log(`     Game phases: ${JSON.stringify(phases)}`);
+        if (this.npsLog.length > 0) {
+            const avgNps = Math.round(this.npsLog.reduce((a,b) => a+b, 0) / this.npsLog.length);
+            const npsDisp = avgNps >= 1000000
+                ? (avgNps/1000000).toFixed(2) + 'M n/s'
+                : (avgNps/1000).toFixed(0) + 'k n/s';
+            console.log(`     Avg NPS: ${npsDisp}  (${this.npsLog.length} samples)`);
+        }
     }
 }
 
@@ -236,7 +244,14 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
                     ? (depth_info.completedDepth === 'book' ? '[book]'
                         : ` [d${depth_info.completedDepth}/${depth_info.maxDepth}${depth_info.isPartial?'~':''}]`)
                     : '';
-                console.log(`   👑 mChess ${move || 'null'} (${elapsed}s)${dStr}`);
+                const npsStr = depth_info && depth_info.nps > 0
+                    ? ` ${depth_info.nps >= 1000000
+                        ? (depth_info.nps/1000000).toFixed(1)+'Mn/s'
+                        : (depth_info.nps/1000).toFixed(0)+'kn/s'}`
+                    : '';
+                console.log(`   👑 mChess ${move || 'null'} (${elapsed}s)${dStr}${npsStr}`);
+                // Accumulate NPS for stats
+                if (depth_info && depth_info.nps > 0) stats.npsLog.push(depth_info.nps);
             } else {
                 // Stockfish moves
                 move = await sfBestMove(sf, fen, depth);
@@ -358,15 +373,61 @@ async function runTournament() {
     const estTotal = n * depths.length * estMinPerGame;
     console.log(`\n⏱️  Estimated time: ~${estTotal} min (~${(estTotal/60).toFixed(1)}h)`);
     console.log(`💾 Results will save to: ${CONFIG.logFile}`);
-    console.log('\n🚀 Starting tournament...\n');
+    console.log('✅ Partial save after every game — safe to interrupt anytime (Ctrl+C)\n');
+    console.log('🚀 Starting tournament...\n');
     const statsMap = {};
     depths.forEach(d => { statsMap[d] = new DepthStats(d); });
+
+    // ── Partial save helper — called after every game ─────────────────
+    const savePartial = (gameNum, total, done = false) => {
+        try {
+            const allGamesFlat = depths.flatMap(d => statsMap[d].games);
+            const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
+            const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
+            const totalL = allGamesFlat.filter(g => g.result === 'sf_win').length;
+            const totalN = allGamesFlat.length;
+            fs.writeFileSync(CONFIG.logFile, JSON.stringify({
+                timestamp:   new Date().toISOString(),
+                status:      done ? 'complete' : `partial_${gameNum}_of_${total}`,
+                config:      { numGames: n, depths },
+                byDepth:     Object.fromEntries(depths.map(d => [d, {
+                    sfELO:        sfELO(d),
+                    estimatedELO: statsMap[d].estimateELO(),
+                    eloCI:        statsMap[d].eloCI(),
+                    score:        statsMap[d].score(),
+                    wins:         statsMap[d].wins(),
+                    losses:       statsMap[d].losses(),
+                    draws:        statsMap[d].draws(),
+                    games:        statsMap[d].games,
+                }])),
+                combined: totalN > 0 ? {
+                    gamesPlayed: totalN,
+                    wins: totalW, losses: totalL, draws: totalD,
+                    score: ((totalW + 0.5*totalD) / totalN).toFixed(3),
+                } : null,
+            }, null, 2));
+        } catch(e) { console.error('⚠️  Partial save failed:', e.message); }
+    };
 
     const browser = await puppeteer.launch({
         headless: 'new',
         protocolTimeout: 120000,
         args: ['--allow-file-access-from-files','--no-sandbox',
                '--disable-setuid-sandbox','--disable-dev-shm-usage'],
+    });
+
+    // ── Graceful Ctrl+C: save partial results before exit ────────────
+    process.on('SIGINT', async () => {
+        console.log('\n\n⚠️  Interrupted! Saving partial results...');
+        savePartial('interrupted', '?', false);
+        console.log(`💾 Partial results saved to: ${CONFIG.logFile}`);
+        // Print partial report
+        console.log('\n' + '═'.repeat(62));
+        console.log('📊 PARTIAL RESULTS AT INTERRUPTION');
+        console.log('═'.repeat(62));
+        depths.forEach(d => { if (statsMap[d].total() > 0) statsMap[d].print(); });
+        try { await browser.close(); } catch(_) {}
+        process.exit(0);
     });
 
     try {
@@ -390,6 +451,12 @@ async function runTournament() {
             } catch(err) {
                 console.error(`\n💥 Game ${i+1} crashed:`, err.message);
                 statsMap[depth].add('draw', mChessColor, 0, 'crash', '', 'unknown');
+            }
+            // 💾 Save partial results after every game
+            savePartial(i+1, total, false);
+            const gs = statsMap[depth];
+            if (gs.total() > 0) {
+                console.log(`   💾 Saved: W:${gs.wins()} L:${gs.losses()} D:${gs.draws()} | ELO ~${gs.estimateELO()} [${gs.eloCI()[0]}..${gs.eloCI()[1]}]`);
             }
             await new Promise(r => setTimeout(r, 1500));
         }
@@ -424,16 +491,7 @@ async function runTournament() {
         console.log(`     ${r}: ${c}`);
     });
 
-    fs.writeFileSync(CONFIG.logFile, JSON.stringify({
-        timestamp: new Date().toISOString(),
-        config: { numGames: n, depths },
-        byDepth: Object.fromEntries(depths.map(d => [d, {
-            sfELO: sfELO(d), estimatedELO: statsMap[d].estimateELO(),
-            eloCI: statsMap[d].eloCI(), score: statsMap[d].score(),
-            wins: statsMap[d].wins(), losses: statsMap[d].losses(), draws: statsMap[d].draws(),
-            games: statsMap[d].games,
-        }])),
-    }, null, 2));
+    savePartial(total, total, true); // final complete save
     console.log(`\n💾 Results saved to: ${CONFIG.logFile}`);
 }
 
