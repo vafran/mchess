@@ -171,18 +171,72 @@ function detectPhase(game) {
     return 'middlegame';
 }
 
+// ── askWiseKing concurrency guard ─────────────────────────────────────────────
+// askWiseKing stores its resolve callback in a single global slot (window._wkResolve).
+// If two calls overlap, the second call overwrites the slot and the worker's reply
+// for call 1 resolves call 2 with the WRONG move.  We prevent this by reloading
+// the page whenever a previous page.evaluate timed out (page.goto cancels stale evals).
+let _pageStale = false;
+
+async function evalMove(page, fen, history, timeoutMs) {
+    if (_pageStale) {
+        console.log('   ♻️  Reloading page (previous call timed out — clearing stale worker state)...');
+        await page.goto('file://' + CONFIG.htmlFile);
+        await new Promise(r => setTimeout(r, 1500));
+        await page.evaluate((lvl) => {
+            try {
+                currentDifficulty = lvl;
+                const s = DIFF_SETTINGS && DIFF_SETTINGS[lvl];
+                if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
+                if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
+                    try { chessEngineWorker.terminate(); } catch(e) {} chessEngineWorker = null;
+                }
+                if (typeof startNewGame === 'function') {
+                    gameMode = 'ai'; playerColor = 'w'; startNewGame('ai');
+                }
+            } catch(e) {}
+        }, CONFIG.selectedLevel || 'grandmaster');
+        await new Promise(r => setTimeout(r, 800));
+        _pageStale = false;
+    }
+
+    const evalP = page.evaluate(async (f, h) => {
+        try { return await window.askWiseKing(f, h); } catch(e) { return null; }
+    }, fen, history);
+
+    const result = await Promise.race([
+        evalP,
+        new Promise(r => setTimeout(() => r('__WK_TIMEOUT__'), timeoutMs)),
+    ]);
+
+    if (result === '__WK_TIMEOUT__') {
+        _pageStale = true;  // page.evaluate still running; mark for reload before next call
+        return null;
+    }
+    return result;
+}
+
 // ── Play one game ─────────────────────────────────────────────
-async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, browser) {
+// NOTE: `page` is a persistent shared page. The Web Worker is NEVER restarted
+// between games so TurboFan keeps JIT-compiled code alive across all games.
+async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, page) {
     const colorStr = mChessColor === 'w' ? '⬜White' : '⬛Black';
     const openingStr = opening.length ? opening.join(' ') : 'start';
     console.log(`\n${'─'.repeat(62)}`);
     console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  Opening:[${openingStr}]  SF:d${depth}`);
     console.log('─'.repeat(62));
 
-    const page = await browser.newPage();
-    page.on('console', msg => {
-        if (msg.type() === 'error') console.log('🌐 Error:', msg.text().slice(0,120));
-    });
+    // Update difficulty settings only — do NOT call startNewGame() because that
+    // creates a new Worker and destroys all JIT-compiled code.
+    // askWiseKing(fen, history) is fully stateless: it receives the complete
+    // position on every call, so no visual game reset is needed.
+    await page.evaluate((lvl) => {
+        try {
+            currentDifficulty = lvl;
+            const s = DIFF_SETTINGS && DIFF_SETTINGS[lvl];
+            if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
+        } catch(e) {}
+    }, CONFIG.selectedLevel || 'grandmaster');
 
     const sf = spawnSF();
     const game = new Chess();
@@ -190,26 +244,6 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
     let phase = 'opening';
 
     try {
-        await page.goto('file://' + CONFIG.htmlFile);
-        await new Promise(r => setTimeout(r, 1500));
-        // ✅ Set difficulty directly — do NOT call startAIGame().
-        // startAIGame() queues setTimeout(startNewGame, 1500) which calls init()
-        // and terminates the Worker mid-search, causing all moves to return null.
-        await page.evaluate((level) => {
-            try {
-                currentDifficulty = level;
-                const s = DIFF_SETTINGS && DIFF_SETTINGS[level];
-                if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
-                // Also clear any autosave so the Worker isn't busy with a restored game
-                if (typeof clearSavedGame === 'function') clearSavedGame();
-                // Kill any Worker that might be running from autosave restore
-                if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
-                    try { chessEngineWorker.terminate(); } catch(e) {}
-                    chessEngineWorker = null;
-                }
-            } catch(e) {}
-        }, CONFIG.selectedLevel || 'grandmaster');
-
         // Apply forced opening moves
         for (const uci of opening) {
             const result = game.move({ from: uci.slice(0,2), to: uci.slice(2,4),
@@ -228,14 +262,10 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
             let move = null;
 
             if (isMChess) {
-                // mChess moves
+                // mChess moves — use evalMove() to safely handle timeouts
+                // and prevent concurrent askWiseKing calls (which corrupt its result)
                 const t0 = Date.now();
-                const movePromise = page.evaluate(async (f, h) => {
-                    try { return await window.askWiseKing(f, h); } catch(e) { return null; }
-                }, fen, game.history());
-
-                const timeoutPromise = new Promise(r => setTimeout(() => r(null), CONFIG.moveTimeoutMs));
-                move = await Promise.race([movePromise, timeoutPromise]);
+                move = await evalMove(page, fen, game.history(), CONFIG.moveTimeoutMs);
 
                 const elapsed = ((Date.now() - t0)/1000).toFixed(1);
                 let depth_info = null;
@@ -250,7 +280,6 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
                         : (depth_info.nps/1000).toFixed(0)+'kn/s'}`
                     : '';
                 console.log(`   👑 mChess ${move || 'null'} (${elapsed}s)${dStr}${npsStr}`);
-                // Accumulate NPS for stats
                 if (depth_info && depth_info.nps > 0) stats.npsLog.push(depth_info.nps);
             } else {
                 // Stockfish moves
@@ -274,7 +303,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
             }
         }
     } finally {
-        try { await page.close(); } catch(_) {}
+        // Do NOT close the page — we reuse it to keep the JIT hot
         try { sf.stdin.write('quit\n'); sf.kill(); } catch(_) {}
     }
 
@@ -410,11 +439,49 @@ async function runTournament() {
     };
 
     const browser = await puppeteer.launch({
-        headless: 'new',
+        headless: false,
         protocolTimeout: 120000,
-        args: ['--allow-file-access-from-files','--no-sandbox',
-               '--disable-setuid-sandbox','--disable-dev-shm-usage'],
+        args: [
+            '--allow-file-access-from-files',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            // ── Prevent Chrome from throttling background tabs / workers ──
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+        ],
     });
+
+    // ── Create ONE persistent page for the entire tournament ──────────────
+    // Re-using the same page means V8/TurboFan JIT-compiled code is never
+    // thrown away between games. NPS stabilises at peak from game 2 onward.
+    const sharedPage = await browser.newPage();
+    sharedPage.on('console', msg => {
+        const t = msg.text();
+        if (msg.type() === 'error') console.log('🌐 Error:', t.slice(0,120));
+        else if (t.includes('NPS:')) console.log('   🧠', t.replace(/.*?Real depth:/, 'depth:').trim());
+    });
+    console.log('🌐 Loading page...');
+    await sharedPage.goto('file://' + CONFIG.htmlFile);
+    await new Promise(r => setTimeout(r, 1500));
+    // Initial engine setup (done once)
+    await sharedPage.evaluate((level) => {
+        try {
+            currentDifficulty = level;
+            const s = DIFF_SETTINGS && DIFF_SETTINGS[level];
+            if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
+            if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
+                try { chessEngineWorker.terminate(); } catch(e) {}
+                chessEngineWorker = null;
+            }
+            if (typeof startNewGame === 'function') {
+                gameMode = 'ai'; playerColor = 'w'; startNewGame('ai');
+            }
+        } catch(e) {}
+    }, CONFIG.selectedLevel || 'grandmaster');
+    await new Promise(r => setTimeout(r, 800));
+    console.log('   ✅ Worker ready. JIT warms up naturally during game 1; NPS improves from game 2+.\n');
 
     // ── Graceful Ctrl+C: save partial results before exit ────────────
     process.on('SIGINT', async () => {
@@ -447,7 +514,7 @@ async function runTournament() {
         for (let i = 0; i < allGames.length; i++) {
             const { depth, mChessColor, opening } = allGames[i];
             try {
-                await playGame(i+1, total, mChessColor, opening, depth, statsMap[depth], browser);
+                await playGame(i+1, total, mChessColor, opening, depth, statsMap[depth], sharedPage);
             } catch(err) {
                 console.error(`\n💥 Game ${i+1} crashed:`, err.message);
                 statsMap[depth].add('draw', mChessColor, 0, 'crash', '', 'unknown');
