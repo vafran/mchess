@@ -3308,6 +3308,7 @@ limitations under the License.
         _mtSeeOcc[lR*8+lC]=1;_mtSeeOccList[nOcc++]=lR*8+lC;
         curPiece=brd[lR][lC]; side=side==='w'?'b':'w';
       }
+      d--; // Discard the last invalid capture attempt
       while(d>0){_mtSeeGain[d-1]=-Math.max(-_mtSeeGain[d-1],_mtSeeGain[d]);d--;}
       for(let i=0;i<nOcc;i++)_mtSeeOcc[_mtSeeOccList[i]]=0;
       return _mtSeeGain[0];
@@ -8200,7 +8201,9 @@ limitations under the License.
             curPiece = b[lR*8+lC];
             side = side === 'w' ? 'b' : 'w';
           }
-
+          // The last d increment corresponds to an attacker that didn't exist.
+          // Discard it so we don't evaluate a capture that can never happen.
+          d--; 
           // Negamax propagation — neither side is forced to make a losing capture
           while (d > 0) { _seeGain[d-1] = -Math.max(-_seeGain[d-1], _seeGain[d]); d--; }
 
@@ -11020,12 +11023,43 @@ limitations under the License.
       const beforeExposure = evaluateExposureRisk(board, color);
       const afterExposure = evaluateExposureRisk(copy, color);
       const exposureDelta = afterExposure.penalty - beforeExposure.penalty;
-      const majorDelta = afterExposure.majorHanging - beforeExposure.majorHanging;
+      
+      // Calculate majorDelta only for OTHER pieces that become hanging.
+      // If the moved piece itself becomes hanging, it is handled by severeReplyPunish.
+      let majorDelta = 0;
+      let newlyHangingPiece = null, newlyHangingSquare = null;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = copy[r][c];
+          if (!p || p === ' ' || colorOf(p) !== color) continue;
+          if (r === move.tr && c === move.tc) continue; // skip the piece that just moved
+          const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
+          if (pVal < 300) continue;
+          const wasSafe = evaluateSquareSafety(r, c, color, board, enemyColor).isSafe;
+          const nowSafe = evaluateSquareSafety(r, c, color, copy, enemyColor).isSafe;
+          if (wasSafe && !nowSafe) {
+            majorDelta++;
+            if (!newlyHangingPiece) {
+              newlyHangingPiece = p;
+              newlyHangingSquare = sqName(r, c);
+            }
+          }
+        }
+      }
+
       const replyRisk = getImmediateReplyRisk(move, color);
       const isUndefended = !!attacker && !defender;
       const losingExchangeRisk = isUndefended && attackerVal > 0 && attackerVal < myVal && targetVal < myVal;
-      const severeReplyPunish = replyRisk.delta <= -120 && (replyRisk.capturedVal >= myVal || replyRisk.capturedVal >= 300);
-      const moderateReplyPunish = replyRisk.delta <= -100 && (replyRisk.capturedVal >= 300 || exposureDelta >= 80 || isUndefended);
+      
+      const isCapture = targetVal > 0;
+      let effectiveDelta = replyRisk.delta;
+      // If we just captured a piece, offset the drop to reflect the true net material change
+      if (isCapture) {
+         effectiveDelta += targetVal;
+      }
+      
+      const severeReplyPunish = effectiveDelta <= -120 && (replyRisk.capturedVal >= myVal || replyRisk.capturedVal >= 300);
+      const moderateReplyPunish = effectiveDelta <= -100 && (replyRisk.capturedVal >= 300 || exposureDelta >= 80 || isUndefended);
       const isQuietDevelopment = targetVal === 0
         && ['N', 'B'].includes((mover || ' ').toUpperCase())
         && [0, 7].includes(move.fr)
@@ -11037,28 +11071,6 @@ limitations under the License.
         && [0, 1, 6, 7].includes(move.fr)
         && majorDelta <= 0 && exposureDelta < 120 && replyRisk.delta > -300
         && !attacker;  // Never clamp if the destination square is directly attacked
-
-      // Find which piece of mine is newly hanging after the move (for majorDelta explanations)
-      let newlyHangingPiece = null, newlyHangingSquare = null;
-      if (majorDelta > 0) {
-        for (let r = 0; r < 8; r++) {
-          for (let c = 0; c < 8; c++) {
-            const p = copy[r][c];
-            if (!p || p === ' ' || colorOf(p) !== color) continue;
-            if (r === move.tr && c === move.tc) continue; // skip the piece that just moved
-            const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-            if (pVal < 30) continue;
-            const wasSafe = evaluateSquareSafety(r, c, color, board, enemyColor).isSafe;
-            const nowSafe = evaluateSquareSafety(r, c, color, copy, enemyColor).isSafe;
-            if (wasSafe && !nowSafe) {
-              newlyHangingPiece = p;
-              newlyHangingSquare = sqName(r, c);
-              break;
-            }
-          }
-          if (newlyHangingPiece) break;
-        }
-      }
 
       // Find which piece of mine can be captured in the best enemy reply
       let replyTargetPiece = null, replyTargetSquare = null;
@@ -11371,7 +11383,7 @@ limitations under the License.
       // 🧠 NORMAL DICTIONARIES (3rd Person Narrative)
       const frasesSerias = {
         es: {
-          P: isOpening ? ["Control del centro: el Peón avanza a {sq}.", "Desarrollo de peones abriendo líneas en {sq}."] : ["Avance estratégico: el Peón refuerza la estructura en {sq}.", "Consolidando la posición con el avance a {sq}."],
+          P: ["Avance estratégico: el Peón refuerza la estructura en {sq}.", "Consolidando la posición con el avance a {sq}."],
           N: ["El Caballo busca una casilla activa en {sq}.", "Maniobra posicional: Caballo a {sq}.", "El caballo se centraliza para ganar influencia.", "Buscando un puesto avanzado en {sq}."],
           B: ["El Alfil domina la diagonal desde {sq}.", "Pieza activa en la diagonal {sq}.", "El alfil barre el tablero desde su nueva posición.", "Desarrollo armónico del alfil a {sq}."],
           R: ["La Torre ocupa la columna en {sq}.", "Torre a {sq}: buscando actividad en la fila.", "La Torre se activa por la vertical {sq}.", "Controlando la columna abierta desde {sq}."],
@@ -11379,7 +11391,7 @@ limitations under the License.
           K: isEndgame ? ["El Rey se activa: es pieza de ataque en el final.", "El monarca sale al combate, la partida se decide."] : ["Seguridad: el Rey busca refugio en {sq}.", "Maniobra de seguridad real en {sq}."]
         },
         en: {
-          P: isOpening ? ["Center control: Pawn moves to {sq}.", "Pawn development opening lines at {sq}."] : ["Strategic advance: Pawn on {sq} strengthens the structure.", "Pawn structure taking shape at {sq}."],
+          P: ["Strategic advance: Pawn on {sq} strengthens the structure.", "Pawn structure taking shape at {sq}."],
           N: ["Knight looks for an active square at {sq}.", "Key square control from {sq}.", "The knight centralizes to gain influence.", "Looking for an advanced outpost on {sq}."],
           B: ["Bishop dominates the diagonal from {sq}.", "Active piece on the diagonal towards {sq}.", "The bishop sweeps the board from its new post.", "Harmonious bishop development to {sq}."],
           R: ["Rook claims the file on {sq}.", "Rook to {sq}: seeking activity along the rank.", "The Rook activates along the {sq} vertical.", "Controlling the open file from {sq}."],
@@ -12303,7 +12315,9 @@ limitations under the License.
           if (isMate) {
             riskLevel = 'low';
             tacticalPenalty = 0;
-          } else if (truelyProfitable && riskLevel === 'high') {
+          } else if (truelyProfitable && riskLevel === 'high' && reply.delta > -120) {
+            // Only reduce from high to medium if we don't have a severe tactical drop
+            // Saving a Queen but hanging a King/Mate/Other Queen should NOT be medium risk!
             riskLevel = 'medium';
           }
 
@@ -12445,29 +12459,29 @@ limitations under the License.
               if (attackerName) {
                 if (lossAbs >= 290) {
                   // Losing a full piece
-                  msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under attack by an enemy ${attackerName} and will be lost — even if defended, the exchange loses material!`;
+                  msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under attack by an enemy ${attackerName}. Defending the square is not enough because the exchange loses material. You must move it, block the attack, or capture the attacker!`;
                 } else if (lossAbs >= 80) {
                   // Losing a pawn or minor material
-                  msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is attacked by an enemy ${attackerName}. The exchange loses you about ${lossAbs} centipawns — consider moving it or blocking.`;
+                  msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is attacked by an enemy ${attackerName}. The exchange loses you about ${lossAbs} centipawns — consider moving it, blocking, or capturing the attacker.`;
                 } else {
                   msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under pressure from an enemy ${attackerName}. The resulting exchange slightly favours your opponent.`;
                 }
               } else {
-                msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under attack with no good defence — protect it or move it!`;
+                msgText = `Your <strong>${pieceName}</strong> on <strong>${sq}</strong> is under attack with no good defence — protect it, move it, or strike back!`;
               }
               if (strategicNote) msgText += strategicNote;
               else if (hasMoreThanOne) msgText += ` (${hangingPieces.length} pieces are at risk — deal with the most important first.)`;
             } else {
               if (attackerName) {
                 if (lossAbs >= 290) {
-                  msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo ataque de un ${attackerName} enemigo y se perderá — ¡aunque la defiendas, el intercambio pierde material!`;
+                  msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> corre un grave peligro por el ataque de un ${attackerName} enemigo. Defender la casilla no basta porque el intercambio pierde material. ¡Debes moverla, bloquear el ataque o capturar al atacante!`;
                 } else if (lossAbs >= 80) {
-                  msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está atacada por un ${attackerName} enemigo. El intercambio te cuesta unos ${lossAbs} centipeones — considera moverla o bloquear.`;
+                  msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está atacada por un ${attackerName} enemigo. El intercambio te cuesta unos ${lossAbs} centipeones — considera moverla, bloquear o capturar al atacante.`;
                 } else {
                   msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo presión de un ${attackerName} enemigo. El intercambio resultante favorece ligeramente al rival.`;
                 }
               } else {
-                msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo ataque sin buena defensa — ¡protégela o muévela!`;
+                msgText = `Tu <strong>${pieceName}</strong> en <strong>${sq}</strong> está bajo ataque sin buena defensa — ¡protégela, muévela o contraataca!`;
               }
               if (strategicNote) msgText += strategicNote;
               else if (hasMoreThanOne) msgText += ` (${hangingPieces.length} piezas están en riesgo — ocúpate primero de la más importante.)`;
@@ -12530,11 +12544,13 @@ limitations under the License.
               const key = `${mv.tr},${mv.tc}`;
               if (seenH.has(key)) return;
               // ✅ FIX: simulate the capture FIRST, then evaluate whether the attacker
-              // is safe on the destination square. Using the pre-move board was wrong —
-              // it missed queen attacks that open up once the attacker moves (e.g. Nxf7 when Qd8 covers f7).
+              // is safe on the destination square.
               const boardAfterCapture = simulateMove(board, mv);
               const eSafety = evaluateSquareSafety(mv.tr, mv.tc, sideToAnalyze, boardAfterCapture, enemyColor);
-              const isFree = eSafety.isSafe; // our piece is safe after the capture
+              // Also ensure we are not hanging a massive piece elsewhere!
+              const reply = getImmediateReplyRisk(mv, sideToAnalyze);
+              const isFree = eSafety.isSafe && reply.delta > -100; 
+
               if (isFree || tVal > myVal) {
                 seenH.add(key);
                 opps.push({ mv, tp, tVal, free: isFree });
@@ -13393,7 +13409,25 @@ limitations under the License.
               const isRankFile = (dkr === 0 || dkc === 0) && !(dkr === 0 && dkc === 0);
               const canAttack = (piece === 'B' && isDiag) || (piece === 'R' && isRankFile) || (piece === 'Q' && (isDiag || isRankFile));
               if (canAttack) {
-                createsPinDesc = en ? ' — and it also pins an enemy piece!' : ' — ¡y además clava una pieza enemiga!';
+                // Verify the ray actually has exactly ONE enemy piece blocking it
+                let pinnedCount = 0;
+                let isOwnPiece = false;
+                const rStep = dkr === 0 ? 0 : dkr / Math.abs(dkr);
+                const cStep = dkc === 0 ? 0 : dkc / Math.abs(dkc);
+                let checkR = m.tr + rStep;
+                let checkC = m.tc + cStep;
+                while (checkR !== eKr || checkC !== eKc) {
+                  const p = copy[checkR][checkC];
+                  if (p !== ' ') {
+                    if (colorOf(p) === color) { isOwnPiece = true; break; }
+                    else { pinnedCount++; }
+                  }
+                  checkR += rStep;
+                  checkC += cStep;
+                }
+                if (!isOwnPiece && pinnedCount === 1) {
+                  createsPinDesc = en ? ' — and it also pins an enemy piece!' : ' — ¡y además clava una pieza enemiga!';
+                }
               }
             }
           }
@@ -13522,7 +13556,8 @@ limitations under the License.
           const victim = copy[nextM.tr][nextM.tc];
           if (victim !== ' ' && colorOf(victim) === enemyColor) {
             const val = PIECE_VALUES[victim.toUpperCase()] || 0;
-            if (val >= 30) highValueTargetsHit.add(`${nextM.tr},${nextM.tc}`);
+            // Only count minor/major pieces for fork praise. Forking pawns isn't a "masterstroke".
+            if (val >= 300) highValueTargetsHit.add(`${nextM.tr},${nextM.tc}`);
           }
         }
       }
