@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.19.2
+Monolith Chess v2.21.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.19.2</title>
+  <title>Monolith Chess v2.21.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.19.2 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.21.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.19.2</div>
+        v2.21.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3891,7 +3891,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.19.2", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.21.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7897,15 +7897,95 @@ limitations under the License.
       if (chessEngineWorker) { try { chessEngineWorker.terminate(); } catch (e) { } }
 
       const workerCode = function () {
-        const PV = { P: 100, N: 325, B: 335, R: 500, Q: 900, K: 20000 }; // aligned with mgPV for accurate MVV-LVA capture ordering
-        const PIECE_VALUES = PV;
-        // ── Tapered piece values (Kaufman-inspired, Phase 1) ──
-        const mgPV = { P: 100, N: 325, B: 335, R: 500, Q: 900 }; // Middlegame: minors stronger
-        const egPV = { P: 120, N: 280, B: 340, R: 530, Q: 860 }; // Endgame: rook/pawn scale up, queen down
-        function deepCopy(b) { return b.map(r => r.slice()); }
-        function clr(p) { if (!p || p === ' ') return null; return p === p.toUpperCase() ? 'w' : 'b'; }
-        function opp(c) { return c === 'w' ? 'b' : 'w'; }
-        function ib(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+        // ══════════════════════════════════════════════════════════════════
+        // ⚡ FAST BOARD v2.21 — Int8Array(64) + full integer piece encoding
+        //
+        // Encoding:  EMPTY=0, White=1-6 (P N B R Q K), Black=7-12 (p n b r q k)
+        // Piece type via:  pt = p & 7   (1=P 2=N 3=B 4=R 5=Q 6=K  0=EMPTY)
+        // Color:           isW = p > 0 && p <= 6     isB = p >= 7
+        // Board:           flat Int8Array(64),  index = row*8 + col
+        //
+        // PST lookup:      PST_I[pt * 64 + sq]  (no string key, no hash lookup)
+        // PV lookup:       PV_I[pt]             (replaces PV['P'], PV['N'], ...)
+        // histTable:       Int32Array(64*64)    (replaces 2D array)
+        // counterMove:     Int16Array(64*64)    (replaces 2D array)
+        // ══════════════════════════════════════════════════════════════════
+
+        // ── Integer piece codes ──────────────────────────────────────────
+        // p & 7 = piece type for ALL pieces: 1=P 2=N 3=B 4=R 5=Q 6=K 0=EMPTY
+        // White=1-6  Black=9-14 (bit3 set = black)  7,8 unused
+        const EMPTY=0,WP=1,WN=2,WB=3,WR=4,WQ=5,WK=6,
+                       BP=9,BN=10,BB=11,BR=12,BQ=13,BK=14;
+
+        // ── Char ↔ Int conversion  (used only in boardToInt8 and stringHash) ──
+        const C2I={' ':0,'P':1,'N':2,'B':3,'R':4,'Q':5,'K':6,
+                   'p':9,'n':10,'b':11,'r':12,'q':13,'k':14};
+        // I2CS indexed by piece code — slots 7,8 unused, padded with ''
+        const I2CS=[' ','P','N','B','R','Q','K','','','p','n','b','r','q','k'];
+
+        // ── Promotion lookup ────────────────────────────────────────────
+        const PROMO_W={Q:WQ,R:WR,B:WB,N:WN,q:WQ,r:WR,b:WB,n:WN};
+        const PROMO_B={Q:BQ,R:BR,B:BB,N:BN,q:BQ,r:BR,b:BB,n:BN};
+
+        // ── Board conversion  (once per search) ─────────────────────────
+        function boardToInt8(sb) {
+          const b = new Int8Array(64);
+          for (let r=0;r<8;r++) for (let c=0;c<8;c++) b[r*8+c]=C2I[sb[r][c]]||0;
+          return b;
+        }
+
+        // ── pUp / pChar:  ONLY used in non-hot-path code (UI, stringHash) ──
+        // Indexed by piece code; slots 7/8 unused
+        const _PUP=['','P','N','B','R','Q','K','','','P','N','B','R','Q','K'];
+        function pUp(p){ return _PUP[p]||''; }
+
+        // ── Lightweight helpers (also inlined in hot paths) ─────────────
+        function clr(p){ return p>0&&p<=6?'w':p>=9?'b':null; }
+        function opp(c){ return c==='w'?'b':'w'; }
+        function ib(r,c){ return r>=0&&r<8&&c>=0&&c<8; }
+        function deepCopy(b){ return new Int8Array(b); }
+
+        // ── Integer piece-value tables  (index = p & 7) ─────────────────
+        // 0=EMPTY 1=P 2=N 3=B 4=R 5=Q 6=K
+        const PV_I  = new Int16Array([0,100,325,335,500,900,20000]);
+        const MG_I  = new Int16Array([0,100,325,335,500,900,0]);   // middlegame
+        const EG_I  = new Int16Array([0,120,280,340,530,860,0]);   // endgame
+
+        // String-keyed wrappers kept for non-hot-path compat
+        const PV={P:100,N:325,B:335,R:500,Q:900,K:20000};
+        const PIECE_VALUES=PV;
+        const mgPV={P:100,N:325,B:335,R:500,Q:900};
+        const egPV={P:120,N:280,B:340,R:530,Q:860};
+
+        // ── Integer-indexed PST  (PST_I[pieceType*64 + sq]) ─────────────
+        // pieceType: 1=P 2=N 3=B 4=R 5=Q 6=KMG  7=KEG (endgame king)
+        // sq: white perspective = row*8+col  (row0=rank8, row7=rank1)
+        // For black: flip sq → (7-row)*8+col
+        const PST_P   = new Int16Array([0,0,0,0,0,0,0,0,50,50,50,50,50,50,50,50,10,10,20,30,30,20,10,10,5,5,10,25,25,10,5,5,0,0,0,20,20,0,0,0,5,-5,-10,0,0,-10,-5,5,5,10,10,-20,-20,10,10,5,0,0,0,0,0,0,0,0]);
+        const PST_N   = new Int16Array([-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,10,15,15,10,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50]);
+        const PST_B   = new Int16Array([-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20]);
+        const PST_R   = new Int16Array([0,0,0,0,0,0,0,0,5,10,10,10,10,10,10,5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,0,0,5,5,5,5,0,0]);
+        const PST_Q   = new Int16Array([-20,-10,-10,-5,-5,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,5,5,5,0,-10,-5,0,5,5,5,5,0,-5,0,0,5,5,5,5,0,-5,-10,5,5,5,5,5,0,-10,-10,0,5,0,0,0,0,-10,-20,-10,-10,-5,-5,-10,-10,-20]);
+        const PST_KMG = new Int16Array([-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,20,20,0,0,0,0,20,20,20,30,10,0,0,10,30,20]);
+        const PST_KEG = new Int16Array([-50,-40,-30,-20,-20,-30,-40,-50,-30,-20,-10,5,5,-10,-20,-30,-30,-5,25,40,40,25,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,25,40,40,25,-5,-30,-30,-20,-10,5,5,-10,-20,-30,-50,-40,-30,-20,-20,-30,-40,-50]);
+
+        // Keep string-keyed PST for any remaining code that hasn't been migrated
+        const PST={P:PST_P,N:PST_N,B:PST_B,R:PST_R,Q:PST_Q,KMG:PST_KMG,KEG:PST_KEG};
+
+        // Inline PST lookup:
+        //   White: pstW(pt, r, c)  uses row as-is (row0=rank8=white's back rank)
+        //   Black: pstB(pt, r, c)  flips row
+        function pstW(pt, r, c) {
+          if (pt===1) return PST_P[r*8+c];
+          if (pt===2) return PST_N[r*8+c];
+          if (pt===3) return PST_B[r*8+c];
+          if (pt===4) return PST_R[r*8+c];
+          if (pt===5) return PST_Q[r*8+c];
+          return PST_KMG[r*8+c]; // king (pt===6) – caller blends MG/EG
+        }
+        function pstB(pt, r, c) { return pstW(pt, 7-r, c); }
+
 
         // Zobrist 64-bit
         const ZL = [], ZH = [];
@@ -7933,7 +8013,9 @@ limitations under the License.
           }
         })();
         const PS = "PNBRQKpnbrqk";
-        function pidx(p) { return p === ' ' ? -1 : PS.indexOf(p); }
+        // pidx: piece code → Zobrist table row 0-11
+        // White 1-6 → 0-5, Black 9-14 → 6-11, slots 7/8 unused → -1
+        function pidx(p) { return p >= 9 ? p - 3 : (p > 0 ? p - 1 : -1); }
         // ── Phase 4: Pawn Hash Table ──
         // Caches doubled/isolated pawn structure score by pawn-only Zobrist hash.
         // Passed pawn logic stays outside (depends on enemy pawn/king position).
@@ -7945,9 +8027,9 @@ limitations under the License.
           let hl = 0, hh = 0;
           const pIdx = 0, pIdx2 = 6; // P=0, p=6 in PS
           for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-            const p = b[r][c];
-            if (p === 'P') { hl ^= ZL[pIdx][r * 8 + c]; hh ^= ZH[pIdx][r * 8 + c]; }
-            else if (p === 'p') { hl ^= ZL[pIdx2][r * 8 + c]; hh ^= ZH[pIdx2][r * 8 + c]; }
+            const p = b[r*8+c];
+            if (p === WP) { hl ^= ZL[pIdx][r * 8 + c]; hh ^= ZH[pIdx][r * 8 + c]; }
+            else if (p === BP) { hl ^= ZL[pIdx2][r * 8 + c]; hh ^= ZH[pIdx2][r * 8 + c]; }
           }
           return [hl >>> 0, hh >>> 0];
         }
@@ -7957,7 +8039,7 @@ limitations under the License.
         function computeZobFull(state) {
           let hl = 0, hh = 0;
           for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-            const i = pidx(state.board[r][c]);
+            const p = state.board[r*8+c]; const i = pidx(p);
             if (i !== -1) { hl = (hl ^ ZL[i][r * 8 + c]) >>> 0; hh = (hh ^ ZH[i][r * 8 + c]) >>> 0; }
           }
           if (state.turn === 'b') { hl = (hl ^ ZBL) >>> 0; hh = (hh ^ ZBH) >>> 0; }
@@ -7976,7 +8058,7 @@ limitations under the License.
 
         // Traductor para conectar con el historial en texto del hilo principal
         function stringHash(state) {
-          let key = state.board.map(r => r.join('')).join('|') + '|' + state.turn;
+          let key = (()=>{let s='';for(let _r=0;_r<8;_r++){for(let _c=0;_c<8;_c++)s+=I2CS[state.board[_r*8+_c]];if(_r<7)s+='|';}return s;})() + '|' + state.turn;
           if (state.castleRights) {
             key += '|' + (state.castleRights.K ? 'K' : '') + (state.castleRights.Q ? 'Q' : '') + (state.castleRights.k ? 'k' : '') + (state.castleRights.q ? 'q' : '');
           }
@@ -7986,24 +8068,15 @@ limitations under the License.
           return key;
         }
 
-        // Tablas posicionales PeSTO
-        const PST = {
-          P: [0, 0, 0, 0, 0, 0, 0, 0, 50, 50, 50, 50, 50, 50, 50, 50, 10, 10, 20, 30, 30, 20, 10, 10, 5, 5, 10, 25, 25, 10, 5, 5, 0, 0, 0, 20, 20, 0, 0, 0, 5, -5, -10, 0, 0, -10, -5, 5, 5, 10, 10, -20, -20, 10, 10, 5, 0, 0, 0, 0, 0, 0, 0, 0],
-          N: [-50, -40, -30, -30, -30, -30, -40, -50, -40, -20, 0, 0, 0, 0, -20, -40, -30, 0, 10, 15, 15, 10, 0, -30, -30, 5, 15, 20, 20, 15, 5, -30, -30, 0, 15, 20, 20, 15, 0, -30, -30, 5, 10, 15, 15, 10, 5, -30, -40, -20, 0, 5, 5, 0, -20, -40, -50, -40, -30, -30, -30, -30, -40, -50],
-          B: [-20, -10, -10, -10, -10, -10, -10, -20, -10, 0, 0, 0, 0, 0, 0, -10, -10, 0, 5, 10, 10, 5, 0, -10, -10, 5, 5, 10, 10, 5, 5, -10, -10, 0, 10, 10, 10, 10, 0, -10, -10, 10, 10, 10, 10, 10, 10, -10, -10, 5, 0, 0, 0, 0, 5, -10, -20, -10, -10, -10, -10, -10, -10, -20],
-          R: [0, 0, 0, 0, 0, 0, 0, 0, 5, 10, 10, 10, 10, 10, 10, 5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, 0, 0, 5, 5, 5, 5, 0, 0],
-          Q: [-20, -10, -10, -5, -5, -10, -10, -20, -10, 0, 0, 0, 0, 0, 0, -10, -10, 0, 5, 5, 5, 5, 0, -10, -5, 0, 5, 5, 5, 5, 0, -5, 0, 0, 5, 5, 5, 5, 0, -5, -10, 5, 5, 5, 5, 5, 0, -10, -10, 0, 5, 0, 0, 0, 0, -10, -20, -10, -10, -5, -5, -10, -10, -20],
-          KMG: [-30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -20, -30, -30, -40, -40, -30, -30, -20, -10, -20, -20, -20, -20, -20, -20, -10, 20, 20, 0, 0, 0, 0, 20, 20, 20, 30, 10, 0, 0, 10, 30, 20],
-          KEG: [-50, -40, -30, -20, -20, -30, -40, -50, -30, -20, -10, 5, 5, -10, -20, -30, -30, -5, 25, 40, 40, 25, -5, -30, -30, -5, 40, 55, 55, 40, -5, -30, -30, -5, 40, 55, 55, 40, -5, -30, -30, -5, 25, 40, 40, 25, -5, -30, -30, -20, -10, 5, 5, -10, -20, -30, -50, -40, -30, -20, -20, -30, -40, -50]
-        };
+
 
         // ── Phase 2: isAttackedByPawn — O(1), 2 lookups ──
         function isAttackedByPawn(r, c, enemyColor, b) {
           const dr = enemyColor === 'w' ? 1 : -1; // look in the direction the enemy pawn attacks FROM
           const er = r + dr;
           if (er < 0 || er > 7) return false;
-          const pawn = enemyColor === 'w' ? 'P' : 'p';
-          return (c > 0 && b[er][c - 1] === pawn) || (c < 7 && b[er][c + 1] === pawn);
+          
+          return (c > 0 && b[er*8+(c-1)] === (enemyColor==='w'?WP:BP)) || (c < 7 && b[er*8+(c+1)] === (enemyColor==='w'?WP:BP));
         }
 
         // ── SEE (Static Exchange Evaluation) ────────────────────────────────
@@ -8021,33 +8094,33 @@ limitations under the License.
           const SV = { P:100, N:325, B:335, R:500, Q:900, K:20000 };
           let d = 0, nOcc = 0;
 
-          _seeGain[0] = SV[b[toR][toC].toUpperCase()] || 0;
+          _seeGain[0] = PV_I[b[toR*8+toC]&7] || 0;
           _seeOcc[fromR*8+fromC] = 1; _seeOccList[nOcc++] = fromR*8+fromC;
-          let curPiece = b[fromR][fromC];
-          let side = clr(curPiece) === 'w' ? 'b' : 'w';
+          let curPiece = b[fromR*8+fromC];
+          let side = ((curPiece)>0&&(curPiece)<=6) ? 'b' : 'w';
 
           while (d < 30) {
             d++;
-            _seeGain[d] = (SV[curPiece.toUpperCase()] || 0) - _seeGain[d-1];
+            _seeGain[d] = (PV_I[curPiece&7] || 0) - _seeGain[d-1];
 
             let lR = -1, lC = -1, lV = 2e9;
 
             // ── 1. Pawns ────────────────────────────────────────────────────
             const pd = side === 'w' ? 1 : -1;
-            const pCh = side === 'w' ? 'P' : 'p';
+            const pCh = side === 'w' ? WP : BP;
             for (const dc of [-1, 1]) {
               const r2 = toR+pd, c2 = toC+dc;
-              if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2][c2] === pCh) {
+              if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2*8+c2] === pCh) {
                 lR = r2; lC = c2; lV = 100; break;
               }
             }
 
             // ── 2. Knights ──────────────────────────────────────────────────
             if (lV > 325) {
-              const nCh = side === 'w' ? 'N' : 'n';
+              const nCh = side === 'w' ? WN : BN;
               for (const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
                 const r2 = toR+dr, c2 = toC+dc;
-                if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2][c2] === nCh) {
+                if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2*8+c2] === nCh) {
                   lR = r2; lC = c2; lV = 325; break;
                 }
               }
@@ -8055,13 +8128,13 @@ limitations under the License.
 
             // ── 3. Bishops + queens on diagonals (X-ray through used squares)
             if (lV > 335) {
-              const bCh = side === 'w' ? 'B' : 'b', qCh = side === 'w' ? 'Q' : 'q';
+              const bCh = side === 'w' ? WB : BB, qCh = side === 'w' ? WQ : BQ;
               for (const [dr,dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
                 let r2 = toR+dr, c2 = toC+dc;
                 while (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8) {
                   if (!_seeOcc[r2*8+c2]) {
-                    const p = b[r2][c2];
-                    if (p !== ' ') {
+                    const p = b[r2*8+c2];
+                    if (p !== 0) {
                       if (p === bCh) { lR = r2; lC = c2; lV = 335; }
                       else if (p === qCh && lV > 900) { lR = r2; lC = c2; lV = 900; }
                       break;
@@ -8075,13 +8148,13 @@ limitations under the License.
 
             // ── 4. Rooks + queens on straights (X-ray through used squares) ─
             if (lV > 500) {
-              const rCh = side === 'w' ? 'R' : 'r', qCh = side === 'w' ? 'Q' : 'q';
+              const rCh = side === 'w' ? WR : BR, qCh = side === 'w' ? WQ : BQ;
               for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
                 let r2 = toR+dr, c2 = toC+dc;
                 while (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8) {
                   if (!_seeOcc[r2*8+c2]) {
-                    const p = b[r2][c2];
-                    if (p !== ' ') {
+                    const p = b[r2*8+c2];
+                    if (p !== 0) {
                       if (p === rCh) { lR = r2; lC = c2; lV = 500; }
                       else if (p === qCh && lV > 900) { lR = r2; lC = c2; lV = 900; }
                       break;
@@ -8095,11 +8168,11 @@ limitations under the License.
 
             // ── 5. King ─────────────────────────────────────────────────────
             if (lV === 2e9) {
-              const kCh = side === 'w' ? 'K' : 'k';
+              const kCh = side === 'w' ? WK : BK;
               outerK: for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
                 if (!dr && !dc) continue;
                 const r2 = toR+dr, c2 = toC+dc;
-                if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2][c2] === kCh) {
+                if (r2 >= 0 && r2 < 8 && c2 >= 0 && c2 < 8 && !_seeOcc[r2*8+c2] && b[r2*8+c2] === kCh) {
                   lR = r2; lC = c2; lV = 20000; break outerK;
                 }
               }
@@ -8108,7 +8181,7 @@ limitations under the License.
             if (lR === -1) break; // No more attackers
 
             _seeOcc[lR*8+lC] = 1; _seeOccList[nOcc++] = lR*8+lC;
-            curPiece = b[lR][lC];
+            curPiece = b[lR*8+lC];
             side = side === 'w' ? 'b' : 'w';
           }
 
@@ -8129,11 +8202,11 @@ limitations under the License.
 
           // Phase + pawn counts
           for (let r = 0; r < 8; r++)for (let c = 0; c < 8; c++) {
-            const p = b[r][c]; if (!p || p === ' ') continue;
-            const u = p.toUpperCase();
-            if (u === 'P') { if (p === 'P') wP[c]++; else bP[c]++; }
-            if (u === 'N' || u === 'B') ph += 1; else if (u === 'R') ph += 2; else if (u === 'Q') ph += 4;
-            if (u === 'B') { if (p === 'B') wBishops++; else bBishops++; }
+            const p = b[r*8+c]; if (!p || p === 0) continue;
+            const pt = p & 7;
+            if (pt === 1) { if (p <= 6) wP[c]++; else bP[c]++; }
+            if (pt === 2 || pt === 3) ph += 1; else if (pt === 4) ph += 2; else if (pt === 5) ph += 4;
+            if (pt === 3) { if (p <= 6) wBishops++; else bBishops++; }
           }
           ph = Math.min(ph, 24);
           const eg = 1 - ph / 24;
@@ -8142,10 +8215,10 @@ limitations under the License.
           // Uses tapered values for accurate material comparison
           let wMat = 0, bMat = 0;
           for (let _r = 0; _r < 8; _r++)for (let _c = 0; _c < 8; _c++) {
-            const _p = b[_r][_c]; if (!_p || _p === ' ') continue;
-            const _u = _p.toUpperCase(); if (_u === 'P' || _u === 'K') continue;
-            const tv = Math.round((mgPV[_u] || 0) * (1 - eg) + (egPV[_u] || 0) * eg);
-            if (_p === _u) wMat += tv; else bMat += tv;
+            const _p = b[_r*8+_c]; if (!_p || _p === 0) continue;
+            const _u = _p & 7; if (_u === 1 || _u === 6) continue;
+            const tv = Math.round((MG_I[_u] || 0) * (1 - eg) + (EG_I[_u] || 0) * eg);
+            if (_p <= 6) wMat += tv; else bMat += tv;
           }
           const matDiff = wMat - bMat;
           const wIni = matDiff < -200 ? 1.10 : 1.0;
@@ -8163,16 +8236,16 @@ limitations under the License.
           }
 
           let wUndevelopedMinors = 0;
-          if (b[7][1] === 'N') wUndevelopedMinors++;
-          if (b[7][2] === 'B') wUndevelopedMinors++;
-          if (b[7][5] === 'B') wUndevelopedMinors++;
-          if (b[7][6] === 'N') wUndevelopedMinors++;
+          if (b[7*8+1] === 2) wUndevelopedMinors++;
+          if (b[7*8+2] === 3) wUndevelopedMinors++;
+          if (b[7*8+5] === 3) wUndevelopedMinors++;
+          if (b[7*8+6] === 2) wUndevelopedMinors++;
 
           let bUndevelopedMinors = 0;
-          if (b[0][1] === 'n') bUndevelopedMinors++;
-          if (b[0][2] === 'b') bUndevelopedMinors++;
-          if (b[0][5] === 'b') bUndevelopedMinors++;
-          if (b[0][6] === 'n') bUndevelopedMinors++;
+          if (b[0*8+1] === BN) bUndevelopedMinors++;
+          if (b[0*8+2] === BB) bUndevelopedMinors++;
+          if (b[0*8+5] === BB) bUndevelopedMinors++;
+          if (b[0*8+6] === BN) bUndevelopedMinors++;
 
           if (eg < 0.3) {
             // INCREASED Undeveloped Penalty from 15 to 20
@@ -8188,12 +8261,12 @@ limitations under the License.
             for (const fc of flankCols) {
               // White flank pawn advanced (not on starting rank 6 or absent)
               let wFlankMoved = false;
-              for (let r = 0; r < 6; r++) { if (b[r][fc] === 'P') { wFlankMoved = true; break; } }
-              if (wFlankMoved && b[6][fc] !== 'P') s -= wUndevelopedMinors * 8;
+              for (let r = 0; r < 6; r++) { if (b[r*8+fc] === 1) { wFlankMoved = true; break; } }
+              if (wFlankMoved && b[6*8+fc] !== 1) s -= wUndevelopedMinors * 8;
               // Black flank pawn advanced (not on starting rank 1 or absent)
               let bFlankMoved = false;
-              for (let r = 2; r < 8; r++) { if (b[r][fc] === 'p') { bFlankMoved = true; break; } }
-              if (bFlankMoved && b[1][fc] !== 'p') s += bUndevelopedMinors * 8;
+              for (let r = 2; r < 8; r++) { if (b[r*8+fc] === BP) { bFlankMoved = true; break; } }
+              if (bFlankMoved && b[1*8+fc] !== BP) s += bUndevelopedMinors * 8;
             }
           }
 
@@ -8223,18 +8296,18 @@ limitations under the License.
 
           // ── Per-piece evaluation ────────────────────────────────────────────
           for (let r = 0; r < 8; r++)for (let c = 0; c < 8; c++) {
-            const p = b[r][c]; if (!p || p === ' ') continue;
-            const isW = p === p.toUpperCase(), u = p.toUpperCase();
+            const p = b[r*8+c]; if (!p || p === 0) continue;
+            const isW = p > 0 && p <= 6, pt2 = p & 7; const u = pt2;
             const sign = isW ? 1 : -1;
             const idx = isW ? (r * 8 + c) : ((7 - r) * 8 + c);
 
             // Material + PST
             // ⚠️ Use flat PV values here to keep evaluate() consistent with quiesce()/moveScore().
             // Tapered mgPV/egPV only used for wMat/bMat (initiative calc above).
-            const val = PV[u] || 0;
+            const val = PV_I[u] || 0;
             let pst = 0;
-            if (u === 'K') pst = eg > 0.6 ? PST.KEG[idx] : PST.KMG[idx];
-            else if (PST[u]) pst = PST[u][idx];
+            if (u === 6) pst = eg > 0.6 ? PST_KEG[idx] : PST_KMG[idx];
+            else if (u===1) pst=PST_P[idx]; else if (u===2) pst=PST_N[idx]; else if (u===3) pst=PST_B[idx]; else if (u===4) pst=PST_R[idx]; else if (u===5) pst=PST_Q[idx];
 
             // ── Passed pawn bonus ─────────────────────────────────────────
             let bonus = 0;
@@ -8244,7 +8317,7 @@ limitations under the License.
             // El resto de piezas ya está cubierto por la búsqueda táctica (quiesce).
 
             // 👸 Frenar la Dama en la apertura: no salir antes de desarrollar menores
-            if (u === 'Q' && eg < 0.5) {
+            if (u === 5 && eg < 0.5) {
               const homeR = isW ? 7 : 0;
               if (r !== homeR || c !== 3) {
                 const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
@@ -8256,17 +8329,17 @@ limitations under the License.
             }
 
             // 🚨 Si la Dama está en peligro, penalizamos fuerte
-            if (u === 'Q') {
+            if (u === 5) {
               if (isAtk(state, r, c, isW ? 'b' : 'w')) {
                 const isDefended = isAtk(state, r, c, isW ? 'w' : 'b');
                 bonus -= isDefended ? 150 : 500;
               }
             }
 
-            if (u === 'P') {
+            if (u === 1) {
               let ok = true, dir = isW ? -1 : 1;
               for (let rr = r + dir; isW ? rr >= 0 : rr <= 7; rr += dir) {
-                if (b[rr][c] === (isW ? 'p' : 'P') || (c > 0 && b[rr][c - 1] === (isW ? 'p' : 'P')) || (c < 7 && b[rr][c + 1] === (isW ? 'p' : 'P'))) { ok = false; break; }
+                const ePawnC = isW ? BP : WP; if (b[rr*8+c] === ePawnC || (c > 0 && b[rr*8+(c - 1)] === ePawnC) || (c < 7 && b[rr*8+(c + 1)] === ePawnC)) { ok = false; break; }
               }
               if (ok) {
                 // ✅ NOTE: Passed pawn bonus is now handled by the PASS_OWN / PASS_DANGER block
@@ -8283,9 +8356,9 @@ limitations under the License.
                 // Tarrasch from pawn perspective: friendly rook directly behind the pawn
                 const behindDir = isW ? 1 : -1;
                 for (let br = r + behindDir; br >= 0 && br < 8; br += behindDir) {
-                  const bp = b[br][c];
-                  if (bp === (isW ? 'R' : 'r')) { bonus += Math.round(40 * eg); break; }
-                  if (bp !== ' ') break; // any other piece blocks the line
+                  const bp = b[br*8+c];
+                  if (bp === (isW ? WR : BR)) { bonus += Math.round(40 * eg); break; }
+                  if (bp !== 0) break; // any other piece blocks the line
                 }
 
                 // ── Rule of the Square (Unstoppable Passer) ──────────────────
@@ -8326,8 +8399,9 @@ limitations under the License.
               const backRow = r + (isW ? 1 : -1);
               if (backRow >= 0 && backRow <= 7) {
                 let isDefendedByPawn = false;
-                if (c > 0 && b[backRow][c - 1] === (isW ? 'P' : 'p')) isDefendedByPawn = true;
-                if (c < 7 && b[backRow][c + 1] === (isW ? 'P' : 'p')) isDefendedByPawn = true;
+                const myPawnC = isW ? WP : BP;
+                if (c > 0 && b[backRow*8+(c - 1)] === myPawnC) isDefendedByPawn = true;
+                if (c < 7 && b[backRow*8+(c + 1)] === myPawnC) isDefendedByPawn = true;
 
                 if (isDefendedByPawn) {
                   bonus += 12; // Small positional bonus for rocky structure
@@ -8338,7 +8412,7 @@ limitations under the License.
             }
 
             // ── Rook on open / semi-open file ─────────────────────────────
-            if (u === 'R') {
+            if (u === 4) {
               const myPawns = isW ? wP : bP, epPawns = isW ? bP : wP;
               if (myPawns[c] === 0 && epPawns[c] === 0) bonus += 40; // fully open (was 25)
               else if (myPawns[c] === 0) bonus += 20;              // semi-open (was 12)
@@ -8346,19 +8420,19 @@ limitations under the License.
               // Anti-Shuffle: rook tension near enemy king
               let _eKing = null;
               for (let _er = 0; _er < 8 && !_eKing; _er++) for (let _ec = 0; _ec < 8; _ec++)
-                if (b[_er][_ec] === (isW ? 'k' : 'K')) { _eKing = [_er, _ec]; break; }
+                if (b[_er*8+_ec] === (isW ? BK : WK)) { _eKing = [_er, _ec]; break; }
               if (_eKing) { const _fd = Math.abs(c - _eKing[1]); if (_fd <= 1) { bonus += 35; if (epPawns[c] === 0) bonus += 25; } else if (_fd <= 2) bonus += 15; }
 
               // 🌪️ STRATEGY: Tarrasch Rule (Rook behind passed pawn)
-              const myPawnChar = isW ? 'P' : 'p';
-              const enemyPawnChar = isW ? 'p' : 'P';
+              const myPawnInt = isW ? WP : BP;
+              const enemyPawnInt = isW ? BP : WP;
               const pushDir = isW ? -1 : 1;
               for (let scanR = r + pushDir; isW ? scanR >= 0 : scanR <= 7; scanR += pushDir) {
-                const pieceInFront = b[scanR][c];
-                if (pieceInFront === myPawnChar) {
+                const pieceInFront = b[scanR*8+c];
+                if (pieceInFront === myPawnInt) {
                   if (epPawns[c] === 0) bonus += 25; // Rook pushing its own passed pawn
                   break;
-                } else if (pieceInFront === enemyPawnChar) {
+                } else if (pieceInFront === enemyPawnInt) {
                   if (myPawns[c] === 0) bonus += 15; // Rook braking from behind the enemy pawn
                   break;
                 }
@@ -8366,20 +8440,41 @@ limitations under the License.
             }
 
             // ── Rook on 7th rank (or 2nd for black) ──────────────────────
-            if (u === 'R') {
+            if (u === 4) {
               const rank7 = isW ? 1 : 6;
               if (r === rank7) bonus += 35; // was 20
+
+              // 🛡️ CONNECTED ROOKS: bonus when two own rooks form a battery (same rank/file, nothing between)
+              const myRook = isW ? WR : BR;
+              let connected = false;
+              // Check same rank (horizontal battery)
+              for (let _c = 0; _c < 8 && !connected; _c++) {
+                if (_c === c || b[r*8+_c] !== myRook) continue;
+                let clear = true;
+                const lo = Math.min(c, _c) + 1, hi = Math.max(c, _c);
+                for (let x = lo; x < hi; x++) { if (b[r*8+x] !== 0) { clear = false; break; } }
+                if (clear) connected = true;
+              }
+              // Check same file (vertical battery)
+              for (let _r = 0; _r < 8 && !connected; _r++) {
+                if (_r === r || b[_r*8+c] !== myRook) continue;
+                let clear = true;
+                const lo = Math.min(r, _r) + 1, hi = Math.max(r, _r);
+                for (let x = lo; x < hi; x++) { if (b[x*8+c] !== 0) { clear = false; break; } }
+                if (clear) connected = true;
+              }
+              if (connected) bonus += 15; // +15cp per rook → +30 total for the pair
             }
 
             // ── Knight mobility (count reachable squares) ─────────────────
-            if (u === 'N') {
+            if (u === 2) {
               const knightMoves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
               let mob = 0;
               for (const [dr, dc] of knightMoves) {
                 const nr = r + dr, nc = c + dc;
                 if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-                  const t = b[nr][nc];
-                  if ((!t || t === ' ' || clr(t) !== (isW ? 'w' : 'b')) &&
+                  const t = b[nr*8+nc];
+                  if ((!t || t === 0 || clr(t) !== (isW ? 'w' : 'b')) &&
                     !isAttackedByPawn(nr, nc, isW ? 'b' : 'w', b)) mob++;
                 }
               }
@@ -8396,15 +8491,15 @@ limitations under the License.
                 let supported = false;
                 const pD = isW ? 1 : -1;
                 if (r + pD >= 0 && r + pD < 8) {
-                  if (c > 0 && b[r + pD][c - 1] === (isW ? 'P' : 'p')) supported = true;
-                  if (c < 7 && b[r + pD][c + 1] === (isW ? 'P' : 'p')) supported = true;
+                  if (c > 0 && b[(r + pD)*8+(c - 1)] === (isW ? WP : BP)) supported = true;
+                  if (c < 7 && b[(r + pD)*8+(c + 1)] === (isW ? WP : BP)) supported = true;
                 }
                 let enemyCanAttack = false;
                 const eD = isW ? -1 : 1;
-                const ePawn = isW ? 'p' : 'P';
+                const ePawn = isW ? BP : WP;
                 for (let er = r + eD; isW ? er >= 0 : er < 8; er += eD) {
-                  if (c > 0 && b[er][c - 1] === ePawn) enemyCanAttack = true;
-                  if (c < 7 && b[er][c + 1] === ePawn) enemyCanAttack = true;
+                  if (c > 0 && b[er*8+(c - 1)] === ePawn) enemyCanAttack = true;
+                  if (c < 7 && b[er*8+(c + 1)] === ePawn) enemyCanAttack = true;
                 }
                 if (supported && !enemyCanAttack) isOutpost = true;
               }
@@ -8416,13 +8511,13 @@ limitations under the License.
             }
 
             // ── Bishop mobility (open diagonals) ─────────────────────────
-            if (u === 'B') {
+            if (u === 3) {
               let mob = 0;
               for (const [dr, dc] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
                 let nr = r + dr, nc = c + dc;
                 while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-                  const t = b[nr][nc];
-                  if (!t || t === ' ') {
+                  const t = b[nr*8+nc];
+                  if (!t || t === 0) {
                     if (!isAttackedByPawn(nr, nc, isW ? 'b' : 'w', b)) mob++;
                     nr += dr; nc += dc;
                   } else { if (clr(t) !== (isW ? 'w' : 'b') && !isAttackedByPawn(nr, nc, isW ? 'b' : 'w', b)) mob++; break; }
@@ -8432,11 +8527,23 @@ limitations under the License.
               // Open-diagonal bishop (+56cp) vs blocked bishop (-48cp) = 104cp difference.
               // Previously (+21 vs -18) = 39cp — barely visible vs 300cp piece value.
               bonus += (mob - 6) * 8;
+
+              // 🟠 BAD BISHOP: penalize bishop when own pawns block its diagonals
+              // A bishop on light squares is "bad" if many own pawns sit on light squares.
+              // sq color for this bishop: (r+c) % 2
+              const bishopSqColor = (r + c) % 2;
+              const ownPawn = isW ? WP : BP;
+              let ownPawnsOnSameColor = 0;
+              for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+                if (b[_r*8+_c] === ownPawn && (_r + _c) % 2 === bishopSqColor) ownPawnsOnSameColor++;
+              }
+              // -8cp per blocked pawn, scaled by endgame (worse in endgame with fewer pieces)
+              if (ownPawnsOnSameColor > 2) bonus -= (ownPawnsOnSameColor - 2) * Math.round(8 * (0.5 + 0.5 * eg));
             }
             // Anti Opening Shuffle now evaluated globally via wUndevelopedMinors
 
             // ── King activity in endgame ──────────────────────────────────
-            if (u === 'K' && eg > 0.4) { // 🎯 TOURNAMENT IMPROVEMENT: activate earlier (was: 0.5)
+            if (u === 6 && eg > 0.4) { // 🎯 TOURNAMENT IMPROVEMENT: activate earlier (was: 0.5)
               // 👑 CRITICAL IMPROVEMENT: King must activate in endgames
               // Bonus for centralization (squares d4, d5, e4, e5)
               const centerDist = Math.abs(3.5 - r) + Math.abs(3.5 - c);
@@ -8447,7 +8554,7 @@ limitations under the License.
               let closestEnemyPawn = 999;
               for (let er = 0; er < 8; er++) {
                 for (let ec = 0; ec < 8; ec++) {
-                  if (b[er][ec] === (isW ? 'p' : 'P')) {
+                  if (b[er*8+ec] === (isW ? BP : WP)) {
                     const dist = Math.abs(r - er) + Math.abs(c - ec);
                     closestEnemyPawn = Math.min(closestEnemyPawn, dist);
                   }
@@ -8460,7 +8567,7 @@ limitations under the License.
             }
 
             // ── King safety in middlegame ─────────────────────────────────
-            if (u === 'K' && eg < 0.5) {
+            if (u === 6 && eg < 0.5) {
               // 🏰 STRATEGY: Penalty for losing castling without having left the center
               const homeR = isW ? 7 : 0;
               if (r === homeR && c >= 3 && c <= 5) { // If the king is still in the central columns (d, e, f)
@@ -8481,8 +8588,8 @@ limitations under the License.
                 for (const [ddr, ddc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
                   let rr = zr + ddr, rc = zc + ddc;
                   while (rr >= 0 && rr < 8 && rc >= 0 && rc < 8) {
-                    const tp = b[rr][rc];
-                    if (tp !== ' ') { if (clr(tp) === enemyClr && (tp.toUpperCase() === 'B' || tp.toUpperCase() === 'Q')) attackersSet.add(rr * 8 + rc); break; }
+                    const tp = b[rr*8+rc];
+                    if (tp !== 0) { if (clr(tp) === enemyClr && ((tp&7) === 3 || (tp&7) === 5)) attackersSet.add(rr * 8 + rc); break; }
                     rr += ddr; rc += ddc;
                   }
                 }
@@ -8490,8 +8597,8 @@ limitations under the License.
                 for (const [ddr, ddc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
                   let rr = zr + ddr, rc = zc + ddc;
                   while (rr >= 0 && rr < 8 && rc >= 0 && rc < 8) {
-                    const tp = b[rr][rc];
-                    if (tp !== ' ') { if (clr(tp) === enemyClr && (tp.toUpperCase() === 'R' || tp.toUpperCase() === 'Q')) attackersSet.add(rr * 8 + rc); break; }
+                    const tp = b[rr*8+rc];
+                    if (tp !== 0) { if (clr(tp) === enemyClr && ((tp&7) === 4 || (tp&7) === 5)) attackersSet.add(rr * 8 + rc); break; }
                     rr += ddr; rc += ddc;
                   }
                 }
@@ -8499,8 +8606,8 @@ limitations under the License.
                 for (const [ddr, ddc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
                   const kr = zr + ddr, kc = zc + ddc;
                   if (kr >= 0 && kr < 8 && kc >= 0 && kc < 8) {
-                    const tp = b[kr][kc];
-                    if (tp !== ' ' && clr(tp) === enemyClr && tp.toUpperCase() === 'N') attackersSet.add(kr * 8 + kc);
+                    const tp = b[kr*8+kc];
+                    if (tp !== 0 && clr(tp) === enemyClr && (tp&7) === 2) attackersSet.add(kr * 8 + kc);
                   }
                 }
                 // Enemy pawn attacks: black pawn at zr-1 attacks zr (for white king); white pawn at zr+1 attacks zr (for black king)
@@ -8509,8 +8616,8 @@ limitations under the License.
                   for (const pdc of [-1, 1]) {
                     const pc = zc + pdc;
                     if (pc >= 0 && pc < 8) {
-                      const tp = b[pawnRow][pc];
-                      if (tp !== ' ' && clr(tp) === enemyClr && tp.toUpperCase() === 'P') attackersSet.add(pawnRow * 8 + pc);
+                      const tp = b[pawnRow*8+pc];
+                      if (tp !== 0 && clr(tp) === enemyClr && (tp&7) === 1) attackersSet.add(pawnRow * 8 + pc);
                     }
                   }
                 }
@@ -8518,9 +8625,9 @@ limitations under the License.
 
               let attackWeight = 0;
               attackersSet.forEach(sq => {
-                const pType = b[Math.floor(sq / 8)][sq % 8].toUpperCase();
-                if (pType === 'Q') attackWeight += 3;
-                else if (pType === 'R') attackWeight += 2;
+                const pType = b[(Math.floor(sq / 8))*8+(sq % 8)] & 7;
+                if (pType === 5) attackWeight += 3;
+                else if (pType === 4) attackWeight += 2;
                 else attackWeight += 1;
               });
               let attackers = attackWeight;
@@ -8531,7 +8638,7 @@ limitations under the License.
               if (shieldRow >= 0 && shieldRow < 8) {
                 for (let dc = -1; dc <= 1; dc++) {
                   const nc = c + dc;
-                  if (nc >= 0 && nc < 8 && b[shieldRow][nc] === (isW ? 'P' : 'p')) shield += 1.0;
+                  if (nc >= 0 && nc < 8 && b[shieldRow*8+nc] === (isW ? WP : BP)) shield += 1.0;
                 }
               }
               // ✨ Improvement 4: Extended pawn shield (2nd row in front of king)
@@ -8540,7 +8647,7 @@ limitations under the License.
               if (shieldRow2 >= 0 && shieldRow2 < 8) {
                 for (let dc = -1; dc <= 1; dc++) {
                   const nc = c + dc;
-                  if (nc >= 0 && nc < 8 && b[shieldRow2][nc] === (isW ? 'P' : 'p')) shield += 0.5;
+                  if (nc >= 0 && nc < 8 && b[shieldRow2*8+nc] === (isW ? WP : BP)) shield += 0.5;
                 }
               }
               bonus += Math.round(shield * 30);
@@ -8555,10 +8662,10 @@ limitations under the License.
                 let enemyMajors = 0;
                 const ec = isW ? 'b' : 'w';
                 for (let er = 0; er < 8; er++) for (let ecc = 0; ecc < 8; ecc++) {
-                  const ep = b[er][ecc];
-                  if (ep && ep !== ' ' && clr(ep) === ec) {
-                    const eu = ep.toUpperCase();
-                    if (eu === 'Q' || eu === 'R' || eu === 'B' || eu === 'N') enemyMajors++;
+                  const ep = b[er*8+ecc];
+                  if (ep && ep !== 0 && clr(ep) === ec) {
+                    const eu = ep & 7;
+                    if (eu === 5 || eu === 4 || eu === 3 || eu === 2) enemyMajors++;
                   }
                 }
                 bonus -= enemyMajors * 12; // -12 cp per active enemy piece near exposed king (was 22 — reduced to avoid Greek Gift overvaluation)
@@ -8576,9 +8683,9 @@ limitations under the License.
                   if (nc < 0 || nc > 7) continue;
 
                   // If the pawn in that column has advanced, there is "storm"
-                  if (b[startRank][nc] !== (isW ? 'P' : 'p')) {
+                  if (b[startRank*8+nc] !== (isW ? WP : BP)) {
                     // If it advanced 1 square, we add 1 point. If it advanced more, we add 2.
-                    if (b[startRank + dir][nc] === (isW ? 'P' : 'p')) stormPoints += 1;
+                    if (b[(startRank + dir)*8+(nc)] === (isW ? WP : BP)) stormPoints += 1;
                     else stormPoints += 2;
                   }
                 }
@@ -8600,14 +8707,14 @@ limitations under the License.
                 for (const fc of filesToCheck) {
                   let hasFriendlyPawn = false;
                   for (let fr = 0; fr < 8; fr++) {
-                    if (b[fr][fc] === (isW ? 'P' : 'p')) {
+                    if (b[fr*8+fc] === (isW ? WP : BP)) {
                       hasFriendlyPawn = true; break;
                     }
                   }
                   if (!hasFriendlyPawn) {
                     let enemyMajorOnFile = false;
                     for (let fr = 0; fr < 8; fr++) {
-                      if (b[fr][fc] === (isW ? 'r' : 'R') || b[fr][fc] === (isW ? 'q' : 'Q')) {
+                      if (b[fr*8+fc] === (isW ? BR : WR) || b[fr*8+fc] === (isW ? BQ : WQ)) {
                         enemyMajorOnFile = true; break;
                       }
                     }
@@ -8622,13 +8729,13 @@ limitations under the License.
               // This forces the engine to play defensive pawn moves (e.g. h4 to stop h5-h4) early.
               if (c >= 5 || c <= 2) {
                 const flankCols = c >= 5 ? [5, 6, 7] : [0, 1, 2];
-                const enemyPawn = isW ? 'p' : 'P';
+                const enemyPawn = isW ? BP : WP;
                 // Storm: enemy pawns should be on OUR side of the board (ranks 3-5 for white, 2-4 for black)
                 // The closer they are to our king row, the higher the danger.
                 let stormThreat = 0;
                 for (const fc of flankCols) {
                   for (let fr = 0; fr < 8; fr++) {
-                    if (b[fr][fc] !== enemyPawn) continue;
+                    if (b[fr*8+fc] !== enemyPawn) continue;
                     // Distance from promotion for the enemy pawn (closer = more dangerous)
                     // Black pawns promote at row 7, White pawns promote at row 0.
                     const distToPromo = isW ? (7 - fr) : fr; // 🔴 FIX: was isW ? fr : (7-fr)
@@ -8659,15 +8766,15 @@ limitations under the License.
           const PASS_DANGER = 30; // cp base danger for enemy passer
           for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
-              const p = b[r][c];
-              if (!p || p === ' ') continue;
-              if (p === 'P') {
+              const p = b[r*8+c];
+              if (!p || p === 0) continue;
+              if (p === WP) {
                 // White pawn — check rows 0..r-1 for black sentinels
                 let passed = true;
                 for (let rr = 0; rr < r && passed; rr++) {
-                  if (c > 0 && b[rr][c - 1] === 'p') passed = false;
-                  if (b[rr][c] === 'p') passed = false;
-                  if (c < 7 && b[rr][c + 1] === 'p') passed = false;
+                  if (c > 0 && b[rr*8+(c - 1)] === BP) passed = false;
+                  if (b[rr*8+c] === BP) passed = false;
+                  if (c < 7 && b[rr*8+(c + 1)] === BP) passed = false;
                 }
                 if (passed) {
                   // Own bonus: gentle, tapered
@@ -8675,13 +8782,13 @@ limitations under the License.
                   s += PASS_OWN * ownFactor * (0.25 + 0.75 * eg);
                   // Danger penalty if the enemy king is far (no blocker): not here, handled via evaluate king dist
                 }
-              } else if (p === 'p') {
+              } else if (p === BP) {
                 // Black pawn — check rows r+1..7 for white sentinels
                 let passed = true;
                 for (let rr = r + 1; rr < 8 && passed; rr++) {
-                  if (c > 0 && b[rr][c - 1] === 'P') passed = false;
-                  if (b[rr][c] === 'P') passed = false;
-                  if (c < 7 && b[rr][c + 1] === 'P') passed = false;
+                  if (c > 0 && b[rr*8+(c - 1)] === WP) passed = false;
+                  if (b[rr*8+c] === WP) passed = false;
+                  if (c < 7 && b[rr*8+(c + 1)] === WP) passed = false;
                 }
                 if (passed) {
                   // r=6 (rank 2 for black → one step from promo), r=5 (rank 3), r=4 (rank 4)
@@ -8699,83 +8806,326 @@ limitations under the License.
             }
           }
 
-          // 👑 KING ACTIVITY IN ENDGAME
+          // ── QUEEN MOBILITY ───────────────────────────────────────────────
+          // A blocked queen is worth less — it cannot attack, pin, or infiltrate.
+          // Penalty for blocked queens in the opening/midgame; lighter in endgame.
+          // Only relevant before eg=0.8 (when queens are usually gone in endgame).
+          if (eg < 0.8) {
+            for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+              const p = b[r*8+c];
+              if (!p || (p & 7) !== 5) continue; // only queens (type 5)
+              const isW = (p >= 1 && p <= 6);
+              let mob = 0;
+              // Queen moves in 8 directions (bishop + rook)
+              for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) {
+                let nr = r + dr, nc = c + dc;
+                while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                  const t = b[nr*8+nc];
+                  if (!t || t === 0) { mob++; nr += dr; nc += dc; }
+                  else { if ((isW ? (t >= 9) : (t <= 6))) mob++; break; } // enemy: 1 sq
+                }
+              }
+              // Baseline: 14 squares = neutral. Below 8: penalty. Above 20: bonus.
+              // Scaled: +5cp per square above baseline, -6cp per square below.
+              // Taper: mobility matters more in midgame, less in pure endgame.
+              const mobBonus = (mob - 14) * 5 * (1 - eg * 0.5);
+              if (isW) s += Math.round(mobBonus); else s -= Math.round(mobBonus);
+            }
+          }
+
+          // ── SPACE ADVANTAGE ──────────────────────────────────────────────
+          // Count pawns already in the extended center of the ENEMY half (ranks 4-5).
+          // Board orientation: row 0 = rank 8 (black back), row 7 = rank 1 (white back).
+          // White advanced pawns: rows 3-4 (ranks 5-4, opponent's half).
+          // Black advanced pawns: rows 3-4 (ranks 5-4, opponent's half).
+          // Each such pawn = +3cp space bonus (mirrors Stockfish's space heuristic).
+          if (eg < 0.6) {
+            let wSpace = 0, bSpace = 0;
+            for (let r = 3; r <= 4; r++) for (let c = 2; c <= 5; c++) {
+              const p = b[r*8+c];
+              if (!p || (p & 7) !== 1) continue; // only pawns (type 1)
+              if (p <= 6) wSpace++; // White pawn in enemy extended center
+              else bSpace++;        // Black pawn in enemy extended center
+            }
+            s += (wSpace - bSpace) * 3;
+          }
+
+          // ── MOP-UP SCORE ─────────────────────────────────────────────────
+          // Active from eg > 0.5 (not just 0.7) — includes K+R vs K, K+Q vs K, K+B+N vs K.
+          // A SINGLE major/minor piece is enough to trigger mop-up (was: wMaj >= 2).
+          // Forces the winning king to corner the losing king — prevents aimless shuffling.
+          if (eg > 0.5) {
+            let wMaj = 0, bMaj = 0;
+            for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+              const _p = b[_r*8+_c];
+              if (!_p || _p === 0) continue;
+              const _u = _p & 7;
+              if (_p <= 6 && (_u===2||_u===3||_u===4||_u===5)) wMaj++;
+              else if (_p >= 9 && (_u===2||_u===3||_u===4||_u===5)) bMaj++;
+            }
+            // Trigger if one side has at least 1 piece and the other has none
+            const wMopup = wMaj >= 1 && bMaj === 0;
+            const bMopup = bMaj >= 1 && wMaj === 0;
+            if (wMopup || bMopup) {
+              const wk = state.wKing || findKing(b, 'w');
+              const bk = state.bKing || findKing(b, 'b');
+              if (wk && bk) {
+                const [wKr, wKc] = wk, [bKr, bKc] = bk;
+                const wKorner = Math.max(Math.abs(wKr-3.5), Math.abs(wKc-3.5));
+                const bKorner = Math.max(Math.abs(bKr-3.5), Math.abs(bKc-3.5));
+                const kingProx = 14 - Math.max(Math.abs(wKr-bKr), Math.abs(wKc-bKc));
+                if (wMopup) s += Math.round((4.7 * bKorner + 1.6 * kingProx) * eg);
+                if (bMopup) s -= Math.round((4.7 * wKorner + 1.6 * kingProx) * eg);
+              }
+            }
+          }
+
+          // ── BACKWARD PAWNS ───────────────────────────────────────────────
+          // A pawn is backward if its advance square is attacked by an enemy pawn
+          // and it has no friendly pawn support on adjacent columns.
+          for (let r = 1; r < 7; r++) {
+            for (let c = 0; c < 8; c++) {
+              const p = b[r*8+c];
+              if (p !== WP && p !== BP) continue;
+              const isWp = (p === WP);
+              const dir = isWp ? -1 : 1;
+              const advR = r + dir;
+              const ePawn = isWp ? BP : WP;
+              const eAttackRow = advR + dir;
+              if (eAttackRow < 0 || eAttackRow > 7) continue;
+              if (!(c > 0 && b[eAttackRow*8+(c-1)] === ePawn) &&
+                  !(c < 7 && b[eAttackRow*8+(c+1)] === ePawn)) continue;
+              // Has supporter on adjacent column?
+              const fPawn = isWp ? WP : BP;
+              let hasSupporter = false;
+              for (const dc of [-1, 1]) {
+                const nc = c + dc;
+                if (nc < 0 || nc > 7) continue;
+                if ((isWp ? wP[nc] : bP[nc]) === 0) continue;
+                for (let sr = r; isWp ? sr < 8 : sr >= 0; isWp ? sr++ : sr--) {
+                  if (b[sr*8+nc] === fPawn) { hasSupporter = true; break; }
+                }
+                if (hasSupporter) break;
+              }
+              if (hasSupporter) continue;
+              const backwardPenalty = Math.round(20 + 10 * eg);
+              if (isWp) s -= backwardPenalty; else s += backwardPenalty;
+            }
+          }
+
+
           // When endgame phase is high, centralize the king and approach enemy pawns.
           // This prevents shuffling in corners and forces active king play.
           if (eg > 0.4) {
-            const [wKr, wKc] = findKing(b, 'w');
-            const [bKr, bKc] = findKing(b, 'b');
-            // Distance from center (0=center, 3.5=corner)
-            const wDist = Math.abs(wKr - 3.5) + Math.abs(wKc - 3.5);
-            const bDist = Math.abs(bKr - 3.5) + Math.abs(bKc - 3.5);
-            const kingCenterBonus = 8 * eg; // up to 8cp per center-step in pure endgame
-            s += kingCenterBonus * (bDist - wDist); // white benefits if its king is closer to center
+            const wkPos = findKing(b, 'w');
+            const bkPos = findKing(b, 'b');
+            if (wkPos && bkPos) {
+              const [wKr, wKc] = wkPos;
+              const [bKr, bKc] = bkPos;
+              // Distance from center (0=center, 3.5=corner)
+              const wDist = Math.abs(wKr - 3.5) + Math.abs(wKc - 3.5);
+              const bDist = Math.abs(bKr - 3.5) + Math.abs(bKc - 3.5);
+              const kingCenterBonus = 8 * eg; // up to 8cp per center-step in pure endgame
+              s += kingCenterBonus * (bDist - wDist); // white benefits if its king is closer to center
+            }
           }
 
           // ⏰ THE CLOCK OF FEAR (Anti-Shuffling / Endgame Conversion)
-          // If we have gone more than 40 half-moves without captures or pawns and we are
-          // winning, sinking the score towards 0 forces the engine to force a change
-          // or a pawn advance — CONVERTS instead of shuffling indefinitely.
+          // Only the WINNING side is penalized for inaction — the engine must make progress.
+          // Losing side is NOT penalized symmetrically as that would make stalling look "optimal".
           const hmc = state.halfMoveClock || 0;
-          if (hmc > 40) {
-            const urgencyFactor = Math.max(0, (100 - hmc)) / 60; // 1.0 at ply 40 → 0 at ply 100
-            if (s > 200) {
-              s = s * urgencyFactor; // White winning: force closure
-            } else if (s < -200) {
-              s = s * urgencyFactor; // Black winning: force closure
+          if (hmc > 20) {
+            const urgency = Math.min(1.0, (hmc - 20) / 60); // 0% at ply20 → 100% at ply80
+            if (s > 100) {
+              // White is winning but not converting — reduce advantage to force progress
+              s = s * (1 - urgency * 0.5);
+            } else if (s < -100) {
+              // Black is winning but not converting — reduce its advantage to force progress
+              s = s * (1 - urgency * 0.5);
+            }
+            // Both branches do the same thing mathematically (scale s toward 0),
+            // but semantically they target the WINNING side in each case.
+            // Near-equal (|s| ≤ 100): no adjustment needed — move ordering handles symmetry.
+          }
+
+          // ── RULE OF THE SQUARE (Pawn Promotion Race) ─────────────────────
+          // If a passed pawn's promotion cannot be caught by the enemy king,
+          // award a large bonus — this allows the engine to "see" the win even at low depth.
+          // Board: row 0 = rank 8 (promotion for White), row 7 = rank 1 (promotion for Black).
+          // Uses Chebyshev distance from king to promotion square.
+          // Guard: only if no major/minor pieces are on the board (pure pawn/king endgame).
+          if (eg > 0.6) {
+            let anyMajorMinor = false;
+            for (let _sq = 0; _sq < 64 && !anyMajorMinor; _sq++) {
+              const _p = b[_sq]; if (!_p) continue;
+              const _u = _p & 7; if (_u >= 2 && _u <= 5) anyMajorMinor = true;
+            }
+            if (!anyMajorMinor) {
+              const bk = state.bKing || findKing(b, 'b');
+              const wk = state.wKing || findKing(b, 'w');
+              // White passed pawns
+              if (bk) {
+                const [bkr, bkc] = bk;
+                for (let r = 1; r <= 6; r++) for (let c = 0; c < 8; c++) {
+                  if (b[r*8+c] !== WP) continue;
+                  // Check if it's actually a passed pawn (no black pawn blocking on c or adjacent)
+                  let passed = true;
+                  for (let rr = r - 1; rr >= 0 && passed; rr--) {
+                    for (const dc of [-1, 0, 1]) {
+                      const nc = c + dc;
+                      if (nc < 0 || nc > 7) continue;
+                      if (b[rr*8+nc] === BP) { passed = false; break; }
+                    }
+                  }
+                  if (!passed) continue;
+                  const stepsToPromote = r; // rows to row 0
+                  const kingDist = Math.max(Math.abs(bkr - 0), Math.abs(bkc - c)); // Chebyshev to (0,c)
+                  // If black king needs MORE moves than pawn needs steps (+1 if black to move)
+                  const tempoAdj = state.turn === 'b' ? 0 : 1; // black already moved, white gets it
+                  const lead = kingDist - stepsToPromote - tempoAdj;
+                  if (lead > 0) s += 250 + lead * 40; // big bonus: pawn promotes freely
+                }
+              }
+              // Black passed pawns
+              if (wk) {
+                const [wkr, wkc] = wk;
+                for (let r = 1; r <= 6; r++) for (let c = 0; c < 8; c++) {
+                  if (b[r*8+c] !== BP) continue;
+                  let passed = true;
+                  for (let rr = r + 1; rr <= 7 && passed; rr++) {
+                    for (const dc of [-1, 0, 1]) {
+                      const nc = c + dc;
+                      if (nc < 0 || nc > 7) continue;
+                      if (b[rr*8+nc] === WP) { passed = false; break; }
+                    }
+                  }
+                  if (!passed) continue;
+                  const stepsToPromote = 7 - r; // rows to row 7
+                  const kingDist = Math.max(Math.abs(wkr - 7), Math.abs(wkc - c));
+                  const tempoAdj = state.turn === 'w' ? 0 : 1;
+                  const lead = kingDist - stepsToPromote - tempoAdj;
+                  if (lead > 0) s -= 250 + lead * 40;
+                }
+              }
+            }
+          }
+
+          // ── TARRASCH RULE (Rook Behind Passed Pawn) ──────────────────────
+          // A rook on the same column as a passed pawn, behind it, is ideally placed.
+          // White rook BELOW white pawn (higher row # = lower on board): WR.row > WP.row.
+          // Black rook ABOVE black pawn (lower row # = higher on board): BR.row < BP.row.
+          if (eg > 0.3) {
+            for (let c = 0; c < 8; c++) {
+              // Find white passed pawn and white rook on this column
+              let wpRow = -1, wrRow = -1;
+              for (let r = 0; r < 8; r++) {
+                if (b[r*8+c] === WP) wpRow = r;
+                if (b[r*8+c] === WR) wrRow = r;
+              }
+              if (wpRow > 0 && wrRow > wpRow) {
+                // Quick passed pawn check (no enemy pawn blocking)
+                let passed = true;
+                for (let rr = wpRow - 1; rr >= 0 && passed; rr--) {
+                  for (const dc of [-1, 0, 1]) {
+                    const nc = c + dc;
+                    if (nc < 0 || nc > 7) continue;
+                    if (b[rr*8+nc] === BP) { passed = false; break; }
+                  }
+                }
+                if (passed) s += Math.round(20 * eg);
+              }
+              // Same for black
+              let bpRow = -1, brRow = -1;
+              for (let r = 0; r < 8; r++) {
+                if (b[r*8+c] === BP) bpRow = r;
+                if (b[r*8+c] === BR) brRow = r;
+              }
+              if (bpRow > 0 && brRow < bpRow) {
+                let passed = true;
+                for (let rr = bpRow + 1; rr <= 7 && passed; rr++) {
+                  for (const dc of [-1, 0, 1]) {
+                    const nc = c + dc;
+                    if (nc < 0 || nc > 7) continue;
+                    if (b[rr*8+nc] === WP) { passed = false; break; }
+                  }
+                }
+                if (passed) s -= Math.round(20 * eg);
+              }
+            }
+          }
+
+          // ── KING OPPOSITION ──────────────────────────────────────────────
+          // Direct opposition: kings on same rank or file with exactly 1 square between them.
+          // The side NOT to move holds the opposition (a key advantage in pawn endgames).
+          // Bonus for the side that currently holds opposition, scaled by endgame phase.
+          if (eg > 0.5) {
+            const wk = state.wKing || findKing(b, 'w');
+            const bk = state.bKing || findKing(b, 'b');
+            if (wk && bk) {
+              const [wKr, wKc] = wk, [bKr, bKc] = bk;
+              const dr = Math.abs(wKr - bKr), dc = Math.abs(wKc - bKc);
+              const directOpp = (dr === 2 && dc === 0) || (dr === 0 && dc === 2); // same file/rank, 1 sq apart
+              const diagOpp = dr === 2 && dc === 2; // diagonal opposition
+              if (directOpp || diagOpp) {
+                const oppBonus = Math.round(25 * eg);
+                // The side NOT to move holds the opposition (they force the other king to yield)
+                if (state.turn === 'b') s += oppBonus;  // white has opposition (black must move)
+                else s -= oppBonus; // black has opposition (white must move)
+              }
             }
           }
 
           return s;
+
         }
 
         function atk(board, fr, fc, tr, tc) {
-          const p = board[fr][fc]; if (!p || p === ' ') return false;
-          const u = p.toUpperCase(); const cl = clr(p);
+          const p = board[fr*8+fc]; if (!p || p === 0) return false;
+          const u = p & 7; const cl = p <= 6 ? 'w' : 'b';
           const dr = tr - fr, dc = tc - fc;
-          if (u === 'P') return dr === (cl === 'w' ? -1 : 1) && Math.abs(dc) === 1;
-          if (u === 'N') return (Math.abs(dr) === 2 && Math.abs(dc) === 1) || (Math.abs(dr) === 1 && Math.abs(dc) === 2);
-          if (u === 'K') return Math.abs(dr) <= 1 && Math.abs(dc) <= 1;
+          if (u === 1) return dr === (cl === 'w' ? -1 : 1) && Math.abs(dc) === 1;
+          if (u === 2) return (Math.abs(dr) === 2 && Math.abs(dc) === 1) || (Math.abs(dr) === 1 && Math.abs(dc) === 2);
+          if (u === 6) return Math.abs(dr) <= 1 && Math.abs(dc) <= 1;
           const diag = Math.abs(dr) === Math.abs(dc) && dr !== 0;
           const straight = (dr === 0 && dc !== 0) || (dc === 0 && dr !== 0);
-          if (u === 'B' && !diag || u === 'R' && !straight || u === 'Q' && !(diag || straight)) return false;
+          if (u === 3 && !diag || u === 4 && !straight || u === 5 && !(diag || straight)) return false;
           const sr = dr === 0 ? 0 : dr > 0 ? 1 : -1, sc = dc === 0 ? 0 : dc > 0 ? 1 : -1;
           let cr = fr + sr, cc = fc + sc;
-          while (cr !== tr || cc !== tc) { if (board[cr][cc] !== ' ') return false; cr += sr; cc += sc; }
+          while (cr !== tr || cc !== tc) { if (board[cr*8+cc] !== 0) return false; cr += sr; cc += sc; }
           return true;
         }
         // ── isAtk: outward ray-casting — much faster than scanning 64 squares ──
         function isAtk(state, r, c, byColor) {
           const b = state.board;
-          const pawn = byColor === 'w' ? 'P' : 'p';
-          const knight = byColor === 'w' ? 'N' : 'n';
-          const king = byColor === 'w' ? 'K' : 'k';
-          const bishop = byColor === 'w' ? 'B' : 'b';
-          const rook = byColor === 'w' ? 'R' : 'r';
-          const queen = byColor === 'w' ? 'Q' : 'q';
+          const pawn   = byColor === 'w' ? WP : BP;
+          const knight = byColor === 'w' ? WN : BN;
+          const king   = byColor === 'w' ? WK : BK;
+          const bishop = byColor === 'w' ? WB : BB;
+          const rook   = byColor === 'w' ? WR : BR;
+          const queen  = byColor === 'w' ? WQ : BQ;
           // 1. Pawn attacks
           const pd = byColor === 'w' ? 1 : -1;
           if (r + pd >= 0 && r + pd < 8) {
-            if (c - 1 >= 0 && b[r + pd][c - 1] === pawn) return true;
-            if (c + 1 < 8 && b[r + pd][c + 1] === pawn) return true;
+            if (c - 1 >= 0 && b[(r + pd)*8+(c - 1)] === pawn) return true;
+            if (c + 1 < 8 && b[(r + pd)*8+(c + 1)] === pawn) return true;
           }
           // 2. Knight attacks
           for (const [dr, dc] of [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]) {
             const nr = r + dr, nc = c + dc;
-            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && b[nr][nc] === knight) return true;
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && b[nr*8+nc] === knight) return true;
           }
           // 3. King attacks
           for (let dr = -1; dr <= 1; dr++)for (let dc = -1; dc <= 1; dc++) {
             if (!dr && !dc) continue;
             const nr = r + dr, nc = c + dc;
-            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && b[nr][nc] === king) return true;
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && b[nr*8+nc] === king) return true;
           }
           // 4. Diagonal rays (bishop/queen)
           for (const [dr, dc] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
             let nr = r + dr, nc = c + dc;
             while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-              const t = b[nr][nc];
-              if (t !== ' ') { if (t === bishop || t === queen) return true; break; }
+              const t = b[nr*8+nc];
+              if (t !== 0) { if (t === bishop || t === queen) return true; break; }
               nr += dr; nc += dc;
             }
           }
@@ -8783,8 +9133,8 @@ limitations under the License.
           for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
             let nr = r + dr, nc = c + dc;
             while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-              const t = b[nr][nc];
-              if (t !== ' ') { if (t === rook || t === queen) return true; break; }
+              const t = b[nr*8+nc];
+              if (t !== 0) { if (t === rook || t === queen) return true; break; }
               nr += dr; nc += dc;
             }
           }
@@ -8794,16 +9144,16 @@ limitations under the License.
         function inChk(state, color) {
           const kPos = color === 'w' ? state.wKing : state.bKing;
           if (!kPos) {
-            const k = color === 'w' ? 'K' : 'k';
+            const k = color === 'w' ? WK : BK;
             for (let r = 0; r < 8; r++)for (let c = 0; c < 8; c++)
-              if (state.board[r][c] === k) return isAtk(state, r, c, opp(color));
+              if (state.board[r*8+c] === k) return isAtk(state, r, c, opp(color));
             return false;
           }
           return isAtk(state, kPos[0], kPos[1], opp(color));
         }
         function cloneS(s) {
           return {
-            board: s.board.map(r => r.slice()), turn: s.turn,
+            board: new Int8Array(s.board), turn: s.turn,
             castleRights: { ...s.castleRights },
             enPassantTarget: Array.isArray(s.enPassantTarget) ? [...s.enPassantTarget] : null,
             halfMoveClock: s.halfMoveClock || 0,
@@ -8815,28 +9165,29 @@ limitations under the License.
         }
         function applyMove(state, m) {
           const ns = cloneS(state);
-          const b = ns.board; const p = b[m.fr][m.fc]; const u = p.toUpperCase();
+          const b = ns.board; const p = b[(m.fr)*8+(m.fc)]; const u = p & 7;
           // Save pre-move state needed for incremental hash update
-          const _captured = b[m.tr][m.tc];
+          const _captured = b[(m.tr)*8+(m.tc)];
           const _oldEP = ns.enPassantTarget;
           const _oldCR = { ...ns.castleRights };
           let _epCapturePiece = null, _epCapturePos = null;
           let _rookPiece = null, _rookFrom = null, _rookTo = null;
-          if (u === 'P' && m.tc !== m.fc && b[m.tr][m.tc] === ' ') {
-            _epCapturePiece = b[m.fr][m.tc]; _epCapturePos = [m.fr, m.tc];
-            b[m.fr][m.tc] = ' ';
+          if (u === 1 && m.tc !== m.fc && b[(m.tr)*8+(m.tc)] === 0) {
+            _epCapturePiece = b[(m.fr)*8+(m.tc)]; _epCapturePos = [m.fr, m.tc];
+            b[(m.fr)*8+(m.tc)] = 0;
           }
-          if (u === 'K' && Math.abs(m.tc - m.fc) === 2) {
-            if (m.tc === 6) { _rookFrom = [m.fr, 7]; _rookTo = [m.fr, 5]; _rookPiece = b[m.fr][7]; b[m.fr][5] = b[m.fr][7]; b[m.fr][7] = ' '; }
-            else { _rookFrom = [m.fr, 0]; _rookTo = [m.fr, 3]; _rookPiece = b[m.fr][0]; b[m.fr][3] = b[m.fr][0]; b[m.fr][0] = ' '; }
+          if (u === 6 && Math.abs(m.tc - m.fc) === 2) {
+            if (m.tc === 6) { _rookFrom = [m.fr, 7]; _rookTo = [m.fr, 5]; _rookPiece = b[(m.fr)*8+(7)]; b[(m.fr)*8+(5)] = b[(m.fr)*8+(7)]; b[(m.fr)*8+(7)] = 0; }
+            else { _rookFrom = [m.fr, 0]; _rookTo = [m.fr, 3]; _rookPiece = b[(m.fr)*8+(0)]; b[(m.fr)*8+(3)] = b[(m.fr)*8+(0)]; b[(m.fr)*8+(0)] = 0; }
           }
-          b[m.tr][m.tc] = p; b[m.fr][m.fc] = ' ';
-          if (p === 'P' && m.tr === 0) b[m.tr][m.tc] = m.promo || 'Q';
-          if (p === 'p' && m.tr === 7) b[m.tr][m.tc] = (m.promo ? (m.promo.toLowerCase()) : 'q');
-          if (p === 'K') ns.wKing = [m.tr, m.tc];
-          if (p === 'k') ns.bKing = [m.tr, m.tc];
-          if (u === 'K') { if (p === 'K') { ns.castleRights.K = false; ns.castleRights.Q = false; } else { ns.castleRights.k = false; ns.castleRights.q = false; } }
-          if (u === 'R') {
+          b[(m.tr)*8+(m.tc)] = p; b[(m.fr)*8+(m.fc)] = 0;
+          // Promotion — must store integer piece code, not string
+          if (p === WP && m.tr === 0) b[(m.tr)*8+(m.tc)] = m.promo || WQ;
+          if (p === BP && m.tr === 7) b[(m.tr)*8+(m.tc)] = m.promo || BQ;
+          if (p === WK) ns.wKing = [m.tr, m.tc];
+          if (p === BK) ns.bKing = [m.tr, m.tc];
+          if (u === 6) { if (p === WK) { ns.castleRights.K = false; ns.castleRights.Q = false; } else { ns.castleRights.k = false; ns.castleRights.q = false; } }
+          if (u === 4) {
             if (m.fr === 7 && m.fc === 7) ns.castleRights.K = false; if (m.fr === 7 && m.fc === 0) ns.castleRights.Q = false;
             if (m.fr === 0 && m.fc === 7) ns.castleRights.k = false; if (m.fr === 0 && m.fc === 0) ns.castleRights.q = false;
           }
@@ -8844,16 +9195,16 @@ limitations under the License.
           if (m.tr === 7 && m.tc === 0) ns.castleRights.Q = false;
           if (m.tr === 0 && m.tc === 7) ns.castleRights.k = false;
           if (m.tr === 0 && m.tc === 0) ns.castleRights.q = false;
-          ns.enPassantTarget = (u === 'P' && Math.abs(m.tr - m.fr) === 2) ? [(m.fr + m.tr) / 2, m.fc] : null;
+          ns.enPassantTarget = (u === 1 && Math.abs(m.tr - m.fr) === 2) ? [(m.fr + m.tr) / 2, m.fc] : null;
           ns.turn = opp(state.turn);
           // ── Incremental Zobrist hash update for applyMove ────────────────────
           let hl = ns.hashL, hh = ns.hashH;
           const _pi = pidx(p), _sq = m.fr * 8 + m.fc, _dq = m.tr * 8 + m.tc;
           hl = (hl ^ ZL[_pi][_sq]) >>> 0; hh = (hh ^ ZH[_pi][_sq]) >>> 0;
-          if (_captured !== ' ') { const _ci = pidx(_captured); hl = (hl ^ ZL[_ci][_dq]) >>> 0; hh = (hh ^ ZH[_ci][_dq]) >>> 0; }
+          if (_captured !== 0) { const _ci = pidx(_captured); hl = (hl ^ ZL[_ci][_dq]) >>> 0; hh = (hh ^ ZH[_ci][_dq]) >>> 0; }
           if (_epCapturePiece) { const _ei = pidx(_epCapturePiece), _es = _epCapturePos[0] * 8 + _epCapturePos[1]; hl = (hl ^ ZL[_ei][_es]) >>> 0; hh = (hh ^ ZH[_ei][_es]) >>> 0; }
           if (_rookFrom) { const _ri = pidx(_rookPiece); hl = (hl ^ ZL[_ri][_rookFrom[0]*8+_rookFrom[1]]) >>> 0; hh = (hh ^ ZH[_ri][_rookFrom[0]*8+_rookFrom[1]]) >>> 0; hl = (hl ^ ZL[_ri][_rookTo[0]*8+_rookTo[1]]) >>> 0; hh = (hh ^ ZH[_ri][_rookTo[0]*8+_rookTo[1]]) >>> 0; }
-          const _fi = pidx(b[m.tr][m.tc]); hl = (hl ^ ZL[_fi][_dq]) >>> 0; hh = (hh ^ ZH[_fi][_dq]) >>> 0;
+          const _fi = pidx(b[(m.tr)*8+(m.tc)]); hl = (hl ^ ZL[_fi][_dq]) >>> 0; hh = (hh ^ ZH[_fi][_dq]) >>> 0;
           if (_oldEP) { hl = (hl ^ Z_EP_L[_oldEP[1]]) >>> 0; hh = (hh ^ Z_EP_H[_oldEP[1]]) >>> 0; }
           if (ns.enPassantTarget) { hl = (hl ^ Z_EP_L[ns.enPassantTarget[1]]) >>> 0; hh = (hh ^ Z_EP_H[ns.enPassantTarget[1]]) >>> 0; }
           if (_oldCR.K && !ns.castleRights.K) { hl = (hl ^ Z_CASTLE_L[0]) >>> 0; hh = (hh ^ Z_CASTLE_H[0]) >>> 0; }
@@ -8872,10 +9223,10 @@ limitations under the License.
         // always call unmakeMove, even when a TIMEOUT exception is thrown.
         function makeMove(state, m) {
           const b = state.board;
-          const p = b[m.fr][m.fc]; const u = p.toUpperCase();
+          const p = b[(m.fr)*8+(m.fc)]; const u = p & 7;
           const save = {
             p,
-            captured: b[m.tr][m.tc],
+            captured: b[(m.tr)*8+(m.tc)],
             epCapture: null, epPos: null,
             rookFrom: null, rookTo: null, rookPiece: null,
             oldEP: state.enPassantTarget,
@@ -8886,33 +9237,33 @@ limitations under the License.
             oldHashH: state.hashH
           };
           // En passant: pawn captures diagonally to an empty square → remove captured pawn
-          if (u === 'P' && m.tc !== m.fc && b[m.tr][m.tc] === ' ') {
-            save.epCapture = b[m.fr][m.tc]; save.epPos = [m.fr, m.tc];
-            b[m.fr][m.tc] = ' ';
+          if (u === 1 && m.tc !== m.fc && b[(m.tr)*8+(m.tc)] === 0) {
+            save.epCapture = b[(m.fr)*8+(m.tc)]; save.epPos = [m.fr, m.tc];
+            b[(m.fr)*8+(m.tc)] = 0;
           }
           // Castling: move the rook
-          if (u === 'K' && Math.abs(m.tc - m.fc) === 2) {
-            if (m.tc === 6) { save.rookFrom = [m.fr, 7]; save.rookTo = [m.fr, 5]; save.rookPiece = b[m.fr][7]; b[m.fr][5] = b[m.fr][7]; b[m.fr][7] = ' '; }
-            else { save.rookFrom = [m.fr, 0]; save.rookTo = [m.fr, 3]; save.rookPiece = b[m.fr][0]; b[m.fr][3] = b[m.fr][0]; b[m.fr][0] = ' '; }
+          if (u === 6 && Math.abs(m.tc - m.fc) === 2) {
+            if (m.tc === 6) { save.rookFrom = [m.fr, 7]; save.rookTo = [m.fr, 5]; save.rookPiece = b[(m.fr)*8+(7)]; b[(m.fr)*8+(5)] = b[(m.fr)*8+(7)]; b[(m.fr)*8+(7)] = 0; }
+            else { save.rookFrom = [m.fr, 0]; save.rookTo = [m.fr, 3]; save.rookPiece = b[(m.fr)*8+(0)]; b[(m.fr)*8+(3)] = b[(m.fr)*8+(0)]; b[(m.fr)*8+(0)] = 0; }
           }
           // Move piece
-          b[m.tr][m.tc] = p; b[m.fr][m.fc] = ' ';
-          // Promotion
-          if (p === 'P' && m.tr === 0) b[m.tr][m.tc] = m.promo || 'Q';
-          if (p === 'p' && m.tr === 7) b[m.tr][m.tc] = m.promo ? m.promo.toLowerCase() : 'q';
+          b[(m.tr)*8+(m.tc)] = p; b[(m.fr)*8+(m.fc)] = 0;
+          // Promotion — must store integer piece code, not string
+          if (p === WP && m.tr === 0) b[(m.tr)*8+(m.tc)] = m.promo || WQ;
+          if (p === BP && m.tr === 7) b[(m.tr)*8+(m.tc)] = m.promo || BQ;
           // Update king position cache
-          if (p === 'K') state.wKing = [m.tr, m.tc];
-          if (p === 'k') state.bKing = [m.tr, m.tc];
+          if (p === WK) state.wKing = [m.tr, m.tc];
+          if (p === BK) state.bKing = [m.tr, m.tc];
           // Update castling rights (moving piece)
-          if (u === 'K') { if (p === 'K') { state.castleRights.K = false; state.castleRights.Q = false; } else { state.castleRights.k = false; state.castleRights.q = false; } }
-          if (u === 'R') { if (m.fr === 7 && m.fc === 7) state.castleRights.K = false; if (m.fr === 7 && m.fc === 0) state.castleRights.Q = false; if (m.fr === 0 && m.fc === 7) state.castleRights.k = false; if (m.fr === 0 && m.fc === 0) state.castleRights.q = false; }
+          if (u === 6) { if (p === WK) { state.castleRights.K = false; state.castleRights.Q = false; } else { state.castleRights.k = false; state.castleRights.q = false; } }
+          if (u === 4) { if (m.fr === 7 && m.fc === 7) state.castleRights.K = false; if (m.fr === 7 && m.fc === 0) state.castleRights.Q = false; if (m.fr === 0 && m.fc === 7) state.castleRights.k = false; if (m.fr === 0 && m.fc === 0) state.castleRights.q = false; }
           // Update castling rights (captured rook on original square)
           if (m.tr === 7 && m.tc === 7) state.castleRights.K = false; if (m.tr === 7 && m.tc === 0) state.castleRights.Q = false;
           if (m.tr === 0 && m.tc === 7) state.castleRights.k = false; if (m.tr === 0 && m.tc === 0) state.castleRights.q = false;
           // Update en passant target
-          state.enPassantTarget = (u === 'P' && Math.abs(m.tr - m.fr) === 2) ? [(m.fr + m.tr) / 2, m.fc] : null;
+          state.enPassantTarget = (u === 1 && Math.abs(m.tr - m.fr) === 2) ? [(m.fr + m.tr) / 2, m.fc] : null;
           // ⏰ RELOJ DEL MIEDO: resetear si es peón o captura, incrementar si no
-          if (u === 'P' || save.captured !== ' ' || save.epCapture) {
+          if (u === 1 || save.captured !== 0 || save.epCapture) {
             state.halfMoveClock = 0;
           } else {
             state.halfMoveClock = (state.halfMoveClock || 0) + 1;
@@ -8925,7 +9276,7 @@ limitations under the License.
             // Remove moving piece from source
             hl = (hl ^ ZL[_pi][_sq]) >>> 0; hh = (hh ^ ZH[_pi][_sq]) >>> 0;
             // Remove captured piece from destination (normal capture)
-            if (save.captured !== ' ') {
+            if (save.captured !== 0) {
               const _ci = pidx(save.captured);
               hl = (hl ^ ZL[_ci][_dq]) >>> 0; hh = (hh ^ ZH[_ci][_dq]) >>> 0;
             }
@@ -8940,8 +9291,8 @@ limitations under the License.
               hl = (hl ^ ZL[_ri][save.rookFrom[0] * 8 + save.rookFrom[1]]) >>> 0; hh = (hh ^ ZH[_ri][save.rookFrom[0] * 8 + save.rookFrom[1]]) >>> 0;
               hl = (hl ^ ZL[_ri][save.rookTo[0] * 8 + save.rookTo[1]])   >>> 0; hh = (hh ^ ZH[_ri][save.rookTo[0] * 8 + save.rookTo[1]])   >>> 0;
             }
-            // Place piece at destination (handles promotion — b[m.tr][m.tc] already updated)
-            const _fi = pidx(b[m.tr][m.tc]);
+            // Place piece at destination (handles promotion — b[(m.tr)*8+(m.tc)] already updated)
+            const _fi = pidx(b[(m.tr)*8+(m.tc)]);
             hl = (hl ^ ZL[_fi][_dq]) >>> 0; hh = (hh ^ ZH[_fi][_dq]) >>> 0;
             // En-passant key: remove old, add new
             if (save.oldEP) { hl = (hl ^ Z_EP_L[save.oldEP[1]]) >>> 0; hh = (hh ^ Z_EP_H[save.oldEP[1]]) >>> 0; }
@@ -8962,10 +9313,10 @@ limitations under the License.
           state.hashL = save.oldHashL; state.hashH = save.oldHashH; // O(1) 64-bit restore
           state.turn = opp(state.turn);
           const b = state.board;
-          b[m.fr][m.fc] = save.p;
-          b[m.tr][m.tc] = save.captured;
-          if (save.epPos) { b[save.epPos[0]][save.epPos[1]] = save.epCapture; b[m.tr][m.tc] = ' '; }
-          if (save.rookFrom) { b[save.rookFrom[0]][save.rookFrom[1]] = save.rookPiece; b[save.rookTo[0]][save.rookTo[1]] = ' '; }
+          b[(m.fr)*8+(m.fc)] = save.p;
+          b[(m.tr)*8+(m.tc)] = save.captured;
+          if (save.epPos) { b[save.epPos[0]*8+save.epPos[1]] = save.epCapture; b[(m.tr)*8+(m.tc)] = 0; }
+          if (save.rookFrom) { b[save.rookFrom[0]*8+save.rookFrom[1]] = save.rookPiece; b[save.rookTo[0]*8+save.rookTo[1]] = 0; }
           state.enPassantTarget = save.oldEP;
           state.castleRights = save.oldCR;
           // Restore king position cache in O(1)
@@ -8977,56 +9328,57 @@ limitations under the License.
         function pseudoMoves(state, color) {
           const b = state.board, moves = [];
           for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-            const p = b[r][c]; if (!p || p === ' ' || clr(p) !== color) continue;
-            const u = p.toUpperCase();
-            if (u === 'P') {
+            const p = b[r*8+c]; if (!p || p === 0 || clr(p) !== color) continue;
+            const u = p & 7;
+            if (u === 1) {
               const dir = color === 'w' ? -1 : 1, start = color === 'w' ? 6 : 1, fr = r + dir;
               const promoRow = color === 'w' ? 0 : 7;
-              function addPawnMove(tr, tc) {
+              // ✅ Arrow function (not function declaration) — properly captures r,c per square
+              const addPawnMove = (tr, tc) => {
                 if (tr === promoRow) {
-                  // Generate 4 promotion moves
-                  for (const promo of ['Q', 'R', 'B', 'N'])
+                  const promos = color === 'w' ? [WQ, WR, WB, WN] : [BQ, BR, BB, BN];
+                  for (const promo of promos)
                     moves.push({ fr: r, fc: c, tr, tc, promo });
                 } else {
                   moves.push({ fr: r, fc: c, tr, tc });
                 }
-              }
-              if (ib(fr, c) && b[fr][c] === ' ') {
+              };
+              if (ib(fr, c) && b[fr*8+c] === 0) {
                 addPawnMove(fr, c);
-                if (r === start && b[r + dir * 2][c] === ' ') addPawnMove(r + dir * 2, c);
+                if (r === start && b[(r + dir * 2)*8+(c)] === 0) addPawnMove(r + dir * 2, c);
               }
               for (const dc of [-1, 1]) {
                 const tc = c + dc;
                 if (ib(fr, tc)) {
-                  if (b[fr][tc] !== ' ' && clr(b[fr][tc]) !== color) addPawnMove(fr, tc);
+                  if (b[fr*8+tc] !== 0 && clr(b[fr*8+tc]) !== color) addPawnMove(fr, tc);
                   if (state.enPassantTarget && state.enPassantTarget[0] === fr && state.enPassantTarget[1] === tc) addPawnMove(fr, tc);
                 }
               }
-            } else if (u === 'N') {
+            } else if (u === 2) {
               for (const [dr, dc] of [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]) {
                 const tr = r + dr, tc = c + dc;
-                if (ib(tr, tc) && clr(b[tr][tc]) !== color) moves.push({ fr: r, fc: c, tr, tc });
+                if (ib(tr, tc) && clr(b[tr*8+tc]) !== color) moves.push({ fr: r, fc: c, tr, tc });
               }
-            } else if (u === 'K') {
+            } else if (u === 6) {
               for (const [dr, dc] of [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]) {
                 const tr = r + dr, tc = c + dc;
-                if (ib(tr, tc) && clr(b[tr][tc]) !== color) moves.push({ fr: r, fc: c, tr, tc });
+                if (ib(tr, tc) && clr(b[tr*8+tc]) !== color) moves.push({ fr: r, fc: c, tr, tc });
               }
               const row = color === 'w' ? 7 : 0;
               if (r === row && c === 4) {
                 const cr = state.castleRights;
-                if (color === 'w' && cr.K && b[row][5] === ' ' && b[row][6] === ' ' && !inChk(state, color) && !isAtk(state, row, 5, opp(color)) && !isAtk(state, row, 6, opp(color))) moves.push({ fr: r, fc: c, tr: row, tc: 6 });
-                if (color === 'w' && cr.Q && b[row][3] === ' ' && b[row][2] === ' ' && b[row][1] === ' ' && !inChk(state, color) && !isAtk(state, row, 3, opp(color)) && !isAtk(state, row, 2, opp(color))) moves.push({ fr: r, fc: c, tr: row, tc: 2 });
-                if (color === 'b' && cr.k && b[row][5] === ' ' && b[row][6] === ' ' && !inChk(state, color) && !isAtk(state, row, 5, opp(color)) && !isAtk(state, row, 6, opp(color))) moves.push({ fr: r, fc: c, tr: row, tc: 6 });
-                if (color === 'b' && cr.q && b[row][3] === ' ' && b[row][2] === ' ' && b[row][1] === ' ' && !inChk(state, color) && !isAtk(state, row, 3, opp(color)) && !isAtk(state, row, 2, opp(color))) moves.push({ fr: r, fc: c, tr: row, tc: 2 });
+                if (color === 'w' && cr.K && b[row*8+5] === 0 && b[row*8+6] === 0 && !inChk(state, color) && !isAtk(state, row, 5, opp(color)) && !isAtk(state, row, 6, opp(color))) moves.push({ fr: r, fc: c, tr: row, tc: 6 });
+                if (color === 'w' && cr.Q && b[row*8+3] === 0 && b[row*8+2] === 0 && b[row*8+1] === 0 && !inChk(state, color) && !isAtk(state, row, 3, opp(color)) && !isAtk(state, row, 2, opp(color))) moves.push({ fr: r, fc: c, tr: row, tc: 2 });
+                if (color === 'b' && cr.k && b[row*8+5] === 0 && b[row*8+6] === 0 && !inChk(state, color) && !isAtk(state, row, 5, opp(color)) && !isAtk(state, row, 6, opp(color))) moves.push({ fr: r, fc: c, tr: row, tc: 6 });
+                if (color === 'b' && cr.q && b[row*8+3] === 0 && b[row*8+2] === 0 && b[row*8+1] === 0 && !inChk(state, color) && !isAtk(state, row, 3, opp(color)) && !isAtk(state, row, 2, opp(color))) moves.push({ fr: r, fc: c, tr: row, tc: 2 });
               }
             } else {
-              const dirs = u === 'R' ? [[0, 1], [0, -1], [1, 0], [-1, 0]] : u === 'B' ? [[1, 1], [1, -1], [-1, 1], [-1, -1]] : [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+              const dirs = u === 4 ? [[0, 1], [0, -1], [1, 0], [-1, 0]] : u === 3 ? [[1, 1], [1, -1], [-1, 1], [-1, -1]] : [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
               for (const [dr, dc] of dirs) {
                 let tr = r + dr, tc = c + dc;
                 while (ib(tr, tc)) {
-                  if (b[tr][tc] === ' ') moves.push({ fr: r, fc: c, tr, tc });
-                  else { if (clr(b[tr][tc]) !== color) moves.push({ fr: r, fc: c, tr, tc }); break; }
+                  if (b[tr*8+tc] === 0) moves.push({ fr: r, fc: c, tr, tc });
+                  else { if (clr(b[tr*8+tc]) !== color) moves.push({ fr: r, fc: c, tr, tc }); break; }
                   tr += dr; tc += dc;
                 }
               }
@@ -9043,17 +9395,17 @@ limitations under the License.
           });
         }
         function findKing(board, color) {
-          const k = color === 'w' ? 'K' : 'k';
-          for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (board[r][c] === k) return [r, c];
+          const k = color === 'w' ? WK : BK;
+          for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (board[r*8+c] === k) return [r, c];
           return null;
         }
 
         let killers = Array(64).fill(null).map(() => [null, null]);
-        let histTable = Array(64).fill(null).map(() => Array(64).fill(0));
+        let histTable = new Int32Array(64*64);
+        let counterMove = new Array(64*64).fill(null); // stores move objects, can't use typed array
         // ── Countermove heuristic ─────────────────────────────────────────────
-        // counterMove[prevFr*8+prevFc][prevTr*8+prevTc] = move that caused beta-cutoff
+        // counterMove[prevFr*8+prevFc*64+prevTr*8+prevTc] = move that caused beta-cutoff
         // in response to that opponent move. 4th ordering tier after hash/captures/killers.
-        let counterMove = Array(64).fill(null).map(() => Array(64).fill(null));
         // 📝 Zobrist Search Stack: tracks hashes along the CURRENT search path.
         // searchSet gives O(1) repetition lookup; searchStack keeps insertion order for pop.
         let searchStack = [];
@@ -9066,14 +9418,14 @@ limitations under the License.
         let searchStartTime = 0;
 
         function moveScore(state, m, depth) {
-          const p = state.board[m.fr][m.fc];
-          const t = state.board[m.tr][m.tc];
-          const u = p.toUpperCase();
+          const p = state.board[m.fr*8+m.fc];
+          const t = state.board[m.tr*8+m.tc];
+          const u = p & 7;  // integer piece type: 1=P 2=N 3=B 4=R 5=Q 6=K
 
           // 1. Detect En Passant (it's a capture even if the target square is empty)
-          const isEP = (u === 'P' && m.fc !== m.tc && t === ' ');
-          const tv = isEP ? PV['P'] : (t && t !== ' ' ? (PV[t.toUpperCase()] || 0) : 0);
-          const pv = PV[u] || 0;
+          const isEP = (u === 1 && m.fc !== m.tc && t === 0);
+          const tv = isEP ? 100 : (t && t !== 0 ? (PV_I[t&7] || 0) : 0);
+          const pv = PV_I[u] || 0;
 
           // 🔴 TIER 1: CAPTURES — SEE-ordered
           // Winning/equal captures (SEE ≥ 0): highest priority, sorted by gain.
@@ -9089,7 +9441,7 @@ limitations under the License.
           }
 
           // 🟠 TIER 2: PROMOTIONS (Level 900,000)
-          if (u === 'P' && (m.tr === 0 || m.tr === 7)) {
+          if (u === 1 && (m.tr === 0 || m.tr === 7)) {
             return 900000;
           }
 
@@ -9101,16 +9453,18 @@ limitations under the License.
           }
 
           // 🟢 TIER 4: HISTORY & POSITION (0 - 100,000 max)
-          let sc = histTable[m.fr * 8 + m.fc][m.tr * 8 + m.tc] || 0;
+          let sc = histTable[(m.fr * 8 + m.fc) * 64 + (m.tr * 8 + m.tc)] || 0;
           // Security CAP: Ensure history never overlaps with Killer tiers
           if (sc > 50000) sc = 50000;
 
           // FIX: PST bonus breaks 0-score ties at search start (empty histTable)
           // so king-side development (Nf3, Bg7) is preferred over queen-side shuffling.
-          const isW = (u === p);
+          const isW = p > 0 && p <= 6;
           const pstIdx = isW ? (m.tr * 8 + m.tc) : ((7 - m.tr) * 8 + m.tc);
-          if (u === 'K') sc += PST.KMG[pstIdx];
-          else if (PST[u]) sc += PST[u][pstIdx];
+          if (u === 6) sc += PST_KMG[pstIdx];
+          else if (u===1) sc+=PST_P[pstIdx]; else if (u===2) sc+=PST_N[pstIdx];
+          else if (u===3) sc+=PST_B[pstIdx]; else if (u===4) sc+=PST_R[pstIdx];
+          else if (u===5) sc+=PST_Q[pstIdx];
 
           // Killer Instinct: Prioritize moves near the enemy king
           const pc = clr(p);
@@ -9147,9 +9501,9 @@ limitations under the License.
           }
 
           const caps = inCheckNow ? legalMoves(state, color) : legalMoves(state, color).filter(m => {
-            if (state.board[m.tr][m.tc] !== ' ') return true;
-            if (state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ') return true;
-            if (state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) return true;
+            if (state.board[m.tr*8+m.tc] !== 0) return true;
+            if ((state.board[m.fr*8+m.fc]&7) === 1 && m.fc !== m.tc && state.board[m.tr*8+m.tc] === 0) return true;
+            if ((state.board[m.fr*8+m.fc]&7) === 1 && (m.tr === 0 || m.tr === 7)) return true;
             if (qd < 2) {
               const save2 = makeMove(state, m);
               const givesCheck = inChk(state, opp(color));
@@ -9164,12 +9518,12 @@ limitations under the License.
           const scores = new Int32Array(caps.length);
           for (let i = 0; i < caps.length; i++) {
             const mi = caps[i];
-            const p = state.board[mi.fr][mi.fc];
-            const t = state.board[mi.tr][mi.tc];
-            const u = p.toUpperCase();
-            const isEP = (u === 'P' && mi.fc !== mi.tc && t === ' ');
-            const tv = isEP ? PV['P'] : (t !== ' ' ? (PV[t.toUpperCase()] || 0) : 0);
-            scores[i] = (tv * 10) - (PV[u] || 0);
+            const p = state.board[mi.fr*8+mi.fc];
+            const t = state.board[mi.tr*8+mi.tc];
+            const u = p & 7;
+            const isEP = (u === 1 && mi.fc !== mi.tc && t === 0);
+            const tv = isEP ? 100 : (t !== 0 ? (PV_I[t&7] || 0) : 0);
+            scores[i] = (tv * 10) - (PV_I[u] || 0);
           }
 
           const DELTA = 250;
@@ -9181,15 +9535,15 @@ limitations under the License.
               const ts = scores[bestIdx]; scores[bestIdx] = scores[idx]; scores[idx] = ts;
             }
             const m = caps[idx];
-            const isEP = state.board[m.fr][m.fc].toUpperCase() === 'P' && m.fc !== m.tc && state.board[m.tr][m.tc] === ' ';
-            const tv = isEP ? PV['P'] : (PV[state.board[m.tr][m.tc].toUpperCase()] || 0);
-            const isP = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
+            const isEP = (state.board[m.fr*8+m.fc]&7) === 1 && m.fc !== m.tc && state.board[m.tr*8+m.tc] === 0;
+            const tv = isEP ? 100 : (PV_I[state.board[m.tr*8+m.tc]&7] || 0);
+            const isP = (state.board[m.fr*8+m.fc]&7) === 1 && (m.tr === 0 || m.tr === 7);
 
             if (!inCheckNow && !isP) {
               // SEE pruning: skip losing captures (e.g. BxN when N defended by P = -20cp)
               // Fast path: downward captures (attacker ≤ victim) are always SEE ≥ 0 — never prune.
               // Full SEE only for upward captures which might be losing.
-              const _av = PV[state.board[m.fr][m.fc].toUpperCase()] || 0;
+              const _av = PV_I[state.board[m.fr*8+m.fc]&7] || 0;
               if (!isEP && tv > 0 && _av > tv && see(state.board, m.tr, m.tc, m.fr, m.fc) < 0) continue;
               // Delta pruning: skip captures that can't raise alpha even with full margin
               if (maximizing  && sp + tv + DELTA < alpha) continue;
@@ -9231,8 +9585,10 @@ limitations under the License.
         const TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2;
         let gameHashCount = new Map();
 
-        const _PC = { Q:1, R:2, B:3, N:4, q:1, r:2, b:3, n:4 };
-        const _PS = [null, 'Q', 'R', 'B', 'N'];
+        // Promo encoding: map integer piece codes → compact 1-8 for TT storage
+        // WQ=5→1 WR=4→2 WB=3→3 WN=2→4 / BQ=13→5 BR=12→6 BB=11→7 BN=10→8
+        const _PC = { 5:1, 4:2, 3:3, 2:4, 13:5, 12:6, 11:7, 10:8 }; // int→compact
+        const _PS = [undefined, WQ, WR, WB, WN, BQ, BR, BB, BN];    // compact→int
         function encodeMove(m) {
           if (!m) return 0;
           return (m.fr << 12) | (m.fc << 9) | (m.tr << 6) | (m.tc << 3) | (_PC[m.promo] || 0);
@@ -9293,8 +9649,8 @@ limitations under the License.
             let hasMajorOrMinor = false;
             for (let _r = 0; _r < 8 && !hasMajorOrMinor; _r++)
               for (let _c = 0; _c < 8 && !hasMajorOrMinor; _c++) {
-                const _p = state.board[_r][_c];
-                if (_p && _p !== ' ' && clr(_p) === movingClr && 'NBRQ'.includes(_p.toUpperCase())) hasMajorOrMinor = true;
+                const _p = state.board[_r*8+_c];
+                if (_p && _p !== 0 && clr(_p) === movingClr) { const _u = _p & 7; if (_u >= 2 && _u <= 5) hasMajorOrMinor = true; }
               }
             if (hasMajorOrMinor) {
               // Adaptive R: increases with depth, but capped so at least 1 ply remains.
@@ -9320,7 +9676,7 @@ limitations under the License.
           // 🚀 Pre-calcular scores UNA VEZ por nodo (evita N·logN llamadas a moveScore en .sort)
           const scores = new Int32Array(moves.length);
           // Countermove: move that caused a beta-cutoff last time the opponent played prevMove
-          const cm = prevMove ? (counterMove[prevMove.fr * 8 + prevMove.fc] && counterMove[prevMove.fr * 8 + prevMove.fc][prevMove.tr * 8 + prevMove.tc]) : null;
+          const cm = prevMove ? counterMove[(prevMove.fr * 8 + prevMove.fc) * 64 + (prevMove.tr * 8 + prevMove.tc)] : null;
           for (let i = 0; i < moves.length; i++) {
             const mi = moves[i];
             let sc;
@@ -9356,8 +9712,8 @@ limitations under the License.
             const m = moves[idx];
 
             // ── Futility Pruning ────────────────────────────────────────────
-            const isCapture = state.board[m.tr][m.tc] !== ' ';
-            const isPromo = state.board[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
+            const isCapture = state.board[m.tr*8+m.tc] !== 0;
+            const isPromo = (state.board[m.fr*8+m.fc]&7) === 1 && (m.tr === 0 || m.tr === 7);
             if (canFutility && depth <= 2 && !isCapture && !isPromo && moveCount > 0) {
               const margin = FUTILITY_MARGIN[depth] || 0;
               if (maximizing && staticEval + margin <= alpha) { moveCount++; continue; }
@@ -9366,17 +9722,28 @@ limitations under the License.
 
             // ── Late Move Pruning (LMP) ─────────────────────────────────────
             // At low depths, prune quiet moves beyond a move-count threshold.
-            // These very late moves almost never improve the score at shallow depth.
+            // DISABLED in endgame (≤4 non-pawn pieces): all quiet moves may be decisive.
             if (!checked && !isCapture && !isPromo && depth <= 3 && moveCount > 0) {
-              const lmpLimit = depth === 1 ? 8 : depth === 2 ? 15 : 25;
-              if (moveCount >= lmpLimit) { moveCount++; continue; }
+              let _tmpPieces = 0;
+              for (let _i = 0; _i < 64; _i++) { const _pp = state.board[_i]; if (_pp && (_pp & 7) >= 2 && (_pp & 7) <= 5) _tmpPieces++; }
+              if (_tmpPieces > 4) { // Middlegame: apply LMP normally
+                const lmpLimit = depth === 1 ? 8 : depth === 2 ? 15 : 25;
+                if (moveCount >= lmpLimit) { moveCount++; continue; }
+              }
             }
+
 
             // ── Late Move Reductions (LMR) — logarithmic formula ───────────
             const doLMR = moveCount >= 2 && depth >= 2 && !checked && !isCapture && !isPromo;
 
             const save = makeMove(state, m);
-            const ext = inChk(state, opp(color)) ? 1 : 0; // check extension: computed AFTER makeMove
+            // Extension: +1 ply if move gives check, OR if a pawn is now on rank 2/3 (WP) or rank 6/7 (BP)
+            // — forcing the engine to calculate the promotion path fully at shallow depths.
+            const givesCheck = inChk(state, opp(color));
+            const movedPiece = save.p; // piece that just moved (before promo transform)
+            const isAdvancedPawn = (movedPiece === WP && (m.tr === 1 || m.tr === 2)) ||
+                                   (movedPiece === BP && (m.tr === 5 || m.tr === 6));
+            const ext = (givesCheck ? 1 : 0) + (isAdvancedPawn && depth <= 4 ? 1 : 0);
             let v;
             try {
               if (moveCount === 0) {
@@ -9386,7 +9753,7 @@ limitations under the License.
                 // ── LMR: logarithmic reduction (Stockfish-style) ─────────────
                 // R = 0.77 + ln(depth) * ln(moveCount+1) / 2.36
                 // Clamped to [1, depth-1] so we never search at depth 0 in reduced window.
-                const histConf = (histTable[m.fr * 8 + m.fc] && histTable[m.fr * 8 + m.fc][m.tr * 8 + m.tc]) || 0;
+                const histConf = histTable[(m.fr * 8 + m.fc) * 64 + (m.tr * 8 + m.tc)] || 0;
                 let reduction = Math.max(1, Math.min(depth - 1,
                   Math.round(0.77 + Math.log(depth) * Math.log(moveCount + 1) / 2.36)
                 ));
@@ -9415,11 +9782,11 @@ limitations under the License.
             if (maximizing) { if (v > best) { best = v; bestMoveFound = m; } if (v > alpha) alpha = v; }
             else { if (v < best) { best = v; bestMoveFound = m; } if (v < beta) beta = v; }
             if (alpha >= beta) {
-              if (state.board[m.tr][m.tc] === ' ') {
+              if (state.board[m.tr*8+m.tc] === 0) {
                 killers[depth][1] = killers[depth][0]; killers[depth][0] = m;
-                histTable[m.fr * 8 + m.fc][m.tr * 8 + m.tc] += depth * depth;
+                histTable[(m.fr * 8 + m.fc) * 64 + (m.tr * 8 + m.tc)] += depth * depth;
                 // Store countermove: this quiet move refuted prevMove
-                if (prevMove) counterMove[prevMove.fr * 8 + prevMove.fc][prevMove.tr * 8 + prevMove.tc] = m;
+                if (prevMove) counterMove[(prevMove.fr * 8 + prevMove.fc) * 64 + (prevMove.tr * 8 + prevMove.tc)] = m;
               }
               break;
             }
@@ -9460,12 +9827,13 @@ limitations under the License.
             const deadline = Date.now() + timeout;
             const color = msg.turn;
             const multiPV = msg.multiPV || 1;
+            const _int8Board = boardToInt8(msg.board);
             const state = {
-              board: msg.board, turn: msg.turn,
+              board: _int8Board, turn: msg.turn,
               castleRights: msg.castleRights || { K: false, Q: false, k: false, q: false },
               enPassantTarget: msg.enPassantTarget || null,
-              wKing: findKing(msg.board, 'w'),  // king position cache
-              bKing: findKing(msg.board, 'b'),
+              wKing: findKing(_int8Board, 'w'),  // king position cache
+              bKing: findKing(_int8Board, 'b'),
               halfMoveClock: msg.halfMoveClock || 0
             };
 
@@ -9479,8 +9847,8 @@ limitations under the License.
             // Note: ttData (flat Int32Array) persists across searches — positions evaluated while
             // the human was thinking remain valid. Slots are overwritten in place by depth preference.
             killers = Array(64).fill(null).map(() => [null, null]);
-            histTable = Array(64).fill(null).map(() => Array(64).fill(0));
-            counterMove = Array(64).fill(null).map(() => Array(64).fill(null));
+            histTable = new Int32Array(64*64);
+            counterMove = new Array(64*64).fill(null);
             computeZobFull(state); // sets state.hashL and state.hashH (64-bit, O(64) once)
             const _rootBk = (state.hashL ^ state.hashH) >>> 0; // XOR-fold for searchSet
             searchStack = [_rootBk]; searchSet = new Set([_rootBk]); // 📝 init with root position
@@ -9517,12 +9885,12 @@ limitations under the License.
             const MVV_LVA_SCORES = { K: 0, P: 1, N: 2, B: 3, R: 4, Q: 5 };
             let scoredRoot = rootMoves.map(m => {
               let s = 0;
-              const target = state.board[m.tr][m.tc];
-              const mover = state.board[m.fr][m.fc];
-              if (target && target !== ' ') {
-                // MVV-LVA: capture score = victim value - attacker value (scaled)
-                const victim = MVV_LVA_SCORES[target.toUpperCase()] || 0;
-                const attacker = MVV_LVA_SCORES[mover.toUpperCase()] || 0;
+              const target = state.board[m.tr*8+m.tc];
+              const mover = state.board[m.fr*8+m.fc];
+              if (target && target !== 0) {
+                // MVV-LVA: victim rank - attacker rank (P=1,...,Q=5,K=0)
+                const victim = target & 7;   // 1=P 2=N 3=B 4=R 5=Q 6=K
+                const attacker = mover & 7;
                 s = 10 + victim * 10 - attacker;
               } else {
                 // Quiet moves: penalize immediately if SEE < 0 (piece hangs on landing square).
@@ -9532,7 +9900,7 @@ limitations under the License.
                 if (quietSee < -100) s = -200 + quietSee; // push well below all other quiet moves
               }
               // Promotions ranked just below winning captures
-              if (mover && mover.toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7)) s += 50;
+              if (mover && (mover & 7) === 1 && (m.tr === 0 || m.tr === 7)) s += 50;
               return { move: m, score: s };
             });
             scoredRoot.sort((a, b) => b.score - a.score);
@@ -9574,8 +9942,8 @@ limitations under the License.
               if (d > 1) {
                 for (let _hi = 0; _hi < 64; _hi++) {
                   for (let _hj = 0; _hj < 64; _hj++) {
-                    if (histTable[_hi][_hj] > 0) {
-                      histTable[_hi][_hj] -= Math.floor(histTable[_hi][_hj] / 16); // ÷16 = gentler than ÷8
+                    if (histTable[_hi*64+_hj] > 0) {
+                      histTable[_hi*64+_hj] -= Math.floor(histTable[_hi*64+_hj] / 16); // ÷16 = gentler than ÷8
                     }
                   }
                 }
@@ -9653,11 +10021,12 @@ limitations under the License.
                 if (currentDepthScores.length > 0) {
                   const best = currentDepthScores.reduce((a, b) => b.score > a.score ? b : a).score;
 
-                  // 🪂 PARACAÍDAS: Under 15% budget → abort cleanly.
+                  // 🪂 PARACAÍDAS: Under 8% budget → abort cleanly.
                   // IMPORTANT: mark depthPartial=true BEFORE break so the Failsafe block below
                   // (!depthPartial check) does NOT trigger a costly full-window re-search.
+                  // Was 15%: too aggressive — interrupted aspiration retries leaving empty scores.
                   const timeLeft = deadline - Date.now();
-                  if (timeLeft < timeout * 0.15) {
+                  if (timeLeft < timeout * 0.08) {
                     depthPartial = true;    // prevents Failsafe from firing
                     analysisPartial = true; // exits the depth loop too
                     break;
@@ -9793,6 +10162,20 @@ limitations under the License.
               });
             }
 
+            // 🛡️ EMERGENCY FAILSAFE: If finalOptions is empty (should NEVER happen in a legal position),
+            // fall back through: bestOptions → scoredRoot → rootMoves[0].
+            // This guarantees the worker ALWAYS returns a legal move and never causes mchess_no_move.
+            if (!finalOptions || finalOptions.length === 0) {
+              console.error('⚠️ finalOptions empty — using emergency fallback');
+              if (bestOptions && bestOptions.length > 0) {
+                finalOptions = bestOptions;
+              } else if (scoredRoot && scoredRoot.length > 0) {
+                finalOptions = [scoredRoot[0]]; // Return best-ordered move from initial scoring
+              } else {
+                finalOptions = [{ move: rootMoves[0], score: 0 }]; // Last resort: first legal move
+              }
+            }
+
 
             // ── ROOT-LEVEL SEE ANTI-BLUNDER FILTER ────────────────────────
             // After all depth iterations, run a fast SEE check on the top move.
@@ -9806,7 +10189,7 @@ limitations under the License.
               const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
               for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
                 const _m = _sr[_i].move;
-                const _isCapture = state.board[_m.tr][_m.tc] !== ' ';
+                const _isCapture = state.board[_m.tr*8+_m.tc] !== 0;
                 if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
                 const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
                 if (_moveSee >= -100) { _safeIdx = _i; break; } // move is safe
@@ -10012,11 +10395,11 @@ limitations under the License.
           move = await getBestAIMoveAsync(aiColor, aiDepth, aiMistakeChance, aiTimeLimit);
           // 🔴 ABORT: if init() was called while the engine was thinking, bail out immediately
           if (aiSearchGeneration !== searchGen) { aiThinking = false; return; }
-          if (move) {
-            const legal = getLegalMovesForColorInPlace(aiColor);
-            const ok = legal.some(mv => mv.fr === move.fr && mv.fc === move.fc && mv.tr === move.tr && mv.tc === move.tc);
-            if (!ok) move = findBestMoveFor(aiColor, aiDepth, aiMistakeChance, SEARCH_TIME_LIMIT_MS) || null;
-          }
+          // ✅ Worker result is trusted directly.
+          // The UI's getLegalMovesForColorInPlace() can miss some moves (e.g. castling edge cases)
+          // causing valid worker moves to appear "illegal" and triggering stack-overflow fallbacks.
+          if (!move) move = getLegalMovesForColorInPlace(aiColor)[0] || null;
+
         }
 
         // 3. Execute move
@@ -10038,8 +10421,11 @@ limitations under the License.
           const turnBarB = document.getElementById('turnBar');
           if (turnBarB) turnBarB.style.display = '';
           aiThinking = false;
-          // ✨ FIX: Pass the promotion to the engine
-          await makeMove(move.fr, move.fc, move.tr, move.tc, move.promo);
+          // ✨ FIX: Convert integer promo code (from worker) back to string char for UI board
+          // Worker encodes: WQ=5,WR=4,WB=3,WN=2 / BQ=13,BR=12,BB=11,BN=10
+          const INT_TO_PROMO = {2:'N',3:'B',4:'R',5:'Q',10:'N',11:'B',12:'R',13:'Q'};
+          const promoArg = (move.promo && typeof move.promo === 'number') ? INT_TO_PROMO[move.promo] : move.promo;
+          await makeMove(move.fr, move.fc, move.tr, move.tc, promoArg);
         }
 
         if (isCapture) {
@@ -10473,15 +10859,14 @@ limitations under the License.
           // SEE-based exchange validation: if the enemy captures our piece but the
           // exchange is losing for them (SEE < 0 from enemy's perspective), it's
           // not a real threat — the enemy attacker will be lost in the recapture.
+          // Skip it entirely so it doesn't pollute worstEval / trigger a warning.
           const targetPiece = after[enemyMove.tr][enemyMove.tc];
           if (targetPiece && targetPiece !== ' ') {
             const seeFromEnemy = see(after, enemyMove.tr, enemyMove.tc, enemyMove.fr, enemyMove.fc);
             if (seeFromEnemy < 0) {
-              // Losing exchange for the enemy: restore the piece value so the Professor
-              // doesn't penalise what is effectively a free recapture for us.
-              const enemyPieceChar = after[enemyMove.tr][enemyMove.tc];
-              const enemyPieceVal = PIECE_VALUES[(enemyPieceChar || ' ').toUpperCase()] || 0;
-              ev += color === 'w' ? enemyPieceVal : -enemyPieceVal;
+              // Losing exchange for the enemy: they wouldn't play this move.
+              // Use continue so worstEval is never updated by a suicidal reply.
+              continue;
             }
           }
         }
@@ -11773,14 +12158,24 @@ limitations under the License.
           if (!hanging.danger && !destAttacker && history.length <= 6 && (riskLevel === 'medium' || riskLevel === 'high')) riskLevel = 'low';
           if (hanging.danger) riskLevel = 'high';
 
-          // SEE check on the moving piece's destination:
-          // If the piece lands on a square where it's immediately captured for a net loss
-          // (e.g. Bc6 pinning d7 but pawn takes the bishop), add a heavy penalty.
-          const isQMove = board[move.fr][move.fc]?.toUpperCase() !== undefined;
-          const movePieceSee = isQMove && board[move.tr][move.tc] === ' '
-            ? see(board, move.tr, move.tc, move.fr, move.fc)
-            : null; // For captures, SEE is already handled by injected capture filter
-          const destSeeHeavyLoss = movePieceSee !== null && movePieceSee < -50;
+          // 🔍 SEE CHECK: applies to ALL moves (captures AND quiet moves).
+          // For captures: if SEE < 0, the piece loses material net even though it captures.
+          // For quiet moves: if SEE < -50, the piece lands on a square where it's lost.
+          let seePenalty = 0;
+          if (!isMate) {
+            const isCapture = board[move.tr][move.tc] !== ' ';
+            const moveSee = see(board, move.tr, move.tc, move.fr, move.fc);
+            if (isCapture) {
+              if (moveSee < 0) {
+                // Losing capture: e.g. Bxh7 when Nf6 recaptures. SEE < 0 = net material loss.
+                seePenalty = Math.abs(moveSee);
+                riskLevel = 'high';
+              }
+            } else if (moveSee < -50) {
+              // Quiet move landing on attacked square (original logic).
+              seePenalty = Math.abs(moveSee);
+            }
+          }
 
           const reply = getImmediateReplyRisk(move, sideToAnalyze);
 
@@ -11818,16 +12213,18 @@ limitations under the License.
             } catch (_) { }
           }
 
-          let tacticalPenalty = (isBook ? 0 : severeDrop) + hangingPenalty + abandonedPenalty;
-          // If the piece immediately loses material on landing (SEE < -50), add heavy penalty
-          if (destSeeHeavyLoss && !isMate) tacticalPenalty += Math.abs(movePieceSee);
+          let tacticalPenalty = (isBook ? 0 : severeDrop) + hangingPenalty + abandonedPenalty + seePenalty;
+
+          // If SEE proves the capture is losing, isProfitableTrade is false regardless of raw piece values.
+          const truelyProfitable = isProfitableTrade && seePenalty === 0;
 
           if (isMate) {
             riskLevel = 'low';
             tacticalPenalty = 0;
-          } else if (isProfitableTrade && riskLevel === 'high') {
+          } else if (truelyProfitable && riskLevel === 'high') {
             riskLevel = 'medium';
           }
+
 
           // 🎲 GAMBIT DETECTION for book moves shown here
           let enrichedOpt = { ...opt };
@@ -12517,20 +12914,36 @@ limitations under the License.
 
             let tacticalPenalty = severeDrop + hangingPenalty + abandonedPenalty;
 
-            // 🚨 SEE CHECK for book moves: if the piece immediately loses material on its
-            // landing square (pawn advancing into an attacked square), add a heavy penalty.
-            // This catches suicidal book advances the hanging/reply system misses.
-            if (opt.isBook && !isMate) {
-              const isQuietBookMove = board[mv.tr][mv.tc] === ' '; // non-capture
-              if (isQuietBookMove) {
+            // 🔍 SEE CHECK: validate ALL captures and book quiet moves.
+            // Previously only book quiet moves were SEE-validated. This meant captures like
+            // Bxh7 (where Nf6 immediately recaptures) were recommended as "you gain a pawn"
+            // even though the bishop is lost. Now: SEE < 0 on ANY capture adds a penalty.
+            if (!isMate) {
+              const isCapture = board[mv.tr][mv.tc] !== ' ';
+              if (isCapture) {
+                // SEE from the moving piece's perspective on the target square.
+                // see(board, toR, toC, fromR, fromC) returns net centipawn gain.
+                // If negative: the piece is immediately recaptured at a loss.
+                const captureSee = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
+                if (captureSee < 0) {
+                  // Losing capture: piece captures but is immediately recaptured for a loss.
+                  // The loss is the absolute SEE value (e.g. -235cp if bishop takes pawn but knight takes bishop).
+                  tacticalPenalty += Math.abs(captureSee);
+                  // Escalate risk: a losing capture is always high risk.
+                  riskLevel = 'high';
+                  // Also mark isProfitableTrade as false since SEE proves it isn't.
+                  // (isProfitableTrade was computed purely from piece values, ignoring recaptures)
+                }
+              } else if (opt.isBook) {
+                // Quiet book move: check if landing square is attacked (original SEE logic)
                 const landingSee = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
                 if (landingSee < -50) {
-                  // The piece will be taken at a loss — significant penalty regardless of book status
                   tacticalPenalty += Math.abs(landingSee);
                   if (riskLevel === 'low') riskLevel = 'high';
                 }
               }
             }
+
 
             if (isMate) {
               riskLevel = 'low';
@@ -13123,8 +13536,19 @@ limitations under the License.
 
       // ⚔️ 9. MATERIAL CAPTURES
       if (target !== ' ') {
-        return withQS(en ? `⚔️ You win material by capturing the ${getLocalizedPieceName(target)}.` : `⚔️ Lógica material: ganas ventaja al capturar su ${getLocalizedPieceName(target)}.`);
+        // SEE validation: only label as material gain if the capture is actually winning.
+        // A capture where the attacker is immediately retaken at a loss is NOT "ganas ventaja".
+        const captureSee = see(board, m.tr, m.tc, m.fr, m.fc);
+        if (captureSee > 0) {
+          // Winning capture — net material gain
+          return withQS(en ? `⚔️ You win material by capturing the ${getLocalizedPieceName(target)}.` : `⚔️ Lógica material: ganas ventaja al capturar su ${getLocalizedPieceName(target)}.`);
+        } else if (captureSee === 0) {
+          // Equal exchange — mention it neutrally
+          return withQS(en ? `⚔️ Equal exchange: you capture the ${getLocalizedPieceName(target)} and your piece will be recaptured.` : `⚔️ Intercambio igual: capturas su ${getLocalizedPieceName(target)} pero tu pieza será recapturada.`);
+        }
+        // captureSee < 0 → losing capture — fall through to other explanations (don't call it a gain)
       }
+
 
       // 🛡️ 10. ACTIVE DEFENSE (Rescue and Coverage)
       // Case A: the moving piece itself was hanging and is now safe
