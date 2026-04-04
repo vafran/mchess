@@ -9457,7 +9457,7 @@ limitations under the License.
         // searchSet gives O(1) repetition lookup; searchStack keeps insertion order for pop.
         let searchStack = [];
         let searchSet = new Set();
-        let historySet = new Set();
+        let historyCount = new Map(); // Zobrist XOR-fold → occurrence count in game history
 
         // 📊 TELEMETRÍA
         let searchNodes = 0;
@@ -9662,7 +9662,9 @@ limitations under the License.
           if (Date.now() >= deadline) throw 'TIMEOUT';
           const bkL = state.hashL, bkH = state.hashH;
           const bkS = (bkL ^ bkH) >>> 0; // XOR-fold for searchSet (repetition detection)
-          if (searchSet.has(bkS) || historySet.has(bkS)) return 0;
+          // Draw by repetition: position reached once in game history + found again on search path
+          const hc = historyCount.get(bkS) || 0;
+          if (searchSet.has(bkS) || hc >= 2) return 0;
           if ((state.halfMoveClock || 0) >= 100) return 0;
           // TT lookup — full 64-bit key prevents type-1 errors
           const alphaOrig = alpha;
@@ -9887,7 +9889,7 @@ limitations under the License.
 
             // Load position history
             gameHashCount = new Map();
-            historySet.clear();
+            historyCount.clear();
             for (const h of (msg.positionHashes || [])) {
               if(!h) continue;
               const p = h.split('|');
@@ -9919,7 +9921,7 @@ limitations under the License.
                 if (!isNaN(epFile)) { hl = (hl ^ Z_EP_L[epFile]) >>> 0; hh = (hh ^ Z_EP_H[epFile]) >>> 0; }
               }
               const bkS = (hl ^ hh) >>> 0;
-              historySet.add(bkS);
+              historyCount.set(bkS, (historyCount.get(bkS) || 0) + 1);
               gameHashCount.set(h, (gameHashCount.get(h) || 0) + 1);
             }
 
