@@ -12763,9 +12763,20 @@ limitations under the License.
         displayList.forEach((opt, idx) => {
           const m = opt.move;
           const isBook = !!opt.isBook;
-          const strategicIntent = isBook
-            ? `<strong>${simplifyForKids(opt.name || '')}</strong>: ${simplifyForKids(opt.desc || '')}`
-            : simplifyForKids(getStrategicIntent(m, sideToAnalyze));
+          
+          let strategicIntent = "";
+          if (isBook) {
+            strategicIntent = `<strong>${simplifyForKids(opt.name || '')}</strong>: ${simplifyForKids(opt.desc || '')}`;
+          } else if (opt.tacticalPenalty > 150) {
+            // 🛡️ CONTROL DE CORDURA: Si la jugada pierde material grave (penalización alta), 
+            // prohibimos que el generador de texto busque intenciones "brillantes".
+            strategicIntent = en 
+                ? "An emergency move in a very difficult tactical situation." 
+                : "Un movimiento de emergencia en una situación táctica muy complicada.";
+          } else {
+            strategicIntent = simplifyForKids(getStrategicIntent(m, sideToAnalyze));
+          }
+          
           const riskReason = getMoveRiskReason(m, sideToAnalyze, opt.riskLevel);
 
           // 🕸️ Spider Sense connection: if this move rescues a piece the Spider Sense
@@ -13344,6 +13355,13 @@ limitations under the License.
         }
         return base;
       };
+
+      // 🚨 0. ABSOLUTE PRIORITY: ESCAPING CHECK
+      if (inCheck(color, board)) {
+          return withQS(en 
+              ? "🛡️ Evasion! You move your piece to escape the check and save your King." 
+              : "🛡️ ¡Evasión! Respondes a la amenaza directa para salvar a tu Rey del jaque.");
+      }
 
       // 🏆 1. MAXIMUM PRIORITY: CHECKMATE AND CHECK
       if (inCheck(enemyColor, copy)) {
@@ -14076,9 +14094,9 @@ limitations under the License.
               }
 
               reason += en
-                ? `<br><br>👁️ <em>The Coach points out the refutation: ${pName} to ${tName}.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>Why?</strong> ${amenazaDesc}</span>`
-                : `<br><br>👁️ <em>El Profesor señala la refutación: ${pName} a ${tName}.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>¿Por qué?</strong> ${amenazaDesc}</span>`;
-            }
+                ? `<br><br>👁️ <em>The Coach points out the opponent's best reply: <strong>...${pName} to ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>Why?</strong> ${amenazaDesc}</span>`
+                : `<br><br>👁️ <em>El Profesor señala la mejor respuesta del rival: <strong>...${pName} a ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>¿Por qué?</strong> ${amenazaDesc}</span>`;
+              }
             setTimeout(clearArrows, 5500);
           } catch (e) { }
 
