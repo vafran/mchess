@@ -14,9 +14,9 @@ const readline   = require('readline');
 const CONFIG = {
     numGames:      20,      // minimum for ±76 ELO precision
     depths:        [7, 8],  // bracket with two depths (override at runtime)
-    htmlFile:      path.join(__dirname, 'mChess_v2.20.html'),
+    htmlFile:      path.join(__dirname, '../mChess.html'),
     stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish'),
-    logFile:       path.join(__dirname, 'tournament_v2.20_results.json'),
+    logFile:       path.join(__dirname, 'tournament_latest_results.json'),
     moveTimeoutMs: 45000,   // 45s max per mChess move
     gameTimeoutMs: 3600000, // 1h per game
 };
