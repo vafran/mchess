@@ -187,7 +187,7 @@ async function evalMove(page, fen, history, timeoutMs) {
             try {
                 currentDifficulty = lvl;
                 const s = DIFF_SETTINGS && DIFF_SETTINGS[lvl];
-                if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
+                if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = (lvl === 'grandmaster' ? 30000 : s.timeLimit); }
                 if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
                     try { chessEngineWorker.terminate(); } catch(e) {} chessEngineWorker = null;
                 }
@@ -234,7 +234,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
         try {
             currentDifficulty = lvl;
             const s = DIFF_SETTINGS && DIFF_SETTINGS[lvl];
-            if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
+            if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = (lvl === 'grandmaster' ? 30000 : s.timeLimit); }
         } catch(e) {}
     }, CONFIG.selectedLevel || 'grandmaster');
 
@@ -470,7 +470,7 @@ async function runTournament() {
         try {
             currentDifficulty = level;
             const s = DIFF_SETTINGS && DIFF_SETTINGS[level];
-            if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
+            if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = (level === 'grandmaster' ? 30000 : s.timeLimit); }
             if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
                 try { chessEngineWorker.terminate(); } catch(e) {}
                 chessEngineWorker = null;
