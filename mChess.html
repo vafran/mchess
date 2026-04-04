@@ -10007,7 +10007,7 @@ limitations under the License.
             let bestMovesHistory = [];  // Track best move per completed depth
             let bestScoresHistory = []; // Track best score per completed depth (for stability check)
             let lastDepthTime = 0; // ⚡ EBF brake: tracks how long the last depth took
-            const EBF_FACTOR = 3.5; // Branching factor estimate — conservative to avoid over-cutting
+            const EBF_FACTOR = 4.5; // Branching factor estimate — set higher to avoid partial-depth timeouts
             let completedDepth = 0; // 📊 Real depth actually completed (vs maxDepth = target)
 
             for (let d = 1; d <= maxDepth; d++) {
