@@ -7,6 +7,55 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.21.0 — La Edición de Rendimiento y Tácticas
+**~15.600 líneas · ~816 KB**
+
+Objetivo de torneo: **~2000 ELO** (vs Stockfish d:8, torneo de 20 partidas).  
+Motor 4–5× más rápido que v2.13.1 a igual profundidad. Primeros empates por repetición esperados.
+
+### Motor — Tablero 8 bits (`Int8Array(64)`) — NPS ×4–5
+- **Tablero plano `Int8Array(64)`** — migrado desde array 8×8 de strings a array tipado plano con códigos enteros de pieza (`1–6` = Blancas, `9–14` = Negras).
+- **Localidad de caché** — 64 bytes caben en una línea de caché L1. Las lecturas del tablero son prácticamente gratuitas.
+- **Aritmética entera en todo el camino caliente** — tipo de pieza con `p & 7`, color con `p <= 6`. Cero comparaciones de strings.
+- **Buffers preasignados** — `Int8Array`, `Int32Array` para todas las estructuras de búsqueda, asignados una sola vez al arrancar el Worker.
+- **Resultado**: **45k–80k NPS** estables frente a ~10k–18k de v2.13.1 a iguales profundidades.
+
+### Motor — Evaluación Tapered MG/EG (tablas PST dobles)
+- **PST de dos fases** (`PST_MG` / `PST_EG`) — reemplaza las tablas estáticas únicas.
+- Interpolación entera: `score = (mgVal × ph + egVal × (24−ph)) / 24 | 0`. Sin coma flotante en el bucle central.
+- Fase `ph` calculada por piezas: menor=1, torre=2, dama=4. Final puro=0 (sin piezas), apertura completa=24.
+- Caballos y alfiles valorados correctamente en cada fase de la partida.
+
+### Motor — Heurísticas Escudo y Tormenta del Rey
+- **Escudo del Rey** (`eg < 0.3`): +25 cp por peón delante del rey enrocado (hasta 3).
+- **Tormenta de Peones**: penalización por columnas abiertas o semiabiertas hacia el rey enrocado, escalado según lo avanzados que estén los peones de cobertura.
+
+### Motor — Evaluación de Intercambio Estático (SEE)
+- Función completa `see()` con soporte de rayos X (detecta piezas que aparecen tras quitar otra).
+- Capturas ganadoras/iguales (`SEE ≥ 0`) ordenadas por ganancia neta — buscadas primero.
+- Capturas perdedoras (`SEE < 0`) — priorizadas por debajo de jugadas silenciosas; descartadas en la búsqueda de quietud.
+- Elimina la clase más común de colgadas: cambiar un alfil por un peón defendido por otro peón.
+
+### Bug — Detección de Empate por Repetición (crítico)
+- **Causa raíz**: tras el refactor al tablero de 8 bits, `positionHashes` (strings del historial) se enviaba al Worker pero el bucle de búsqueda usaba claves Zobrist XOR-fold — **nunca estaban conectadas**. El motor era completamente ciego a la repetición.
+- **Solución**: los strings de `positionHashes` se decodifican ahora a claves Zobrist usando exactamente las mismas tablas `ZL`/`ZH`/`ZBL`/`Z_CASTLE`/`Z_EP` que `makeMove()`, acumuladas en `historyCount: Map<u32, count>`.
+- **Umbral correcto**: `minimax()` devuelve 0 cuando `historyCount.get(bkS) >= 2` (posición vista ≥ 2 veces en historial = territorio de triple repetición).
+
+### Infraestructura de Torneo (`arena_tournament.js` v2)
+- 20 líneas de apertura (cobertura ECO), alternancia de colores, 20 partidas por defecto.
+- Guardado JSON parcial tras cada partida — se puede interrumpir con Ctrl+C sin perder datos.
+- Log de NPS por jugada, NPS medio en el informe final.
+- Intervalos de confianza ELO al 95% (método Wilson score).
+- Página V8/TurboFan compartida entre partidas — el código JIT se calienta en la partida 1 y se mantiene. NPS estable desde la partida 2.
+- Tiempo máximo de 45 segundos por jugada con detección de página caducada y recarga automática.
+
+### Motor — Actualización de la TT
+- **TT de 1 048 576 entradas** (20 MB, `Int32Array`) — antes 200K entradas.
+- Entradas EXACT nunca sobreescritas por UPPER/LOWER a ninguna profundidad.
+- Puntuaciones de mate almacenadas como absolutas (ajustadas por `plyFromRoot`) para recuperación correcta.
+
+---
+
 ## v2.13.1 — Hotfix
 **~14.100 líneas · ~687 KB**
 

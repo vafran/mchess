@@ -7,6 +7,55 @@ Format: version · size · what changed.
 
 ---
 
+## v2.21.0 — The Performance & Tactics Edition
+**~15,600 lines · ~816 KB**
+
+Tournament target: **~2000 ELO** (vs Stockfish d:8, 20-game tournament).  
+Engine is 4–5× faster than v2.13.1 at equal depth. First repetition draws expected.
+
+### Engine — 8-Bit Board Representation (NPS ×4–5)
+- **`Int8Array(64)` flat board** — migrated from `8×8` string array to flat typed array with integer piece codes (`1–6` = White, `9–14` = Black).
+- **Cache locality** — 64 bytes fit in a single L1 cache line. Board reads cost near-zero.
+- **Integer arithmetic throughout** — piece type `p & 7`, color `p <= 6`. Zero string comparisons in the hot path.
+- **Pre-allocated buffers** — `Int8Array`, `Int32Array` for all search structures, allocated once at Worker startup.
+- **Result**: stable **45k–80k NPS** vs ~10k–18k in v2.13.1 at identical depths.
+
+### Engine — Tapered Evaluation (MG/EG PST)
+- **Dual-phase PST** (`PST_MG` / `PST_EG`) — replaces single static tables.
+- Integer interpolation: `score = (mgVal × ph + egVal × (24−ph)) / 24 | 0`. No floats in hot path.
+- Phase `ph` from pieces: minor=1, rook=2, queen=4. Endgame=0 (no pieces) to 24 (full set).
+- Knights/bishops valued correctly for each game phase.
+
+### Engine — King Shield & Storm Heuristics
+- **King Shield** (`eg < 0.3`): +25 cp per pawn in front of the castled king (up to 3).
+- **King Storm**: penalty for open/semi-open files toward the castled king, scaled by how far cover pawns have advanced.
+
+### Engine — Static Exchange Evaluation (SEE)
+- Full `see()` function with X-ray support (lines up correctly behind removed pieces).
+- Winning/equal captures (`SEE ≥ 0`) sorted by net gain — searched first.
+- Losing captures (`SEE < 0`) — deprioritised below quiet moves in move ordering; skipped in quiescence.
+- Eliminates the most common blunder class: trading a bishop for a guarded pawn.
+
+### Bug Fix — Repetition Draw Detection (critical)
+- **Root cause**: after the 8-bit refactor, `positionHashes` (UI string hashes) were sent to the Worker but the search used Zobrist XOR-fold keys — they were never connected. The engine was completely blind to repetition.
+- **Fix**: `positionHashes` strings are now decoded into Zobrist keys using the same `ZL`/`ZH`/`ZBL`/`Z_CASTLE`/`Z_EP` tables as `makeMove()`, stored in `historyCount: Map<u32, count>`.
+- **Correct threshold**: `minimax()` returns 0 when `historyCount.get(bkS) >= 2` (position seen ≥2 times in history = threefold repetition territory).
+
+### Tournament Infrastructure (arena_tournament.js v2)
+- 20 opening lines (ECO coverage), color alternation, 20 games default.
+- Partial JSON save after every game — safe to interrupt with Ctrl+C.
+- NPS per-move logging, average NPS in final report.
+- 95% Wilson score ELO confidence intervals.
+- Persistent V8/TurboFan page across all games — JIT stabilises at peak from game 2.
+- 45-second per-move timeout with stale-page detection and auto-reload.
+
+### Engine — TT Upgrade
+- **1 048 576-entry TT** (20 MB, `Int32Array`) — was 200K entries.
+- EXACT entries are never overwritten by UPPER/LOWER entries at any depth.
+- Mate scores stored as absolute (plyFromRoot-adjusted) for correct retrieval.
+
+---
+
 ## v2.13.1 — Hotfix
 **~14,100 lines · ~687 KB**
 

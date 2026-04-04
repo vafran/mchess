@@ -25,11 +25,11 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 - **Cero fricción.** Sin instalación, sin cuenta, sin internet tras la primera descarga. Funciona en un portátil de diez años igual que en un teléfono moderno.
 - **Ajedrez real, no una versión simplificada.** Reglas FIDE completas: al paso, enroque, triple repetición, regla de los 50 movimientos, todo.
 - **Indulgente abajo, desafiante arriba.** Fácil y Medio existen para que los principiantes sepan lo que es ganar. Difícil y Rey Sabio existen para cuando estén listos.
-- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~676 KB. Cero dependencias.
+- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~816 KB. Cero dependencias.
 
 ### No-objetivos
 
-- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza picos de **~1700 ELO** (benchmark vs Stockfish profundidad 6, torneo de 5 partidas).
+- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor apunta a **~2000 ELO** en el nivel Rey Sabio (benchmark: vs Stockfish profundidad 8, torneo de 20 partidas). La cifra exacta depende del hardware.
 - **Multijugador en línea.** Solo juego local.
 - **Herramientas avanzadas de preparación.** El libro de aperturas está curado para enseñar, no para preparación profesional.
 - **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad, aunque la v2.1.0 introdujo correcciones críticas en cuellos de botella de bajo nivel.
@@ -68,7 +68,7 @@ Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimien
 
 Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técnicas activas
 
-### 👑 Maestro — *Rey Sabio* (~1700 ELO)
+### 👑 Maestro — *Rey Sabio* (~2000 ELO objetivo)
 
 **Para:** Jugadores de club fuertes y amateurs avanzados.
 
@@ -84,7 +84,7 @@ Hasta 30 semijugadas de profundidad (tope de 30s) · 0% de errores · libro comp
 | 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
 | 🔥 Difícil | ~1400 | 6 | 0% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~1700 | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
+| 👑 Rey Sabio | ~2000 ELO objetivo | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
 
 ---
 
@@ -183,9 +183,64 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
-## Novedades en v2.13.0 — *The Memory Update*
+## Novedades en v2.21.0 — *La Edición de Rendimiento y Tácticas*
 
-- **Fix crítico — Amnesia del Worker TT**: La tabla de transposición (200K entradas), jugadas asesinas e historial se borraban en cada turno en modo torneo. Corregido reutilizando el Web Worker durante toda la partida. La profundidad de búsqueda en finales saltó de d:8–10 a **d:14–18**, con picos en **d:30**. Primeros empates significativos de la historia: **3 tablas en 4 partidas vs Stockfish profundidad 6 (~1700 ELO)**.
+Esta versión es una reescritura completa del motor con objetivo de **2000 ELO** frente a Stockfish profundidad 8. Se eliminaron todos los cuellos de botella de rendimiento; la búsqueda es ahora 4–5× más rápida que en v2.13.1 a igual profundidad.
+
+### 🚀 Tablero en 8 bits — `Int8Array(64)` (NPS ×4–5)
+
+El tablero se migró de un array 8×8 de strings (`'P'`, `'k'`…) a un **`Int8Array(64)` plano** con piezas como enteros (`1–6` = Blancas, `9–14` = Negras).
+
+- **Localidad de caché**: 64 bytes caben en una sola línea de caché L1 — las lecturas del tablero son prácticamente gratuitas.
+- **Aritmética entera en todas partes**: tipo de pieza con `p & 7`, color con `p <= 6`. Sin comparaciones de strings en el camino caliente.
+- **Cero asignaciones en caliente**: todos los buffers (`Int8Array`, `Int32Array`) se preasignan una vez al arrancar el Worker.
+- **Resultado**: **45k–80k NPS** estables frente a ~10k–18k en v2.13.1 a iguales profundidades.
+
+### 📊 Evaluación Tapered MG/EG (tablas PST duales)
+
+Se sustituyeron las tablas PST únicas por **tablas de dos fases** (`PST_MG` / `PST_EG`).
+
+```
+score = (mgVal × ph + egVal × (24 − ph)) / 24   [entero, sin coma flotante en el camino caliente]
+```
+
+La fase `ph` se calcula a partir de las piezas restantes: cada menor = 1, torre = 2, dama = 4. Final puro = 0, apertura completa = 24. Esto permite valorar las piezas correctamente en todas las fases — p.ej. caballos se centralizan en el medio juego y retroceden en el final.
+
+### 🛡️ Heurísticas Escudo y Tormenta del Rey
+
+- **Escudo del Rey** (`eg < 0.3`): premia mantener 3 peones delante del rey enrocado (+25 cp cada uno).
+- **Tormenta de Peones**: penaliza columnas abiertas o semiabierta hacia el rey enrocado, escalado según lo avanzados que estén los peones de cobertura.
+
+### ⚔️ Evaluación de Intercambio Estático (SEE)
+
+Una función completa `see()` evalúa las secuencias de capturas antes de ejecutarlas:
+
+- Capturas ganadoras/iguales (`SEE ≥ 0`) ordenadas por ganancia neta — buscadas primero.
+- Capturas perdedoras (`SEE < 0`) posicionadas por debajo de jugadas silenciosas — descartadas en la quietud.
+- Ataques de rayos X (pieza que aparece al quitar otra) manejados correctamente.
+
+Elimina la clase más frecuente de colgadas del motor: cambiar un alfil por un peón defendido por otro peón.
+
+### 🔁 Detección de Empate por Repetición Restaurada
+
+Tras el refactor al tablero de 8 bits, el historial de la partida se enviaba al Worker como strings pero el bucle de búsqueda usaba claves Zobrist XOR-fold — **nunca estaban conectados**. El motor era completamente ciego a la repetición.
+
+Solución: los strings de `positionHashes` ahora se decodifican a claves Zobrist usando las mismas tablas que `makeMove()`, acumuladas en `historyCount: Map<u32, count>`. La comprobación de empate en `minimax()` es:
+```
+if (searchSet.has(bkS) || historyCount.get(bkS) >= 2) return 0;
+```
+
+### Infraestructura de Torneo
+
+- `arena_tournament.js` v2: torneo de 20 partidas, alternancia de colores, 20 líneas de apertura (cobertura ECO), guardado parcial tras cada partida, log de NPS, intervalos de confianza ELO (Wilson score).
+- Página V8/TurboFan compartida y persistente entre partidas — el código JIT sobrevive entre rondas, el NPS se estabiliza en su pico desde la partida 2.
+- Tiempo máximo de 45 segundos por jugada con detección de página caducada y recarga automática.
+
+---
+
+## Novedades en v2.13.1 — *The Memory Update*
+
+- **Fix crítico — Amnesia del Worker TT**: La tabla de transposición, jugadas asesinas e historial se borraban en cada turno en modo torneo. Corregido reutilizando el Web Worker durante toda la partida. La profundidad de búsqueda en finales saltó de d:8–10 a **d:14–18**, con picos en **d:30**. Primeros empates significativos: **3 tablas en 4 partidas vs Stockfish profundidad 6 (~1700 ELO)**.
 - **Libro — Variante de Cambio del Ruy López**: Tras `Axc6 dxc6`, el motor ahora juega `d3` desde el libro en vez de encontrar `Cxe5??` por sí solo (pierde contra `Dd4!`).
 - **Libro — Apertura Inglesa Alekhine Invertida**: Tras `c4 e5 Cf3 e4`, el motor juega `Cd4` desde el libro. Antes se derrumbaba en 40 jugadas.
 - **Libro — Sistema KIA con g3**: 13 entradas nuevas para el sistema `g3 Ag2 Cf3 d3 0-0` contra todas las respuestas negras principales.
@@ -333,21 +388,21 @@ Combinado con una implementación corregida de **Zobrist Hashing** que rastrea l
 
 ### Diseño monolítico
 
-~676 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
+~816 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
 
 ### Motor de búsqueda
 
-Web Worker + motor de respaldo en el hilo principal. Pila alpha-beta: Profundización Iterativa, PVS, NMP (R=2/3), LMR, Poda de Futilidad (profundidad ≤ 3, márgenes 150/300/500 cp), Ventanas de Aspiración (±75 cp con failsafe garantizado), Búsqueda de Quietud (máx. 5 sin jaque / 8 en jaque, poda delta), Extensiones de Jaque.
+Web Worker + motor de respaldo en el hilo principal. Pila alpha-beta: Profundización Iterativa, PVS, NMP (R adaptativo), LMR (fórmula logarítmica), Poda de Futilidad (profundidad ≤ 2, márgenes 175/350 cp), Ventanas de Aspiración (±75 cp), Búsqueda de Quietud (máx. 5 sin jaque / 8 en jaque, poda SEE, poda delta), Extensiones de Jaque, Extensiones de Peón Avanzado.
 
-Tabla de transposición de 200K entradas con hashing Zobrist y desalojo por profundidad. Cada entrada guarda la mejor jugada para ordenación en la siguiente iteración.
+Tabla de transposición de 1 048 576 entradas (20 MB, `Int32Array`) con hashing Zobrist y preferencia por profundidad. Las entradas EXACT nunca se sobreescriben por entradas UPPER/LOWER. Cada entrada guarda la mejor jugada. Tablero en `Int8Array(64)` plano — 45–80k NPS en hardware típico.
 
 Ordenación de jugadas: jugada TT (prioridad 1.000.000) → capturas MVV-LVA → coronaciones → jugadas asesinas → contramovimiento → heurística de historial → tropismo al rey. Las jugadas raíz se preordenan con MVV-LVA antes de la primera iteración.
 
 ### Evaluación
 
-Tablas PST estilo PeSTO, evaluación cónica del rey (interpolación mediojuego ↔ final), estructura de peones (doblados −15, aislados −20, pasados rango×15 escalado ×4.5 en final), pareja de alfiles (+40), actividad de torres (columna abierta +25, séptima fila +20), seguridad dinámica del rey (penalización cuadrática, tope en 80 cp).
+Tablas PST duales estilo PeSTO (`PST_MG` / `PST_EG`) con interpolación tapered entera (`(mgVal × ph + egVal × (24-ph)) / 24 | 0`). Estructura de peones: doblados −15, aislados −40, pasados escalados por fase + Regla del Cuadrado. Pareja de alfiles (+40). Escudo/Tormenta del rey (mediojuego). Actividad de torres (columna abierta +40, séptima fila +35, torres conectadas +15). Seguridad dinámica del rey. Detección de caballo-outpost. Penalización de mal alfil.
 
-Valores de piezas: C=325, A=335, T=500, D=900. Interpolación tapered mediojuego/final (mgPV/egPV).
+Valores de piezas: C=325, A=335, T=500, D=900. Interpolación tapered mediojuego/final.
 
 ### Libro de aperturas
 
@@ -430,4 +485,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.13.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~687 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.21.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~816 KB. Cero dependencias. Abre el archivo y juega.*
