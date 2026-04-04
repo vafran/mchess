@@ -9555,7 +9555,7 @@ limitations under the License.
             if (state.board[m.tr*8+m.tc] !== 0) return true;
             if ((state.board[m.fr*8+m.fc]&7) === 1 && m.fc !== m.tc && state.board[m.tr*8+m.tc] === 0) return true;
             if ((state.board[m.fr*8+m.fc]&7) === 1 && (m.tr === 0 || m.tr === 7)) return true;
-            if (qd < 4) {
+            if (qd < 3) {
               const save2 = makeMove(state, m);
               const givesCheck = inChk(state, opp(color));
               unmakeMove(state, m, save2);
@@ -10002,7 +10002,7 @@ limitations under the License.
 
             // Soft time limit at 50%: if we have used more than half of the budget
             // we don't start another depth that almost certainly won't finish.
-            const softDeadline = Date.now() + Math.floor(timeout * 0.85);
+            const softDeadline = Date.now() + Math.floor(timeout * 0.75);
 
             let bestMovesHistory = [];  // Track best move per completed depth
             let bestScoresHistory = []; // Track best score per completed depth (for stability check)
