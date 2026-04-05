@@ -2735,6 +2735,9 @@ limitations under the License.
 
   <script>
     // Variable global única y aislada para el Coliseo
+    // 🛸 Variable global para rastrear la última petición y evitar crosstalk en el Coliseo
+    window._wkLastRequestId = 0;
+
     window.askWiseKing = async function (fen, historyArr = []) {
       console.log("🏟️ Received FEN request:", fen);
       try {
@@ -2818,6 +2821,7 @@ limitations under the License.
           } else {
             worker = createEngineWorker();
           }
+          const currentId = ++window._wkLastRequestId;
           let settled = false;
           const t = setTimeout(() => {
             console.log("⚠️ Safety timer triggered.");
@@ -2825,6 +2829,9 @@ limitations under the License.
           }, timeoutRes + 15000);
 
           worker.onmessage = function (e) {
+            // 🛡️ Ignorar mensajes de búsquedas canceladas o peticiones antiguas
+            if (e.data.requestId && e.data.requestId !== currentId) return;
+
             if (e.data.action === 'result') {
               clearTimeout(t);
               if (!settled) {
@@ -2857,6 +2864,7 @@ limitations under the License.
             castleRights,
             enPassantTarget,
             depth: _depth, multiPV: 1, timeout: timeoutRes,
+            requestId: currentId,
             positionHashes: [...positionHashes],
             halfMoveClock: parts[4] ? (parseInt(parts[4]) || 0) : 0
           });
@@ -2875,18 +2883,24 @@ limitations under the License.
             window._lastSearchDepth = { completedDepth: 0, maxDepth: _depth, isPartial: true };
             return uci;
           }
+          console.error("❌ CRITICAL: No move found by engine OR fallback! FEN:", fen);
           return null;
         }
 
         const m = results.moves[0].move;
         const cols = 'abcdefgh';
-        const promotion = (m.tr === 0 || m.tr === 7) && board[m.fr][m.fc].toUpperCase() === 'P' ? (m.promo ? m.promo.toLowerCase() : 'q') : '';
+        // 🛡️ FIX: Traducir códigos numéricos de promoción (del motor) a strings antes de usar toLowerCase()
+        const INT_TO_PROMO = {2:'n',3:'b',4:'r',5:'q',10:'n',11:'b',12:'r',13:'q', 'N':'n', 'B':'b', 'R':'r', 'Q':'q'};
+        const rawPromo = (m.promo && typeof m.promo === 'number') ? INT_TO_PROMO[m.promo] : m.promo;
+        const promotion = (m.tr === 0 || m.tr === 7) && board[m.fr][m.fc].toUpperCase() === 'P' ? (rawPromo ? rawPromo.toLowerCase() : 'q') : '';
+
         const uci = cols[m.fc] + (8 - m.fr) + cols[m.tc] + (8 - m.tr) + promotion;
         // Expose depth info so arena_tournament.js can read it via page.evaluate
-        window._lastSearchDepth = { completedDepth: results.completedDepth, maxDepth: results.maxDepth, isPartial: results.isPartial };
+        window._lastSearchDepth = { completedDepth: results.completedDepth, maxDepth: results.maxDepth, isPartial: results.isPartial, nps: results.nps };
         return uci;
       } catch (e) {
-        console.log("❌ ERROR IN ASKWISEKING:", e);
+        console.error("❌ CRITICAL ERROR IN ASKWISEKING:", e);
+        console.log("Current state - FEN:", fen);
         return null;
       }
     };
@@ -9876,6 +9890,7 @@ limitations under the License.
         self.onmessage = function (e) {
           const msg = e.data;
           if (msg.action !== 'search') return;
+          const requestId = msg.requestId || null;
 
           try {
             const timeout = Math.max(1000, msg.timeout || 5000);
@@ -10298,10 +10313,10 @@ limitations under the License.
             const _ms = Date.now() - searchStartTime;
             const _nps = _ms > 0 ? Math.floor((_totalN / _ms) * 1000) : 0;
             console.log(`🧠 Real depth: ${completedDepth}/${maxDepth} | Nodes: ${_totalN} (${qSearchNodes} in Q) | NPS: ${_nps} | TT: ${ttHitsCount}`);
-            postMessage({ action: 'result', moves: finalOptions, isPartial: analysisPartial, nps: _nps, nodes: _totalN, depth: maxDepth, completedDepth });
+            postMessage({ action: 'result', moves: finalOptions, isPartial: analysisPartial, nps: _nps, nodes: _totalN, depth: maxDepth, completedDepth, requestId });
 
           } catch (err) {
-            postMessage({ action: 'error', error: String(err) });
+            postMessage({ action: 'error', error: String(err), requestId });
           }
         };
       };
@@ -12952,8 +12967,10 @@ limitations under the License.
           // Only suggest theoretical moves if the King is still on its original square.
           const kingPos = findKing(currentTurn, board);
           const isStandardPosition = kingPos && (currentTurn === 'w' ? kingPos[0] === 7 : kingPos[0] === 0);
+          const totalPieces = board.flat().filter(p => p !== ' ').length;
 
-          if (history.length <= 1 && isStandardPosition) {
+          // 🛡️ FIX: Only suggest openings if we are really at the start of a normal game
+          if (history.length <= 1 && isStandardPosition && !fenPositionLoaded && totalPieces >= 30) {
             const want = currentTurn === 'w'
               ? ['e4', 'd4', 'c4', 'Nf3', 'g3', 'f4', 'b4', 'g4', 'Nc3', 'c3', 'b3']
               : ['e5', 'c5', 'e6', 'c6', 'd5'];
@@ -13874,9 +13891,12 @@ limitations under the License.
         ];
 
       const idx = history.length % 3;
-      // ✨ FIX: Si hay pocas piezas, SIEMPRE es el final, sin importar el turno
-      if (piecesCount <= 10) return endgameTips[idx];
-      if (moveCount <= 10) return openingTips[idx];
+      // ✨ FIX: If there are few pieces, it is ALWAYS the end, regardless of the turn
+      if (piecesCount <= 12) return endgameTips[idx];
+      
+      // 🛡️ FIX: Don't give opening tips if we have loaded a complex FEN
+      if (moveCount <= 10 && !fenPositionLoaded && piecesCount >= 28) return openingTips[idx];
+      
       return middlegameTips[idx];
     }
 
@@ -15707,6 +15727,23 @@ limitations under the License.
         window.highlightTimer = null;
         render();
       }, 4500);
+    };
+
+    // 🧪 DIAGNÓSTICOS PARA EL COLISEO (Auditoría Pedagógica)
+    window.getPedagogicalCheckup = function() {
+      const pList = document.getElementById('professorList');
+      const hints = pList ? Array.from(pList.querySelectorAll('.hint-item')).map(el => el.innerText.trim()) : [];
+      const commentary = document.getElementById('commentaryList');
+      const lastComment = commentary ? (commentary.querySelector('.commentary-entry')?.innerText.trim() || '') : '';
+      
+      return {
+        fen: boardToFEN(board),
+        depth: window._lastSearchDepth || null,
+        professorHints: hints,
+        lastCommentary: lastComment,
+        evalScore: typeof evaluateBoard === 'function' ? evaluateBoard(board, 'hard') : null,
+        timestamp: new Date().toISOString()
+      };
     };
   </script>
 </body>
