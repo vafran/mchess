@@ -7407,10 +7407,12 @@ limitations under the License.
       }
 
       for (let c = 0; c < 8; c++) {
-        if (wP[c] > 1) score -= 15 * wP[c]; // FIX
-        if (bP[c] > 1) score += 15 * bP[c]; // FIX
-        if (wP[c] > 0 && (c === 0 || wP[c - 1] === 0) && (c === 7 || wP[c + 1] === 0)) score -= 40; // FIX
-        if (bP[c] > 0 && (c === 0 || bP[c - 1] === 0) && (c === 7 || bP[c + 1] === 0)) score += 40; // FIX
+        // Doubled pawns: -30cp per extra pawn
+        if (wP[c] > 1) score -= 30 * (wP[c] - 1);
+        if (bP[c] > 1) score += 30 * (bP[c] - 1);
+        // Isolated pawns: flat -50cp
+        if (wP[c] > 0 && (c === 0 || wP[c - 1] === 0) && (c === 7 || wP[c + 1] === 0)) score -= 50;
+        if (bP[c] > 0 && (c === 0 || bP[c - 1] === 0) && (c === 7 || bP[c + 1] === 0)) score += 50;
       }
 
       let wBishopsCount = 0, bBishopsCount = 0;
@@ -8249,9 +8251,9 @@ limitations under the License.
           // Guía al motor a buscar cambios matemáticamente: acorta la partida y ahoga
           // el contrajuego. Equivale a ~+60cp de incentivo extra cuando se va muy ganando.
           if (matDiff > 150) {
-            s += (matDiff * eg) * 0.4;   // Blancas ganando: premiar simplificación
+            s += (matDiff * eg) * 0.1;   // Blancas ganando: incentivo reducido para no regalar peones
           } else if (matDiff < -150) {
-            s -= (Math.abs(matDiff) * eg) * 0.4; // Negras ganando: premiar simplificación
+            s -= (Math.abs(matDiff) * eg) * 0.1; // Negras ganando: incentivo reducido
           }
 
           let wUndevelopedMinors = 0;
@@ -8298,10 +8300,12 @@ limitations under the License.
           } else {
             pawnScore = 0;
             for (let pcc = 0; pcc < 8; pcc++) {
-              if (wP[pcc] > 1) pawnScore -= 15 * (wP[pcc] - 1); // penalise excess pawns only
-              if (bP[pcc] > 1) pawnScore += 15 * (bP[pcc] - 1);
-              if (wP[pcc] > 0 && (pcc === 0 || wP[pcc - 1] === 0) && (pcc === 7 || wP[pcc + 1] === 0)) pawnScore -= 40;
-              if (bP[pcc] > 0 && (pcc === 0 || bP[pcc - 1] === 0) && (pcc === 7 || bP[pcc + 1] === 0)) pawnScore += 40;
+              // Doubled pawns: -30cp per extra pawn on same file
+              if (wP[pcc] > 1) pawnScore -= 30 * (wP[pcc] - 1);
+              if (bP[pcc] > 1) pawnScore += 30 * (bP[pcc] - 1);
+              // Isolated pawns: flat -50cp (NOT scaled by count to avoid over-penalizing doubled+isolated)
+              if (wP[pcc] > 0 && (pcc === 0 || wP[pcc - 1] === 0) && (pcc === 7 || wP[pcc + 1] === 0)) pawnScore -= 50;
+              if (bP[pcc] > 0 && (pcc === 0 || bP[pcc - 1] === 0) && (pcc === 7 || bP[pcc + 1] === 0)) pawnScore += 50;
             }
             pawnCacheKey[pSlot * 2] = phL; pawnCacheKey[pSlot * 2 + 1] = phH;
             pawnCacheVal[pSlot] = pawnScore;
@@ -8812,8 +8816,8 @@ limitations under the License.
           // Own passers: small bonus scaled by rank and endgame phase.
           // Enemy passers: DANGER penalty — scaled exponentially at rank 5+ to force blocking.
           //   rank 5 (3 from promo) → high danger; rank 6 → very high; rank 7 → critical.
-          const PASS_OWN = 18;  // cp bonus at rank 5 in pure endgame
-          const PASS_DANGER = 30; // cp base danger for enemy passer
+          const PASS_OWN = 45;  // cp bonus base (boosted for stronger endgame passer play)
+          const PASS_DANGER = 80; // cp base danger for enemy passer (exponential at rank 5+)
           for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
               const p = b[r*8+c];
@@ -10483,7 +10487,20 @@ limitations under the License.
           // ✅ Worker result is trusted directly.
           // The UI's getLegalMovesForColorInPlace() can miss some moves (e.g. castling edge cases)
           // causing valid worker moves to appear "illegal" and triggering stack-overflow fallbacks.
-          if (!move) move = getLegalMovesForColorInPlace(aiColor)[0] || null;
+          if (!move) {
+            // Fallback layer 1: UI legal moves
+            const legalFall = getLegalMovesForColorInPlace(aiColor);
+            if (legalFall.length > 0) {
+              // Pick the move with the best quick score (captures first, then any)
+              legalFall.sort((a, b) => {
+                const aCapture = (board[a.tr] && board[a.tr][a.tc] && board[a.tr][a.tc] !== ' ') ? 1 : 0;
+                const bCapture = (board[b.tr] && board[b.tr][b.tc] && board[b.tr][b.tc] !== ' ') ? 1 : 0;
+                return bCapture - aCapture;
+              });
+              move = legalFall[0];
+              console.warn('⚠️ Engine returned null — using UI fallback move:', move);
+            }
+          }
 
         }
 
