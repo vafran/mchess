@@ -13953,45 +13953,16 @@ limitations under the License.
       lastTrainingTipText = tip;
       return `🎓 ${tip}`;
     }
+
     function analyzeLastMove() {
-      // 🚦 1. We block: We let Puppeteer know we are working
-      window.professorThinking = true; 
-      
       lastProfessorAction = 'wasgood';
       const pList = document.getElementById('professorList');
 
-// 🤖 2. PUPPETEER: Robust reading of the last move from the interface
       if (!window.snapshotBeforeHumanMove || !window.snapshotAfterHumanMove) {
-        
-        // Let's get the last move by reading the visual elements of the history.
-        // This avoids the collision with the browser's window.history.
-        const moveElements = document.querySelectorAll('.move-clickable');
-        
-        if (moveElements.length > 0) {
-            // Extract the text of the last move
-            const lastMoveText = moveElements[moveElements.length - 1].innerText.trim();
-            // If the number of moves is odd, the last one was white. If even, black.
-            const side = (moveElements.length % 2 !== 0) ? 'Blancas' : 'Negras';
-            
-            // Get the advantage calculated by the engine
-            const diff = typeof lastEvalDiff !== 'undefined' ? lastEvalDiff : 0;
-            
-            let evalMsg = "";
-            if (Math.abs(diff) < 50) evalMsg = `✅ Buen movimiento de las ${side}. Mantienen el equilibrio de la posición.`;
-            else if ((side === 'Blancas' && diff < -150) || (side === 'Negras' && diff > 150)) evalMsg = `❓ Imprecisión de las ${side}. Han permitido contrajuego.`;
-            else if ((side === 'Blancas' && diff > 150) || (side === 'Negras' && diff < -150)) evalMsg = `🔥 ¡Excelente jugada de las ${side}! Han castigado al rival.`;
-            else evalMsg = `💡 Jugada dinámica de las ${side} (${lastMoveText}).`;
-
-            if (pList) pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--primary); padding-left:10px; background:rgba(168,85,247,0.05);"><span class="hint-icon">⚖️</span><span class="hint-text">${evalMsg}</span></div>`;
-        } else {
-            if (pList) pList.innerHTML = `<div class="hint-item"><span class="hint-text">${currentLanguage === 'en' ? 'No moves to analyze yet. Make a move first.' : 'No hay jugadas para analizar todavía. Haz una jugada primero.'}</span></div>`;
-        }
-        
-        // 🔓 We unblock Puppeteer so it can continue
-        window.professorThinking = false; 
+        if (pList) pList.innerHTML = `<div class="hint-item"><span class="hint-text">${currentLanguage === 'en' ? 'No moves to analyze yet. Make a move first.' : 'No hay jugadas para analizar todavía. Haz una jugada primero.'}</span></div>`;
         return;
       }
-      
+
       switchTab('professor');
       const en = currentLanguage === 'en';
 
@@ -14022,7 +13993,6 @@ limitations under the License.
               <span class="hint-text">${colorIcon} <strong>${en ? 'Coach:' : 'Profesor:'}</strong> ${en ? 'The game ended in stalemate — a draw!' : '¡La partida terminó en tablas por ahogado!'}</span></div>`;
           }
           pList.innerHTML = resultHtml;
-          window.professorThinking = false; // 🔓 LIBERAMOS
           return;
         }
       }
@@ -14042,6 +14012,8 @@ limitations under the License.
         }
 
         // ⏱️ 2. INJECT PAST RULES (O(1) snapshot from onCellClick)
+        // Restores castleRights, enPassantTarget and turn to the exact state
+        // at the moment the human clicked — eliminates temporal desync.
         if (window.snapshotBeforeRules) {
           castleRights = { ...window.snapshotBeforeRules.castleRights };
           enPassantTarget = window.snapshotBeforeRules.enPassantTarget
@@ -14073,10 +14045,12 @@ limitations under the License.
 
         const lostPieces = getLostMaterial(window.snapshotBeforeHumanMove, window.snapshotAfterHumanMove, moverColor);
 
-        // 3. OPENING DAMPING
-        const isOpeningPhase = game.history().length <= 10;
+        // 3. OPENING DAMPING — suppress false positives in development phase
+        // Normal piece development in the first 10 moves rarely loses real material;
+        // a delta of -200 to -350 is usually PST noise, not a tactical blunder.
+        const isOpeningPhase = history.length <= 10;
         const effectiveDelta = isOpeningPhase && !isRealHanging && lostPieces.length === 0
-          ? reply.delta * 0.5 
+          ? reply.delta * 0.5   // halve the penalty to filter PST noise
           : reply.delta;
 
         const colorName = moverColor === 'w' ? (en ? 'White' : 'Blancas') : (en ? 'Black' : 'Negras');
@@ -14096,6 +14070,7 @@ limitations under the License.
               ? getLocalizedPieceName(hanging.attacker)
               : (en ? 'enemy piece' : 'pieza enemiga');
 
+            // Obtenemos el motivo que calculó el cerebro matemático
             const motivo = hanging.reason || 'indefensa';
 
             if (motivo === 'superada en número') {
@@ -14112,6 +14087,7 @@ limitations under the License.
                 : `<br>⚠️ Tu pieza en ${hanging.square} está indefensa y puede ser capturada gratis por ${pArticle} ${attackerName}.`;
             }
           } else {
+            // ✨ FIX: Differentiate between "Blundering a piece" and "Missing a winning move"
             const absEvalBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
             const moverEvalBefore = moverColor === 'w' ? absEvalBefore : -absEvalBefore;
 
@@ -14120,6 +14096,8 @@ limitations under the License.
                 ? `<br>📉 You missed a golden tactical opportunity! You focused on the opponent's last move and a much stronger attack slipped away.`
                 : `<br>📉 ¡Dejaste escapar una oportunidad táctica de oro! Te centraste en la última jugada del rival y se te escapó un ataque mucho más fuerte.`;
 
+              // 🧠 Async Worker search for the missed move — restores board state first,
+              // then patches the rendered hint when the result arrives (non-blocking).
               (function _findMissedAsync(snapBoard, snapCR, snapEP, snapTurn, snapMoverColor, snapHumanMove, snapEn) {
                 const _savedB = deepCopy(board), _savedCR = { ...castleRights },
                       _savedEP = enPassantTarget ? [...enPassantTarget] : null, _savedT = turn;
@@ -14128,6 +14106,7 @@ limitations under the License.
                 enPassantTarget = snapEP ? [...snapEP] : null;
                 turn = snapTurn;
                 const missedHintId = 'missedMoveHint_' + Date.now();
+                // placeholder shown immediately
                 reason += snapEn
                   ? `<br><br>💡 <em id="${missedHintId}" style="color:var(--text-light)">Calculating best alternative…</em>`
                   : `<br><br>💡 <em id="${missedHintId}" style="color:var(--text-light)">Calculando la mejor alternativa…</em>`;
@@ -14137,6 +14116,7 @@ limitations under the License.
                   if (!missedMove) return;
                   if (missedMove.fr === snapHumanMove.fr && missedMove.fc === snapHumanMove.fc &&
                       missedMove.tr === snapHumanMove.tr && missedMove.tc === snapHumanMove.tc) return;
+                  // Re-enter past position to get piece names
                   const _sb2 = deepCopy(board), _scr2 = { ...castleRights },
                         _sep2 = enPassantTarget ? [...enPassantTarget] : null, _st2 = turn;
                   board = deepCopy(snapBoard); castleRights = { ...snapCR };
@@ -14165,6 +14145,7 @@ limitations under the License.
             }
           }
 
+          // Draw error arrows
           try {
             if (typeof clearArrows === 'function') clearArrows();
             const afterCopy = simulateMove(window.snapshotBeforeHumanMove, humanMove);
@@ -14178,10 +14159,11 @@ limitations under the License.
               const pName = getLocalizedPieceName(afterCopy[reply.replyMove.fr][reply.replyMove.fc]);
               const tName = sqName(reply.replyMove.tr, reply.replyMove.tc);
 
+              // ✨ FIX: Cambiamos temporalmente el tablero global para que getStrategicIntent analice la amenaza
               const tempBoard = board;
               board = afterCopy;
               let amenazaDesc = simplifyForKids(getStrategicIntent(reply.replyMove, enemyColor));
-              board = tempBoard; 
+              board = tempBoard; // Restauramos el tablero inmediatamente
 
               if (!amenazaDesc) {
                 amenazaDesc = en ? "It wins material cleanly." : "Gana material limpiamente aprovechando tu posición.";
@@ -14210,7 +14192,10 @@ limitations under the License.
 
         } else if (riskLevel === 'low') {
           const intent = getStrategicIntent(humanMove, moverColor);
+
+          // 🟡 ABSOLUTE EVALUATION CHECK: Warn if the player is losing badly despite no mistake
           const absEval = evaluateBoard(window.snapshotAfterHumanMove, 'hard');
+          // Convert to mover's perspective: positive = mover is winning
           const moverEval = moverColor === 'w' ? absEval : -absEval;
           let situationWarning = '';
           if (moverEval <= -600) {
@@ -14234,6 +14219,8 @@ limitations under the License.
         } else {
           const intent = getStrategicIntent(humanMove, moverColor);
           const riskReason = getMoveRiskReason(humanMove, moverColor, riskLevel);
+
+          // 🟡 ABSOLUTE EVALUATION CHECK for dynamic moves too
           const absEval = evaluateBoard(window.snapshotAfterHumanMove, 'hard');
           const moverEval = moverColor === 'w' ? absEval : -absEval;
           let situationWarning = '';
@@ -14266,13 +14253,11 @@ limitations under the License.
         castleRights = savedCastleRights;
         enPassantTarget = savedEpTarget;
         turn = savedTurn;
-        
-        // 🔓 We free Puppeteer at the end of the process
-        window.professorThinking = false; 
       }
 
       pList.innerHTML = html;
     }
+
 
     function getLostMaterial(oldBrd, newBrd, color) {
       const lost = [];
