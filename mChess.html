@@ -13180,7 +13180,7 @@ limitations under the License.
           // Depth 4 and 5000ms is more reliable on mobile than depth 5 at 6000ms.
           // At grandmaster level the Professor gets extra depth so its suggestions
           // match the quality of the AI engine (both run in the same Worker).
-          const profDepth = currentDifficulty === 'grandmaster' ? 10 : 7;
+          const profDepth = currentDifficulty === 'grandmaster' ? 30 : 7;
           const profTimeout = currentDifficulty === 'grandmaster' ? 15000 : 5000;
 
           // --- SNAPSHOT: capture position before launching the async Worker so
