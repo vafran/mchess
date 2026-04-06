@@ -7,11 +7,20 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
-## v2.21.0 — La Edición de Rendimiento y Tácticas
-**~15.600 líneas · ~816 KB**
+## v2.21.0 — La Edición de Rendimiento y Tácticas (Final)
+**~15.800 líneas · ~818 KB**
 
-Objetivo de torneo: **~2000 ELO** (vs Stockfish d:8, torneo de 20 partidas).  
-Motor 4–5× más rápido que v2.13.1 a igual profundidad. Primeros empates por repetición esperados.
+Objetivo de torneo: **~1900 ELO** (vs Stockfish d:7).  
+Rendimiento real (v2.21.0 Final): **1631 ELO** vs Stockfish d:7 (20 partidas).  
+Motor 4–5× más rápido que v2.13.1 a igual profundidad. Estable y resistente a cuelgues.
+
+### Motor — Paracaídas de Seguridad (Fallback absoluto)
+- **Lógica de seguridad en `askWiseKing`** — implementado un try/catch global y validación de jugadas que garantiza que el motor siempre devuelva un movimiento legal, evitando bloqueos en la interfaz durante test de larga duración.
+
+### Motor — Heurística de finales y Mop-up
+- **Incentivo de coronación** — valor base del peón subido a **145** para incitar el avance.
+- **Mop-up (Acorralar al rey)** — factores de proximidad y distancia al centro multiplicados por 10 (47/16). El motor ahora es mucho más eficiente dando mate a reyes solitarios.
+- **Simplificación sintonizada** — corregido el multiplicador de intercambio para asegurar que el motor busque simplificar material cuando tiene una ventaja clara (> 200cp).
 
 ### Motor — Tablero 8 bits (`Int8Array(64)`) — NPS ×4–5
 - **Tablero plano `Int8Array(64)`** — migrado desde array 8×8 de strings a array tipado plano con códigos enteros de pieza (`1–6` = Blancas, `9–14` = Negras).
