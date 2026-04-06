@@ -7,6 +7,19 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.22.0 — Actualización de Inteligencia Pedagógica
+**~15,800 líneas · ~805 KB**
+
+### 🌟 Nuevas Características
+*   **🧠 "Modo Dios" del Profesor (Análisis Profundo):** El sistema de sugerencias ahora es capaz de alcanzar una profundidad de análisis de nivel Gran Maestro (**Profundidad 30**) con un tiempo de cálculo extendido (hasta 15,000ms). El Profesor ya no se limita a detectar tácticas inmediatas; ahora formula planes estratégicos complejos.
+*   **⏳ Cuenta Atrás Visual de Análisis:** Implementación de la función genérica `startThinkingCountdown`. Ahora, cuando el Profesor realiza un análisis profundo, la interfaz muestra un temporizador de cuenta atrás en vivo, mejorando enormemente la experiencia del usuario durante los tiempos de espera.
+
+### 🛠️ Mejoras Técnicas
+*   **🛡️ Protección del Historial de Movimientos:** Reestructuración de la forma en que el motor lee la partida. El Profesor y el Comentarista ahora priorizan el estado interno del ajedrez (`game.history()`) sobre `window.history`, eliminando colisiones y conflictos directos con el objeto de historial del navegador.
+*   **🌍 Ámbito Global para Utilidades:** Refactorización de la función de selección de frases (`getRnd`) para que resida en el ámbito global del script. Esto asegura que cualquier módulo dependiente del idioma o la aleatoriedad pueda acceder a ella sin interrupciones durante la inicialización del motor.
+
+---
+
 ## v2.21.0 — La Edición de Rendimiento y Tácticas (Final)
 **~15.800 líneas · ~818 KB**
 

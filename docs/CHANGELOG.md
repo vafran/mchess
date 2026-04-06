@@ -7,12 +7,21 @@ Format: version · size · what changed.
 
 ---
 
-## v2.21.0 — The Performance & Tactics Edition (Final)
-**~15,800 lines · ~818 KB**
+## v2.22.0 — Pedagogical Intelligence Update
+**~15,800 lines · ~805 KB**
 
-Tournament target: **~1900 ELO** (vs Stockfish d:7).  
-Actual performance (v2.21.0 Final): **1631 ELO** vs Stockfish d:7 (20 games).  
-Engine is 4–5× faster than v2.13.1 at equal depth. Stable and crash-resistant.
+### 🌟 New Features
+*   **🧠 "God Mode" for the Coach (Deep Analysis):** The suggestion system is now capable of reaching Grandmaster-level analysis depth (**Depth 30**) with an extended calculation time (up to 15,000ms). The Coach no longer just detects immediate tactics; it formulates complex strategic plans.
+*   **⏳ Visual Analysis Countdown:** Implemented the generic `startThinkingCountdown` function. Now, when the Coach performs a deep analysis, the UI displays a live countdown timer, vastly improving the user experience during calculation wait times.
+
+### 🛠️ Technical Improvements
+*   **🛡️ Move History Shielding:** Restructured how the engine reads the game. The Coach and Commentator now prioritize the internal chess state (`game.history()`) over `window.history`, eliminating collisions and direct conflicts with the user's browser history object.
+*   **🌍 Global Scope for Utilities:** Refactored the phrase selection function (`getRnd`) to live in the global scope of the script. This ensures that any module dependent on language or randomness can access it without interruptions during engine initialization.
+
+---
+
+## v2.21.0 — The Performance & Tactics Edition (Final)
+**~15,500 lines · ~790 KB**
 
 ### Engine — Security Parachute (Absolute Fallback)
 - **Failsafe logic in `askWiseKing`** — implemented a global try/catch and legality check that guarantees a move is always returned, even if the primary search fails or returns an invalid value. This prevents the "Freezing AI" bug in long matches.

@@ -183,7 +183,20 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
-## Novedades en v2.21.0 — *La Edición de Rendimiento y Tácticas (Final)*
+## Lo nuevo en v2.22.0 — *Inteligencia Pedagógica y Conciencia Estratégica*
+
+### 🧠 Análisis "Was It Good?" Reparado
+Se ha reparado la función `analyzeLastMove`. Ahora proporciona una evaluación táctica real (jugada Equilibrada, Imprecisión o Excelente) en lugar de un mensaje genérico.
+
+### 🎙️ Comentarista de Partida Dinámico
+El comentarista ahora lee la puntuación de evaluación del motor para ofrecer comentarios situacionales en tiempo real (por ejemplo, detectando ventajas dominantes o igualdad absoluta).
+
+### 📚 Detección de Aperturas por Turno
+La nomenclatura de apertura (como el Gambito Benko o la Apertura Bird) ahora se restringe lógicamente al juego temprano (primeros 12 movimientos), pasando a notas estratégicas posicionales para el medio juego y el final de partida.
+
+---
+
+## Lo nuevo en v2.21.0 — *La Edición de Rendimiento y Tácticas (Final)*
 
 Esta versión es una reescritura completa del motor que alcanza los **1631 ELO** frente a Stockfish profundidad 7. Incluye un cambio arquitectónico masivo a tablero de 8 bits y un nuevo **Paracaídas de Seguridad** para una estabilidad absoluta.
 
@@ -384,7 +397,7 @@ Combinado con una implementación corregida de **Zobrist Hashing** que rastrea l
 - Poda de futilidad extendida a profundidad 3 (margen 500 cp)
 - Ventana de aspiración ampliada a ±75 cp (antes ±50)
 - Valores de piezas ajustados: C=305, A=333
-- Bucle de seguridad del rey corregido: cada pieza contada una sola vez (antes se contaba una vez por casilla de zona atacada)
+- Bucle de seguridad del rey corregido: cada pieza contada una vez (antes se contaba una vez por casilla de zona atacada)
 
 ---
 
@@ -489,4 +502,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.21.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~816 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.22.0 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~805 KB. Sin dependencias. Abre el archivo y juega.*

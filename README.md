@@ -175,7 +175,18 @@ Three styles, with labels now visible under the slider:
 
 | # | Severity | Description | Planned fix |
 |---|---|---|---|
-| 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()` without first checking if the opponent has any legal moves. Affects roughly 1 in 50 won endgames with a lone enemy king. | v2.14.0 — fix in quiescence search |
+| 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
+
+## What's new in v2.22.0 — *Pedagogical Intelligence & Strategic Awareness*
+
+### 🧠 Fixed "Was It Good?" Analysis
+The `analyzeLastMove` function has been repaired. It now provides real tactical assessment (Balanced, Inaccuracy, or Excellent move) instead of an empty placeholder.
+
+### 🎙️ Dynamic Game Commentary
+The commentator now reads the engine's evaluation score to provide real-time situational remarks (e.g., detecting dominating advantages or absolute equality).
+
+### 📚 Turn-Aware Opening Detection
+Opening nomenclature (like the Benko Gambit) is now restricted to the first 12 moves, switching to positional notes for the middle and endgame.
 
 ---
 
@@ -490,4 +501,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.21.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~816 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.22.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~805 KB. Zero dependencies. Open the file and play.*
