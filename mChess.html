@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.21.0
+Monolith Chess v2.22.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.21.0</title>
+  <title>Monolith Chess v2.21.1</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.21.0 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.21.1 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.21.0</div>
+        v2.21.1</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3923,7 +3923,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.21.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.21.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -9779,7 +9779,7 @@ limitations under the License.
             }
           }
 
-          // 🚀 Pre-calcular scores UNA VEZ por nodo (evita N·logN llamadas a moveScore en .sort)
+          // 🚀 Pre-calculate scores ONCE per node (avoids N·logN calls to moveScore in .sort)
           const scores = new Int32Array(moves.length);
           // Countermove: move that caused a beta-cutoff last time the opponent played prevMove
           const cm = prevMove ? counterMove[(prevMove.fr * 8 + prevMove.fc) * 64 + (prevMove.tr * 8 + prevMove.tc)] : null;
@@ -11348,18 +11348,25 @@ limitations under the License.
       }
     }
 
-    // 🎙️ COMENTARISTA
-    function addCommentaryEntry(explicitMove = null, moveHistory = null) {
+    // 🎙️ COMMENTATOR
+    function addCommentaryEntry(explicitMove = null, moveHistory = null, evalScore = null) {
       const list = document.getElementById('commentaryList');
       if (!list) return;
 
-      const currentHistory = moveHistory || history;
+      // 🛠️ FIX: Robust search for history in the global environment
+      let currentHistory = moveHistory;
+      if (!currentHistory) {
+          if (typeof history !== 'undefined' && Array.isArray(history)) currentHistory = history;
+          else if (typeof game !== 'undefined') currentHistory = game.history();
+          else currentHistory = []; // Final fallback
+      }
+
       const lastMove = explicitMove || (currentHistory.length > 0 ? currentHistory[currentHistory.length - 1] : null);
       const lang = currentLanguage === 'en' ? 'en' : 'es';
       const getRnd = (arr, buck) => pickFreshPhrase(arr, buck);
 
-      // 1. INICIO DE PARTIDA
-      if (currentHistory.length === 0) {
+      // If there is no real history and no explicit move, we are in the first move
+      if (currentHistory.length === 0 && !lastMove) {
         commentaryLog = [];
         resetCommentaryStyleMemory();
         const intros = {
@@ -11368,29 +11375,57 @@ limitations under the License.
             '🎙️ "Great! Start by developing your pieces."',
             '🎙️ "New game! Check safety before each move."',
             '🎙️ "Take your time. Good moves are better than fast moves."',
-            '🎙️ "Fresh start! Let’s fight for the center."',
-            '🎙️ "Pieces are set. Time for good ideas, not rush moves."',
-            '🎙️ "Eyes on the board: defend first, then attack."',
-            '🎙️ "New battle! Knights and bishops want to get out early."',
-            '🎙️ "Let’s build a strong position one move at a time."',
-            '🎙️ "Show me your best chess today. Smart and steady!"'
+            '🎙️ "Fresh start! Let’s fight for the center."'
           ],
           es: [
             '🎙️ "¡Tablero listo! Juguemos con calma y cabeza."',
             '🎙️ "¡Genial! Empieza desarrollando tus piezas."',
             '🎙️ "Partida nueva: mira la seguridad antes de mover."',
             '🎙️ "Sin prisa: una buena jugada vale más que una rápida."',
-            '🎙️ "¡Nueva batalla! Pelea por el centro desde el inicio."',
-            '🎙️ "Piezas listas. Hoy manda la buena idea."',
-            '🎙️ "Ojos en el tablero: primero defensa, luego ataque."',
-            '🎙️ "Caballos y alfiles quieren salir a jugar."',
-            '🎙️ "Construye una posición fuerte jugada a jugada."',
-            '🎙️ "A por una gran partida: calma, cálculo y diversión."'
+            '🎙️ "¡Nueva batalla! Pelea por el centro desde el inicio."'
           ]
         };
         const intro = getRnd(intros[lang], 'intro');
         list.innerHTML = `<div class="commentary-entry" style="border-left: 4px solid var(--accent); padding: 8px 10px; background: rgba(168,85,247,0.05);"><span class="hint-text"><em>${intro}</em></span></div>`;
         return;
+      }
+
+      // 🧠 EVALUATION LOGIC (The new thing so it reacts to the script)
+      // If an evalScore is passed, the commentator reacts to the advantage
+      if (evalScore !== null) {
+          const moveCount = currentHistory.length;
+          let dynamicComment = "";
+          
+          if (moveCount > 6) {
+              if (evalScore > 400) {
+                  dynamicComment = lang === 'en' ? "White is dominating the board completely." : "Las Blancas dominan el tablero por completo. Presión asfixiante.";
+              } else if (evalScore < -400) {
+                  dynamicComment = lang === 'en' ? "Black is crushing the position. A clear advantage." : "Las Negras están aplastando la posición. Ventaja clarísima.";
+              } else if (evalScore > 150) {
+                  dynamicComment = lang === 'en' ? "White has a solid advantage here." : "Las Blancas tienen una sólida ventaja aquí.";
+              } else if (evalScore < -150) {
+                  dynamicComment = lang === 'en' ? "Black is pressing and holds a good edge." : "Las Negras presionan y mantienen una buena ventaja.";
+              } else if (Math.abs(evalScore) < 50 && moveCount > 15) {
+                  dynamicComment = lang === 'en' ? "The tension is palpable. Perfect equality." : "La tensión es palpable. Igualdad absoluta en la mesa.";
+              }
+          }
+
+          // If there is a dynamic comment based on the evaluation, we use it as the main action
+          if (dynamicComment) {
+              const now = new Date();
+              const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
+              commentaryLog.unshift({ html: `🎙️ ${dynamicComment}`, time: timeStr, tone: 'serious' });
+              if (commentaryLog.length > 15) commentaryLog.pop();
+              list.innerHTML = commentaryLog.map((entry, i) => `
+                <div class="commentary-entry" style="border-left: 4px solid ${i === 0 ? 'var(--accent)' : 'rgba(168,85,247,0.25)'}; padding: 6px 10px; background: rgba(168,85,247,${i === 0 ? '0.06' : '0.02'}); margin-bottom: 5px; opacity: ${i === 0 ? '1' : '0.6'};">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <span class="hint-text" style="font-style: italic; font-size: ${i === 0 ? '0.95rem' : '0.82rem'};">${entry.html}</span>
+                    <span style="font-size:0.7rem; color:var(--text-light); margin-left:8px;">${entry.time}</span>
+                  </div>
+                </div>
+              `).join('');
+              return; // We end here if the evaluation was used
+          }
       }
 
       // ── Castling: handle before sqToRc which cannot parse 'O-O' ──────────────
@@ -11418,13 +11453,13 @@ limitations under the License.
         return;
       }
 
-      // ✨ FIX FINAL: Limpiar Jaques (+), Mates (#) Y Coronaciones (=Q) antes de leer la casilla
+      // ✨ FINAL FIX: Clean Checks (+), Mates (#) AND Promotions (=Q) before reading the square
       const cleanMove = lastMove.replace(/[+#]/g, '').split('=')[0];
       const targetSq = cleanMove.slice(-2);
       const targetRc = sqToRc(targetSq);
 
       // Anti-crash protection
-      if (!targetRc) return;
+      if (!targetRc || !board || !board[targetRc[0]]) return;
 
       const lastPieceMoved = board[targetRc[0]][targetRc[1]];
       const colorWhoMoved = colorOf(lastPieceMoved);
@@ -11525,36 +11560,17 @@ limitations under the License.
         }
       };
 
-      // 🔍 SPECIAL DETECTORS (Quality & Captures)
       let isQueenCaptured = false;
       let capturedPieceChar = null;
-      let isHugeBlunder = false;
-      let isBrilliant = false;
 
-      // 1. Extract Captured Piece
       if (isCapture) {
         const cementerio = colorWhoMoved === 'w' ? capturedByWhite : capturedByBlack;
-        if (cementerio.length > 0) {
+        if (cementerio && cementerio.length > 0) {
           capturedPieceChar = cementerio[cementerio.length - 1];
-          if (capturedPieceChar.toUpperCase() === 'Q') isQueenCaptured = true;
+          if (capturedPieceChar && capturedPieceChar.toUpperCase() === 'Q') isQueenCaptured = true;
         }
       }
 
-      // 2. Evaluate Move Quality against the Engine
-      if (window.snapshotBeforeHumanMove) {
-        const evBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
-        const evAfter = evaluateBoard(board, 'hard');
-        // Delta from the perspective of the player who just moved
-        const delta = colorWhoMoved === 'w' ? (evAfter - evBefore) : (evBefore - evAfter);
-        if (delta <= -250) isHugeBlunder = true;
-        if (delta >= 200) isBrilliant = true;
-      }
-
-
-      // 🎓 SCHOLAR'S MATE AVERTED: Black defends against Qh5/Bc4 attack
-      // Only fires for the Qh5 line (queen goes to h5), because Qf3 attacks f7 directly
-      // and g6 does NOT defend against it. Qf3 line ends with Qxf7# specialComment instead.
-      // ⚠️ NOTE: normalizedHistory/lastNorm MUST be declared before this block to avoid TDZ errors
       const normalizedHistory = currentHistory.map(m => m.replace(/[+#?!]/g, '').trim());
       const lastNorm = normalizedHistory.length ? normalizedHistory[normalizedHistory.length - 1] : '';
       const endsWithSequence = (seq) => {
@@ -11565,10 +11581,10 @@ limitations under the License.
 
       let isScholarAverted = false;
       if (isOpening && colorWhoMoved === 'b') {
-        const hasQThreat = normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3'); // Qh5 and Qf3 Scholar lines
+        const hasQThreat = normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3'); 
         const hasBishopThreat = normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5');
         const lastDefense = targetSq === 'g6' || targetSq === 'e6' || targetSq === 'e7' || targetSq === 'd5'
-          || targetSq === 'f6' || lastNorm === 'Nf6' || lastNorm === 'Nc6'; // f6/Nf6/Nc6 all protect f7
+          || targetSq === 'f6' || lastNorm === 'Nf6' || lastNorm === 'Nc6'; 
         if (hasQThreat && hasBishopThreat && lastDefense) {
           isScholarAverted = true;
         }
@@ -11584,14 +11600,11 @@ limitations under the License.
       } else if (lastMove.includes('#') && (lastNorm === 'Qxf7' || lastNorm === 'Qxf2') &&
                  normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5' || m === 'Qh5' || m === 'Qf3') &&
                  normalizedHistory.length <= 12) {
-        // Scholar's Mate: any Qxf7#/Qxf2# with a bishop developed and few moves played
         specialComment = lang === 'en'
           ? getRnd(["🔥 Scholar's Mate lands! Quick queen and bishop combo.", "🎬 Classic Scholar's Mate: Qxf7 ends it early.", "⚡ Fast finish! The f7 weakness sealed the deal."], 'special_scholar_mate')
           : getRnd(["🔥 ¡Jaque Pastor consumado! Dama y alfil, combinación letal.", "🎬 Jaque Pastor clásico: Qxf7 cierra la partida.", "⚡ ¡Final exprés! La debilidad en f7 fue decisiva."], 'special_scholar_mate');
       } else if (isOpening && (
-          // Queen last, bishop already in play
           ((lastNorm === 'Qh5' || lastNorm === 'Qf3' || lastNorm === 'Qf6') && normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5')) ||
-          // Bishop last (Bc4), queen (Qf3/Qh5) already in play (most common order: e4→Qf3→Bc4)
           ((lastNorm === 'Bc4' || lastNorm === 'Bc5') && normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3' || m === 'Qf6'))
         )) {
         specialComment = lang === 'en'
@@ -11605,14 +11618,8 @@ limitations under the License.
         specialComment = lang === 'en'
           ? getRnd(["🐴 Knight fork zone! f7/f2 is always tactical."], 'special_fork_zone')
           : getRnd(["🐴 ¡Zona de tenedor! f7/f2 siempre trae táctica."], 'special_fork_zone');
-      } else if (lastNorm === 'O-O' || lastNorm === 'O-O-O') {
-        specialTone = 'serious';
-        specialComment = lang === 'en'
-          ? (lastNorm === 'O-O' ? getRnd(["🛡️ Kingside castling completed: safer king, connected plan."], 'special_castle_short') : getRnd(["🏰 Long castling! Opposite-side attacks may start soon."], 'special_castle_long'))
-          : (lastNorm === 'O-O' ? getRnd(["🛡️ Enroque corto completado: rey más seguro y plan más claro."], 'special_castle_short') : getRnd(["🏰 ¡Enroque largo! Pueden venir ataques a bandos opuestos."], 'special_castle_long'));
       }
 
-      // 🎯 FINAL RESOLUTION
       let comment = "";
       let toneUsed = 'serious';
       let actionComment = "";
@@ -11620,15 +11627,14 @@ limitations under the License.
       if (isQueenCaptured) {
         toneUsed = 'funny';
         actionComment = lang === 'en'
-          ? getRnd(["💎 A massive blow! The Queen is captured.", "💎 Big hit! The Queen leaves the board.", "💎 Boom! That Queen capture changes the whole game."], 'queen_cap')
-          : getRnd(["💎 ¡Golpe brutal! Cae la Dama.", "💎 ¡Momento clave! La Dama abandona el tablero.", "💎 ¡Boom! Esta captura de Dama lo cambia todo."], 'queen_cap');
+          ? getRnd(["💎 A massive blow! The Queen is captured.", "💎 Big hit! The Queen leaves the board."], 'queen_cap')
+          : getRnd(["💎 ¡Golpe brutal! Cae la Dama.", "💎 ¡Momento clave! La Dama abandona el tablero."], 'queen_cap');
       }
       else if (isCapture && capturedPieceChar) {
         const isFunny = Math.random() < getCommentaryFunnyChance('capture');
         toneUsed = isFunny ? 'funny' : 'serious';
         const pool = isFunny ? frasesCapturaBromas[lang][pieceChar] : frasesCapturaSerias[lang][pieceChar];
 
-        // Inject captured piece name
         const capName = getLocalizedPieceName(capturedPieceChar);
         const capArt = getPieceArticle(capturedPieceChar, 'def');
         const capToken = lang === 'en' ? `the ${capName}` : `${capArt} ${capName}`;
@@ -11648,13 +11654,11 @@ limitations under the License.
         }
       }
 
-      // Overrides — order matters: completed mate > promotion > special patterns > isScholarAverted
       if (isPromotion) {
         toneUsed = 'funny';
         comment = lang === 'en' ? getRnd(["👑 EPIC! A pawn reaches the end and promotes!"], 'promo') : getRnd(["👑 ¡ÉPICO! ¡Un peón ha logrado coronar!"], 'promo');
       }
       else if (specialComment) {
-        // Scholar's Mate completed (Qxf7#) must beat the isScholarAverted check below
         toneUsed = specialTone;
         comment = specialComment;
       }
@@ -11663,39 +11667,16 @@ limitations under the License.
         comment = lang === 'en' ? getRnd(["Did someone really think that Scholar's Mate would work?", "A Scholar's Mate attempt... completely denied."], 'scholar_stop') : getRnd(["¿Alguien pensaba que ese Pastor iba a funcionar?", "Intento de Jaque Pastor... totalmente neutralizado."], 'scholar_stop');
       }
       else if (openingName) {
-        // Use colorWhoMoved to frame the announcement correctly:
-        // White's moves establish openings; Black's moves choose defenses.
-        // Use a pool of varied phrases so it doesn't always say "Se plantea".
         const isWhiteMove = colorWhoMoved === 'w';
         if (lang === 'en') {
           const phrases = isWhiteMove
-            ? [
-              `The game enters the **${openingName}**. ${openingTechNote}`,
-              `White responds with the **${openingName}**. ${openingTechNote}`,
-              `Opening confirmed: **${openingName}**. ${openingTechNote}`,
-              `Classic **${openingName}** on the board. ${openingTechNote}`,
-              `White continues with the **${openingName}**. ${openingTechNote}`,
-            ]
-            : [
-              `Black responds with the **${openingName}**. ${openingTechNote}`,
-              `Black chooses the **${openingName}**. ${openingTechNote}`,
-              `Black enters the **${openingName}**. ${openingTechNote}`,
-            ];
+            ? [`The game enters the **${openingName}**. ${openingTechNote}`, `White responds with the **${openingName}**.`]
+            : [`Black responds with the **${openingName}**. ${openingTechNote}`, `Black chooses the **${openingName}**.`];
           comment = getRnd(phrases, 'opening_note');
         } else {
           const phrases = isWhiteMove
-            ? [
-              `Se plantea la **${openingName}**. ${openingTechNote}`,
-              `Las blancas responden con la **${openingName}**. ${openingTechNote}`,
-              `Apertura confirmada: **${openingName}**. ${openingTechNote}`,
-              `Clásica **${openingName}** en el tablero. ${openingTechNote}`,
-              `Las blancas continúan con la **${openingName}**. ${openingTechNote}`,
-            ]
-            : [
-              `Las negras responden con la **${openingName}**. ${openingTechNote}`,
-              `Las negras eligen la **${openingName}**. ${openingTechNote}`,
-              `El rival opta por la **${openingName}**. ${openingTechNote}`,
-            ];
+            ? [`Se plantea la **${openingName}**. ${openingTechNote}`, `Las blancas responden con la **${openingName}**.`]
+            : [`Las negras responden con la **${openingName}**. ${openingTechNote}`, `Las negras eligen la **${openingName}**.`];
           comment = getRnd(phrases, 'opening_note');
         }
       }
@@ -11706,30 +11687,16 @@ limitations under the License.
         comment = lang === 'en' ? getRnd(["Check! Precision is absolutely required now."], 'end_check') : getRnd(["¡Jaque! Ahora la precisión es absolutamente vital."], 'end_check');
       }
       else if (isCheck) {
-        // Check in middlegame — detect if it also creates a pin or discovered attack
         const checkPhrases = lang === 'en'
-          ? ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately.", "🎯 A direct check forces the opponent's hand — use the tempo!", "🔥 Check! Good forcing move — keep the pressure on.", "⚡ Check! The king is under fire — watch for tactical follow-ups."]
-          : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato.", "🎯 ¡Jaque directo! Forzamos al rival — ¡aprovecha el tempo!", "🔥 ¡Jaque! Buena jugada forzante — mantén la presión.", "⚡ ¡Jaque! El rey está bajo fuego — atento a los seguimientos tácticos."];
+          ? ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately."]
+          : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato."];
         comment = getRnd(checkPhrases, 'mid_check');
       }
       else {
         comment = actionComment;
       }
 
-      // 📊 Append Engine Quality Evaluation at the end
-      if (isHugeBlunder) {
-        comment += lang === 'en'
-          ? "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>Blunder!</strong> A piece is left completely unprotected or advantage is lost.</span>"
-          : "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>¡Error grave!</strong> Una pieza queda sin defensa o se pierde la ventaja.</span>";
-      } else if (isBrilliant) {
-        comment += lang === 'en'
-          ? "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>Brilliant move!</strong> A spectacular tactical vision.</span>"
-          : "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>¡Jugada brillante!</strong> Una visión táctica espectacular.</span>";
-      }
-
-      // Renderizado
-
-      // Renderizado
+      // Renderizado final
       const now = new Date();
       const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
       commentaryLog.unshift({ html: comment, time: timeStr, tone: toneUsed });
@@ -12835,11 +12802,39 @@ limitations under the License.
           if (isBook) {
             strategicIntent = `<strong>${simplifyForKids(opt.name || '')}</strong>: ${simplifyForKids(opt.desc || '')}`;
           } else if (opt.tacticalPenalty > 150) {
-            // 🛡️ CONTROL DE CORDURA: Si la jugada pierde material grave (penalización alta), 
-            // prohibimos que el generador de texto busque intenciones "brillantes".
-            strategicIntent = en 
-                ? "An emergency move in a very difficult tactical situation." 
-                : "Un movimiento de emergencia en una situación táctica muy complicada.";
+            // 🛡️ IMPROVED SANITY CHECK: Detectar al Rey correctamente
+            
+            // If 'm.piece' doesn't exist, we try to see if the move name starts with 'R' (Rey) or 'K' (King)
+            // or if we know the board, look at the origin square (m.fr, m.fc)
+            const moveName = opt.name || (opt.move && opt.move.san) || "";
+            const isKingMove = (m.piece === 'k' || m.piece === 'K') || 
+                               (moveName.startsWith('R') || moveName.startsWith('K')) ||
+                               (typeof board !== 'undefined' && board[m.fr] && board[m.fr][m.fc] && 
+                                (board[m.fr][m.fc] === 'K' || board[m.fr][m.fc] === 'k'));
+
+            if (isKingMove) {
+                strategicIntent = en 
+                    ? "The King maneuvers to a safer square under heavy tactical pressure." 
+                    : "El Rey maniobra hacia una casilla más segura bajo fuerte presión táctica.";
+            } else {
+                // Defensive phrases assortment
+                const emergencyTexts = [
+                    "Un movimiento defensivo estricto para evitar pérdidas de material.",
+                    "Jugada de contención: prioriza la supervivencia ante las amenazas del rival.",
+                    "Una decisión prácticamente forzada por la tensión táctica del tablero.",
+                    "Movimiento de emergencia: la posición exige tapar agujeros antes que atacar."
+                ];
+                const engTexts = [
+                    "A strict defensive move to avoid material loss.",
+                    "Containment play: prioritizing survival against enemy threats.",
+                    "A decision practically forced by the board's tactical tension.",
+                    "Emergency move: the position demands patching holes before attacking."
+                ];
+                
+                // We use the coordinates to choose a phrase (so the same move always gives the same phrase)
+                const textIndex = (m.tr + m.tc) % 4; 
+                strategicIntent = en ? engTexts[textIndex] : emergencyTexts[textIndex];
+            }
           } else {
             strategicIntent = simplifyForKids(getStrategicIntent(m, sideToAnalyze));
           }
@@ -13185,8 +13180,8 @@ limitations under the License.
           // Depth 4 and 5000ms is more reliable on mobile than depth 5 at 6000ms.
           // At grandmaster level the Professor gets extra depth so its suggestions
           // match the quality of the AI engine (both run in the same Worker).
-          const profDepth = currentDifficulty === 'grandmaster' ? 8 : 4;
-          const profTimeout = currentDifficulty === 'grandmaster' ? 12000 : 5000;
+          const profDepth = currentDifficulty === 'grandmaster' ? 30 : 7;
+          const profTimeout = currentDifficulty === 'grandmaster' ? 15000 : 5000;
 
           // --- SNAPSHOT: capture position before launching the async Worker so
           //     we can validate the result belongs to the current position and
@@ -13712,9 +13707,18 @@ limitations under the License.
           for (let c = minC + 1; c < maxC; c++) if (copy[m.tr][c] !== ' ') { clear = false; break; }
           if (clear) {
             const rankNum = 8 - m.tr;
-            return withQS(en
-              ? `🏗️ Excellent! Both rooks on rank ${rankNum} — doubled rooks control the entire row.`
-              : `🏗️ ¡Excelente! Ambas torres en la fila ${rankNum} — torres dobladas controlan toda la fila.`);
+            // 🛡️ NEW: Differentiate between back rank defense and doubled rooks
+            const isBackRank = (color === 'w' && m.tr === 7) || (color === 'b' && m.tr === 0);
+            
+            if (isBackRank) {
+                return withQS(en
+                  ? `🛡️ Solid defense! Both rooks coordinate to protect your back rank.`
+                  : `🛡️ Defensa sólida: ambas torres se coordinan para proteger tu primera fila.`);
+            } else {
+                return withQS(en
+                  ? `🏗️ Excellent! Both rooks on rank ${rankNum} — doubled rooks control the entire row.`
+                  : `🏗️ ¡Excelente! Ambas torres en la fila ${rankNum} — torres dobladas controlan toda la fila.`);
+            }
           }
         }
       }
@@ -14253,6 +14257,7 @@ limitations under the License.
 
       pList.innerHTML = html;
     }
+
 
     function getLostMaterial(oldBrd, newBrd, color) {
       const lost = [];

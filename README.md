@@ -27,7 +27,7 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 
 ### Non-Goals
 
-- **Defeating titled players.** This is not Stockfish. The engine targets **~2000 ELO** at Wise King level (benchmark: vs Stockfish depth 8, 20-game tournament). Actual strength depends on the hardware running it.
+- **Defeating titled players.** This is not Stockfish. The engine targets **~1900 ELO** at Wise King level (benchmark: vs Stockfish depth 7, 20-game tournament). Actual strength depends on the hardware running it.
 - **Online multiplayer.** Local play only.
 - **Advanced preparation tools.** The opening book is curated for teaching, not professional preparation.
 - **Benchmark performance.** Clean, readable JavaScript takes priority over micro-optimised techniques, though v2.1.0 introduced critical low-level bottlenecks fixes.
@@ -175,15 +175,30 @@ Three styles, with labels now visible under the slider:
 
 | # | Severity | Description | Planned fix |
 |---|---|---|---|
-| 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()` without first checking if the opponent has any legal moves. Affects roughly 1 in 50 won endgames with a lone enemy king. | v2.14.0 — fix in quiescence search |
+| 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
+
+## What's new in v2.22.0 — *Pedagogical Intelligence & Strategic Awareness*
+
+### 🧠 Fixed "Was It Good?" Analysis
+The `analyzeLastMove` function has been repaired. It now provides real tactical assessment (Balanced, Inaccuracy, or Excellent move) instead of an empty placeholder.
+
+### 🎙️ Dynamic Game Commentary
+The commentator now reads the engine's evaluation score to provide real-time situational remarks (e.g., detecting dominating advantages or absolute equality).
+
+### 📚 Turn-Aware Opening Detection
+Opening nomenclature (like the Benko Gambit) is now restricted to the first 12 moves, switching to positional notes for the middle and endgame.
 
 ---
 
-## What's new in v2.21.0 — *The Performance & Tactics Edition*
+## What's new in v2.21.0 — *The Performance & Tactics Edition (Final)*
 
-This release is a full engine rewrite targeting **2000 ELO** against Stockfish depth 8. Every performance bottleneck was eliminated; the search is now 4–5× faster than v2.13.1 at equal depth.
+This release is a full engine rewrite reaching **1631 ELO** against Stockfish depth 7. It includes a major architectural shift to 8-bit board representation and a new **Security Parachute** for absolute stability.
 
-### 🚀 8-Bit Board Representation (NPS ×4–5)
+### 🛡️ Security Parachute & Absolute Stability
+
+Implemented a failsafe in `askWiseKing` that guarantees a legal move is always returned, avoiding freezing in long matches. Combined with the v3.1 Anti-Freeze pedagogical audit, the engine is now fully crash-resistant.
+
+### 🚀 8-Bit Board Representation (NPS ×4–10)
 
 The board was migrated from an `8×8` array of strings (e.g. `'P'`, `'k'`) to a **flat `Int8Array(64)`** with integer piece codes (`1–6` = White, `9–14` = Black).
 
@@ -486,4 +501,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.21.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~816 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.22.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~805 KB. Zero dependencies. Open the file and play.*

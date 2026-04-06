@@ -7,11 +7,33 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
-## v2.21.0 — La Edición de Rendimiento y Tácticas
-**~15.600 líneas · ~816 KB**
+## v2.22.0 — Actualización de Inteligencia Pedagógica
+**~15,800 líneas · ~805 KB**
 
-Objetivo de torneo: **~2000 ELO** (vs Stockfish d:8, torneo de 20 partidas).  
-Motor 4–5× más rápido que v2.13.1 a igual profundidad. Primeros empates por repetición esperados.
+### 🌟 Nuevas Características
+*   **🧠 "Modo Dios" del Profesor (Análisis Profundo):** El sistema de sugerencias ahora es capaz de alcanzar una profundidad de análisis de nivel Gran Maestro (**Profundidad 30**) con un tiempo de cálculo extendido (hasta 15,000ms). El Profesor ya no se limita a detectar tácticas inmediatas; ahora formula planes estratégicos complejos.
+*   **⏳ Cuenta Atrás Visual de Análisis:** Implementación de la función genérica `startThinkingCountdown`. Ahora, cuando el Profesor realiza un análisis profundo, la interfaz muestra un temporizador de cuenta atrás en vivo, mejorando enormemente la experiencia del usuario durante los tiempos de espera.
+
+### 🛠️ Mejoras Técnicas
+*   **🛡️ Protección del Historial de Movimientos:** Reestructuración de la forma en que el motor lee la partida. El Profesor y el Comentarista ahora priorizan el estado interno del ajedrez (`game.history()`) sobre `window.history`, eliminando colisiones y conflictos directos con el objeto de historial del navegador.
+*   **🌍 Ámbito Global para Utilidades:** Refactorización de la función de selección de frases (`getRnd`) para que resida en el ámbito global del script. Esto asegura que cualquier módulo dependiente del idioma o la aleatoriedad pueda acceder a ella sin interrupciones durante la inicialización del motor.
+
+---
+
+## v2.21.0 — La Edición de Rendimiento y Tácticas (Final)
+**~15.800 líneas · ~818 KB**
+
+Objetivo de torneo: **~1900 ELO** (vs Stockfish d:7).  
+Rendimiento real (v2.21.0 Final): **1631 ELO** vs Stockfish d:7 (20 partidas).  
+Motor 4–5× más rápido que v2.13.1 a igual profundidad. Estable y resistente a cuelgues.
+
+### Motor — Paracaídas de Seguridad (Fallback absoluto)
+- **Lógica de seguridad en `askWiseKing`** — implementado un try/catch global y validación de jugadas que garantiza que el motor siempre devuelva un movimiento legal, evitando bloqueos en la interfaz durante test de larga duración.
+
+### Motor — Heurística de finales y Mop-up
+- **Incentivo de coronación** — valor base del peón subido a **145** para incitar el avance.
+- **Mop-up (Acorralar al rey)** — factores de proximidad y distancia al centro multiplicados por 10 (47/16). El motor ahora es mucho más eficiente dando mate a reyes solitarios.
+- **Simplificación sintonizada** — corregido el multiplicador de intercambio para asegurar que el motor busque simplificar material cuando tiene una ventaja clara (> 200cp).
 
 ### Motor — Tablero 8 bits (`Int8Array(64)`) — NPS ×4–5
 - **Tablero plano `Int8Array(64)`** — migrado desde array 8×8 de strings a array tipado plano con códigos enteros de pieza (`1–6` = Blancas, `9–14` = Negras).

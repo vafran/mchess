@@ -29,7 +29,7 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 
 ### No-objetivos
 
-- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor apunta a **~2000 ELO** en el nivel Rey Sabio (benchmark: vs Stockfish profundidad 8, torneo de 20 partidas). La cifra exacta depende del hardware.
+- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor apunta a **~1900 ELO** en el nivel Rey Sabio (v2.21.0 real: **1631 ELO** vs Stockfish d:7). La cifra exacta depende del hardware.
 - **Multijugador en línea.** Solo juego local.
 - **Herramientas avanzadas de preparación.** El libro de aperturas está curado para enseñar, no para preparación profesional.
 - **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad, aunque la v2.1.0 introdujo correcciones críticas en cuellos de botella de bajo nivel.
@@ -183,11 +183,28 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
-## Novedades en v2.21.0 — *La Edición de Rendimiento y Tácticas*
+## Lo nuevo en v2.22.0 — *Inteligencia Pedagógica y Conciencia Estratégica*
 
-Esta versión es una reescritura completa del motor con objetivo de **2000 ELO** frente a Stockfish profundidad 8. Se eliminaron todos los cuellos de botella de rendimiento; la búsqueda es ahora 4–5× más rápida que en v2.13.1 a igual profundidad.
+### 🧠 Análisis "Was It Good?" Reparado
+Se ha reparado la función `analyzeLastMove`. Ahora proporciona una evaluación táctica real (jugada Equilibrada, Imprecisión o Excelente) en lugar de un mensaje genérico.
 
-### 🚀 Tablero en 8 bits — `Int8Array(64)` (NPS ×4–5)
+### 🎙️ Comentarista de Partida Dinámico
+El comentarista ahora lee la puntuación de evaluación del motor para ofrecer comentarios situacionales en tiempo real (por ejemplo, detectando ventajas dominantes o igualdad absoluta).
+
+### 📚 Detección de Aperturas por Turno
+La nomenclatura de apertura (como el Gambito Benko o la Apertura Bird) ahora se restringe lógicamente al juego temprano (primeros 12 movimientos), pasando a notas estratégicas posicionales para el medio juego y el final de partida.
+
+---
+
+## Lo nuevo en v2.21.0 — *La Edición de Rendimiento y Tácticas (Final)*
+
+Esta versión es una reescritura completa del motor que alcanza los **1631 ELO** frente a Stockfish profundidad 7. Incluye un cambio arquitectónico masivo a tablero de 8 bits y un nuevo **Paracaídas de Seguridad** para una estabilidad absoluta.
+
+### 🛡️ Paracaídas de Seguridad y Estabilidad Absoluta
+
+Implementado un sistema de seguridad en `askWiseKing` que garantiza que el motor siempre devuelva un movimiento legal, evitando que la IA se "congele" en partidas largas. Combinado con la auditoría pedagógica v3.1 Anti-Freeze, el motor es ahora totalmente resistente a cuelgues.
+
+### 🚀 Tablero en 8 bits — `Int8Array(64)` (NPS ×4–10)
 
 El tablero se migró de un array 8×8 de strings (`'P'`, `'k'`…) a un **`Int8Array(64)` plano** con piezas como enteros (`1–6` = Blancas, `9–14` = Negras).
 
@@ -380,7 +397,7 @@ Combinado con una implementación corregida de **Zobrist Hashing** que rastrea l
 - Poda de futilidad extendida a profundidad 3 (margen 500 cp)
 - Ventana de aspiración ampliada a ±75 cp (antes ±50)
 - Valores de piezas ajustados: C=305, A=333
-- Bucle de seguridad del rey corregido: cada pieza contada una sola vez (antes se contaba una vez por casilla de zona atacada)
+- Bucle de seguridad del rey corregido: cada pieza contada una vez (antes se contaba una vez por casilla de zona atacada)
 
 ---
 
@@ -485,4 +502,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.21.0 — Un juego de ajedrez hecho para una niña de 9 años que, sin querer, acabó siendo un motor serio.* *~816 KB. Cero dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.22.0 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~805 KB. Sin dependencias. Abre el archivo y juega.*

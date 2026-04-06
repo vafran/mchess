@@ -7,11 +7,24 @@ Format: version · size · what changed.
 
 ---
 
-## v2.21.0 — The Performance & Tactics Edition
-**~15,600 lines · ~816 KB**
+## v2.22.0 — Pedagogical Intelligence Update
+**~15,800 lines · ~805 KB**
 
-Tournament target: **~2000 ELO** (vs Stockfish d:8, 20-game tournament).  
-Engine is 4–5× faster than v2.13.1 at equal depth. First repetition draws expected.
+### 🌟 New Features
+*   **🧠 "God Mode" for the Coach (Deep Analysis):** The suggestion system is now capable of reaching Grandmaster-level analysis depth (**Depth 30**) with an extended calculation time (up to 15,000ms). The Coach no longer just detects immediate tactics; it formulates complex strategic plans.
+*   **⏳ Visual Analysis Countdown:** Implemented the generic `startThinkingCountdown` function. Now, when the Coach performs a deep analysis, the UI displays a live countdown timer, vastly improving the user experience during calculation wait times.
+
+### 🛠️ Technical Improvements
+*   **🛡️ Move History Shielding:** Restructured how the engine reads the game. The Coach and Commentator now prioritize the internal chess state (`game.history()`) over `window.history`, eliminating collisions and direct conflicts with the user's browser history object.
+*   **🌍 Global Scope for Utilities:** Refactored the phrase selection function (`getRnd`) to live in the global scope of the script. This ensures that any module dependent on language or randomness can access it without interruptions during engine initialization.
+
+---
+
+## v2.21.0 — The Performance & Tactics Edition (Final)
+**~15,500 lines · ~790 KB**
+
+### Engine — Security Parachute (Absolute Fallback)
+- **Failsafe logic in `askWiseKing`** — implemented a global try/catch and legality check that guarantees a move is always returned, even if the primary search fails or returns an invalid value. This prevents the "Freezing AI" bug in long matches.
 
 ### Engine — 8-Bit Board Representation (NPS ×4–5)
 - **`Int8Array(64)` flat board** — migrated from `8×8` string array to flat typed array with integer piece codes (`1–6` = White, `9–14` = Black).
@@ -28,7 +41,10 @@ Engine is 4–5× faster than v2.13.1 at equal depth. First repetition draws exp
 
 ### Engine — King Shield & Storm Heuristics
 - **King Shield** (`eg < 0.3`): +25 cp per pawn in front of the castled king (up to 3).
-- **King Storm**: penalty for open/semi-open files toward the castled king, scaled by how far cover pawns have advanced.
+### Engine — Endgame & Mop-up Logic
+- **Pawn Promotion Incentive** — increased base pawn value to **145** to encourage advancement.
+- **Mop-up King Cornering** — proximity and center-distance factors increased by 10x (47/16). The engine is now significantly more efficient at checkmating lone kings.
+- **Simplification correctly tuned** — fixed the trade-incentive multiplier to ensure the engine simplifies material when ahead by > 200cp.
 
 ### Engine — Static Exchange Evaluation (SEE)
 - Full `see()` function with X-ray support (lines up correctly behind removed pieces).
