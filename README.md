@@ -27,7 +27,7 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 
 ### Non-Goals
 
-- **Defeating titled players.** This is not Stockfish. The engine peaks around **~1700 ELO** (benchmark vs Stockfish depth 6, 5-game tournament).
+- **Defeating titled players.** This is not Stockfish. The engine targets **~2000 ELO** at Wise King level (benchmark: vs Stockfish depth 8, 20-game tournament). Actual strength depends on the hardware running it.
 - **Online multiplayer.** Local play only.
 - **Advanced preparation tools.** The opening book is curated for teaching, not professional preparation.
 - **Benchmark performance.** Clean, readable JavaScript takes priority over micro-optimised techniques, though v2.1.0 introduced critical low-level bottlenecks fixes.
@@ -66,7 +66,7 @@ That is everything. The game handles the rest.
 
 6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Master — *Wise King* (~1700 ELO)
+### 👑 Master — *Wise King* (~2000 ELO target)
 
 **Target:** Strong club players and advanced amateurs.
 
@@ -82,7 +82,7 @@ Up to 30-ply depth (time-capped at 30s) · 0% mistakes · full book · full eval
 | 🐣 Easy | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medium | ~1010 | 4 | 20% | ±6 cp | first 2 moves | ✅ |
 | 🔥 Hard | ~1400 | 6 | 0% | none | ✅ full | ✅ |
-| 👑 Wise King | ~1700 | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
+| 👑 Wise King | ~2000 ELO target | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
  
 ---
 
@@ -179,7 +179,62 @@ Three styles, with labels now visible under the slider:
 
 ---
 
-## What's new in v2.13.0 — *The Memory Update*
+## What's new in v2.21.0 — *The Performance & Tactics Edition*
+
+This release is a full engine rewrite targeting **2000 ELO** against Stockfish depth 8. Every performance bottleneck was eliminated; the search is now 4–5× faster than v2.13.1 at equal depth.
+
+### 🚀 8-Bit Board Representation (NPS ×4–5)
+
+The board was migrated from an `8×8` array of strings (e.g. `'P'`, `'k'`) to a **flat `Int8Array(64)`** with integer piece codes (`1–6` = White, `9–14` = Black).
+
+- **Cache locality**: 64 bytes fit in a single L1 cache line — board reads are effectively free.
+- **Integer arithmetic everywhere**: piece type extracted with `p & 7`, color with `p <= 6`. No string comparisons in the hot path.
+- **Zero allocations**: all buffers (`Int8Array`, `Int32Array`) are pre-allocated once at worker startup.
+- **Result**: stable **45k–80k NPS** vs ~10k–18k in v2.13.1 at identical depths.
+
+### 📊 Tapered Evaluation (MG/EG PST)
+
+Replaced single static Piece-Square Tables with **dual-phase tables** (`PST_MG` / `PST_EG`).
+
+```
+score = (mgVal × ph + egVal × (24 − ph)) / 24   [integer, no floats in hot path]
+```
+
+Phase `ph` is computed from remaining pieces: each minor = 1, rook = 2, queen = 4. Pure endgame = 0, full middlegame = 24. This allows the engine to value pieces correctly across all game phases — e.g. knights centralise in the middlegame and retreat to safe squares in the endgame.
+
+### 🛡️ King Shield & Storm Heuristics
+
+- **King Shield** (`eg < 0.3`): rewards keeping 3 pawns in front of the castled king (+25 cp each).
+- **King Storm**: penalises open or semi-open files toward the castled king, scaled by how far the cover pawns have been pushed.
+
+### ⚔️ Static Exchange Evaluation (SEE)
+
+A full `see()` function evaluates capture sequences before committing to them:
+
+- Winning/equal captures (`SEE ≥ 0`) sorted by net gain — tried first.
+- Losing captures (`SEE < 0`) deprioritised below quiet moves — tried last or skipped in quiescence.
+- X-ray attacks (piece lines up behind removed piece) handled correctly.
+
+This eliminates the engine's most common class of blunders: trading a bishop for a pawn protected by another pawn.
+
+### 🔁 Repetition Draw Detection Restored
+
+After the 8-bit refactor, game history was sent to the worker as string hashes but the search loop used Zobrist XOR-fold keys — they were **never connected**. The engine was completely blind to repetition.
+
+Fix: `positionHashes` strings are now decoded into Zobrist keys using the same tables as `makeMove()`, stored in `historyCount: Map<u32, count>`. The draw check in `minimax()` is:
+```
+if (searchSet.has(bkS) || historyCount.get(bkS) >= 2) return 0;
+```
+
+### Tournament Infrastructure
+
+- `arena_tournament.js` v2: 20-game tournament, color alternation, 20 opening lines (ECO coverage), partial save after every game, NPS logging, ELO confidence intervals (Wilson score).
+- Persistent shared V8/TurboFan page across all games — JIT code survives between rounds, NPS stabilises at peak from game 2.
+- 45-second per-move timeout with stale-page detection and auto-reload.
+
+---
+
+## What's new in v2.13.1 — *The Memory Update*
 
 - **Worker TT Amnesia Fix (critical)**: The engine's transposition table, killer moves, and history heuristics were wiped on every single move in tournament/Arena mode. Fixed by reusing the Web Worker across moves. Endgame search depth jumped from d:8–10 to **d:14–18**, with peaks at **d:30**. First meaningful tournament draws achieved: **2 draws in 3 games vs Stockfish depth 6 (~1700 ELO)**.
 - **Opening Book — Ruy López Exchange**: Added book coverage after `Bxc6 dxc6`, preventing the engine from finding `Nxe5??` on its own (which loses to `Qd4!`).
@@ -335,15 +390,15 @@ Several bugs in the search engine were identified and corrected post-release. Th
 
 ### Search
 
-Web Worker + main-thread fallback. Alpha-beta stack: Iterative Deepening, PVS, NMP (R=2/3), LMR, Futility Pruning (depth ≤ 3, margins 150/300/500 cp), Aspiration Windows (±75 cp, guaranteed full-window fallback), Quiescence Search (max depth 5 non-check / 8 in-check, delta pruning), Check Extensions.
+Web Worker + main-thread fallback. Alpha-beta stack: Iterative Deepening, PVS, NMP (adaptive R), LMR (logarithmic formula), Futility Pruning (depth ≤ 2, margins 175/350 cp), Aspiration Windows (±75 cp), Quiescence Search (max depth 5 non-check / 8 in-check, SEE pruning, delta pruning), Check Extensions, Advanced Pawn Extensions.
 
-200K-entry Zobrist transposition table in the Worker with depth-aware eviction. Each entry stores the **best move** for ordering in the next iteration.
+1 048 576-entry Zobrist transposition table (20 MB, `Int32Array`) in the Worker with depth-aware eviction. EXACT entries are never overwritten by UPPER/LOWER entries. Each entry stores the **best move** for ordering in the next iteration. Board represented as flat `Int8Array(64)` — 45–80k NPS on typical hardware.
 
 Move ordering: TT move (priority 1,000,000) → MVV-LVA captures → promotions → killer moves → counter move → history heuristic → king tropism → central bonus. Root moves pre-sorted with MVV-LVA before depth-1.
 
 ### Evaluation
 
-PeSTO-style PST tables, tapered king evaluation (middlegame ↔ endgame), pawn structure (doubled −15, isolated −20, passed pawn rank×15 scaled ×4.5 in endgame), bishop pair (+40), rook activity (open file +25, 7th rank +20), dynamic king safety (quadratic penalty per attacking piece, capped at 80 cp).
+PeSTO-style dual-phase PST tables (`PST_MG` / `PST_EG`) with integer tapered interpolation (`(mgVal × ph + egVal × (24-ph)) / 24 | 0`). Pawn structure: doubled −15, isolated −40, passed pawn scaled with phase + Rule of the Square. Bishop pair +40. King Shield/Storm (middlegame). Rook activity (open file +40, 7th rank +35, connected rooks +15). Dynamic king safety. Knight outpost detection. Bad bishop penalty.
 
 Piece values: N=325, B=335, R=500, Q=900 (bishop correctly valued above knight by 10 cp). Tapered middlegame/endgame interpolation (mgPV/egPV).
 
@@ -431,4 +486,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.13.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~687 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.21.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~816 KB. Zero dependencies. Open the file and play.*

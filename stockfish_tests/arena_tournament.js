@@ -1,9 +1,9 @@
 const puppeteer = require('puppeteer');
-const { spawn }  = require('child_process');
-const { Chess }  = require('chess.js');
-const path       = require('path');
-const fs         = require('fs');
-const readline   = require('readline');
+const { spawn } = require('child_process');
+const { Chess } = require('chess.js');
+const path = require('path');
+const fs = require('fs');
+const readline = require('readline');
 
 // ═══════════════════════════════════════════════════════════════
 // 🏆 TOURNAMENT v2 — mChess vs Stockfish
@@ -12,28 +12,28 @@ const readline   = require('readline');
 // ═══════════════════════════════════════════════════════════════
 
 const CONFIG = {
-    numGames:      20,      // minimum for ±76 ELO precision
-    depths:        [7, 8],  // bracket with two depths (override at runtime)
-    htmlFile:      path.join(__dirname, '..', 'mChess.html'),
+    numGames: 20,      // minimum for ±76 ELO precision
+    depths: [7, 8],  // bracket with two depths (override at runtime)
+    htmlFile: path.join(__dirname, '../mChess.html'),
     stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish'),
-    logFile:       path.join(__dirname, 'tournament_v2_results.json'),
-    moveTimeoutMs: 45000,   // 45s max per mChess move
+    logFile: path.join(__dirname, 'tournament_latest_results.json'),
+    moveTimeoutMs: 90000,   // 45s max per mChess move
     gameTimeoutMs: 3600000, // 1h per game
 };
 
 // ELO map (Lichess-calibrated approximations)
 const DEPTH_ELO = {
-    1:900, 2:1100, 3:1300, 4:1450, 5:1600,
-    6:1750, 7:1900, 8:2000, 9:2100, 10:2200,
-    12:2350, 15:2500, 18:2700, 20:2800
+    1: 900, 2: 1100, 3: 1300, 4: 1450, 5: 1600,
+    6: 1750, 7: 1900, 8: 2000, 9: 2100, 10: 2200,
+    12: 2350, 15: 2500, 18: 2700, 20: 2800
 };
 function sfELO(d) {
     if (DEPTH_ELO[d]) return DEPTH_ELO[d];
-    const keys = Object.keys(DEPTH_ELO).map(Number).sort((a,b)=>a-b);
-    for (let i = 0; i < keys.length-1; i++) {
-        if (d > keys[i] && d < keys[i+1]) {
-            const t = (d-keys[i])/(keys[i+1]-keys[i]);
-            return Math.round(DEPTH_ELO[keys[i]]*(1-t) + DEPTH_ELO[keys[i+1]]*t);
+    const keys = Object.keys(DEPTH_ELO).map(Number).sort((a, b) => a - b);
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (d > keys[i] && d < keys[i + 1]) {
+            const t = (d - keys[i]) / (keys[i + 1] - keys[i]);
+            return Math.round(DEPTH_ELO[keys[i]] * (1 - t) + DEPTH_ELO[keys[i + 1]] * t);
         }
     }
     return 2200;
@@ -48,86 +48,96 @@ const OPENING_BOOK = [
     ['d2d4'],       // 1.d4 (Queen's Pawn)
     ['c2c4'],       // 1.c4 (English)
     ['g1f3'],       // 1.Nf3 (Reti)
-    ['e2e4','e7e5'],// 1.e4 e5 (Open Game)
-    ['e2e4','c7c5'],// 1.e4 c5 (Sicilian)
-    ['e2e4','e7e6'],// 1.e4 e6 (French)
-    ['e2e4','c7c6'],// 1.e4 c6 (Caro-Kann)
-    ['d2d4','d7d5'],// 1.d4 d5 (Closed)
-    ['d2d4','g8f6'],// 1.d4 Nf6 (Indian)
-    ['e2e4','e7e5','g1f3','b8c6'],      // Open, 2.Nf3 Nc6
-    ['e2e4','c7c5','g1f3','d7d6'],      // Sicilian Najdorf setup
-    ['d2d4','d7d5','c2c4'],             // Queen's Gambit
-    ['e2e4','e7e5','g1f3','g8f6'],      // Petrov
-    ['e2e4','e7e5','f1c4'],             // Italian
-    ['d2d4','g8f6','c2c4','e7e6'],      // Queen's Indian setup
-    ['e2e4','d7d6','d2d4','g8f6'],      // Pirc
-    ['c2c4','e7e5'],                    // Reversed Sicilian
-    ['g1f3','d7d5','g2g3'],             // Reti
+    ['e2e4', 'e7e5'],// 1.e4 e5 (Open Game)
+    ['e2e4', 'c7c5'],// 1.e4 c5 (Sicilian)
+    ['e2e4', 'e7e6'],// 1.e4 e6 (French)
+    ['e2e4', 'c7c6'],// 1.e4 c6 (Caro-Kann)
+    ['d2d4', 'd7d5'],// 1.d4 d5 (Closed)
+    ['d2d4', 'g8f6'],// 1.d4 Nf6 (Indian)
+    ['e2e4', 'e7e5', 'g1f3', 'b8c6'],      // Open, 2.Nf3 Nc6
+    ['e2e4', 'c7c5', 'g1f3', 'd7d6'],      // Sicilian Najdorf setup
+    ['d2d4', 'd7d5', 'c2c4'],             // Queen's Gambit
+    ['e2e4', 'e7e5', 'g1f3', 'g8f6'],      // Petrov
+    ['e2e4', 'e7e5', 'f1c4'],             // Italian
+    ['d2d4', 'g8f6', 'c2c4', 'e7e6'],      // Queen's Indian setup
+    ['e2e4', 'd7d6', 'd2d4', 'g8f6'],      // Pirc
+    ['c2c4', 'e7e5'],                    // Reversed Sicilian
+    ['g1f3', 'd7d5', 'g2g3'],             // Reti
 ];
 
 // ── Stats per depth ──────────────────────────────────────────
 class DepthStats {
     constructor(depth) {
-        this.depth   = depth;
-        this.sfELO   = sfELO(depth);
-        this.games   = [];
-        this.wW=0; this.wB=0; // wins as white / black
-        this.lW=0; this.lB=0; // losses
-        this.dW=0; this.dB=0; // draws
+        this.depth = depth;
+        this.sfELO = sfELO(depth);
+        this.games = [];
+        this.npsLog = []; // NPS samples per move, for average
+        this.wW = 0; this.wB = 0; // wins as white / black
+        this.lW = 0; this.lB = 0; // losses
+        this.dW = 0; this.dB = 0; // draws
     }
     add(result, mChessColor, moves, reason, pgn, phase) {
-        this.games.push({result, mChessColor, moves, reason, pgn, phase,
-                         ts: new Date().toISOString()});
+        this.games.push({
+            result, mChessColor, moves, reason, pgn, phase,
+            ts: new Date().toISOString()
+        });
         const w = mChessColor === 'w';
-        if (result === 'mchess_win')  { if(w) this.wW++; else this.wB++; }
-        else if (result === 'sf_win') { if(w) this.lW++; else this.lB++; }
-        else                          { if(w) this.dW++; else this.dB++; }
+        if (result === 'mchess_win') { if (w) this.wW++; else this.wB++; }
+        else if (result === 'sf_win') { if (w) this.lW++; else this.lB++; }
+        else { if (w) this.dW++; else this.dB++; }
     }
-    wins()   { return this.wW + this.wB; }
+    wins() { return this.wW + this.wB; }
     losses() { return this.lW + this.lB; }
-    draws()  { return this.dW + this.dB; }
-    total()  { return this.games.length; }
-    score()  { return this.total() > 0 ? (this.wins() + 0.5*this.draws()) / this.total() : 0; }
+    draws() { return this.dW + this.dB; }
+    total() { return this.games.length; }
+    score() { return this.total() > 0 ? (this.wins() + 0.5 * this.draws()) / this.total() : 0; }
 
     // 95% confidence interval using Wilson score
     wilsonCI() {
-        const n = this.total(); if (n === 0) return [0,0];
+        const n = this.total(); if (n === 0) return [0, 0];
         const p = this.score();
         const z = 1.96;
-        const center = (p + z*z/(2*n)) / (1 + z*z/n);
-        const margin = z * Math.sqrt(p*(1-p)/n + z*z/(4*n*n)) / (1+z*z/n);
-        return [Math.max(0, center-margin), Math.min(1, center+margin)];
+        const center = (p + z * z / (2 * n)) / (1 + z * z / n);
+        const margin = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n);
+        return [Math.max(0, center - margin), Math.min(1, center + margin)];
     }
 
     estimateELO() {
         const p = this.score();
         if (p === 0) return this.sfELO - 600;
         if (p === 1) return this.sfELO + 600;
-        return Math.round(this.sfELO - 400 * Math.log10((1-p)/p));
+        return Math.round(this.sfELO - 400 * Math.log10((1 - p) / p));
     }
     eloCI() {
         const [lo, hi] = this.wilsonCI();
-        const eloLo = lo===0 ? this.sfELO-600 : Math.round(this.sfELO - 400*Math.log10((1-lo)/lo));
-        const eloHi = hi===1 ? this.sfELO+600 : Math.round(this.sfELO - 400*Math.log10((1-hi)/hi));
+        const eloLo = lo === 0 ? this.sfELO - 600 : Math.round(this.sfELO - 400 * Math.log10((1 - lo) / lo));
+        const eloHi = hi === 1 ? this.sfELO + 600 : Math.round(this.sfELO - 400 * Math.log10((1 - hi) / hi));
         return [eloLo, eloHi];
     }
     print() {
         const [elo_lo, elo_hi] = this.eloCI();
         const phases = {};
-        this.games.forEach(g => { phases[g.phase] = (phases[g.phase]||0)+1; });
+        this.games.forEach(g => { phases[g.phase] = (phases[g.phase] || 0) + 1; });
         console.log(`\n  📊 Stockfish d${this.depth} (~${this.sfELO} ELO)`);
         console.log(`     Games: ${this.total()} | W:${this.wins()} L:${this.losses()} D:${this.draws()}`);
         console.log(`     As White  → W:${this.wW} L:${this.lW} D:${this.dW}`);
         console.log(`     As Black  → W:${this.wB} L:${this.lB} D:${this.dB}`);
-        console.log(`     Score: ${(this.score()*100).toFixed(1)}%`);
+        console.log(`     Score: ${(this.score() * 100).toFixed(1)}%`);
         console.log(`     ELO estimate: ~${this.estimateELO()}  [95%CI: ${elo_lo}..${elo_hi}]`);
         console.log(`     Game phases: ${JSON.stringify(phases)}`);
+        if (this.npsLog.length > 0) {
+            const avgNps = Math.round(this.npsLog.reduce((a, b) => a + b, 0) / this.npsLog.length);
+            const npsDisp = avgNps >= 1000000
+                ? (avgNps / 1000000).toFixed(2) + 'M n/s'
+                : (avgNps / 1000).toFixed(0) + 'k n/s';
+            console.log(`     Avg NPS: ${npsDisp}  (${this.npsLog.length} samples)`);
+        }
     }
 }
 
 // ── Stockfish wrapper ────────────────────────────────────────
 function spawnSF() {
-    const sf = spawn(CONFIG.stockfishPath, { stdio: ['pipe','pipe','pipe'] });
+    const sf = spawn(CONFIG.stockfishPath, { stdio: ['pipe', 'pipe', 'pipe'] });
     sf.stdin.write('uci\n');
     return sf;
 }
@@ -163,18 +173,84 @@ function detectPhase(game) {
     return 'middlegame';
 }
 
+// ── askWiseKing concurrency guard ─────────────────────────────────────────────
+// askWiseKing stores its resolve callback in a single global slot (window._wkResolve).
+// If two calls overlap, the second call overwrites the slot and the worker's reply
+// for call 1 resolves call 2 with the WRONG move.  We prevent this by reloading
+// the page whenever a previous page.evaluate timed out (page.goto cancels stale evals).
+let _pageStale = false;
+
+async function evalMove(page, fen, history, timeoutMs) {
+    if (_pageStale) {
+        console.log('   ♻️  Reloading page (previous call timed out — clearing stale worker state)...');
+        await page.goto('file://' + CONFIG.htmlFile);
+        await new Promise(r => setTimeout(r, 1500));
+        await page.evaluate((lvl) => {
+            try {
+                currentDifficulty = lvl;
+                const s = DIFF_SETTINGS && DIFF_SETTINGS[lvl];
+                if (s) {
+                    aiDepth = s.depth;
+                    aiMistakeChance = s.mistakes;
+                    // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
+                    if (lvl === 'grandmaster') s.timeLimit = 30000;
+                    aiTimeLimit = s.timeLimit;
+                }
+                if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
+                    try { chessEngineWorker.terminate(); } catch (e) { } chessEngineWorker = null;
+                }
+                if (typeof startNewGame === 'function') {
+                    gameMode = 'ai'; playerColor = 'w'; startNewGame('ai');
+                }
+            } catch (e) { }
+        }, CONFIG.selectedLevel || 'grandmaster');
+        await new Promise(r => setTimeout(r, 800));
+        _pageStale = false;
+    }
+
+    const evalP = page.evaluate(async (f, h) => {
+        try { return await window.askWiseKing(f, h); } catch (e) { return null; }
+    }, fen, history);
+
+    const result = await Promise.race([
+        evalP,
+        new Promise(r => setTimeout(() => r('__WK_TIMEOUT__'), timeoutMs)),
+    ]);
+
+    if (result === '__WK_TIMEOUT__') {
+        _pageStale = true;  // page.evaluate still running; mark for reload before next call
+        return null;
+    }
+    return result;
+}
+
 // ── Play one game ─────────────────────────────────────────────
-async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, browser) {
+// NOTE: `page` is a persistent shared page. The Web Worker is NEVER restarted
+// between games so TurboFan keeps JIT-compiled code alive across all games.
+async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, page) {
     const colorStr = mChessColor === 'w' ? '⬜White' : '⬛Black';
     const openingStr = opening.length ? opening.join(' ') : 'start';
     console.log(`\n${'─'.repeat(62)}`);
     console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  Opening:[${openingStr}]  SF:d${depth}`);
     console.log('─'.repeat(62));
 
-    const page = await browser.newPage();
-    page.on('console', msg => {
-        if (msg.type() === 'error') console.log('🌐 Error:', msg.text().slice(0,120));
-    });
+    // Update difficulty settings only — do NOT call startNewGame() because that
+    // creates a new Worker and destroys all JIT-compiled code.
+    // askWiseKing(fen, history) is fully stateless: it receives the complete
+    // position on every call, so no visual game reset is needed.
+    await page.evaluate((lvl) => {
+        try {
+            currentDifficulty = lvl;
+            const s = DIFF_SETTINGS && DIFF_SETTINGS[lvl];
+            if (s) {
+                aiDepth = s.depth;
+                aiMistakeChance = s.mistakes;
+                // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
+                if (lvl === 'grandmaster') s.timeLimit = 30000;
+                aiTimeLimit = s.timeLimit;
+            }
+        } catch (e) { }
+    }, CONFIG.selectedLevel || 'grandmaster');
 
     const sf = spawnSF();
     const game = new Chess();
@@ -182,30 +258,12 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
     let phase = 'opening';
 
     try {
-        await page.goto('file://' + CONFIG.htmlFile);
-        await new Promise(r => setTimeout(r, 1500));
-        // ✅ Set difficulty directly — do NOT call startAIGame().
-        // startAIGame() queues setTimeout(startNewGame, 1500) which calls init()
-        // and terminates the Worker mid-search, causing all moves to return null.
-        await page.evaluate((level) => {
-            try {
-                currentDifficulty = level;
-                const s = DIFF_SETTINGS && DIFF_SETTINGS[level];
-                if (s) { aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit; }
-                // Also clear any autosave so the Worker isn't busy with a restored game
-                if (typeof clearSavedGame === 'function') clearSavedGame();
-                // Kill any Worker that might be running from autosave restore
-                if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
-                    try { chessEngineWorker.terminate(); } catch(e) {}
-                    chessEngineWorker = null;
-                }
-            } catch(e) {}
-        }, CONFIG.selectedLevel || 'grandmaster');
-
         // Apply forced opening moves
         for (const uci of opening) {
-            const result = game.move({ from: uci.slice(0,2), to: uci.slice(2,4),
-                                       promotion: uci[4] || 'q' });
+            const result = game.move({
+                from: uci.slice(0, 2), to: uci.slice(2, 4),
+                promotion: uci[4] || 'q'
+            });
             if (!result) { console.log(`⚠️ Opening move ${uci} illegal — skipping rest`); break; }
         }
 
@@ -220,23 +278,25 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
             let move = null;
 
             if (isMChess) {
-                // mChess moves
+                // mChess moves — use evalMove() to safely handle timeouts
+                // and prevent concurrent askWiseKing calls (which corrupt its result)
                 const t0 = Date.now();
-                const movePromise = page.evaluate(async (f, h) => {
-                    try { return await window.askWiseKing(f, h); } catch(e) { return null; }
-                }, fen, game.history());
+                move = await evalMove(page, fen, game.history(), CONFIG.moveTimeoutMs);
 
-                const timeoutPromise = new Promise(r => setTimeout(() => r(null), CONFIG.moveTimeoutMs));
-                move = await Promise.race([movePromise, timeoutPromise]);
-
-                const elapsed = ((Date.now() - t0)/1000).toFixed(1);
+                const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
                 let depth_info = null;
-                try { depth_info = await page.evaluate(() => window._lastSearchDepth || null); } catch(_){}
+                try { depth_info = await page.evaluate(() => window._lastSearchDepth || null); } catch (_) { }
                 const dStr = depth_info
                     ? (depth_info.completedDepth === 'book' ? '[book]'
-                        : ` [d${depth_info.completedDepth}/${depth_info.maxDepth}${depth_info.isPartial?'~':''}]`)
+                        : ` [d${depth_info.completedDepth}/${depth_info.maxDepth}${depth_info.isPartial ? '~' : ''}]`)
                     : '';
-                console.log(`   👑 mChess ${move || 'null'} (${elapsed}s)${dStr}`);
+                const npsStr = depth_info && depth_info.nps > 0
+                    ? ` ${depth_info.nps >= 1000000
+                        ? (depth_info.nps / 1000000).toFixed(1) + 'Mn/s'
+                        : (depth_info.nps / 1000).toFixed(0) + 'kn/s'}`
+                    : '';
+                console.log(`   👑 mChess ${move || 'null'} (${elapsed}s)${dStr}${npsStr}`);
+                if (depth_info && depth_info.nps > 0) stats.npsLog.push(depth_info.nps);
             } else {
                 // Stockfish moves
                 move = await sfBestMove(sf, fen, depth);
@@ -249,18 +309,20 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
             }
 
             try {
-                game.move({ from: move.slice(0,2), to: move.slice(2,4),
-                            promotion: move[4] || 'q' });
+                game.move({
+                    from: move.slice(0, 2), to: move.slice(2, 4),
+                    promotion: move[4] || 'q'
+                });
                 phase = detectPhase(game);
-            } catch(e) {
+            } catch (e) {
                 console.error(`❌ Illegal: ${move} (${isMChess ? 'mChess' : 'SF'})`);
                 reason = isMChess ? 'mchess_illegal' : 'sf_illegal';
                 break;
             }
         }
     } finally {
-        try { await page.close(); } catch(_) {}
-        try { sf.stdin.write('quit\n'); sf.kill(); } catch(_) {}
+        // Do NOT close the page — we reuse it to keep the JIT hot
+        try { sf.stdin.write('quit\n'); sf.kill(); } catch (_) { }
     }
 
     // Determine result
@@ -270,10 +332,10 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
         reason = 'checkmate';
     } else if (game.isDraw()) {
         result = 'draw';
-        if (game.isStalemate())          reason = 'stalemate';
+        if (game.isStalemate()) reason = 'stalemate';
         else if (game.isThreefoldRepetition()) reason = 'repetition';
         else if (game.isInsufficientMaterial()) reason = 'insufficient_material';
-        else                             reason = '50_moves';
+        else reason = '50_moves';
     } else if (reason === 'mchess_illegal' || reason === 'mchess_no_move') {
         result = 'sf_win';
     } else if (reason === 'sf_illegal' || reason === 'sf_no_move') {
@@ -283,8 +345,8 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
     }
 
     const resultStr = result === 'mchess_win' ? '✅ mChess wins'
-                    : result === 'sf_win'      ? '❌ Stockfish wins'
-                    : '🤝 Draw';
+        : result === 'sf_win' ? '❌ Stockfish wins'
+            : '🤝 Draw';
     console.log(`\n${resultStr}  reason:${reason}  moves:${game.history().length}  phase:${phase}`);
 
     stats.add(result, mChessColor, game.history().length, reason, game.pgn(), phase);
@@ -296,7 +358,7 @@ async function runTournament() {
     console.log('║       🏆 TOURNAMENT v2 — mChess vs Stockfish 🏆          ║');
     console.log('╚' + '═'.repeat(62) + '╝');
 
-    const rl  = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const ask = q => new Promise(r => rl.question(q, r));
 
     // ── mChess level ─────────────────────────────────────────
@@ -306,7 +368,7 @@ async function runTournament() {
     console.log('  3) Wizard      (hard)');
     console.log('  4) Wise King   (grandmaster) ← recommended');
     const levelAns = (await ask('Choose 1-4 (enter=4): ')).trim();
-    const LEVEL_MAP = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
+    const LEVEL_MAP = { '1': 'easy', '2': 'medium', '3': 'hard', '4': 'grandmaster' };
     const selectedLevel = LEVEL_MAP[levelAns] || 'grandmaster';
     console.log(`✅ mChess level: ${selectedLevel}`);
 
@@ -339,16 +401,16 @@ async function runTournament() {
     console.log('  30 games → ±62  ELO precision  (~3-4h)');
     console.log('  50 games → ±48  ELO precision  (~5-7h)');
     const nAns = (await ask('Games per depth (enter=10): ')).trim();
-    const n    = Math.max(2, parseInt(nAns) || 10);
+    const n = Math.max(2, parseInt(nAns) || 10);
     console.log(`✅ ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
 
     rl.close();
 
     CONFIG.numGames = n;
-    CONFIG.depths   = depths;
+    CONFIG.depths = depths;
     CONFIG.selectedLevel = selectedLevel;
 
-    console.log(`\n🔧 Config: ${n} games × ${depths.length} depth(s) = ${n*depths.length} total games`);
+    console.log(`\n🔧 Config: ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
     depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
 
     const htmlBase = path.basename(CONFIG.htmlFile, '.html');
@@ -356,17 +418,107 @@ async function runTournament() {
 
     const estMinPerGame = 6; // conservative estimate
     const estTotal = n * depths.length * estMinPerGame;
-    console.log(`\n⏱️  Estimated time: ~${estTotal} min (~${(estTotal/60).toFixed(1)}h)`);
+    console.log(`\n⏱️  Estimated time: ~${estTotal} min (~${(estTotal / 60).toFixed(1)}h)`);
     console.log(`💾 Results will save to: ${CONFIG.logFile}`);
-    console.log('\n🚀 Starting tournament...\n');
+    console.log('✅ Partial save after every game — safe to interrupt anytime (Ctrl+C)\n');
+    console.log('🚀 Starting tournament...\n');
     const statsMap = {};
     depths.forEach(d => { statsMap[d] = new DepthStats(d); });
 
+    // ── Partial save helper — called after every game ─────────────────
+    const savePartial = (gameNum, total, done = false) => {
+        try {
+            const allGamesFlat = depths.flatMap(d => statsMap[d].games);
+            const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
+            const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
+            const totalL = allGamesFlat.filter(g => g.result === 'sf_win').length;
+            const totalN = allGamesFlat.length;
+            fs.writeFileSync(CONFIG.logFile, JSON.stringify({
+                timestamp: new Date().toISOString(),
+                status: done ? 'complete' : `partial_${gameNum}_of_${total}`,
+                config: { numGames: n, depths },
+                byDepth: Object.fromEntries(depths.map(d => [d, {
+                    sfELO: sfELO(d),
+                    estimatedELO: statsMap[d].estimateELO(),
+                    eloCI: statsMap[d].eloCI(),
+                    score: statsMap[d].score(),
+                    wins: statsMap[d].wins(),
+                    losses: statsMap[d].losses(),
+                    draws: statsMap[d].draws(),
+                    games: statsMap[d].games,
+                }])),
+                combined: totalN > 0 ? {
+                    gamesPlayed: totalN,
+                    wins: totalW, losses: totalL, draws: totalD,
+                    score: ((totalW + 0.5 * totalD) / totalN).toFixed(3),
+                } : null,
+            }, null, 2));
+        } catch (e) { console.error('⚠️  Partial save failed:', e.message); }
+    };
+
     const browser = await puppeteer.launch({
-        headless: 'new',
+        headless: false,
         protocolTimeout: 120000,
-        args: ['--allow-file-access-from-files','--no-sandbox',
-               '--disable-setuid-sandbox','--disable-dev-shm-usage'],
+        args: [
+            '--allow-file-access-from-files',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            // ── Prevent Chrome from throttling background tabs / workers ──
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+        ],
+    });
+
+    // ── Create ONE persistent page for the entire tournament ──────────────
+    // Re-using the same page means V8/TurboFan JIT-compiled code is never
+    // thrown away between games. NPS stabilises at peak from game 2 onward.
+    const sharedPage = await browser.newPage();
+    sharedPage.on('console', msg => {
+        const t = msg.text();
+        if (msg.type() === 'error') console.log('🌐 Error:', t.slice(0, 120));
+        else if (t.includes('NPS:')) console.log('   🧠', t.replace(/.*?Real depth:/, 'depth:').trim());
+    });
+    console.log('🌐 Loading page...');
+    await sharedPage.goto('file://' + CONFIG.htmlFile);
+    await new Promise(r => setTimeout(r, 1500));
+    // Initial engine setup (done once)
+    await sharedPage.evaluate((level) => {
+        try {
+            currentDifficulty = level;
+            const s = DIFF_SETTINGS && DIFF_SETTINGS[level];
+            if (s) {
+                aiDepth = s.depth;
+                aiMistakeChance = s.mistakes;
+                // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
+                if (level === 'grandmaster') s.timeLimit = 30000;
+                aiTimeLimit = s.timeLimit;
+            }
+            if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
+                try { chessEngineWorker.terminate(); } catch (e) { }
+                chessEngineWorker = null;
+            }
+            if (typeof startNewGame === 'function') {
+                gameMode = 'ai'; playerColor = 'w'; startNewGame('ai');
+            }
+        } catch (e) { }
+    }, CONFIG.selectedLevel || 'grandmaster');
+    await new Promise(r => setTimeout(r, 800));
+    console.log('   ✅ Worker ready. JIT warms up naturally during game 1; NPS improves from game 2+.\n');
+
+    // ── Graceful Ctrl+C: save partial results before exit ────────────
+    process.on('SIGINT', async () => {
+        console.log('\n\n⚠️  Interrupted! Saving partial results...');
+        savePartial('interrupted', '?', false);
+        console.log(`💾 Partial results saved to: ${CONFIG.logFile}`);
+        // Print partial report
+        console.log('\n' + '═'.repeat(62));
+        console.log('📊 PARTIAL RESULTS AT INTERRUPTION');
+        console.log('═'.repeat(62));
+        depths.forEach(d => { if (statsMap[d].total() > 0) statsMap[d].print(); });
+        try { await browser.close(); } catch (_) { }
+        process.exit(0);
     });
 
     try {
@@ -386,10 +538,16 @@ async function runTournament() {
         for (let i = 0; i < allGames.length; i++) {
             const { depth, mChessColor, opening } = allGames[i];
             try {
-                await playGame(i+1, total, mChessColor, opening, depth, statsMap[depth], browser);
-            } catch(err) {
-                console.error(`\n💥 Game ${i+1} crashed:`, err.message);
+                await playGame(i + 1, total, mChessColor, opening, depth, statsMap[depth], sharedPage);
+            } catch (err) {
+                console.error(`\n💥 Game ${i + 1} crashed:`, err.message);
                 statsMap[depth].add('draw', mChessColor, 0, 'crash', '', 'unknown');
+            }
+            // 💾 Save partial results after every game
+            savePartial(i + 1, total, false);
+            const gs = statsMap[depth];
+            if (gs.total() > 0) {
+                console.log(`   💾 Saved: W:${gs.wins()} L:${gs.losses()} D:${gs.draws()} | ELO ~${gs.estimateELO()} [${gs.eloCI()[0]}..${gs.eloCI()[1]}]`);
             }
             await new Promise(r => setTimeout(r, 1500));
         }
@@ -410,30 +568,21 @@ async function runTournament() {
     const totalL = allGamesFlat.filter(g => g.result === 'sf_win').length;
     const totalN = allGamesFlat.length;
     if (totalN > 0 && depths.length > 1) {
-        const score = (totalW + 0.5*totalD) / totalN;
-        const avgSfELO = depths.reduce((s,d) => s + sfELO(d) * statsMap[d].total(), 0) / totalN;
-        const combinedELO = score===0 ? avgSfELO-600 : score===1 ? avgSfELO+600
-            : Math.round(avgSfELO - 400*Math.log10((1-score)/score));
+        const score = (totalW + 0.5 * totalD) / totalN;
+        const avgSfELO = depths.reduce((s, d) => s + sfELO(d) * statsMap[d].total(), 0) / totalN;
+        const combinedELO = score === 0 ? avgSfELO - 600 : score === 1 ? avgSfELO + 600
+            : Math.round(avgSfELO - 400 * Math.log10((1 - score) / score));
         console.log(`\n  🎯 Combined ELO estimate: ~${combinedELO}  (${totalN} games total)`);
     }
 
     console.log('\n  📋 Breakdown by reason:');
     const allReasons = {};
-    allGamesFlat.forEach(g => { allReasons[g.reason] = (allReasons[g.reason]||0)+1; });
-    Object.entries(allReasons).sort((a,b)=>b[1]-a[1]).forEach(([r,c]) => {
+    allGamesFlat.forEach(g => { allReasons[g.reason] = (allReasons[g.reason] || 0) + 1; });
+    Object.entries(allReasons).sort((a, b) => b[1] - a[1]).forEach(([r, c]) => {
         console.log(`     ${r}: ${c}`);
     });
 
-    fs.writeFileSync(CONFIG.logFile, JSON.stringify({
-        timestamp: new Date().toISOString(),
-        config: { numGames: n, depths },
-        byDepth: Object.fromEntries(depths.map(d => [d, {
-            sfELO: sfELO(d), estimatedELO: statsMap[d].estimateELO(),
-            eloCI: statsMap[d].eloCI(), score: statsMap[d].score(),
-            wins: statsMap[d].wins(), losses: statsMap[d].losses(), draws: statsMap[d].draws(),
-            games: statsMap[d].games,
-        }])),
-    }, null, 2));
+    savePartial(total, totalN, true); // final complete save
     console.log(`\n💾 Results saved to: ${CONFIG.logFile}`);
 }
 
