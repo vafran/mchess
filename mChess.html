@@ -11013,17 +11013,11 @@ limitations under the License.
           if (targetPiece && targetPiece !== ' ') {
             // If it's a capture: check that they don't lose material by making it
             const seeFromEnemy = see(after, enemyMove.tr, enemyMove.tc, enemyMove.fr, enemyMove.fc);
-            if (seeFromEnemy < 0) {
-              continue;
-            }
+            if (seeFromEnemy < 0) continue;
           } else {
-            // 🚨 THE FIX: If it's a move to an empty square (Quiet Move),
-            // evaluateBoard doesn't see that the piece commits suicide because it's depth 0.
-            // We pass the square safety filter to discard absurd suicides (e.g. free Qg3).
+            // 🚨 FILTER ANTI-SUICIDES: If the enemy moves to an empty square, we check that they don't give away the piece
             const safety = evaluateSquareSafety(enemyMove.tr, enemyMove.tc, enemyColor, afterReply, color);
-            if (!safety.isSafe) {
-              continue;
-            }
+            if (!safety.isSafe) continue;
           }
         }
 
@@ -12435,7 +12429,7 @@ limitations under the License.
               const p = board[r][c];
               if (!p || p === ' ' || colorOf(p) !== sideToAnalyze) continue;
               const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-              if (pVal < 100) continue; // skip anything below pawn
+              if (pVal <= 100) continue; // skip anything below pawn
               const safety = evaluateSquareSafety(r, c, sideToAnalyze, board, enemyColor);
               if (!safety.isSafe && safety.attackers.length > 0) {
                 // SEE filter: only warn if the exchange is actually losing for us.
@@ -12887,7 +12881,11 @@ limitations under the License.
         const emergencyMsg = displayList.some(opt => opt && opt.emergency)
           ? `<div style="margin-bottom:10px; padding:8px 10px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); font-size:0.82rem;">${t('emergencyCoachLine')}</div>`
           : '';
-
+        
+        // 🧠 MEMORY OF THE PROFESSOR: We save the moves we just suggested
+        window.lastProfessorSuggestions = displayList.map(opt => ({
+            fr: opt.move.fr, fc: opt.move.fc, tr: opt.move.tr, tc: opt.move.tc
+        }));
         pList.innerHTML = `${panicMsg}${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
 
       } catch (err) {
@@ -13769,25 +13767,28 @@ limitations under the License.
       if (wasHanging && isSafeNow) {
         return withQS(en ? "🛡️ You rescue your piece moving it to a safe square." : "🛡️ Reacción crítica: rescatas tu pieza moviéndola a una casilla segura.");
       }
-      // Case B: this move shields another piece that was hanging
-      // Guard: only claim "shield" if the threatened piece is genuinely safer after the move,
-      // AND the attacker count on it actually decreased (prevents false positives where the
-      // move coincidentally changes an unrelated attacker geometry).
+      // Case B: this move shields OR defends another piece that was hanging
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
           const p = board[r][c];
           if (p === ' ' || colorOf(p) !== color) continue;
           if (r === m.fr && c === m.fc) continue; // skip the piece that moved
           const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-          if (pVal < 30) continue; // only care about minor pieces and above
+          if (pVal < 30) continue; 
+          
           const safetyBefore = evaluateSquareSafety(r, c, color, board, enemyColor);
-          if (safetyBefore.isSafe) continue; // piece was already safe — no rescue
+          if (safetyBefore.isSafe) continue; // piece was already safe
+          
           const safetyAfter = evaluateSquareSafety(r, c, color, copy, enemyColor);
-          // Require that the piece is now genuinely safe AND it has fewer attackers
-          if (safetyAfter.isSafe && safetyAfter.attackers.length < safetyBefore.attackers.length) {
+          
+          // 🛡️ FIX: Si la pieza no estaba segura antes, y ahora SÍ lo está, ¡la hemos defendido!
+          // Ya sea bloqueando al atacante o añadiendo un nuevo defensor (ej. Caballo defiende Peón).
+          if (safetyAfter.isSafe) {
+            const pieceName = getLocalizedPieceName(p);
+            const destSq = sqName(r, c);
             return withQS(en
-              ? `🛡️ This move shields your ${getLocalizedPieceName(p)}, reducing the threat against it.`
-              : `🛡️ Excelente defensa: esta jugada reduce la amenaza sobre tu ${getLocalizedPieceName(p)} vulnerable.`);
+              ? `🛡️ Solid defense! This move actively protects your vulnerable ${pieceName} on ${destSq}.`
+              : `🛡️ Defensa sólida: con esta jugada proteges tu ${pieceName} en ${destSq}, que estaba bajo ataque.`);
           }
         }
       }
@@ -13802,6 +13803,19 @@ limitations under the License.
             if (vVal > mVal || !evaluateSquareSafety(nextM.tr, nextM.tc, enemyColor, copy, color).isSafe) {
               return withQS(en ? `🎯 It forces the opponent to react by attacking the ${getLocalizedPieceName(victim)}.` : `🎯 Ganas un tiempo al ejercer fuerte presión sobre su ${getLocalizedPieceName(victim)}.`);
             }
+          }
+        }
+      }
+
+      // 🎯 11.5 EXPLOITING WEAK PAWN STRUCTURE (Radar de escudos rotos)
+      if (history.length > 10 && ['Q', 'B'].includes(piece) && target === ' ') {
+        const isAdvanced = (color === 'w' && m.tr <= 4) || (color === 'b' && m.tr >= 3);
+        if (isAdvanced) {
+          const evalDiff = evaluateBoard(copy, 'hard') * (color === 'w' ? 1 : -1);
+          if (evalDiff > 150) {
+            return withQS(en 
+              ? "🎯 Eye on the gap! This piece aims at the holes and weak pawns in the enemy camp." 
+              : "🎯 ¡Ojo al hueco! Esta pieza presiona los agujeros y peones débiles del campo rival.");
           }
         }
       }
@@ -14032,6 +14046,30 @@ limitations under the License.
         const moverColor = colorOf(pieceMoved);
         const enemyColor = moverColor === 'w' ? 'b' : 'w';
 
+        // 🧠 CHECKING MEMORY: Did you follow my recommendation?
+        if (window.lastProfessorSuggestions && window.lastProfessorSuggestions.length > 0) {
+            const leHicisteCaso = window.lastProfessorSuggestions.some(m => 
+                m.fr === humanMove.fr && m.fc === humanMove.fc && m.tr === humanMove.tr && m.tc === humanMove.tc
+            );
+
+            if (leHicisteCaso) {
+                const colorName = moverColor === 'w' ? (en ? 'White' : 'Blancas') : (en ? 'Black' : 'Negras');
+                const colorIcon = moverColor === 'w' ? '⬜' : '⬛';
+                const profPrefix = `${colorIcon} <strong>${en ? 'Coach to ' + colorName : 'Profesor a ' + colorName}:</strong>`;
+                
+                // 🛑 WE FORCE THE EXIT HERE. No tactics, no analysis, you got it right!
+                pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--success); padding-left:10px; background:rgba(34,197,94,0.05);">
+                  <span class="hint-icon">🌟</span>
+                  <span class="hint-text">
+                    ${profPrefix} ${en ? 'Excellent! You followed my recommendation. A brilliant move!' : '¡Excelente! Has seguido mi recomendación al pie de la letra. ¡Una jugada brillante!'}
+                  </span></div>`;
+                
+                window.lastProfessorSuggestions = null; // Clear memory
+                finishProfessorThinking(); // Make sure the loader turns off
+                return; // Cut execution 100%
+            }
+        }
+        window.lastProfessorSuggestions = null; // Clear if not followed
         const hanging = getImmediateHangingAfterMove(humanMove, moverColor);
         const reply = getImmediateReplyRisk(humanMove, moverColor);
         const riskLevel = getMoveRiskLevel(humanMove, moverColor);
@@ -14061,7 +14099,13 @@ limitations under the License.
         const colorIcon = moverColor === 'w' ? '⬜' : '⬛';
         const profPrefix = `${colorIcon} <strong>${en ? 'Coach to ' + colorName : 'Profesor a ' + colorName}:</strong>`;
 
-        if (lostPieces.length > 0 || isRealHanging || effectiveDelta <= -200) {
+        // 🧠 FIX: We evaluate if we really let a massive advantage slip away
+        const absEvalBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
+        const moverEvalBefore = moverColor === 'w' ? absEvalBefore : -absEvalBefore;
+        const missedWin = (moverEvalBefore >= 200 && effectiveDelta <= -200);
+
+        // 🛡️ SMART RULE: Do not punish with RED ERROR just for evaluation ghosts
+        if (lostPieces.length > 0 || isRealHanging || riskLevel === 'high' || reply.delta <= -90000 || missedWin) {
           let reason = "";
 
           if (lostPieces.length > 0) {
@@ -14074,7 +14118,7 @@ limitations under the License.
               ? getLocalizedPieceName(hanging.attacker)
               : (en ? 'enemy piece' : 'pieza enemiga');
 
-            // Obtenemos el motivo que calculó el cerebro matemático
+            // We get the reason calculated by the mathematical brain
             const motivo = hanging.reason || 'indefensa';
 
             if (motivo === 'superada en número') {
@@ -14092,10 +14136,7 @@ limitations under the License.
             }
           } else {
             // ✨ FIX: Differentiate between "Blundering a piece" and "Missing a winning move"
-            const absEvalBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
-            const moverEvalBefore = moverColor === 'w' ? absEvalBefore : -absEvalBefore;
-
-            if (moverEvalBefore >= 200 && effectiveDelta <= -200) {
+            if (missedWin) {
               reason = en
                 ? `<br>📉 You missed a golden tactical opportunity! You focused on the opponent's last move and a much stronger attack slipped away.`
                 : `<br>📉 ¡Dejaste escapar una oportunidad táctica de oro! Te centraste en la última jugada del rival y se te escapó un ataque mucho más fuerte.`;
@@ -14163,19 +14204,26 @@ limitations under the License.
               const pName = getLocalizedPieceName(afterCopy[reply.replyMove.fr][reply.replyMove.fc]);
               const tName = sqName(reply.replyMove.tr, reply.replyMove.tc);
 
-              // ✨ FIX: Cambiamos temporalmente el tablero global para que getStrategicIntent analice la amenaza
+              // ✨ FIX: Analysis of the threat with the temporary board
               const tempBoard = board;
               board = afterCopy;
               let amenazaDesc = simplifyForKids(getStrategicIntent(reply.replyMove, enemyColor));
-              board = tempBoard; // Restauramos el tablero inmediatamente
+              board = tempBoard;
 
-              if (!amenazaDesc) {
-                amenazaDesc = en ? "It wins material cleanly." : "Gana material limpiamente aprovechando tu posición.";
+              // 🔴 TONE FILTER (BILINGUAL): Detects if the text is too "nice"
+              const esBonitoES = amenazaDesc && (amenazaDesc.includes('armonía') || amenazaDesc.includes('solidifica') || amenazaDesc.includes('Mejora'));
+              const esBonitoEN = amenazaDesc && (amenazaDesc.includes('improves') || amenazaDesc.includes('solidifies') || amenazaDesc.includes('coordination'));
+
+              if (!amenazaDesc || esBonitoES || esBonitoEN) {
+                amenazaDesc = en 
+                  ? "It takes advantage of your broken pawn shield and the empty squares you left behind." 
+                  : "Aprovecha que has roto tu escudo de peones y dejado casillas sin defensa.";
               }
 
+              // 🛡️ HONEST AND KID-FRIENDLY TEXT: Warns of danger
               reason += en
-                ? `<br><br>👁️ <em>The Coach points out the opponent's best reply: <strong>...${pName} to ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>Why?</strong> ${amenazaDesc}</span>`
-                : `<br><br>👁️ <em>El Profesor señala la mejor respuesta del rival: <strong>...${pName} a ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>¿Por qué?</strong> ${amenazaDesc}</span>`;
+                ? `<br><br>👁️ <em>The Coach spots a dangerous weak point: <strong>...${pName} to ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>The danger?</strong> ${amenazaDesc}</span>`
+                : `<br><br>👁️ <em>El Profesor ve un punto débil peligroso: <strong>...${pName} a ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>¿El peligro?</strong> ${amenazaDesc}</span>`;
               }
             setTimeout(clearArrows, 5500);
           } catch (e) { }
