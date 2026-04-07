@@ -8439,13 +8439,75 @@ limitations under the License.
             pawnScore = pawnCacheVal[pSlot]; // ✅ Cache hit
           } else {
             pawnScore = 0;
+
+            // ── Most-advanced pawn per file (needed for backward pawn detection) ──
+            // row 0 = rank 8 (black's back); row 7 = rank 1 (white's back).
+            // White advances toward row 0 → most advanced = lowest row.
+            // Black advances toward row 7 → most advanced = highest row.
+            const wFront = [8, 8, 8, 8, 8, 8, 8, 8]; // sentinel: 8 = no pawn
+            const bFront = [-1,-1,-1,-1,-1,-1,-1,-1]; // sentinel: -1 = no pawn
+            for (let r = 0; r < 8; r++) {
+              for (let fc = 0; fc < 8; fc++) {
+                const pp = b[r*8+fc];
+                if (pp === WP && r < wFront[fc]) wFront[fc] = r;
+                if (pp === BP && r > bFront[fc]) bFront[fc] = r;
+              }
+            }
+
+            // ── Pawn islands: each group of adjacent occupied files is one island ──
+            // Extra islands cost -15cp each (fragmented structure = harder to defend).
+            let wIslands = 0, bIslands = 0, wIn = false, bIn = false;
+            for (let fc = 0; fc < 8; fc++) {
+              if (wP[fc] > 0) { if (!wIn) { wIslands++; wIn = true; } } else wIn = false;
+              if (bP[fc] > 0) { if (!bIn) { bIslands++; bIn = true; } } else bIn = false;
+            }
+            if (wIslands > 1) pawnScore -= 15 * (wIslands - 1);
+            if (bIslands > 1) pawnScore += 15 * (bIslands - 1);
+
             for (let pcc = 0; pcc < 8; pcc++) {
               // Doubled pawns: -30cp per extra pawn on same file
               if (wP[pcc] > 1) pawnScore -= 30 * (wP[pcc] - 1);
               if (bP[pcc] > 1) pawnScore += 30 * (bP[pcc] - 1);
-              // Isolated pawns: flat -50cp (NOT scaled by count to avoid over-penalizing doubled+isolated)
-              if (wP[pcc] > 0 && (pcc === 0 || wP[pcc - 1] === 0) && (pcc === 7 || wP[pcc + 1] === 0)) pawnScore -= 50;
-              if (bP[pcc] > 0 && (pcc === 0 || bP[pcc - 1] === 0) && (pcc === 7 || bP[pcc + 1] === 0)) pawnScore += 50;
+
+              // Isolated pawns: flat -50cp
+              const wIso = wP[pcc] > 0 && (pcc === 0 || wP[pcc-1] === 0) && (pcc === 7 || wP[pcc+1] === 0);
+              const bIso = bP[pcc] > 0 && (pcc === 0 || bP[pcc-1] === 0) && (pcc === 7 || bP[pcc+1] === 0);
+              if (wIso) pawnScore -= 50;
+              if (bIso) pawnScore += 50;
+
+              // ── Backward pawns: -30cp ──────────────────────────────────────
+              // A pawn is backward if: it lags behind both adjacent file pawns
+              // AND the square directly ahead is controlled by an enemy pawn.
+              // This penalizes structural weaknesses that can't be fixed without tactics.
+              // Coordinate system: row 0 = rank 8, row 7 = rank 1.
+              //   White pawn at row fr → wants to advance to fr-1.
+              //   Black pawn at (r,c) attacks (r+1,c±1).
+              //   So (fr-1,pcc) is attacked by BP at row (fr-1)-1 = fr-2 on adjacent file.
+              if (wP[pcc] > 0 && !wIso) {
+                const fr = wFront[pcc];
+                const aheadR = fr - 1;
+                const lagging = (pcc === 0 || wFront[pcc-1] < fr) && (pcc === 7 || wFront[pcc+1] < fr);
+                if (lagging && aheadR >= 1) {
+                  const atkR = aheadR - 1; // row where BP must sit to attack aheadR
+                  const atkByBP = (pcc > 0 && b[atkR*8+(pcc-1)] === BP) ||
+                                  (pcc < 7 && b[atkR*8+(pcc+1)] === BP);
+                  if (atkByBP) pawnScore -= 30;
+                }
+              }
+              //   Black pawn at row fr → wants to advance to fr+1.
+              //   White pawn at (r,c) attacks (r-1,c±1).
+              //   So (fr+1,pcc) is attacked by WP at row (fr+1)+1 = fr+2 on adjacent file.
+              if (bP[pcc] > 0 && !bIso) {
+                const fr = bFront[pcc];
+                const aheadR = fr + 1;
+                const lagging = (pcc === 0 || bFront[pcc-1] > fr) && (pcc === 7 || bFront[pcc+1] > fr);
+                if (lagging && aheadR <= 6) {
+                  const atkR = aheadR + 1; // row where WP must sit to attack aheadR
+                  const atkByWP = (pcc > 0 && b[atkR*8+(pcc-1)] === WP) ||
+                                  (pcc < 7 && b[atkR*8+(pcc+1)] === WP);
+                  if (atkByWP) pawnScore += 30;
+                }
+              }
             }
             pawnCacheKey[pSlot * 2] = phL; pawnCacheKey[pSlot * 2 + 1] = phH;
             pawnCacheVal[pSlot] = pawnScore;
