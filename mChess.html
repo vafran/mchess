@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.22.1
+Monolith Chess v2.22.2
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.22.1</title>
+  <title>Monolith Chess v2.22.2</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.1 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.2 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2694,7 +2694,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.22.1</div>
+        v2.22.2</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3923,7 +3923,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.22.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.22.2", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -12258,7 +12258,7 @@ limitations under the License.
             if (seen.has(capLabel)) return;
             // Use SEE for accurate exchange evaluation (X-ray aware, king-as-defender aware)
             const seeVal = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
-            if (seeVal < 0) return; // losing capture — don't inject
+            if (seeVal <= 0) return; // losing capture — don't inject
             const myVal = PIECE_VALUES[board[mv.fr][mv.fc].toUpperCase()] || 0;
             const tgtVal = PIECE_VALUES[target.toUpperCase()] || 0;
             merged.push({ move: mv, score: seeVal + 5, isBook: false, injectedCapture: true, seeFree: true });
@@ -13437,8 +13437,20 @@ limitations under the License.
         return en ? "🔥 You attack the enemy king with a direct check." : "🔥 Atacas al rey enemigo con un jaque directo que fuerza su respuesta.";
       }
 
-      // 🏰 2. ENROQUE
+      // 🏰 2. CASTLING
       if (piece === 'K' && Math.abs(m.tc - m.fc) === 2) {
+        // Verificar si la columna del rey tiene al menos un peón de escudo
+        const pawnChar = color === 'w' ? 'P' : 'p';
+        let kingFileHasPawn = false;
+        for(let r = 0; r < 8; r++) { 
+          if (copy[r][m.tc] === pawnChar) kingFileHasPawn = true; 
+        }
+        
+        if (!kingFileHasPawn) {
+            return withQS(en 
+              ? "⚠️ Reckless castling: you move your king to a file with no pawn shield, walking directly into danger!" 
+              : "⚠️ Enroque temerario: llevas a tu rey a una columna sin escudo de peones, ¡caminando directo hacia el peligro!");
+        }
         return en ? "🏰 You castle to protect your king and connect your rooks." : "🏰 Te enrocas: pones a salvo al rey y preparas las torres para el combate.";
       }
 
@@ -14061,7 +14073,7 @@ limitations under the License.
                 pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--success); padding-left:10px; background:rgba(34,197,94,0.05);">
                   <span class="hint-icon">🌟</span>
                   <span class="hint-text">
-                    ${profPrefix} ${en ? 'Excellent! You followed my recommendation. A brilliant move!' : '¡Excelente! Has seguido mi recomendación al pie de la letra. ¡Una jugada brillante!'}
+                    ${profPrefix} ${en ? 'Excellent! You followed my recommendation.' : '¡Excelente! Has seguido mi recomendación al pie de la letra.'}
                   </span></div>`;
                 
                 window.lastProfessorSuggestions = null; // Clear memory
