@@ -11389,7 +11389,6 @@ limitations under the License.
       }
 
       // 🧠 EVALUATION LOGIC (The new thing so it reacts to the script)
-      // If an evalScore is passed, the commentator reacts to the advantage
       if (evalScore !== null) {
           const moveCount = currentHistory.length;
           let dynamicComment = "";
@@ -11408,7 +11407,6 @@ limitations under the License.
               }
           }
 
-          // If there is a dynamic comment based on the evaluation, we use it as the main action
           if (dynamicComment) {
               const now = new Date();
               const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
@@ -11422,11 +11420,11 @@ limitations under the License.
                   </div>
                 </div>
               `).join('');
-              return; // We end here if the evaluation was used
+              return; 
           }
       }
 
-      // ── Castling: handle before sqToRc which cannot parse 'O-O' ──────────────
+      // ── Castling
       const normForCastle = lastMove.replace(/[+#]/g, '');
       if (normForCastle === 'O-O' || normForCastle === 'O-O-O') {
         const isShort = normForCastle === 'O-O';
@@ -11451,12 +11449,10 @@ limitations under the License.
         return;
       }
 
-      // ✨ FINAL FIX: Clean Checks (+), Mates (#) AND Promotions (=Q) before reading the square
       const cleanMove = lastMove.replace(/[+#]/g, '').split('=')[0];
       const targetSq = cleanMove.slice(-2);
       const targetRc = sqToRc(targetSq);
 
-      // Anti-crash protection
       if (!targetRc || !board || !board[targetRc[0]]) return;
 
       const lastPieceMoved = board[targetRc[0]][targetRc[1]];
@@ -11471,7 +11467,6 @@ limitations under the License.
       const isPromotion = lastMove.includes('=');
       const pieceChar = lastMove.length > 2 && /[KQRBN]/.test(lastMove[0]) ? lastMove[0] : 'P';
 
-      // Opening and History
       let openingName = null, openingTechNote = '';
       const openingMatch = detectOpeningFromHistory(currentHistory, lastMove, board);
       if (isOpening && openingMatch && shouldAnnounceOpening(currentHistory, openingMatch, board)) {
@@ -11480,7 +11475,7 @@ limitations under the License.
       }
       const historicalMotif = detectHistoricalMotifFromHistory(currentHistory);
 
-      // 🧠 NORMAL DICTIONARIES (3rd Person Narrative)
+      // 🧠 DICTIONARIES
       const frasesSerias = {
         es: {
           P: ["Avance estratégico: el Peón refuerza la estructura en {sq}.", "Consolidando la posición con el avance a {sq}."],
@@ -11519,7 +11514,6 @@ limitations under the License.
         }
       };
 
-      // ⚔️ EXCLUSIVE DICTIONARIES FOR CAPTURES ({cap} token)
       const frasesCapturaSerias = {
         es: {
           P: ["El peón captura {cap} en {sq}.", "Ganancia de material: el peón toma {cap} en {sq}.", "El peón recoge a {cap} en {sq}."],
@@ -11558,8 +11552,11 @@ limitations under the License.
         }
       };
 
+      // 🔍 SPECIAL DETECTORS (Quality & Captures)
       let isQueenCaptured = false;
       let capturedPieceChar = null;
+      let isHugeBlunder = false;
+      let isBrilliant = false;
 
       if (isCapture) {
         const cementerio = colorWhoMoved === 'w' ? capturedByWhite : capturedByBlack;
@@ -11567,6 +11564,18 @@ limitations under the License.
           capturedPieceChar = cementerio[cementerio.length - 1];
           if (capturedPieceChar && capturedPieceChar.toUpperCase() === 'Q') isQueenCaptured = true;
         }
+      }
+
+      // 📊 EVALUATION OF MOVE QUALITY (The Commentator's Quick Brain)
+      if (window.snapshotBeforeHumanMove) {
+        try {
+          const evBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
+          const evAfter = evaluateBoard(board, 'hard');
+          const delta = colorWhoMoved === 'w' ? (evAfter - evBefore) : (evBefore - evAfter);
+          
+          if (delta <= -250) isHugeBlunder = true;
+          if (delta >= 200) isBrilliant = true;
+        } catch(e) {}
       }
 
       const normalizedHistory = currentHistory.map(m => m.replace(/[+#?!]/g, '').trim());
@@ -11652,6 +11661,43 @@ limitations under the License.
         }
       }
 
+      // 🌟 DETECTION OF FAMOUS CHESS PLAYERS' STYLES
+      let styleComment = "";
+      
+      if (isBrilliant) {
+          styleComment = lang === 'en' 
+            ? " 🌪️ Pure Mikhail Tal! A chaotic and brilliant move." 
+            : " 🌪️ ¡A lo Mijaíl Tal! Una jugada de pura magia y caos en el tablero.";
+      } 
+      else if (pieceChar === 'P' && (targetSq === 'h4' || targetSq === 'h5' || targetSq === 'a4' || targetSq === 'a5') && currentHistory.length < 25 && !isCapture) {
+          styleComment = lang === 'en' 
+            ? " 🤖 AlphaZero style! Pushing the edge pawn to squeeze the opponent." 
+            : " 🤖 ¡Estilo AlphaZero! Empujando el peón de flanco temprano para asfixiar al rival.";
+      } 
+      else if (pieceChar === 'K' && (targetSq === 'h1' || targetSq === 'h8' || targetSq === 'b1' || targetSq === 'b8') && !isCastle && !isCapture && !isCheck) {
+          styleComment = lang === 'en' 
+            ? " 🐍 Tigran Petrosian would be proud. Pure prophylaxis." 
+            : " 🐍 Tigran Petrosian estaría orgulloso. Profilaxis preventiva de manual.";
+      } 
+      else if (pieceChar === 'P' && (targetSq === 'd5' || targetSq === 'e5' || targetSq === 'd4' || targetSq === 'e4') && isCapture && currentHistory.length > 10 && currentHistory.length < 30) {
+          styleComment = lang === 'en' 
+            ? " ⚔️ Garry Kasparov vibes! Exploding the center with aggression." 
+            : " ⚔️ ¡Vibras de Garry Kaspárov! Dinamitando el centro con pura agresividad.";
+      }
+      else if ((pieceChar === 'N' || pieceChar === 'B') && !isCapture && !isCheck && (targetSq.includes('4') || targetSq.includes('5'))) {
+          if (Math.random() < 0.15) {
+              styleComment = lang === 'en' 
+                ? " 🕸️ Anatoly Karpov style. Slowly improving the piece." 
+                : " 🕸️ Al estilo Anatoly Karpov. Mejorando la pieza poco a poco, tejiendo la red.";
+          }
+      }
+
+      // We add the style to the base action
+      if (styleComment && Math.random() < 0.60) {
+          actionComment += styleComment;
+      }
+
+      // 1. FINAL ASSIGNMENT OF THE BASE COMMENT
       if (isPromotion) {
         toneUsed = 'funny';
         comment = lang === 'en' ? getRnd(["👑 EPIC! A pawn reaches the end and promotes!"], 'promo') : getRnd(["👑 ¡ÉPICO! ¡Un peón ha logrado coronar!"], 'promo');
@@ -11694,7 +11740,18 @@ limitations under the License.
         comment = actionComment;
       }
 
-      // Renderizado final
+      // 2. 📊 FINAL VISUAL LABELS (Commentator Style)
+      if (isHugeBlunder) {
+        comment += lang === 'en'
+          ? "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>Wait...</strong> Did they just blunder? That doesn't look good!</span>"
+          : "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>Un momento...</strong> ¿Acaba de cometer un error grave? ¡Eso tiene mala pinta!</span>";
+      } else if (isBrilliant) {
+        comment += lang === 'en'
+          ? "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>Brilliant!</strong> The commentator is speechless!</span>"
+          : "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>¡Brillante!</strong> ¡El comentarista se ha quedado sin palabras!</span>";
+      }
+
+      // 3. Final rendering
       const now = new Date();
       const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
       commentaryLog.unshift({ html: comment, time: timeStr, tone: toneUsed });
@@ -11709,7 +11766,7 @@ limitations under the License.
       `).join('');
     }
 
-    // ✨ Restored Auxiliary Function: switchTab
+    // Function: switchTab
     function switchTab(tab) {
       activeTab = tab;
       document.getElementById('tabCommentary').classList.toggle('active', tab === 'commentary');
