@@ -7493,7 +7493,7 @@ limitations under the License.
 
           if (type === 'Q' || type === 'R') {
             if (isSquareAttacked(r, c, isW ? 'b' : 'w', brd)) {
-              bonus -= (type === 'Q' ? 400 : 180);
+              bonus -= (type === 'Q' ? 80 : 40); 
             }
           }
 
@@ -7996,23 +7996,132 @@ limitations under the License.
         // pieceType: 1=P 2=N 3=B 4=R 5=Q 6=KMG  7=KEG (endgame king)
         // sq: white perspective = row*8+col  (row0=rank8, row7=rank1)
         // For black: flip sq → (7-row)*8+col
-        const PST_P_MG = new Int16Array([0,0,0,0,0,0,0,0,50,50,50,50,50,50,50,50,10,10,20,30,30,20,10,10,5,5,10,25,25,10,5,5,0,0,0,20,20,0,0,0,5,-5,-10,0,0,-10,-5,5,5,10,10,-20,-20,10,10,5,0,0,0,0,0,0,0,0]);
-        const PST_P_EG = new Int16Array([0,0,0,0,0,0,0,0,80,80,80,80,80,80,80,80,50,50,50,50,50,50,50,50,30,30,30,30,30,30,30,30,15,15,15,15,15,15,15,15,0,0,0,0,0,0,0,0,-5,-5,-5,-5,-5,-5,-5,-5,0,0,0,0,0,0,0,0]);
+        // 🥷 PeSTO tables — ML-optimized asymmetric PSTs (Ronald Friedrich)
+        const PST_P_MG = new Int16Array([
+          0,0,0,0,0,0,0,0,
+          98,134,61,95,68,126,34,-11,
+          -6,7,26,31,63,22,-23,23,
+          -14,13,6,21,23,12,17,-23,
+          -27,-2,-5,12,17,6,10,-25,
+          -26,-4,-4,-10,3,3,33,-12,
+          -35,-1,-20,-23,-15,24,38,-22,
+          0,0,0,0,0,0,0,0
+        ]);
+        const PST_P_EG = new Int16Array([
+          0,0,0,0,0,0,0,0,
+          178,173,158,134,147,132,165,187,
+          94,100,85,67,56,53,82,84,
+          32,24,13,5,-2,4,17,17,
+          13,9,-3,-7,-7,-8,3,-1,
+          4,7,-6,1,0,-5,-1,-8,
+          13,8,8,10,13,0,2,-7,
+          0,0,0,0,0,0,0,0
+        ]);
 
-        const PST_N_MG = new Int16Array([-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,10,15,15,10,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50]);
-        const PST_N_EG = PST_N_MG; 
+        const PST_N_MG = new Int16Array([
+          -167,-89,-34,-49,61,-97,-15,-107,
+          -73,-41,72,36,23,62,7,-17,
+          -47,60,37,65,84,129,73,44,
+          -9,17,19,53,37,69,18,22,
+          -13,4,16,13,28,19,21,-8,
+          -23,-9,12,10,19,17,25,-16,
+          -29,-53,-12,-3,-1,18,-14,-19,
+          -105,-21,-58,-33,-17,-28,-19,-23
+        ]);
+        const PST_N_EG = new Int16Array([
+          -58,-38,-13,-28,-31,-27,-63,-99,
+          -25,-8,-25,-2,-9,-25,-24,-52,
+          -24,-20,10,9,-1,-9,-19,-41,
+          -17,3,22,22,22,11,8,-18,
+          -18,-6,16,25,16,17,4,-18,
+          -23,-3,-1,15,10,-3,-20,-22,
+          -42,-20,-10,-5,-2,-20,-23,-44,
+          -29,-51,-23,-15,-22,-18,-50,-64
+        ]);
 
-        const PST_B_MG = new Int16Array([-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20]);
-        const PST_B_EG = PST_B_MG; 
+        const PST_B_MG = new Int16Array([
+          -29,4,-82,-37,-25,-42,7,-8,
+          -26,16,-18,-13,30,59,18,-47,
+          -16,37,43,40,35,50,37,-2,
+          -4,5,19,50,37,37,7,-2,
+          -6,13,13,26,34,12,10,4,
+          0,15,15,15,14,27,18,10,
+          4,15,16,0,2,21,16,1,
+          -59,-78,-82,-76,-23,-107,-37,-50
+        ]);
+        const PST_B_EG = new Int16Array([
+          -14,-21,-11,-8,-7,-9,-17,-24,
+          -8,-4,7,-12,-3,-13,-4,-14,
+          2,-8,0,-1,-2,6,0,4,
+          -3,9,12,9,14,10,3,2,
+          -6,3,13,19,7,10,-3,-9,
+          -12,-3,8,10,13,3,-7,-15,
+          -14,-18,-7,-1,4,-9,-15,-27,
+          -23,-9,-23,-5,-9,-16,-5,-17
+        ]);
 
-        const PST_R_MG = new Int16Array([0,0,0,0,0,0,0,0,5,10,10,10,10,10,10,5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,0,0,5,5,5,5,0,0]);
-        const PST_R_EG = PST_R_MG;
+        const PST_R_MG = new Int16Array([
+          32,42,32,51,63,9,31,43,
+          27,32,58,62,80,67,26,44,
+          -5,19,26,36,17,45,61,16,
+          -24,-11,7,26,24,35,-8,-20,
+          -36,-26,-12,-1,9,-7,6,-23,
+          -45,-25,-16,-17,3,0,-5,-33,
+          -44,-16,-20,-9,-1,11,-6,-71,
+          -19,-13,1,17,16,7,-37,-26
+        ]);
+        const PST_R_EG = new Int16Array([
+          13,10,18,15,12,12,8,5,
+          11,13,13,11,-3,3,8,3,
+          7,7,7,5,4,-3,-5,-3,
+          4,3,13,1,2,1,-1,2,
+          3,5,8,4,-5,-6,-8,-11,
+          -4,0,-5,-1,-7,-12,-8,-16,
+          -6,-6,0,2,-9,-9,-11,-3,
+          -9,2,3,-1,-5,-13,4,-20
+        ]);
 
-        const PST_Q_MG = new Int16Array([-20,-10,-10,-5,-5,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,5,5,5,0,-10,-5,0,5,5,5,5,0,-5,0,0,5,5,5,5,0,-5,-10,5,5,5,5,5,0,-10,-10,0,5,0,0,0,0,-10,-20,-10,-10,-5,-5,-10,-10,-20]);
-        const PST_Q_EG = new Int16Array([-20,-20,-20,-20,-20,-20,-20,-20,-20,-10,-10,-10,-10,-10,-10,-20,-20,-10,0,5,5,0,-10,-20,-20,-10,5,10,10,5,-10,-20,-20,-10,5,10,10,5,-10,-20,-20,-10,0,5,5,0,-10,-20,-20,-10,-10,-10,-10,-10,-10,-20,-20,-20,-20,-20,-20,-20,-20,-20]);
+        const PST_Q_MG = new Int16Array([
+          -28,0,29,12,59,44,43,45,
+          -24,-39,-5,1,-16,57,28,54,
+          -13,-17,7,8,29,56,47,57,
+          -27,-27,-16,-16,-1,17,-2,1,
+          -9,-26,-9,-10,-2,-4,3,-3,
+          -14,2,-11,-2,-5,2,14,5,
+          -35,-8,11,2,8,15,-3,1,
+          -1,-18,-9,10,-15,-25,-31,-50
+        ]);
+        const PST_Q_EG = new Int16Array([
+          -9,22,22,27,27,19,10,20,
+          -17,20,32,41,58,25,30,0,
+          -20,6,9,49,47,35,19,9,
+          3,22,24,45,57,40,57,36,
+          -18,28,19,47,31,34,12,11,
+          16,20,27,29,9,33,14,5,
+          -22,-23,-30,-16,-16,-23,-36,-32,
+          -33,-28,-22,-43,-5,-32,-20,-41
+        ]);
 
-        const PST_K_MG = new Int16Array([-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,20,20,0,0,0,0,20,20,20,30,10,0,0,10,30,20]);
-        const PST_K_EG = new Int16Array([-50,-40,-30,-20,-20,-30,-40,-50,-30,-20,-10,5,5,-10,-20,-30,-30,-5,25,40,40,25,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,25,40,40,25,-5,-30,-30,-20,-10,5,5,-10,-20,-30,-50,-40,-30,-20,-20,-30,-40,-50]);
+        const PST_K_MG = new Int16Array([
+          -65,23,16,-15,-56,-34,2,13,
+          29,-1,-20,-7,-8,-4,-38,-29,
+          -9,24,2,-16,-20,6,22,-22,
+          -17,-20,-12,-27,-30,-25,-14,-36,
+          -49,-1,-27,-39,-46,-44,-33,-51,
+          -14,-14,-22,-46,-44,-30,-15,-27,
+          1,7,-8,-64,-43,-16,9,8,
+          -15,36,12,-54,8,-28,24,14
+        ]);
+        const PST_K_EG = new Int16Array([
+          -74,-35,-18,-18,-11,15,4,-17,
+          -12,17,14,17,17,38,23,11,
+          10,22,23,15,32,16,32,9,
+          -8,22,24,27,26,33,26,3,
+          18,-4,21,24,27,23,9,-11,
+          19,12,20,22,14,25,16,-18,
+          -27,11,4,13,14,4,-5,-17,
+          -53,-34,-21,-11,-28,-14,-24,-43
+        ]);
 
         const PST_MG = [null, PST_P_MG, PST_N_MG, PST_B_MG, PST_R_MG, PST_Q_MG, PST_K_MG];
         const PST_EG = [null, PST_P_EG, PST_N_EG, PST_B_EG, PST_R_EG, PST_Q_EG, PST_K_EG];
@@ -8413,11 +8522,10 @@ limitations under the License.
               }
             }
 
-            // 🚨 Si la Dama está en peligro, penalizamos fuerte
+            // 🚨 If the Queen is in danger, we penalize (but without going crazy)
             if (u === 5) {
               if (isAtk(state, r, c, isW ? 'b' : 'w')) {
-                const isDefended = isAtk(state, r, c, isW ? 'w' : 'b');
-                bonus -= isDefended ? 150 : 500;
+                bonus -= 50; 
               }
             }
 
@@ -8967,8 +9075,8 @@ limitations under the License.
               else if (_p >= 9 && (_u===2||_u===3||_u===4||_u===5)) bMaj++;
             }
             // Trigger if one side has at least 1 piece and the other has none
-            const wMopup = (wMaj >= 1 || (s > 400 && eg > 0.8)) && bMaj === 0;
-            const bMopup = (bMaj >= 1 || (s < -400 && eg > 0.8)) && wMaj === 0;
+            const wMopup = (wMaj >= 1 && bMaj === 0) || (s > 500 && eg > 0.6);
+            const bMopup = (bMaj >= 1 && wMaj === 0) || (s < -500 && eg > 0.6);
             if (wMopup || bMopup) {
               const wk = state.wKing || findKing(b, 'w');
               const bk = state.bKing || findKing(b, 'b');
@@ -9743,6 +9851,17 @@ limitations under the License.
           if (depth <= 0) return quiesce(state, alpha, beta, maximizing, deadline);
           const color = maximizing ? 'w' : 'b';
           const checked = inChk(state, color);
+
+          // 🥷 ROBO 3: Reverse Futility Pruning (Static Null Move Pruning)
+          // Si estamos a baja profundidad, sin jaque, y no buscamos mates, 
+          // evaluamos estáticamente. Si ganamos por paliza, cortamos ANTES de generar jugadas.
+          if (depth <= 3 && !checked && Math.abs(beta) < 90000) {
+            const staticEval = evaluate(state);
+            const margin = 120 * depth; // Margen de seguridad: 120cp por nivel
+            if (maximizing && staticEval - margin >= beta) return staticEval - margin;
+            if (!maximizing && staticEval + margin <= alpha) return staticEval + margin;
+          }
+
           const moves = legalMoves(state, color);
           if (moves.length === 0) return checked ? (maximizing ? -99999 - depth : 99999 + depth) : 0;
 
@@ -9776,6 +9895,20 @@ limitations under the License.
                 if (!maximizing && nullScore <= alpha) { return nullScore; }
               } catch (e) { if (String(e) === 'TIMEOUT') throw e; }
               finally { state.turn = savedTurn; state.enPassantTarget = savedEP; state.hashL = savedHL; state.hashH = savedHH; }
+            }            
+          }
+
+          if (depth >= 4 && !hashMove && !checked) {
+            try {
+              // search at depth - 2. We don't use the result, we just fill the TT.
+              minimax(state, depth - 2, alpha, beta, maximizing, deadline, false, prevMove, plyFromRoot);
+              // We check if we have a good move saved
+              const iid_tte = ttGet(bkL, bkH);
+              if (iid_tte && iid_tte.bestMove) {
+                hashMove = iid_tte.bestMove;
+              }
+            } catch (e) { 
+              if (String(e) === 'TIMEOUT') throw e; 
             }
           }
 
@@ -10620,17 +10753,20 @@ limitations under the License.
       if (!results.length) return null;
 
 
+      // 🎲 LÓGICA DE INYECCIÓN DE ERRORES "HUMANOS"
       if (mistakeChance > 0 && Math.random() < mistakeChance) {
-        const legal = getLegalMovesForColorInPlace(color);
-        if (legal.length > 1) {
-          const cutoff = Math.max(1, Math.floor(results.length * 0.7));
-          const weakPool = results.slice(cutoff);
-          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)].move;
-          const nonBest = legal.filter(m => {
-            const b = results[0] && results[0].move;
-            return !(b && m.fr === b.fr && m.fc === b.fc && m.tr === b.tr && m.tc === b.tc);
+        if (results.length > 1) {
+          const bestScore = results[0].score;
+          // Guardrail: el error no puede costarnos más de 300cp respecto a la mejor jugada.
+          // Así evitamos que la IA regale la Dama solo por "querer equivocarse".
+          const plausibleMistakes = results.slice(1).filter(r => {
+            return Math.abs(bestScore - r.score) < 300;
           });
-          if (nonBest.length > 0) return nonBest[Math.floor(Math.random() * Math.min(4, nonBest.length))];
+          if (plausibleMistakes.length > 0) {
+            const chosenMistake = plausibleMistakes[Math.floor(Math.random() * plausibleMistakes.length)];
+            console.log(`🎲 IA cometió un error "humano". Drop de ${Math.abs(bestScore - chosenMistake.score)}cp.`);
+            return chosenMistake.move;
+          }
         }
       }
       return results[0].move || null;
@@ -10812,22 +10948,26 @@ limitations under the License.
         endSearch();
       }
 
-      // Mistake: pick from the WEAKEST 30% of scored moves (plausible error, not random suicide).
-      // This mirrors the same logic used in getBestAIMoveAsync for the Worker path.
-      if (Math.random() < mistakeChance) {
+      // 🎲 LÓGICA DE ERRORES (Fallback síncrono)
+      if (mistakeChance > 0 && Math.random() < mistakeChance) {
         const allMoves = getLegalMovesForColorInPlace(color);
         if (allMoves.length > 1) {
-          // Score each legal move shallowly and build a weak pool (bottom 30%)
+          // Puntuamos cada jugada legal superficialmente
           const shallowScored = allMoves.map(m => {
             const prev = makeMoveOnBoard(m);
             const sc = evaluateBoard(board, 'medium');
             unmakeMove(prev);
             return { m, sc };
           });
+          // Ordenamos de mejor a peor
           shallowScored.sort((a, b) => color === 'w' ? b.sc - a.sc : a.sc - b.sc);
-          const cutoff = Math.max(1, Math.floor(shallowScored.length * 0.7));
-          const weakPool = shallowScored.slice(cutoff); // bottom 30%
-          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)].m;
+          const bestScore = shallowScored[0].sc;
+          // Cogemos opciones subóptimas (quitando la mejor), limitando el desastre a 300cp
+          const plausibleMistakes = shallowScored.slice(1).filter(r => Math.abs(bestScore - r.sc) < 300);
+          if (plausibleMistakes.length > 0) {
+            const poolSize = Math.min(5, plausibleMistakes.length);
+            return plausibleMistakes[Math.floor(Math.random() * poolSize)].m;
+          }
         }
       }
       return bestMoves[Math.floor(Math.random() * bestMoves.length)];
