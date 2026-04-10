@@ -231,11 +231,14 @@ async function evalMove(page, fen, history, timeoutMs) {
 // ── Play one game ─────────────────────────────────────────────
 // NOTE: `page` is a persistent shared page. The Web Worker is NEVER restarted
 // between games so TurboFan keeps JIT-compiled code alive across all games.
-async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, page) {
+// startFen: optional FEN string to start from a specific position (FEN replay mode).
+//           When set, `opening` is ignored.
+async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, page, startFen = null) {
     const colorStr = mChessColor === 'w' ? '⬜White' : '⬛Black';
-    const openingStr = opening.length ? opening.join(' ') : 'start';
+    const openingStr = startFen ? `FEN: ${startFen.slice(0, 40)}…` : (opening.length ? opening.join(' ') : 'start');
     console.log(`\n${'─'.repeat(62)}`);
-    console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  Opening:[${openingStr}]  SF:d${depth}`);
+    console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  ${startFen ? '📌 FEN replay' : `Opening:[${openingStr}]`}  SF:d${depth}`);
+    if (startFen) console.log(`   FEN: ${startFen}`);
     console.log('─'.repeat(62));
 
     // Update difficulty settings only — do NOT call startNewGame() because that
@@ -257,18 +260,20 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
     }, CONFIG.selectedLevel || 'grandmaster');
 
     const sf = spawnSF();
-    const game = new Chess();
+    const game = startFen ? new Chess(startFen) : new Chess();
     let reason = 'unknown';
     let phase = 'opening';
 
     try {
-        // Apply forced opening moves
-        for (const uci of opening) {
-            const result = game.move({
-                from: uci.slice(0, 2), to: uci.slice(2, 4),
-                promotion: uci[4] || 'q'
-            });
-            if (!result) { console.log(`⚠️ Opening move ${uci} illegal — skipping rest`); break; }
+        // Apply forced opening moves (only in normal mode, not FEN replay)
+        if (!startFen) {
+            for (const uci of opening) {
+                const result = game.move({
+                    from: uci.slice(0, 2), to: uci.slice(2, 4),
+                    promotion: uci[4] || 'q'
+                });
+                if (!result) { console.log(`⚠️ Opening move ${uci} illegal — skipping rest`); break; }
+            }
         }
 
         const gameStart = Date.now();
@@ -365,6 +370,13 @@ async function runTournament() {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const ask = q => new Promise(r => rl.question(q, r));
 
+    // ── Mode selection ────────────────────────────────────────
+    console.log('\nSelect mode:');
+    console.log('  1) Normal tournament  (full games from opening)');
+    console.log('  2) FEN replay         (reproduce specific positions)');
+    const modeAns = (await ask('Choose 1-2 (enter=1): ')).trim();
+    const fenReplayMode = modeAns === '2';
+
     // ── mChess level ─────────────────────────────────────────
     console.log('\nSelect mChess level:');
     console.log('  1) Chick       (easy)');
@@ -392,21 +404,67 @@ async function runTournament() {
     console.log('  d9  → ~2100 ELO');
     console.log('  d10 → ~2200 ELO  (very strong, mostly losses)');
     console.log('  You can enter multiple depths: e.g. 7,8');
-    const depthAns = (await ask('Depth(s) 1-15 (enter=8): ')).trim();
+    const depthAns = (await ask('Depth(s) 1-15 (enter=7): ')).trim();
     const depths = depthAns
         ? depthAns.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20)
-        : [8];
+        : [7];
     depths.forEach(d => console.log(`✅ Stockfish d${d} → ~${sfELO(d)} ELO`));
 
-    // ── Number of games ───────────────────────────────────────
-    console.log('\nNumber of games per depth:');
-    console.log('  10 games → ±108 ELO precision  (~50-90 min on average PC)');
-    console.log('  20 games → ±76  ELO precision  (~2-3h)   ← recommended');
-    console.log('  30 games → ±62  ELO precision  (~3-4h)');
-    console.log('  50 games → ±48  ELO precision  (~5-7h)');
-    const nAns = (await ask('Games per depth (enter=10): ')).trim();
-    const n = Math.max(2, parseInt(nAns) || 10);
-    console.log(`✅ ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
+    // ── FEN replay: load positions ────────────────────────────
+    let fenList = []; // { fen, mChessColor }
+    if (fenReplayMode) {
+        console.log('\n📌 FEN REPLAY MODE');
+        console.log('  Enter one FEN per line. Format: <FEN> [w|b]');
+        console.log('  The color (w/b) is who mChess plays AS in that position.');
+        console.log('  If omitted, mChess plays the side to move in the FEN.');
+        console.log('  Or enter a path to a JSON file: [{ "fen": "...", "color": "w" }, ...]');
+        console.log('  Leave blank and press Enter to finish.\n');
+        const firstLine = (await ask('FEN / JSON file path: ')).trim();
+        if (firstLine.endsWith('.json')) {
+            const raw = JSON.parse(fs.readFileSync(path.resolve(__dirname, firstLine), 'utf8'));
+            fenList = raw.map(e => ({ fen: e.fen, mChessColor: e.color || e.fen.split(' ')[1] }));
+            console.log(`✅ Loaded ${fenList.length} positions from ${firstLine}`);
+        } else if (firstLine) {
+            const lines = [firstLine];
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                const line = (await ask('FEN (blank to finish): ')).trim();
+                if (!line) break;
+                lines.push(line);
+            }
+            fenList = lines.map(line => {
+                const parts = line.split(/\s+/);
+                // last token may be 'w' or 'b' (color override), rest is FEN
+                const lastTok = parts[parts.length - 1];
+                let color, fen;
+                if (lastTok === 'w' || lastTok === 'b') {
+                    color = lastTok;
+                    fen = parts.slice(0, -1).join(' ');
+                } else {
+                    fen = parts.join(' ');
+                    color = fen.split(' ')[1]; // side to move in FEN
+                }
+                return { fen, mChessColor: color };
+            });
+            console.log(`✅ ${fenList.length} position(s) loaded`);
+        }
+        if (fenList.length === 0) {
+            console.log('⚠️  No FENs entered — switching to normal tournament mode.');
+        }
+    }
+
+    // ── Number of games (normal mode only) ───────────────────
+    let n = fenList.length > 0 ? fenList.length * depths.length : 0;
+    if (!fenReplayMode || fenList.length === 0) {
+        console.log('\nNumber of games per depth:');
+        console.log('  10 games → ±108 ELO precision  (~50-90 min on average PC)');
+        console.log('  20 games → ±76  ELO precision  (~2-3h)   ← recommended');
+        const nAns = (await ask('Games per depth (enter=10): ')).trim();
+        n = Math.max(2, parseInt(nAns) || 10);
+        console.log(`✅ ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
+    } else {
+        console.log(`\n✅ ${fenList.length} position(s) × ${depths.length} depth(s) = ${n} total games`);
+    }
 
     rl.close();
 
@@ -414,11 +472,12 @@ async function runTournament() {
     CONFIG.depths = depths;
     CONFIG.selectedLevel = selectedLevel;
 
-    console.log(`\n🔧 Config: ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
-    depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
-
     const htmlBase = path.basename(CONFIG.htmlFile, '.html');
-    CONFIG.logFile = path.join(__dirname, `tournament_${htmlBase}_d${depths.join('_')}_${n}g.json`);
+    const modeTag = (fenReplayMode && fenList.length > 0) ? '_fenreplay' : '';
+    CONFIG.logFile = path.join(__dirname, `tournament_${htmlBase}_d${depths.join('_')}_${fenReplayMode && fenList.length > 0 ? fenList.length : n}g${modeTag}.json`);
+
+    console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${depths.length} depth(s)`);
+    depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
 
     const estMinPerGame = 6; // conservative estimate
     const estTotal = n * depths.length * estMinPerGame;
@@ -526,23 +585,33 @@ async function runTournament() {
     });
 
     try {
-        // Build game list: alternate colors, rotate openings
+        // Build game list
         const allGames = [];
         for (const depth of depths) {
-            for (let i = 0; i < n; i++) {
-                allGames.push({
-                    depth,
-                    mChessColor: i % 2 === 0 ? 'w' : 'b',  // alternate every game
-                    opening: OPENING_BOOK[i % OPENING_BOOK.length],
-                });
+            if (fenReplayMode && fenList.length > 0) {
+                // FEN replay: one game per FEN entry
+                for (const { fen, mChessColor } of fenList) {
+                    allGames.push({ depth, mChessColor, opening: [], startFen: fen });
+                }
+            } else {
+                // Normal tournament: alternate colors, rotate openings
+                const gamesPerDepth = Math.floor(n / depths.length);
+                for (let i = 0; i < gamesPerDepth; i++) {
+                    allGames.push({
+                        depth,
+                        mChessColor: i % 2 === 0 ? 'w' : 'b',
+                        opening: OPENING_BOOK[i % OPENING_BOOK.length],
+                        startFen: null,
+                    });
+                }
             }
         }
 
         const total = allGames.length;
         for (let i = 0; i < allGames.length; i++) {
-            const { depth, mChessColor, opening } = allGames[i];
+            const { depth, mChessColor, opening, startFen } = allGames[i];
             try {
-                await playGame(i + 1, total, mChessColor, opening, depth, statsMap[depth], sharedPage);
+                await playGame(i + 1, total, mChessColor, opening, depth, statsMap[depth], sharedPage, startFen);
             } catch (err) {
                 console.error(`\n💥 Game ${i + 1} crashed:`, err.message);
                 statsMap[depth].add('draw', mChessColor, 0, 'crash', '', 'unknown');

@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.24.0
+Monolith Chess v2.25.1
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.24.0</title>
+  <title>Monolith Chess v2.25.1</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.24.0 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.1 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3923,7 +3923,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.24.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -8432,6 +8432,35 @@ limitations under the License.
           const wIni = matDiff < -200 ? 1.04 : 1.0;
           const bIni = matDiff > 200 ? 1.04 : 1.0;
 
+          // 🛑 v2.25.1: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
+          // Evita que el motor simplifique a finales que no se pueden ganar
+          // (Rey+Caballo vs Rey, Rey+Alfil vs Rey → evaluación 0 inmediata)
+          const wPawnTotal = wP[0]+wP[1]+wP[2]+wP[3]+wP[4]+wP[5]+wP[6]+wP[7];
+          const bPawnTotal = bP[0]+bP[1]+bP[2]+bP[3]+bP[4]+bP[5]+bP[6]+bP[7];
+          if (wPawnTotal === 0 && bPawnTotal === 0) {
+            // EG_I[2]=280 (caballo), EG_I[3]=340 (alfil) — ambos < 400 → empate muerto
+            if (wMat < 400 && bMat < 400) return 0;
+          }
+          // 🛑 Maldición del alfil del color equivocado (peón de torre + alfil del color malo)
+          if (wPawnTotal === 1 && bMat === 0 && bPawnTotal === 0 && wMat < 400) {
+            if (wP[0] === 1 || wP[7] === 1) {
+              const pCol = wP[0] === 1 ? 0 : 7;
+              const promoSqColor = (0 + pCol) % 2;
+              let bishopSqColor = -1;
+              for (let i = 0; i < 64; i++) { if (b[i] === WB) { bishopSqColor = (Math.floor(i/8) + (i%8)) % 2; break; } }
+              if (bishopSqColor !== -1 && bishopSqColor !== promoSqColor) return 0;
+            }
+          }
+          if (bPawnTotal === 1 && wMat === 0 && wPawnTotal === 0 && bMat < 400) {
+            if (bP[0] === 1 || bP[7] === 1) {
+              const pCol = bP[0] === 1 ? 0 : 7;
+              const promoSqColor = (7 + pCol) % 2;
+              let bishopSqColor = -1;
+              for (let i = 0; i < 64; i++) { if (b[i] === BB) { bishopSqColor = (Math.floor(i/8) + (i%8)) % 2; break; } }
+              if (bishopSqColor !== -1 && bishopSqColor !== promoSqColor) return 0;
+            }
+          }
+
           // 🪓 INCENTIVO DE SIMPLIFICACIÓN (Trading)
           // Cuando el bando ganador (ventaja > 150cp) intercambia piezas, 'eg' sube
           // acercándose a 1. Premiamos ese movimiento inflando la ventaja * eg * 0.4.
@@ -8866,6 +8895,24 @@ limitations under the License.
                 // King near enemy pawns in endgame = good for attacking them
                 bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
               }
+
+              // 👑 v2.25.1: ESCOLTA DE PEONES PASADOS PROPIOS
+              // El rey debe ponerse delante del peón avanzado para abrirle camino
+              const myPawnC = isW ? WP : BP;
+              for (let pr = 0; pr < 8; pr++) {
+                for (let pc = 0; pc < 8; pc++) {
+                  if (b[pr*8+pc] === myPawnC) {
+                    // Peón en mitad del tablero rival (avanzado)
+                    if ((isW && pr <= 4) || (!isW && pr >= 3)) {
+                      const distToPawn = Math.max(Math.abs(r - pr), Math.abs(c - pc));
+                      const isAhead = isW ? (r <= pr) : (r >= pr);
+                      if (isAhead && distToPawn <= 2) {
+                        bonus += Math.round(40 * eg); // +40cp por escoltar de cerca
+                      }
+                    }
+                  }
+                }
+              }
             }
 
             // ── King safety in middlegame ─────────────────────────────────
@@ -9182,9 +9229,9 @@ limitations under the License.
               if (_p <= 6 && (_u===2||_u===3||_u===4||_u===5)) wMaj++;
               else if (_p >= 9 && (_u===2||_u===3||_u===4||_u===5)) bMaj++;
             }
-            // Trigger if one side has at least 1 piece and the other has none
-            const wMopup = (wMaj >= 1 && bMaj === 0) || (s > 500 && eg > 0.6);
-            const bMopup = (bMaj >= 1 && wMaj === 0) || (s < -500 && eg > 0.6);
+            // Trigger si una ventaja aplastante (+400cp) o pieza sola vs rey
+            const wMopup = (wMaj >= 1 && bMaj === 0) || (s > 400 && eg > 0.6);
+            const bMopup = (bMaj >= 1 && wMaj === 0) || (s < -400 && eg > 0.6);
             if (wMopup || bMopup) {
               const wk = state.wKing || findKing(b, 'w');
               const bk = state.bKing || findKing(b, 'b');
@@ -9192,9 +9239,10 @@ limitations under the License.
                 const [wKr, wKc] = wk, [bKr, bKc] = bk;
                 const wKorner = Math.max(Math.abs(wKr-3.5), Math.abs(wKc-3.5));
                 const bKorner = Math.max(Math.abs(bKr-3.5), Math.abs(bKc-3.5));
-                const kingProx = 14 - Math.max(Math.abs(wKr-bKr), Math.abs(wKc-bKc));
-                if (wMopup) s += Math.round((47 * bKorner + 16 * kingProx) * eg);
-                if (bMopup) s -= Math.round((47 * wKorner + 16 * kingProx) * eg);
+                // Manhattan distance (más preciso que Chebyshev para acorralamiento)
+                const kingProx = 14 - (Math.abs(wKr-bKr) + Math.abs(wKc-bKc));
+                if (wMopup) s += Math.round((50 * bKorner + 20 * kingProx) * eg);
+                if (bMopup) s -= Math.round((50 * wKorner + 20 * kingProx) * eg);
               }
             }
           }
