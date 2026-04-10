@@ -138,6 +138,9 @@ class DepthStats {
 // ── Stockfish wrapper ────────────────────────────────────────
 function spawnSF() {
     const sf = spawn(CONFIG.stockfishPath, { stdio: ['pipe', 'pipe', 'pipe'] });
+    sf.on('error', () => {});
+    sf.stdin.on('error', () => {});
+    sf.stdout.on('error', () => {});
     sf.stdin.write('uci\n');
     return sf;
 }
@@ -146,6 +149,7 @@ function sfBestMove(sf, fen, depth) {
         let buf = '';
         const timeout = setTimeout(() => {
             sf.stdout.removeListener('data', onData);
+            try { sf.kill(); } catch (_) {}
             reject(new Error('Stockfish timeout'));
         }, 30000);
         function onData(data) {
@@ -322,7 +326,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
         }
     } finally {
         // Do NOT close the page — we reuse it to keep the JIT hot
-        try { sf.stdin.write('quit\n'); sf.kill(); } catch (_) { }
+        try { if (!sf.killed) sf.stdin.write('quit\n'); sf.kill(); } catch (_) { }
     }
 
     // Determine result
@@ -582,7 +586,7 @@ async function runTournament() {
         console.log(`     ${r}: ${c}`);
     });
 
-    savePartial(total, totalN, true); // final complete save
+    savePartial(totalN, totalN, true); // final complete save
     console.log(`\n💾 Results saved to: ${CONFIG.logFile}`);
 }
 
