@@ -11646,6 +11646,7 @@ limitations under the License.
       // Clear memory and style
       commentaryLog = [];
       resetCommentaryStyleMemory();
+      window._commentaryEvalBucket = ''; // reset so eval announcements replay correctly
 
       // 🔒 Temporarily suppress blunder/brilliant re-evaluation on historical moves.
       // addCommentaryEntry uses window.snapshotBeforeHumanMove (stale — points to the
