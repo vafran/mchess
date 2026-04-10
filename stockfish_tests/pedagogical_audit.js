@@ -28,7 +28,7 @@ const CONFIG = {
     htmlFile:      path.join(__dirname, '../mChess.html'),
     stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish.exe'),
     outputFile:    path.join(__dirname, 'pedagogical_audit_log.json'),
-    mChessLevel:   'grandmaster',
+    mChessLevel:   'medium',
     sfDepth:       7,
     numGames:      2,
     moveTimeoutMs: 60000,
@@ -205,7 +205,7 @@ function sfBestMove(sf, fen, depth) {
             sf.stdout.removeListener('data', onData);
             try { sf.kill(); } catch (_) {}
             reject(new Error('Stockfish timeout'));
-        }, 30000);
+        }, 60000);
         sf.stdout.on('data', onData);
     });
 }
@@ -237,13 +237,26 @@ async function promptConfig() {
         console.log('  ⚠️  Introduce 1 o 2.');
     }
 
+    console.log('');
+    console.log('  Nivel de mChess:');
+    console.log('    1 → easy        (aleatorio, sin motor)');
+    console.log('    2 → medium      (depth 4, recomendado para auditoría)');
+    console.log('    3 → hard        (depth 6)');
+    console.log('    4 → grandmaster (depth 30 / Rey Sabio — no recomendado aquí,');
+    console.log('                     tarda mucho y la auditoría mide al Profesor, no al motor)');
+    let level;
+    while (true) {
+        const ans = await askQuestion('  Nivel mChess [1-4, defecto 2]: ');
+        const map = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
+        level = map[ans] || (ans === '' ? 'medium' : null);
+        if (level) break;
+        console.log('  ⚠️  Introduce 1, 2, 3 o 4.');
+    }
+
     const gamesAns = await askQuestion(`  Nº de partidas [${CONFIG.numGames}]: `);
     const numGames = parseInt(gamesAns) || CONFIG.numGames;
 
-    const levelAns = await askQuestion(`  Nivel de mChess (easy/medium/hard/grandmaster) [${CONFIG.mChessLevel}]: `);
-    const level = ['easy','medium','hard','grandmaster'].includes(levelAns) ? levelAns : CONFIG.mChessLevel;
-
-    console.log(`\n  ✅ Modo: ${mode} | Partidas: ${numGames} | Nivel: ${level} | SF d${CONFIG.sfDepth}`);
+    console.log(`\n  ✅ Modo: ${mode} | Nivel: ${level} | Partidas: ${numGames} | SF d${CONFIG.sfDepth}`);
     console.log('─────────────────────────────────────────\n');
 
     return { mode, numGames, level };
@@ -277,10 +290,11 @@ async function runAudit() {
         }
     }, CONFIG.mChessLevel);
 
-    const sf = spawnSF();
     const auditLogs = [];
 
     for (let g = 0; g < CONFIG.numGames; g++) {
+        // Respawnear SF por partida — evita usar proceso muerto si timeout en partida anterior
+        const sf = spawnSF();
         const game     = new Chess();
         const mChessColor = (g % 2 === 0) ? 'w' : 'b';
         console.log(`\n🎮 Game ${g+1}: mChess=${mChessColor === 'w' ? 'White' : 'Black'}`);
@@ -380,14 +394,15 @@ async function runAudit() {
             ? (game.turn() === mChessColor ? 'DERROTA' : 'VICTORIA')
             : game.isDraw() ? 'TABLAS' : 'INTERRUMPIDA';
         console.log(`🏁 Partida ${g+1}: ${result} en ${game.history().length} jugadas`);
+
+        // Matar SF al final de cada partida (proceso fresco para la siguiente)
+        try { if (!sf.killed) sf.stdin.write('quit\n'); sf.kill(); } catch(_) {}
     }
 
     // Guardar resultado
     const outFile = CONFIG.outputFile.replace('.json', `_${CONFIG.auditMode}.json`);
     fs.writeFileSync(outFile, JSON.stringify(auditLogs, null, 2));
     console.log(`\n✅ Auditoría completa. ${auditLogs.length} posiciones → ${path.basename(outFile)}`);
-
-    try { if (!sf.killed) sf.stdin.write('quit\n'); sf.kill(); } catch(_) {}
     await browser.close();
 }
 
