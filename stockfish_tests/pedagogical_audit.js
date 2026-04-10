@@ -5,183 +5,259 @@ const path       = require('path');
 const fs         = require('fs');
 
 // ═══════════════════════════════════════════════════════════════
-// 🎓 PEDAGOGICAL AUDIT v3.1 (Anti-Freeze Edition)
-//    Play against Stockfish and extract ALL the reasoning
+// 🎓 PEDAGOGICAL AUDIT v4.0
+//
+//  Dos modos mutuamente excluyentes (no se mezclan por turno):
+//
+//  'whatToDo'  → pregunta "¿Qué hago ahora?" ANTES de que mChess mueva.
+//                Registra qué sugirió el profesor y qué jugó mChess realmente.
+//                Útil para medir calidad de las sugerencias.
+//
+//  'wasItGood' → deja jugar a mChess primero, luego inyecta los snapshots
+//                correctos y llama a analyzeLastMove().
+//                SIN memoria de sugerencias previas (lastProfessorSuggestions=null)
+//                para que el análisis sea honesto, no "¡seguiste mi consejo!".
+//
+//  Por qué no se pueden mezclar: si preguntas "¿Qué hago?" y después
+//  "¿Fue buena?", el motor habrá jugado exactamente lo que recomendó el
+//  profesor → el análisis siempre responde "¡Excelente! Seguiste mi consejo"
+//  en vez de analizar la jugada real.
 // ═══════════════════════════════════════════════════════════════
 
 const CONFIG = {
-    htmlFile:      path.join(__dirname, '../mChess.html'), 
-    stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname,'..', 'stockfish.exe'), // Ensure .exe or correct path
+    htmlFile:      path.join(__dirname, '../mChess.html'),
+    stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish.exe'),
     outputFile:    path.join(__dirname, 'pedagogical_audit_log.json'),
-    mChessLevel:   'medium',
+    mChessLevel:   'grandmaster',
     sfDepth:       7,
-    numGames:      1,
+    numGames:      2,
     moveTimeoutMs: 60000,
+    // 'whatToDo' | 'wasItGood'  — choose ONE
+    auditMode:     'wasItGood',
 };
 
-async function getCheckupAndMove(page, fen, history) {
-    // --- 0. PERFECT SYNCHRONIZATION ---
-    // Force the browser to update its visual board and internal history
-    // so the Professor knows exactly what position it is analyzing.
-    const syncBoard = async () => {
-        await page.evaluate((hist) => {
-            if (typeof game !== 'undefined') {
-                game.reset();
-                hist.forEach(m => game.move(m)); // Recreate moves from Node
-                if (typeof board !== 'undefined') board.position(game.fen(), false);
+// ── Inyectar FEN en los globales del motor sin efectos secundarios ──────────
+// Esto es lo que faltaba en v3.x: syncBoard usaba game.reset() (chess.js API)
+// que no existe en mChess. Esta función setea directamente board, castleRights,
+// enPassantTarget, turn, history, etc. tal y como lo hace loadPositionFromFEN.
+async function setPageFEN(page, fen, historyArr = []) {
+    await page.evaluate((f, h) => {
+        const parts = f.split(/\s+/);
+        const rows = parts[0].split('/');
+        const newBoard = [];
+        for (const row of rows) {
+            const r = [];
+            for (const ch of row) {
+                if (ch >= '1' && ch <= '8') { for (let i = 0; i < parseInt(ch); i++) r.push(' '); }
+                else r.push(ch);
             }
-        }, history);
-    };
-
-    await syncBoard();
-
-    // 1. Ask the engine for a move (Opening Book or Calculation)
-    const move = await page.evaluate(async (f, h) => {
-        try { return await window.askWiseKing(f, h); } 
-        catch(e) { return null; }
-    }, fen, history);
-
-    if (!move) return { move: null, checkup: null };
-
-    // --- 🔍 AUDIT 1: "ANALYSIS" (Static Evaluation) ---
-    const analysisHints = await page.evaluate(async () => {
-        return new Promise(resolve => {
-            const pList = document.getElementById('professorList');
-            if (pList) pList.innerHTML = ''; // Clear residual data
-            
-            if (typeof window.analyzePosition === 'function') window.analyzePosition();
-            
-            // Allow 1 second for the UI to render (static eval, doesn't use Worker)
-            setTimeout(() => {
-                const hints = pList ? Array.from(pList.querySelectorAll('.hint-item')).map(el => el.innerText.trim()) : [];
-                if (pList) pList.innerHTML = '';
-                resolve(hints);
-            }, 1000);
-        });
-    });
-
-    // Restore board (just in case analyzePosition altered anything)
-    await syncBoard();
-
-    // --- 💡 AUDIT 2: "WAS IT GOOD?" (Evaluates the player's last move) ---
-    const wasItGoodHints = await page.evaluate(async () => {
-        return new Promise(resolve => {
-            const pList = document.getElementById('professorList');
-            if (pList) pList.innerHTML = '';
-            
-            if (typeof window.analyzeLastMove !== 'function' || (typeof game !== 'undefined' && game.history().length === 0)) {
-                resolve([]); return;
-            }
-
-            window.professorThinking = true;
-            try { window.analyzeLastMove(); } catch(e) { resolve([]); return; }
-
-            // Safe polling: max 15 seconds wait
-            let checks = 0;
-            const iv = setInterval(() => {
-                checks++;
-                if (window.professorThinking === false || checks > 30) { 
-                    clearInterval(iv);
-                    window.professorThinking = false; // Forced unlock
-                    const hints = pList ? Array.from(pList.querySelectorAll('.hint-item')).map(el => el.innerText.trim()) : [];
-                    if (pList) pList.innerHTML = '';
-                    resolve(hints);
-                }
-            }, 500);
-        });
-    });
-
-    // Restore board again (crucial because analyzeLastMove usually triggers game.undo())
-    await syncBoard();
-
-    // --- 🎯 AUDIT 3: "WHAT DO I DO?" (Tactical options) ---
-    const whatToDoHints = await page.evaluate(async () => {
-        return new Promise(resolve => {
-            const pList = document.getElementById('professorList');
-            if (pList) pList.innerHTML = '';
-            
-            if (typeof window.requestBestMove !== 'function') {
-                resolve([]); return;
-            }
-
-            window.professorThinking = true;
-            try { window.requestBestMove(); } catch(e) { resolve([]); return; }
-
-            // Safe polling: max 15 seconds wait
-            let checks = 0;
-            const iv = setInterval(() => {
-                checks++;
-                if (window.professorThinking === false || checks > 30) { 
-                    clearInterval(iv);
-                    window.professorThinking = false; // Forced unlock
-                    const hints = pList ? Array.from(pList.querySelectorAll('.hint-item')).map(el => el.innerText.trim()) : [];
-                    if (pList) pList.innerHTML = '';
-                    resolve(hints);
-                }
-            }, 500);
-        });
-    });
-
-    // --- 👁️ AUDIT 4 & 5: HAWK EYE AND COMMENTATOR ---
-    const extraData = await page.evaluate(() => {
-        if (typeof window.toggleHawksEye === 'function') window.toggleHawksEye();
-        const score = typeof evaluateBoard === 'function' && typeof board !== 'undefined' ? evaluateBoard(board, 'hard') : 0;
-        if (typeof addCommentaryEntry === 'function') addCommentaryEntry(null, null, score);
-
-        const toast = document.getElementById('toastContainer')?.lastElementChild;
-        const comm = document.getElementById('commentaryList');
-        
-        return {
-            hawkEye: toast ? toast.innerText.trim() : 'No data from Hawk Eye',
-            fen: typeof boardToFEN === 'function' ? boardToFEN(board) : null,
-            depth: window._lastSearchDepth ? window._lastSearchDepth.completedDepth : null,
-            lastCommentary: comm ? (comm.querySelector('.commentary-entry')?.innerText.trim() || '') : '',
-            evalScore: typeof evaluateBoard === 'function' ? evaluateBoard(board, 'hard') : null,
-            timestamp: new Date().toISOString()
-        };
-    });
-
-    const fullCheckup = {
-        ply: history.length + 1,
-        movePlayed: move,
-        ...extraData,
-        professor_Analysis: analysisHints,
-        professor_WasItGood: wasItGoodHints,
-        professor_WhatToDo: whatToDoHints
-    };
-
-    return { move, checkup: fullCheckup };
+            newBoard.push(r);
+        }
+        board = newBoard;
+        turn = parts[1];
+        const cr = parts[2] || '-';
+        castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
+        enPassantTarget = (parts[3] && parts[3] !== '-')
+            ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])]
+            : null;
+        halfMoveClock = parts[4] ? (parseInt(parts[4]) || 0) : 0;
+        history = [...h];
+        fenPositionLoaded = true;          // suprime "haz una jugada primero"
+        if (typeof fenGameActive !== 'undefined') fenGameActive = true; // desactiva libro
+        aiThinking = false;                // evita bloqueo
+        professorThinking = false;
+        gameMode = 'pvp';                  // requestBestMove pasa el check canAsk
+        window.lastProfessorSuggestions = null; // CRÍTICO: evita "¡seguiste mi consejo!"
+    }, fen, historyArr);
 }
 
-function spawnStockfish() {
-    const sf = spawn(CONFIG.stockfishPath);
-    sf.stdin.setEncoding('utf-8');
+// ── Preguntar "¿Qué hago ahora?" y recoger las sugerencias ──────────────────
+async function getWhatToDoHints(page) {
+    return page.evaluate(() => new Promise(resolve => {
+        const pList = document.getElementById('professorList');
+        if (pList) pList.innerHTML = '';
+        if (typeof window.requestBestMove !== 'function') { resolve([]); return; }
+        professorThinking = true;
+        try { window.requestBestMove(); } catch(e) { resolve([]); return; }
+        let checks = 0;
+        const iv = setInterval(() => {
+            checks++;
+            if (!professorThinking || checks > 40) {
+                clearInterval(iv);
+                professorThinking = false;
+                const hints = pList
+                    ? Array.from(pList.querySelectorAll('.hint-item')).map(el => el.innerText.trim())
+                    : [];
+                if (pList) pList.innerHTML = '';
+                resolve(hints);
+            }
+        }, 500);
+    }));
+}
+
+// ── Preguntar "¿Fue buena mi jugada?" con snapshots correctos ────────────────
+// prevFen  = posición ANTES de la jugada de mChess
+// currFen  = posición DESPUÉS de la jugada de mChess
+// historyArr = historial de movimientos EN notación algebraica (chess.js history())
+async function getWasItGoodHints(page, prevFen, currFen, historyArr) {
+    // 1. Inyectar snapshots + estado actual del tablero
+    await page.evaluate((pf, cf, h) => {
+        const fenToBoard = (fen) => {
+            const rows = fen.split(' ')[0].split('/');
+            return rows.map(row => {
+                const r = [];
+                for (const ch of row) {
+                    if (ch >= '1' && ch <= '8') { for (let i = 0; i < parseInt(ch); i++) r.push(' '); }
+                    else r.push(ch);
+                }
+                return r;
+            });
+        };
+        const prevParts = pf.split(/\s+/);
+        const currParts = cf.split(/\s+/);
+
+        // Snapshots que normalmente rellena onCellClick
+        window.snapshotBeforeHumanMove = fenToBoard(pf);
+        window.snapshotAfterHumanMove  = fenToBoard(cf);
+        const prevCr = prevParts[2] || '-';
+        window.snapshotBeforeRules = {
+            castleRights: { K: prevCr.includes('K'), Q: prevCr.includes('Q'), k: prevCr.includes('k'), q: prevCr.includes('q') },
+            enPassantTarget: (prevParts[3] && prevParts[3] !== '-')
+                ? [8 - parseInt(prevParts[3][1]), 'abcdefgh'.indexOf(prevParts[3][0])]
+                : null,
+            turn: prevParts[1]
+        };
+
+        // Estado global = tablero DESPUÉS de la jugada
+        board = window.snapshotAfterHumanMove.map(r => [...r]);
+        turn  = currParts[1];
+        const cr = currParts[2] || '-';
+        castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
+        enPassantTarget = (currParts[3] && currParts[3] !== '-')
+            ? [8 - parseInt(currParts[3][1]), 'abcdefgh'.indexOf(currParts[3][0])]
+            : null;
+        halfMoveClock  = currParts[4] ? (parseInt(currParts[4]) || 0) : 0;
+        history = [...h];
+        fenPositionLoaded = true;
+        if (typeof fenGameActive !== 'undefined') fenGameActive = true;
+        aiThinking = false;
+        professorThinking = false;
+        gameMode = 'pvp';
+        // CRÍTICO: limpiar sugerencias previas para que no responda "¡seguiste mi consejo!"
+        window.lastProfessorSuggestions = null;
+    }, prevFen, currFen, historyArr);
+
+    // 2. Llamar analyzeLastMove y esperar resultado
+    return page.evaluate(() => new Promise(resolve => {
+        const pList = document.getElementById('professorList');
+        if (pList) pList.innerHTML = '';
+        if (typeof window.analyzeLastMove !== 'function') { resolve([]); return; }
+        professorThinking = true;
+        try { window.analyzeLastMove(); } catch(e) { resolve([]); return; }
+        let checks = 0;
+        const iv = setInterval(() => {
+            checks++;
+            if (!professorThinking || checks > 40) {
+                clearInterval(iv);
+                professorThinking = false;
+                const hints = pList
+                    ? Array.from(pList.querySelectorAll('.hint-item')).map(el => el.innerText.trim())
+                    : [];
+                if (pList) pList.innerHTML = '';
+                resolve(hints);
+            }
+        }, 500);
+    }));
+}
+
+// ── Ojo Halcón ───────────────────────────────────────────────────────────────
+async function getHawkEye(page) {
+    return page.evaluate(() => {
+        if (typeof window.toggleHawksEye === 'function') window.toggleHawksEye();
+        const toast = document.getElementById('toastContainer')?.lastElementChild;
+        return toast ? toast.innerText.trim() : 'No data';
+    });
+}
+
+// ── Stockfish (con protección EPIPE) ─────────────────────────────────────────
+function spawnSF() {
+    const sf = spawn(CONFIG.stockfishPath, { stdio: ['pipe', 'pipe', 'pipe'] });
+    sf.on('error', () => {});
+    sf.stdin.on('error', () => {});
+    sf.stdout.on('error', () => {});
     sf.stdin.write('uci\n');
-    sf.stdin.write('isready\n');
     return sf;
 }
 
-function askStockfish(sf, fen, depth) {
-    return new Promise((resolve) => {
+function sfBestMove(sf, fen, depth) {
+    return new Promise((resolve, reject) => {
         sf.stdin.write(`position fen ${fen}\n`);
         sf.stdin.write(`go depth ${depth}\n`);
         const onData = (data) => {
-            const lines = data.toString().split('\n');
-            for (const line of lines) {
+            for (const line of data.toString().split('\n')) {
                 if (line.startsWith('bestmove')) {
                     sf.stdout.removeListener('data', onData);
                     resolve(line.split(' ')[1].trim());
                 }
             }
         };
+        const timeout = setTimeout(() => {
+            sf.stdout.removeListener('data', onData);
+            try { sf.kill(); } catch (_) {}
+            reject(new Error('Stockfish timeout'));
+        }, 30000);
         sf.stdout.on('data', onData);
     });
 }
 
+// ── Menú interactivo ──────────────────────────────────────────────────────────
+function askQuestion(prompt) {
+    const readline = require('readline');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    return new Promise(resolve => rl.question(prompt, ans => { rl.close(); resolve(ans.trim()); }));
+}
+
+async function promptConfig() {
+    console.log('\n🎓 Pedagogical Audit v4.0');
+    console.log('─────────────────────────────────────────');
+    console.log('  1 → ¿Qué hago ahora?  (whatToDo)');
+    console.log('      El profesor sugiere ANTES de que mChess mueva.');
+    console.log('      Mide la calidad de las sugerencias vs la jugada real.');
+    console.log('');
+    console.log('  2 → ¿Fue buena?        (wasItGood)');
+    console.log('      mChess mueve primero, luego el profesor analiza honestamente.');
+    console.log('      Sin memoria de sugerencias previas — análisis real.');
+    console.log('─────────────────────────────────────────');
+
+    let mode;
+    while (true) {
+        const ans = await askQuestion('  Elige modo [1/2]: ');
+        if (ans === '1') { mode = 'whatToDo'; break; }
+        if (ans === '2') { mode = 'wasItGood'; break; }
+        console.log('  ⚠️  Introduce 1 o 2.');
+    }
+
+    const gamesAns = await askQuestion(`  Nº de partidas [${CONFIG.numGames}]: `);
+    const numGames = parseInt(gamesAns) || CONFIG.numGames;
+
+    const levelAns = await askQuestion(`  Nivel de mChess (easy/medium/hard/grandmaster) [${CONFIG.mChessLevel}]: `);
+    const level = ['easy','medium','hard','grandmaster'].includes(levelAns) ? levelAns : CONFIG.mChessLevel;
+
+    console.log(`\n  ✅ Modo: ${mode} | Partidas: ${numGames} | Nivel: ${level} | SF d${CONFIG.sfDepth}`);
+    console.log('─────────────────────────────────────────\n');
+
+    return { mode, numGames, level };
+}
+
+// ── Bucle principal ───────────────────────────────────────────────────────────
 async function runAudit() {
-    console.log("🚀 Starting Pedagogical Audit v3.1 (Anti-Freeze)...");
-    
-    const browser = await puppeteer.launch({ 
+    const { mode, numGames, level } = await promptConfig();
+    CONFIG.auditMode  = mode;
+    CONFIG.numGames   = numGames;
+    CONFIG.mChessLevel = level;
+    CONFIG.outputFile = path.join(__dirname, `pedagogical_audit_log_${mode}.json`);
+
+    const browser = await puppeteer.launch({
         headless: false,
         args: [
             '--allow-file-access-from-files',
@@ -190,10 +266,9 @@ async function runAudit() {
             '--disable-renderer-backgrounding'
         ]
     });
-    
+
     const page = await browser.newPage();
     await page.goto('file://' + CONFIG.htmlFile);
-    
     await page.evaluate((level) => {
         if (typeof currentDifficulty !== 'undefined') currentDifficulty = level;
         if (typeof DIFF_SETTINGS !== 'undefined' && DIFF_SETTINGS[level]) {
@@ -202,73 +277,117 @@ async function runAudit() {
         }
     }, CONFIG.mChessLevel);
 
-    const sf = spawnStockfish();
+    const sf = spawnSF();
     const auditLogs = [];
 
     for (let g = 0; g < CONFIG.numGames; g++) {
-        const game = new Chess();
+        const game     = new Chess();
         const mChessColor = (g % 2 === 0) ? 'w' : 'b';
-        console.log(`\n🎮 Game ${g+1}: mChess plays with ${mChessColor === 'w' ? 'White' : 'Black'}`);
+        console.log(`\n🎮 Game ${g+1}: mChess=${mChessColor === 'w' ? 'White' : 'Black'}`);
 
         while (!game.isGameOver()) {
-            const fen = game.fen();
+            const fen  = game.fen();
             const turn = game.turn();
-            let move;
+            let uciMove;
 
             if (turn === mChessColor) {
-                process.stdout.write(`🤔 mChess (${turn}) thinking and extracting pedagogy... `);
-                
-                const result = await getCheckupAndMove(page, fen, game.history());
-                move = result.move;
-                
-                if (result.checkup) {
-                    auditLogs.push(result.checkup);
-                    const c = result.checkup;
-                    const totalTips = c.professor_Analysis.length + c.professor_WasItGood.length + c.professor_WhatToDo.length;
-                    
-                    process.stdout.write(`Ready!\n`);
-                    if (c.lastCommentary) {
-                        console.log(`   🎙️  Commentary: "${c.lastCommentary}"`);
-                    }
-                    if (totalTips > 0) {
-                        console.log(`   🎓 Professor: ${totalTips} tips available (Analysis: ${c.professor_Analysis.length} | Was_It_Good: ${c.professor_WasItGood.length} | What_To_Do: ${c.professor_WhatToDo.length})`);
-                        // Opcional: Mostrar la primera sugerencia de "WasItGood" si existe, que suele ser la más relevante
-                        if (c.professor_WasItGood.length > 0) {
-                            console.log(`      💡 Tip: ${c.professor_WasItGood[0]}`);
-                        }
-                    }
+                // ── Turno de mChess ───────────────────────────────────────────
+                let professorHints = [];
+
+                if (CONFIG.auditMode === 'whatToDo') {
+                    // 1. Inyectar posición
+                    await setPageFEN(page, fen, game.history());
+                    // 2. Preguntar "¿Qué hago?" ANTES de mover
+                    professorHints = await getWhatToDoHints(page);
+                    // 3. Restaurar estado y pedir jugada (fresh, sin contaminar)
+                    await setPageFEN(page, fen, game.history());
+                    uciMove = await page.evaluate(async (f, h) => {
+                        try { return await window.askWiseKing(f, h); } catch(e) { return null; }
+                    }, fen, game.history());
+
                 } else {
-                    process.stdout.write(`Ready! (No data from Professor).\n`);
+                    // wasItGood: primero jugar, luego analizar
+                    // 1. Inyectar y pedir jugada
+                    await setPageFEN(page, fen, game.history());
+                    uciMove = await page.evaluate(async (f, h) => {
+                        try { return await window.askWiseKing(f, h); } catch(e) { return null; }
+                    }, fen, game.history());
+
+                    // 2. Calcular FEN resultante para los snapshots
+                    if (uciMove) {
+                        const tempGame = new Chess(fen);
+                        try {
+                            tempGame.move({ from: uciMove.slice(0,2), to: uciMove.slice(2,4), promotion: uciMove.length === 5 ? uciMove[4] : 'q' });
+                        } catch(_) {}
+                        const afterFen = tempGame.fen();
+                        // 3. Preguntar "¿Fue buena?" con snapshots reales
+                        professorHints = await getWasItGoodHints(page, fen, afterFen, game.history());
+                    }
                 }
+
+                if (!uciMove) { console.log('❌ mChess no devolvió jugada. Fin de partida.'); break; }
+
+                // Ojo Halcón (sobre el FEN antes de la jugada)
+                await setPageFEN(page, fen, game.history());
+                const hawkEye = await getHawkEye(page);
+
+                // Eval y profundidad
+                const evalScore = await page.evaluate(() =>
+                    typeof evaluateBoard === 'function' ? evaluateBoard(board, 'hard') : null
+                );
+                const depth = await page.evaluate(() =>
+                    window._lastSearchDepth ? window._lastSearchDepth.completedDepth : null
+                );
+
+                // Registrar
+                const entry = {
+                    game:        g + 1,
+                    ply:         game.history().length + 1,
+                    color:       mChessColor,
+                    fen,
+                    movePlayed:  uciMove,
+                    depth,
+                    evalScore,
+                    hawkEye,
+                    auditMode:   CONFIG.auditMode,
+                    professor:   professorHints,
+                    timestamp:   new Date().toISOString()
+                };
+                auditLogs.push(entry);
+
+                // Log en consola
+                const tipCount = professorHints.length;
+                console.log(`  👑 mChess: ${uciMove} [d${depth ?? '?'}] | Tips: ${tipCount} | Eval: ${evalScore != null ? evalScore.toFixed(1) : '?'}`);
+                if (tipCount > 0) console.log(`     💡 ${professorHints[0].slice(0, 140)}`);
+
+                // Aplicar jugada al juego
+                try {
+                    game.move({ from: uciMove.slice(0,2), to: uciMove.slice(2,4), promotion: uciMove.length === 5 ? uciMove[4] : 'q' });
+                } catch(e) { console.error(`❌ Jugada ilegal: ${uciMove}`); break; }
+
             } else {
-                process.stdout.write(`🤖 Stockfish (${turn}) thinking at d${CONFIG.sfDepth}... `);
-                move = await askStockfish(sf, fen, CONFIG.sfDepth);
-                process.stdout.write(`Ready!: ${move}\n`);
-            }
-
-            if (!move || move === 'null') {
-                console.log("❌ No move received. Ending game.");
-                break;
-            }
-
-            try {
-                game.move({ 
-                    from: move.slice(0,2), 
-                    to: move.slice(2,4), 
-                    promotion: move.length === 5 ? move[4] : 'q' 
-                });
-            } catch (e) {
-                console.error(`❌ Illegal move detected: ${move}`);
-                break;
+                // ── Turno de Stockfish ────────────────────────────────────────
+                process.stdout.write(`  🐟 SF d${CONFIG.sfDepth}... `);
+                try {
+                    uciMove = await sfBestMove(sf, fen, CONFIG.sfDepth);
+                    process.stdout.write(`${uciMove}\n`);
+                    game.move({ from: uciMove.slice(0,2), to: uciMove.slice(2,4), promotion: uciMove.length === 5 ? uciMove[4] : 'q' });
+                } catch(e) { console.error(`❌ SF error: ${e.message}`); break; }
             }
         }
-        console.log(`🏁 Game ${g+1} ended: ${game.pgn()}`);
+
+        const result = game.isCheckmate()
+            ? (game.turn() === mChessColor ? 'DERROTA' : 'VICTORIA')
+            : game.isDraw() ? 'TABLAS' : 'INTERRUMPIDA';
+        console.log(`🏁 Partida ${g+1}: ${result} en ${game.history().length} jugadas`);
     }
 
-    fs.writeFileSync(CONFIG.outputFile, JSON.stringify(auditLogs, null, 2));
-    console.log(`\n✅ Audit completed. Data saved to: ${CONFIG.outputFile}`);
-    
-    sf.stdin.write('quit\n');
+    // Guardar resultado
+    const outFile = CONFIG.outputFile.replace('.json', `_${CONFIG.auditMode}.json`);
+    fs.writeFileSync(outFile, JSON.stringify(auditLogs, null, 2));
+    console.log(`\n✅ Auditoría completa. ${auditLogs.length} posiciones → ${path.basename(outFile)}`);
+
+    try { if (!sf.killed) sf.stdin.write('quit\n'); sf.kill(); } catch(_) {}
     await browser.close();
 }
 
