@@ -2757,12 +2757,13 @@ limitations under the License.
           tempBoard.push(r);
         }
 
-        // Asignar al tablero global esperado por el motor
-        board = tempBoard;
+        // 🛡️ RACE FIX: Use local vars — do NOT mutate global board/castleRights/enPassantTarget.
+        // Two concurrent askWiseKing calls (arena + UI) race and corrupt each other's state.
+        // JS is single-threaded: save/restore around sync calls is atomic (no await in between).
         const color = parts[1];
         const cr = parts[2];
-        castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
-        enPassantTarget = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
+        const tempCR = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
+        const tempEP = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
 
         // Apertura
         const historyKey = historyArr.join(',');
@@ -2775,9 +2776,13 @@ limitations under the License.
             const skipBook = false;
 
             if (!skipBook) {
+              // Temporarily set globals for getLegalMovesForColorInPlace (sync, no await — safe)
+              const _sb = board, _scr = castleRights, _sep = enPassantTarget;
+              board = tempBoard; castleRights = tempCR; enPassantTarget = tempEP;
               const legalMvs = getLegalMovesForColorInPlace(color);
+              board = _sb; castleRights = _scr; enPassantTarget = _sep;
               const validBookMoves = valid.filter(entry =>
-                legalMvs.some(m => getMoveNotation(board, color, m, castleRights) === entry.m)
+                legalMvs.some(m => getMoveNotation(tempBoard, color, m, tempCR) === entry.m)
               );
 
               if (validBookMoves.length > 0) {
@@ -2788,11 +2793,11 @@ limitations under the License.
                   randomWeight -= (entry.w || 1);
                   if (randomWeight <= 0) { chosenEntry = entry; break; }
                 }
-                const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
+                const bookMove = legalMvs.find(m => getMoveNotation(tempBoard, color, m, tempCR) === chosenEntry.m);
                 if (bookMove) {
                   console.log("📖 Move selected from the book:", chosenEntry.m);
                   const cols = 'abcdefgh';
-                  const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
+                  const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && tempBoard[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
                   const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
                   console.log("🎯 UCI:", uci);
                   window._lastSearchDepth = { completedDepth: 'book', maxDepth: 'book', isPartial: false };
@@ -2861,8 +2866,8 @@ limitations under the License.
             action: 'search',
             board: tempBoard,
             turn: color,
-            castleRights,
-            enPassantTarget,
+            castleRights: tempCR,
+            enPassantTarget: tempEP,
             depth: _depth, multiPV: 1, timeout: timeoutRes,
             requestId: currentId,
             positionHashes: [...positionHashes],
@@ -2873,11 +2878,14 @@ limitations under the License.
         if (!results || !results.moves || results.moves.length === 0) {
           console.log("❌ Motor returned empty array.");
           // ⚠️ FALLBACK: Return random legal move
+          const _sb2 = board, _scr2 = castleRights, _sep2 = enPassantTarget;
+          board = tempBoard; castleRights = tempCR; enPassantTarget = tempEP;
           const legalMvs = getLegalMovesForColorInPlace(color);
+          board = _sb2; castleRights = _scr2; enPassantTarget = _sep2;
           if (legalMvs && legalMvs.length > 0) {
             const fallbackMove = legalMvs[0];
             const cols = 'abcdefgh';
-            const promotion = (fallbackMove.tr === 0 || fallbackMove.tr === 7) && board[fallbackMove.fr][fallbackMove.fc].toUpperCase() === 'P' ? 'q' : '';
+            const promotion = (fallbackMove.tr === 0 || fallbackMove.tr === 7) && tempBoard[fallbackMove.fr][fallbackMove.fc].toUpperCase() === 'P' ? 'q' : '';
             const uci = cols[fallbackMove.fc] + (8 - fallbackMove.fr) + cols[fallbackMove.tc] + (8 - fallbackMove.tr) + promotion;
             console.log("⚠️ Using fallback move:", uci);
             window._lastSearchDepth = { completedDepth: 0, maxDepth: _depth, isPartial: true };
@@ -2892,7 +2900,7 @@ limitations under the License.
         // 🛡️ FIX: Traducir códigos numéricos de promoción (del motor) a strings antes de usar toLowerCase()
         const INT_TO_PROMO = {2:'n',3:'b',4:'r',5:'q',10:'n',11:'b',12:'r',13:'q', 'N':'n', 'B':'b', 'R':'r', 'Q':'q'};
         const rawPromo = (m.promo && typeof m.promo === 'number') ? INT_TO_PROMO[m.promo] : m.promo;
-        const promotion = (m.tr === 0 || m.tr === 7) && board[m.fr][m.fc].toUpperCase() === 'P' ? (rawPromo ? rawPromo.toLowerCase() : 'q') : '';
+        const promotion = (m.tr === 0 || m.tr === 7) && tempBoard[m.fr][m.fc].toUpperCase() === 'P' ? (rawPromo ? rawPromo.toLowerCase() : 'q') : '';
 
         const uci = cols[m.fc] + (8 - m.fr) + cols[m.tc] + (8 - m.tr) + promotion;
         // Expose depth info so arena_tournament.js can read it via page.evaluate
