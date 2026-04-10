@@ -12635,8 +12635,11 @@ limitations under the License.
         const merged = [];
         // Metemos el libro primero
         bookOpts.forEach(o => { merged.push(o); seen.add(formatMoveLabel(o.move)); });
-        // Add AI move if not duplicated
-        goodOptions.forEach(o => { if (!seen.has(formatMoveLabel(o.move))) merged.push({ ...o, isBook: false }); });
+        // Add AI move if not duplicated — also add to seen to prevent duplicates within goodOptions
+        goodOptions.forEach(o => {
+          const lbl = formatMoveLabel(o.move);
+          if (!seen.has(lbl)) { merged.push({ ...o, isBook: false }); seen.add(lbl); }
+        });
 
         // 📌 SEE-BASED FREE CAPTURE GUARANTEE: if the engine missed a winning or equal capture
         // (e.g. because it prioritised other lines), inject it so the Professor always shows it.
@@ -12777,8 +12780,12 @@ limitations under the License.
           // Checkmate always wins — sort to top unconditionally
           if (a.isMate && !b.isMate) return -1;
           if (!a.isMate && b.isMate) return 1;
-          if (Math.abs((a.tacticalPenalty || 0) - (b.tacticalPenalty || 0)) > 5) {
-            return (a.tacticalPenalty || 0) - (b.tacticalPenalty || 0);
+          // seeFree captures are already validated as winning — treat their penalty as 0 so
+          // a hanging-queen capture like Qxd8 is never buried behind a quiet move.
+          const aTacPen = a.seeFree ? 0 : (a.tacticalPenalty || 0);
+          const bTacPen = b.seeFree ? 0 : (b.tacticalPenalty || 0);
+          if (Math.abs(aTacPen - bTacPen) > 5) {
+            return aTacPen - bTacPen;
           }
           if (history.length <= 10) {
             if (a.isBook && !b.isBook) return -1;
@@ -12787,7 +12794,7 @@ limitations under the License.
           }
           const aScore = a.score !== undefined ? a.score : (a.isBook ? 30 : 0);
           const bScore = b.score !== undefined ? b.score : (b.isBook ? 30 : 0);
-          return (bScore - (b.tacticalPenalty || 0)) - (aScore - (a.tacticalPenalty || 0));
+          return (bScore - bTacPen) - (aScore - aTacPen);
         });
 
         // 🛡️ 4. SITUATION AWARENESS — scan ALL hanging pieces, warn about the most valuable one.
@@ -14230,12 +14237,74 @@ limitations under the License.
       const isEdgeOrCorner = m.tr === 0 || m.tr === 7 || m.tc === 0 || m.tc === 7;
 
       if (piece === 'N' || piece === 'B') {
+        const toSq = sqName(m.tr, m.tc);
+        const fromSq = sqName(m.fr, m.fc);
+        const pieceName = getLocalizedPieceName(movingPiece);
+
+        // Find the most valuable enemy piece threatened from the new square
+        let bestThreat = null;
+        for (const nx of afterMyMoves) {
+          if (nx.fr !== m.tr || nx.fc !== m.tc) continue;
+          const victim = copy[nx.tr][nx.tc];
+          if (!victim || victim === ' ' || colorOf(victim) !== enemyColor) continue;
+          const vVal = PIECE_VALUES[victim.toUpperCase()] || 0;
+          if (vVal >= 100 && (!bestThreat || vVal > bestThreat.vVal))
+            bestThreat = { victim, vVal, sq: sqName(nx.tr, nx.tc) };
+        }
+
         if (newMobility > oldMobility && !isEdgeOrCorner) {
+          if (bestThreat) {
+            const victimName = getLocalizedPieceName(bestThreat.victim);
+            return withQS(en
+              ? `🌱 ${pieceName} to ${toSq} — gains mobility and threatens the ${victimName} on ${bestThreat.sq}.`
+              : `🌱 ${pieceName} a ${toSq} — gana movilidad y amenaza al ${victimName} en ${bestThreat.sq}.`);
+          }
           return withQS(en ? "🌱 You develop the piece, maximizing its active diagonals/squares." : "🌱 Gran desarrollo: colocas la pieza en su máxima actividad radiante.");
         } else if (isEdgeOrCorner) {
-          return withQS(en ? "🔄 You maneuver the piece towards the flank." : "🔄 Maniobra cerrada: llevas la pieza hacia el flanco buscando otro ángulo.");
+          // Fianchetto: bishop to b2/g2 (white) or b7/g7 (black)
+          if (piece === 'B') {
+            const isFianchetto = (color === 'w' && m.tr === 6 && (m.tc === 1 || m.tc === 6)) ||
+                                 (color === 'b' && m.tr === 1 && (m.tc === 1 || m.tc === 6));
+            if (isFianchetto) {
+              const side = m.tc === 1 ? (en ? 'queenside' : 'ala de dama') : (en ? 'kingside' : 'ala de rey');
+              return withQS(en
+                ? `🏹 Fianchetto! ${pieceName} on ${toSq} dominates the long diagonal on the ${side}.`
+                : `🏹 ¡Fianchetto! ${pieceName} en ${toSq} domina la diagonal larga del ${side}.`);
+            }
+          }
+          if (bestThreat) {
+            const victimName = getLocalizedPieceName(bestThreat.victim);
+            return withQS(en
+              ? `🔄 ${pieceName} to ${toSq}, attacking the ${victimName} on ${bestThreat.sq} from the flank.`
+              : `🔄 ${pieceName} a ${toSq} atacando al ${victimName} en ${bestThreat.sq} desde el flanco.`);
+          }
+          if (piece === 'N') {
+            // Show best next jump toward center
+            let bestNext = null, bestDist = 999;
+            for (const nx of afterMyMoves) {
+              if (nx.fr !== m.tr || nx.fc !== m.tc) continue;
+              const d = Math.abs(3.5 - nx.tr) + Math.abs(3.5 - nx.tc);
+              if (d < bestDist) { bestDist = d; bestNext = sqName(nx.tr, nx.tc); }
+            }
+            if (bestNext) {
+              return withQS(en
+                ? `🔄 ${pieceName} maneuvers to ${toSq} — next it can jump to ${bestNext} toward the center.`
+                : `🔄 ${pieceName} maniobra a ${toSq} — en el siguiente turno puede saltar a ${bestNext} hacia el centro.`);
+            }
+          }
+          return withQS(en
+            ? `🔄 ${pieceName} repositions to ${toSq} from the flank.`
+            : `🔄 ${pieceName} se reposiciona a ${toSq} desde el flanco.`);
         } else {
-          return withQS(en ? "🧭 You reposition the piece looking for a solid scheme." : "🧭 Reciclaje posicional: mueves la pieza buscando un esquema más sólido.");
+          if (bestThreat) {
+            const victimName = getLocalizedPieceName(bestThreat.victim);
+            return withQS(en
+              ? `🎯 ${pieceName} to ${toSq}, pressuring the ${victimName} on ${bestThreat.sq}.`
+              : `🎯 ${pieceName} a ${toSq} ejerciendo presión sobre el ${victimName} en ${bestThreat.sq}.`);
+          }
+          return withQS(en
+            ? `🧭 ${pieceName} repositions from ${fromSq} to ${toSq}.`
+            : `🧭 ${pieceName} se reposiciona de ${fromSq} a ${toSq}.`);
         }
       }
 

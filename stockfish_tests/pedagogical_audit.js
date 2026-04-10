@@ -191,22 +191,24 @@ function spawnSF() {
 
 function sfBestMove(sf, fen, depth) {
     return new Promise((resolve, reject) => {
-        sf.stdin.write(`position fen ${fen}\n`);
-        sf.stdin.write(`go depth ${depth}\n`);
-        const onData = (data) => {
-            for (const line of data.toString().split('\n')) {
-                if (line.startsWith('bestmove')) {
-                    sf.stdout.removeListener('data', onData);
-                    resolve(line.split(' ')[1].trim());
-                }
-            }
-        };
+        let buf = '';
         const timeout = setTimeout(() => {
             sf.stdout.removeListener('data', onData);
             try { sf.kill(); } catch (_) {}
             reject(new Error('Stockfish timeout'));
-        }, 60000);
+        }, 30000);
+        function onData(data) {
+            buf += data.toString();
+            if (buf.includes('bestmove')) {
+                clearTimeout(timeout);
+                sf.stdout.removeListener('data', onData);
+                const m = buf.split('bestmove ')[1]?.split(' ')[0]?.trim();
+                resolve(m || null);
+            }
+        }
         sf.stdout.on('data', onData);
+        sf.stdin.write(`position fen ${fen}\n`);
+        sf.stdin.write(`go depth ${depth}\n`);
     });
 }
 
@@ -399,10 +401,9 @@ async function runAudit() {
         try { if (!sf.killed) sf.stdin.write('quit\n'); sf.kill(); } catch(_) {}
     }
 
-    // Guardar resultado
-    const outFile = CONFIG.outputFile.replace('.json', `_${CONFIG.auditMode}.json`);
-    fs.writeFileSync(outFile, JSON.stringify(auditLogs, null, 2));
-    console.log(`\n✅ Auditoría completa. ${auditLogs.length} posiciones → ${path.basename(outFile)}`);
+    // Guardar resultado (outputFile ya lleva el modo — no añadir sufijo extra)
+    fs.writeFileSync(CONFIG.outputFile, JSON.stringify(auditLogs, null, 2));
+    console.log(`\n✅ Auditoría completa. ${auditLogs.length} posiciones → ${path.basename(CONFIG.outputFile)}`);
     await browser.close();
 }
 
