@@ -2981,6 +2981,7 @@ limitations under the License.
     let lastTrainingTipPly = -99;
     let lastTrainingTipText = '';
     let fenPositionLoaded = false; // true when position was loaded from FEN, not played from start
+    let fenGameActive = false;     // true for the whole duration of a FEN-loaded game — disables opening book
     let playerColor = 'w';
     let boardFlipped = false;
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
@@ -3935,6 +3936,7 @@ limitations under the License.
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
+      fenGameActive = false;     // normal game — opening book is active
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
       aiSearchGeneration++;
@@ -10700,6 +10702,18 @@ limitations under the License.
 
     function engineSearch(color, depth, multiPV, timeoutMs, forcedMove = null) {
       const myGen = aiSearchGeneration; // 🔴 RACE FIX: snapshot generation at search start
+      // 🛡️ STALE-RESULT FIX: tag each request so onmessage ignores results from older searches.
+      // Without this, if two engineSearch calls share the worker, the second call's onmessage
+      // overwrites the first's — and may receive the FIRST search's result (for a stale board),
+      // causing the engine to apply a move that was calculated for the wrong position.
+      if (!window._engineSearchReqId) window._engineSearchReqId = 0;
+      const myReqId = ++window._engineSearchReqId;
+      // Snapshot board/state at call-time — avoids any later global mutation affecting the message
+      const _boardSnap = deepCopy(board);
+      const _crSnap = { ...castleRights };
+      const _epSnap = enPassantTarget ? [...enPassantTarget] : null;
+      const _phSnap = [...positionHashes];
+      const _hmSnap = halfMoveClock;
       return new Promise((resolve) => {
         let worker;
         try {
@@ -10724,6 +10738,8 @@ limitations under the License.
         const timer = setTimeout(() => done([]), timeoutMs + 4000);
         worker.onmessage = function (evt) {
           const data = evt.data || {};
+          // 🛡️ Ignore results from earlier/superseded searches
+          if (data.requestId != null && data.requestId !== myReqId) return;
           clearTimeout(timer);
           if (data.action === 'result') done(data.moves || []);
           else if (data.action === 'error') {
@@ -10737,14 +10753,15 @@ limitations under the License.
         };
         worker.postMessage({
           action: 'search',
-          board: deepCopy(board),
+          board: _boardSnap,
           turn: color,
-          castleRights: { ...castleRights },
-          enPassantTarget: enPassantTarget ? [...enPassantTarget] : null,
+          castleRights: _crSnap,
+          enPassantTarget: _epSnap,
           depth, multiPV, timeout: timeoutMs,
-          positionHashes: [...positionHashes],
+          positionHashes: _phSnap,
           forcedMove: forcedMove,
-          halfMoveClock: halfMoveClock  
+          halfMoveClock: _hmSnap,
+          requestId: myReqId
         });
       });
     }
@@ -10780,10 +10797,10 @@ limitations under the License.
       try {
         let move = null;
 
-        // 1. Opening book
+        // 1. Opening book — SKIP if loaded from FEN (book keys assume initial position, not arbitrary FEN)
         let forcedBookMove = null;
-        if (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
-          (currentDifficulty === 'medium' && history.length <= 4)) {
+        if (!fenGameActive && (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
+          (currentDifficulty === 'medium' && history.length <= 4))) {
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
           const bookEntries = OPENING_BOOK[historyKey];
           if (bookEntries && bookEntries.length > 0) {
@@ -16160,6 +16177,7 @@ limitations under the License.
         window.snapshotAfterHumanMove = null;
         window.snapshotBeforeRules = null;
         fenPositionLoaded = true; // tell the Professor this isn't move-0 of a normal game
+        fenGameActive = true;     // 🛡️ disable opening book — book keys assume initial position, not this FEN
 
         // ✨ FIX: Limpiar al Profesor al cargar nuevo FEN
         const pList = document.getElementById('professorList');
