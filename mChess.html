@@ -10306,7 +10306,7 @@ limitations under the License.
             let completedDepth = 0; // 📊 Real depth actually completed (vs maxDepth = target)
 
             for (let d = 1; d <= maxDepth; d++) {
-              if (Date.now() >= deadline) { analysisPartial = true; break; }
+              if (d > 1 && Date.now() >= deadline) { analysisPartial = true; break; } // d=1 siempre completa
               if (d > 3 && Date.now() >= softDeadline) { break; } // soft limit
 
               // ⚡ FRENO PREDICTIVO (EBF): Estimate cost of next depth and skip if it won't finish.
@@ -10569,10 +10569,10 @@ limitations under the License.
               const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
               for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
                 const _m = _sr[_i].move;
-                const _isCapture = state.board[_m.tr*8+_m.tc] !== 0;
-                if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
-                const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
-                if (_moveSee >= -100) { _safeIdx = _i; break; } // move is safe
+                try {
+                  const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
+                  if (_moveSee >= -50) { _safeIdx = _i; break; } // move is safe (capturas y silenciosas)
+                } catch(e) { _safeIdx = 0; break; }
                 // Move hangs a piece for nothing — skip it and try next
               }
               if (_safeIdx > 0) {
@@ -10779,17 +10779,16 @@ limitations under the License.
           // The UI's getLegalMovesForColorInPlace() can miss some moves (e.g. castling edge cases)
           // causing valid worker moves to appear "illegal" and triggering stack-overflow fallbacks.
           if (!move) {
-            // Fallback layer 1: UI legal moves
-            const legalFall = getLegalMovesForColorInPlace(aiColor);
-            if (legalFall.length > 0) {
-              // Pick the move with the best quick score (captures first, then any)
-              legalFall.sort((a, b) => {
-                const aCapture = (board[a.tr] && board[a.tr][a.tc] && board[a.tr][a.tc] !== ' ') ? 1 : 0;
-                const bCapture = (board[b.tr] && board[b.tr][b.tc] && board[b.tr][b.tc] !== ' ') ? 1 : 0;
-                return bCapture - aCapture;
-              });
-              move = legalFall[0];
-              console.warn('⚠️ Engine returned null — using UI fallback move:', move);
+            // Fallback: búsqueda síncrona de emergencia (evita capturar a ciegas)
+            console.warn('⚠️ Worker no respondió. Usando búsqueda síncrona de emergencia.');
+            const emergencyDepth = currentDifficulty === 'grandmaster' ? 3 : 2;
+            move = findBestMoveFor(aiColor, emergencyDepth, 0, 2000, currentDifficulty) || null;
+            // Último recurso: jugada legal aleatoria
+            if (!move) {
+              const legalFall = getLegalMovesForColorInPlace(aiColor);
+              if (legalFall.length > 0) {
+                move = legalFall[Math.floor(Math.random() * legalFall.length)];
+              }
             }
           }
 
