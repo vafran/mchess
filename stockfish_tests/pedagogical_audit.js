@@ -85,8 +85,10 @@ async function getWhatToDoHints(page) {
             if (!professorThinking || checks > 40) {
                 clearInterval(iv);
                 professorThinking = false;
-                const hints = pList
-                    ? Array.from(pList.querySelectorAll('.hint-item')).map(el => el.innerText.trim())
+                // Capture full professorList text — includes panicMsg (⚠️ hanging pieces),
+                // contextMsg (🦅 captures, 🔭 X-rays, ♟️ passed pawns) and the moves list.
+                const hints = pList && pList.innerText.trim()
+                    ? [pList.innerText.trim()]
                     : [];
                 if (pList) pList.innerHTML = '';
                 resolve(hints);
@@ -160,8 +162,8 @@ async function getWasItGoodHints(page, prevFen, currFen, historyArr) {
             if (!professorThinking || checks > 40) {
                 clearInterval(iv);
                 professorThinking = false;
-                const hints = pList
-                    ? Array.from(pList.querySelectorAll('.hint-item')).map(el => el.innerText.trim())
+                const hints = pList && pList.innerText.trim()
+                    ? [pList.innerText.trim()]
                     : [];
                 if (pList) pList.innerHTML = '';
                 resolve(hints);
@@ -177,6 +179,42 @@ async function getHawkEye(page) {
         const toast = document.getElementById('toastContainer')?.lastElementChild;
         return toast ? toast.innerText.trim() : 'No data';
     });
+}
+
+// ── Comentarista: llama addCommentaryEntry con el FEN post-jugada ────────────
+async function getCommentary(page, newFen, newHistory) {
+    return page.evaluate((fen, hist) => {
+        try {
+            // Inject post-move board state
+            const parts = fen.split(' ');
+            const rows  = parts[0].split('/');
+            const nb    = Array.from({length: 8}, () => Array(8).fill(' '));
+            rows.forEach((row, r) => {
+                let c = 0;
+                for (const ch of row) {
+                    if (ch >= '1' && ch <= '8') c += parseInt(ch);
+                    else nb[r][c++] = ch;
+                }
+            });
+            board = nb;
+            turn  = parts[1];
+            const cr = parts[2];
+            castleRights   = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
+            enPassantTarget = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
+            halfMoveClock  = parseInt(parts[4]) || 0;
+            history        = [...hist];
+
+            const ev  = typeof evaluateBoard === 'function' ? evaluateBoard(board, 'hard') : null;
+            const alg = hist.length > 0 ? hist[hist.length - 1] : null;
+            if (typeof window.addCommentaryEntry === 'function') {
+                window.addCommentaryEntry(alg, hist, ev);
+            }
+            // commentaryLog is declared with `let` inside the script — NOT on window.
+            // Read the rendered text directly from the DOM instead.
+            const firstEntry = document.querySelector('#commentaryList .commentary-entry .hint-text');
+            return firstEntry ? firstEntry.innerText.trim() : null;
+        } catch(_) { return null; }
+    }, newFen, newHistory);
 }
 
 // ── Stockfish (con protección EPIPE) ─────────────────────────────────────────
@@ -355,19 +393,32 @@ async function runAudit() {
                     window._lastSearchDepth ? window._lastSearchDepth.completedDepth : null
                 );
 
+                // Aplicar jugada primero para poder capturar el comentario post-jugada
+                let moveApplied = false;
+                try {
+                    game.move({ from: uciMove.slice(0,2), to: uciMove.slice(2,4), promotion: uciMove.length === 5 ? uciMove[4] : 'q' });
+                    moveApplied = true;
+                } catch(e) { console.error(`❌ Jugada ilegal: ${uciMove}`); }
+
+                // Comentarista: inyecta posición post-jugada y llama addCommentaryEntry
+                const lastCommentary = moveApplied
+                    ? await getCommentary(page, game.fen(), game.history())
+                    : null;
+
                 // Registrar
                 const entry = {
-                    game:        g + 1,
-                    ply:         game.history().length + 1,
-                    color:       mChessColor,
+                    game:           g + 1,
+                    ply:            game.history().length,
+                    color:          mChessColor,
                     fen,
-                    movePlayed:  uciMove,
+                    movePlayed:     uciMove,
                     depth,
                     evalScore,
                     hawkEye,
-                    auditMode:   CONFIG.auditMode,
-                    professor:   professorHints,
-                    timestamp:   new Date().toISOString()
+                    auditMode:      CONFIG.auditMode,
+                    professor:      professorHints,
+                    lastCommentary,
+                    timestamp:      new Date().toISOString()
                 };
                 auditLogs.push(entry);
 
@@ -375,11 +426,9 @@ async function runAudit() {
                 const tipCount = professorHints.length;
                 console.log(`  👑 mChess: ${uciMove} [d${depth ?? '?'}] | Tips: ${tipCount} | Eval: ${evalScore != null ? evalScore.toFixed(1) : '?'}`);
                 if (tipCount > 0) console.log(`     💡 ${professorHints[0].slice(0, 140)}`);
+                if (lastCommentary) console.log(`     🎙️  ${lastCommentary.slice(0, 100)}`);
 
-                // Aplicar jugada al juego
-                try {
-                    game.move({ from: uciMove.slice(0,2), to: uciMove.slice(2,4), promotion: uciMove.length === 5 ? uciMove[4] : 'q' });
-                } catch(e) { console.error(`❌ Jugada ilegal: ${uciMove}`); break; }
+                if (!moveApplied) break;
 
             } else {
                 // ── Turno de Stockfish ────────────────────────────────────────

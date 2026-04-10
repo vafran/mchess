@@ -11701,6 +11701,7 @@ limitations under the License.
       // If there is no real history and no explicit move, we are in the first move
       if (currentHistory.length === 0 && !lastMove) {
         commentaryLog = [];
+        window._commentaryEvalBucket = ''; // reset eval bucket on new game
         resetCommentaryStyleMemory();
         const intros = {
           en: [
@@ -11723,26 +11724,42 @@ limitations under the License.
         return;
       }
 
-      // 🧠 EVALUATION LOGIC (The new thing so it reacts to the script)
-      if (evalScore !== null) {
-          const moveCount = currentHistory.length;
-          let dynamicComment = "";
-          
-          if (moveCount > 6) {
-              if (evalScore > 400) {
-                  dynamicComment = lang === 'en' ? "White is dominating the board completely." : "Las Blancas dominan el tablero por completo. Presión asfixiante.";
-              } else if (evalScore < -400) {
-                  dynamicComment = lang === 'en' ? "Black is crushing the position. A clear advantage." : "Las Negras están aplastando la posición. Ventaja clarísima.";
-              } else if (evalScore > 150) {
-                  dynamicComment = lang === 'en' ? "White has a solid advantage here." : "Las Blancas tienen una sólida ventaja aquí.";
-              } else if (evalScore < -150) {
-                  dynamicComment = lang === 'en' ? "Black is pressing and holds a good edge." : "Las Negras presionan y mantienen una buena ventaja.";
-              } else if (Math.abs(evalScore) < 50 && moveCount > 15) {
-                  dynamicComment = lang === 'en' ? "The tension is palpable. Perfect equality." : "La tensión es palpable. Igualdad absoluta en la mesa.";
-              }
-          }
+      // 🧠 EVALUATION CONTEXT — only fires when the advantage BUCKET changes.
+      // This prevents the same phrase repeating on every move.
+      // When bucket is unchanged, fall through to move-specific commentary (varied).
+      if (evalScore !== null && currentHistory.length > 6) {
+          let bucket = '';
+          if      (evalScore >  400)                                   bucket = 'w_crush';
+          else if (evalScore >  150)                                   bucket = 'w_win';
+          else if (evalScore < -400)                                   bucket = 'b_crush';
+          else if (evalScore < -150)                                   bucket = 'b_win';
+          else if (Math.abs(evalScore) < 50 && currentHistory.length > 15) bucket = 'equal';
 
-          if (dynamicComment) {
+          if (bucket && bucket !== (window._commentaryEvalBucket || '')) {
+              window._commentaryEvalBucket = bucket;
+              const evalPools = {
+                  w_crush: {
+                      es: ["Las Blancas dominan el tablero por completo. Presión asfixiante.", "Las blancas controlan cada rincón del tablero.", "El tablero es territorio blanco.", "Aplastante superioridad blanca."],
+                      en: ["White dominates the board completely.", "White controls every corner of the board.", "The board belongs to White.", "A crushing White advantage."]
+                  },
+                  w_win: {
+                      es: ["Las Blancas tienen una ventaja sólida.", "La presión blanca va en aumento.", "Las blancas llevan las riendas de la partida.", "Ventaja técnica en manos blancas."],
+                      en: ["White has a solid advantage.", "White's pressure is building.", "White has the upper hand.", "A technical edge for White."]
+                  },
+                  b_crush: {
+                      es: ["Las Negras están aplastando la posición. Ventaja clarísima.", "Ventaja arrolladora para las negras.", "El tablero se inclina claramente hacia las negras.", "Las negras con control total de la situación."],
+                      en: ["Black is crushing the position. A clear advantage.", "An overwhelming advantage for Black.", "The board tilts heavily toward Black.", "Black in total control."]
+                  },
+                  b_win: {
+                      es: ["Las Negras presionan y mantienen una buena ventaja.", "Las negras llevan el ritmo de la partida.", "Ventaja técnica para las negras.", "Las negras presionan con fuerza."],
+                      en: ["Black is pressing and holds a good edge.", "Black controls the tempo.", "A technical edge for Black.", "Black is pressing hard."]
+                  },
+                  equal: {
+                      es: ["La tensión es palpable. Igualdad absoluta en la mesa.", "Equilibrio perfecto entre los dos bandos.", "Ninguno cede terreno. Todo por decidir.", "Partida igualada: la diferencia la hará un error o una brillantez."],
+                      en: ["The tension is palpable. Perfect equality.", "A perfect balance between both sides.", "Neither gives an inch. Everything to play for.", "Level game: one mistake or one brilliant move will decide it."]
+                  }
+              };
+              const dynamicComment = getRnd(evalPools[bucket][lang], `eval_${bucket}`);
               const now = new Date();
               const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
               commentaryLog.unshift({ html: `🎙️ ${dynamicComment}`, time: timeStr, tone: 'serious' });
@@ -11755,8 +11772,9 @@ limitations under the License.
                   </div>
                 </div>
               `).join('');
-              return; 
+              return;
           }
+          // Bucket unchanged → fall through to move-specific commentary
       }
 
       // ── Castling
