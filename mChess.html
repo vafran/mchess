@@ -2849,13 +2849,13 @@ limitations under the License.
             // 🛡️ Ignorar mensajes de búsquedas canceladas o peticiones antiguas
             if (e.data.requestId && e.data.requestId !== currentId) return;
 
-            if (e.data.action === ‘bestSoFar’) {
-              // Incremental update — store best move found so far (don’t settle yet)
+            if (e.data.action === 'bestSoFar') {
+              // Incremental update — store best move found so far (don't settle yet)
               bestSoFar = { moves: e.data.moves, completedDepth: e.data.completedDepth };
               return;
             }
 
-            if (e.data.action === ‘result’) {
+            if (e.data.action === 'result') {
               clearTimeout(t);
               if (!settled) {
                 settled = true;
@@ -2867,16 +2867,16 @@ limitations under the License.
                   isPartial: !!e.data.isPartial
                 });
               }
-            } else if (e.data.action === ‘error’) {
+            } else if (e.data.action === 'error') {
               // Worker hit an uncaught exception — resolve fast instead of waiting 45s
-              console.log(‘⚠️ Worker error (resolved fast):’, e.data.error);
+              console.log('⚠️ Worker error (resolved fast):', e.data.error);
               clearTimeout(t);
               if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: bestSoFar ? bestSoFar.moves : [], completedDepth: bestSoFar ? bestSoFar.completedDepth : 0, maxDepth: _depth, isPartial: true }); }
             }
           };
           worker.onerror = function (ev) {
-            // Catches uncaught worker exceptions that don’t go through onmessage
-            console.log(‘⚠️ Uncaught worker error:’, ev.message);
+            // Catches uncaught worker exceptions that don't go through onmessage
+            console.log('⚠️ Uncaught worker error:', ev.message);
             clearTimeout(t);
             if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: bestSoFar ? bestSoFar.moves : [], completedDepth: bestSoFar ? bestSoFar.completedDepth : 0, maxDepth: _depth, isPartial: true }); }
           };
@@ -3445,7 +3445,7 @@ limitations under the License.
         bookOne: 'In this theoretical position you have one recommended line:',
         suggestMove: 'I suggest moving your',
         professorSays: 'Coach says:',
-        partial: '⏱️ Partial analysis due to time limit (10s).', emergencyCoachLine: '🛟 I’ll give you a clear, safe move right now.',
+        partial: '⏱️ Partial analysis due to time limit (10s).', emergencyCoachLine: '🛟 I\'ll give you a clear, safe move right now.',
         continueAnalysis: 'Continue analysis (+10s)',
         noCompute: 'I could not compute the Coach recommendation.',
         trainingEnabled: 'Training Mode enabled 🎓',
@@ -10442,7 +10442,7 @@ limitations under the License.
             let prevBestScore = 0; // For aspiration windows
 
             // ✨ Improvement 1: Soft time limit.
-            // Don’t START a new depth iteration if we have used more than 60% of our budget.
+            // Don't START a new depth iteration if we have used more than 60% of our budget.
             // This ensures we always return the last *completed* depth result, which is
             // significantly better than an aborted partial result from a deeper iteration.
             // Immediate exit if there is only one legal move — no quality cost.
@@ -11805,11 +11805,11 @@ limitations under the License.
         resetCommentaryStyleMemory();
         const intros = {
           en: [
-            '🎙️ "Board ready! Let’s play calm and smart."',
+            '🎙️ "Board ready! Let\'s play calm and smart."',
             '🎙️ "Great! Start by developing your pieces."',
             '🎙️ "New game! Check safety before each move."',
             '🎙️ "Take your time. Good moves are better than fast moves."',
-            '🎙️ "Fresh start! Let’s fight for the center."'
+            '🎙️ "Fresh start! Let\'s fight for the center."'
           ],
           es: [
             '🎙️ "¡Tablero listo! Juguemos con calma y cabeza."',
