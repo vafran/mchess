@@ -31,3 +31,7 @@ partidas_guardadas/
 /stockfish_tests/*.json
 /engine_patches.js
 /stockfish_tests/engine_patches.js
+
+# === Archivos de configuración local ===
+# Si tienes archivos de configuración específicos para tu entorno, como claves API o configuraciones de desarrollo
+.claude
