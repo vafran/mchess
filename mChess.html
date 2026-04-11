@@ -2589,12 +2589,11 @@ limitations under the License.
   <!-- Confirmation Modal -->
   <div class="confirm-modal" id="confirmModal">
     <div class="confirm-box">
-      <h3>⚠️ ¿Reiniciar partida?</h3>
-      <p>¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.</p>
+      <h3 id="confirmModalTitle">⚠️ ¿Reiniciar partida?</h3>
+      <p id="confirmModalDesc">¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.</p>
       <div class="confirm-buttons">
-        <button class="btn btn-secondary" onclick="hideConfirmDialog()">Oops, cancelar</button>
-        <button class="btn btn-primary" style="background: var(--danger);" onclick="confirmResetGame()">Sí,
-          reiniciar</button>
+        <button class="btn btn-secondary" id="confirmModalCancel" onclick="hideConfirmDialog()">Oops, cancelar</button>
+        <button class="btn btn-primary" id="confirmModalOk" style="background: var(--danger);" onclick="confirmResetGame()">Sí, reiniciar</button>
       </div>
     </div>
   </div>
@@ -3456,8 +3455,11 @@ limitations under the License.
         aiCaptureSmall: '¡Uy! ¡Te pillé! 😜|¡Buen intento! 🤭|¡Ñam ñam! 😋|¡Eso fue mío! 🎯|¡Sorpresa! 🎉|¡A mi colección! 🏆',
         aiCaptureBig: '¡WOW! ¡Capturé tu Dama! 👑😱|¡Tu Torre es mía! 🏰🤖|¡Adiós Alfil! ✨🤭|¡Caballo capturado! 🐴💨',
         loadFen: '🏁 Cargar Posición (FEN)',
-        fenLibTitle: 'Librería de Posiciones'
-
+        fenLibTitle: 'Librería de Posiciones',
+        confirmRestartTitle: '⚠️ ¿Reiniciar partida?',
+        confirmRestartDesc: '¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.',
+        confirmRestartCancel: 'Oops, cancelar',
+        confirmRestartOk: 'Sí, reiniciar'
       },
       en: {
         thinking: '🤖 Thinking', turnWhite: 'Turn: ⬜ White', turnBlack: 'Turn: ⬛ Black',
@@ -3500,7 +3502,11 @@ limitations under the License.
         aiCaptureSmall: 'Gotcha! 😜|Nice try! 🤭|Yum yum! 😋|That was mine! 🎯|Surprise! 🎉|Into my collection! 🏆',
         aiCaptureBig: 'WOW! I captured your Queen! 👑😱|Your Rook is mine! 🏰🤖|Goodbye Bishop! ✨🤭|Knight captured! 🐴💨',
         loadFen: '🏁 Load Position (FEN)',
-        fenLibTitle: 'Position Library'
+        fenLibTitle: 'Position Library',
+        confirmRestartTitle: '⚠️ Restart game?',
+        confirmRestartDesc: 'Are you sure you want to start over? You will lose all your current progress on this board.',
+        confirmRestartCancel: 'Oops, cancel',
+        confirmRestartOk: 'Yes, restart'
       }
     };
 
@@ -4089,6 +4095,10 @@ limitations under the License.
         resetGame();
         return;
       }
+      document.getElementById('confirmModalTitle').textContent  = t('confirmRestartTitle');
+      document.getElementById('confirmModalDesc').textContent   = t('confirmRestartDesc');
+      document.getElementById('confirmModalCancel').textContent = t('confirmRestartCancel');
+      document.getElementById('confirmModalOk').textContent     = t('confirmRestartOk');
       document.getElementById('confirmModal').classList.add('show');
     }
 
@@ -5333,11 +5343,11 @@ limitations under the License.
     function undoMove() {
       if (aiThinking) return;
 
-      if (gameMode === 'ai' && (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster')) {
+      if (gameMode === 'ai' && currentDifficulty === 'hard') {
         playErrorSound();
         showToast(currentLanguage === 'en'
-          ? `Undo is disabled on ${currentDifficulty === 'hard' ? 'Hard' : 'Master'} level 🚫`
-          : `No se puede deshacer en nivel ${currentDifficulty === 'hard' ? 'Difícil' : 'Maestro'} 🚫`);
+          ? 'Undo is disabled on Hard level 🚫'
+          : 'No se puede deshacer en nivel Difícil 🚫');
         return;
       }
 
