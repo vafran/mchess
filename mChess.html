@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.8
+Monolith Chess v2.25.9
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.8</title>
+  <title>Monolith Chess v2.25.9</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.8 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.9 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3950,7 +3950,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.8", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.9", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -8497,7 +8497,7 @@ limitations under the License.
           const wIni = matDiff < -200 ? 1.04 : 1.0;
           const bIni = matDiff > 200 ? 1.04 : 1.0;
 
-          // 🛑 v2.25.8: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
+          // 🛑 v2.25.9: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
           // Evita que el motor simplifique a finales que no se pueden ganar
           // (Rey+Caballo vs Rey, Rey+Alfil vs Rey → evaluación 0 inmediata)
           const wPawnTotal = wP[0]+wP[1]+wP[2]+wP[3]+wP[4]+wP[5]+wP[6]+wP[7];
@@ -8991,7 +8991,7 @@ limitations under the License.
                 bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
               }
 
-              // 👑 v2.25.8: ESCOLTA DE PEONES PASADOS PROPIOS
+              // 👑 v2.25.9: ESCOLTA DE PEONES PASADOS PROPIOS
               // El rey debe ponerse delante del peón avanzado para abrirle camino
               const myPawnC = isW ? WP : BP;
               for (let pr = 0; pr < 8; pr++) {
@@ -9158,7 +9158,7 @@ limitations under the License.
                 workerKSRaw -= stormPoints * 20; // max = 6×20 = 120 cp
               }
 
-              // 4. Attacker pressure — non-linear S-curve (v2.25.8)
+              // 4. Attacker pressure — non-linear S-curve (v2.25.9)
               // OLD linear formula (attackers*8) gave same reward per attacker regardless of
               // how many were already present: Q+B=32cp, Q+R=40cp — small enough to justify
               // speculative piece sacrifices (Bxf7+ style) at depth 11+.
@@ -9542,6 +9542,44 @@ limitations under the License.
                 // The side NOT to move holds the opposition (they force the other king to yield)
                 if (state.turn === 'b') s += oppBonus;  // white has opposition (black must move)
                 else s -= oppBonus; // black has opposition (white must move)
+              }
+            }
+          }
+
+          // ── HANGING PIECE PENALTY (v2.25.9) ─────────────────────────────────
+          // Penalises a minor/rook that is attacked by an enemy pawn but NOT defended
+          // by a friendly pawn.  Key case: Ng5 attacked by h6 pawn — the engine kept
+          // playing Nc3 because the resulting position (down a knight) still scored okay.
+          // Board convention: row 0 = rank 8 (black home), row 7 = rank 1 (white home).
+          //   Black pawn at (r,c) attacks (r+1, c±1).
+          //   White pawn at (r,c) attacks (r-1, c±1).
+          // So white piece at (R,C) is attacked by BP at (R-1, C±1);
+          //    defended by WP at (R+1, C±1).
+          // Penalty = half the "excess" piece value above a pawn (N→112, B→117, R→200).
+          // Queens excluded — they always have piece-based defenders.
+          // Only middlegame / early endgame (eg < 0.65).
+          if (eg < 0.65) {
+            for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+              const _p = b[_r*8+_c];
+              if (!_p || _p === 0) continue;
+              const _pt = _p & 7;
+              if (_pt === 1 || _pt === 5 || _pt === 6) continue; // skip P, Q, K
+              if (_p <= 6) { // white piece
+                const _atk = (_r > 0 && _c > 0 && b[(_r-1)*8+(_c-1)] === BP) ||
+                             (_r > 0 && _c < 7 && b[(_r-1)*8+(_c+1)] === BP);
+                if (_atk) {
+                  const _def = (_r < 7 && _c > 0 && b[(_r+1)*8+(_c-1)] === WP) ||
+                               (_r < 7 && _c < 7 && b[(_r+1)*8+(_c+1)] === WP);
+                  if (!_def) s -= Math.round((PV_I[_pt] - 100) * 0.5);
+                }
+              } else { // black piece
+                const _atk = (_r < 7 && _c > 0 && b[(_r+1)*8+(_c-1)] === WP) ||
+                             (_r < 7 && _c < 7 && b[(_r+1)*8+(_c+1)] === WP);
+                if (_atk) {
+                  const _def = (_r > 0 && _c > 0 && b[(_r-1)*8+(_c-1)] === BP) ||
+                               (_r > 0 && _c < 7 && b[(_r-1)*8+(_c+1)] === BP);
+                  if (!_def) s += Math.round((PV_I[_pt] - 100) * 0.5);
+                }
               }
             }
           }
@@ -10517,7 +10555,12 @@ limitations under the License.
                     // prevBestScore < -500 means we are down >5 pawns — accept the lifeline
                     scoreForMe = prevBestScore < -500 ? 0 : -9000;
                   } else if (reps === 1) {
-                    scoreForMe = 0; // 2nd repetition — treat as draw, engine decides contextually
+                    // v2.25.9: mild deterrent (-20) instead of exact draw (0).
+                    // Stops aimless king shuttles (Kh1↔Kg1) when the engine is slightly losing:
+                    // it kept oscillating hoping for a 3-fold draw that SF never allowed.
+                    // -20cp is still far better than truly lost positions (<-500), so the engine
+                    // still accepts repetitions as a lifeline when actually in serious trouble.
+                    scoreForMe = -20;
                   } else {
                     let rawScore;
                     // Note: do NOT push child hash here — minimax's internal push handles it.
