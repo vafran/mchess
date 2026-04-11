@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.2
+Monolith Chess v2.25.3
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.2</title>
+  <title>Monolith Chess v2.25.3</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.2 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.3 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3932,7 +3932,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.2", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.3", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7472,6 +7472,19 @@ limitations under the License.
       if (wBishopsCount >= 2) score += 40;
       if (bBishopsCount >= 2) score -= 40;
 
+      // Knight vs Bishop dynamic adjustment — same logic as worker
+      const _totalPawns = wP.reduce((a,b)=>a+b,0) + bP.reduce((a,b)=>a+b,0);
+      const _missing = 16 - _totalPawns;
+      if (_missing !== 0) {
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+          const p = brd[r][c]; if (!p || p === ' ') continue;
+          const _sign = (p === p.toUpperCase()) ? 1 : -1;
+          const _u = p.toUpperCase();
+          if (_u === 'B') score += _sign * _missing * 3;
+          if (_u === 'N') score -= _sign * _missing * 2;
+        }
+      }
+
       let wKing = null, bKing = null;
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
@@ -8450,7 +8463,7 @@ limitations under the License.
           const wIni = matDiff < -200 ? 1.04 : 1.0;
           const bIni = matDiff > 200 ? 1.04 : 1.0;
 
-          // 🛑 v2.25.2: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
+          // 🛑 v2.25.3: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
           // Evita que el motor simplifique a finales que no se pueden ganar
           // (Rey+Caballo vs Rey, Rey+Alfil vs Rey → evaluación 0 inmediata)
           const wPawnTotal = wP[0]+wP[1]+wP[2]+wP[3]+wP[4]+wP[5]+wP[6]+wP[7];
@@ -8621,6 +8634,24 @@ limitations under the License.
           // Having both bishops is worth ~30 centipawns, more in open positions
           if (wBishops >= 2) s += 40;
           if (bBishops >= 2) s -= 40;
+
+          // ── Knight vs Bishop dynamic adjustment (open/closed position) ─────
+          // PeSTO tapers on piece count (ph), not pawn count. We need an extra
+          // signal: more pawns on board → knights better (can hop over); fewer
+          // pawns → bishops better (long diagonals are clear).
+          // +3cp per bishop / -2cp per knight for each pawn missing from the board.
+          // Max effect at 0 pawns: bishop +48cp, knight -32cp (≈+80cp swing).
+          const totalPawns = wPawnTotal + bPawnTotal;
+          const missingPawns = 16 - totalPawns;
+          if (missingPawns !== 0) {
+            for (let _r = 0; _r < 8; _r++)for (let _c = 0; _c < 8; _c++) {
+              const _p = b[_r*8+_c]; if (!_p || _p === 0) continue;
+              const _pt = _p & 7;
+              const _sign = (_p > 0 && _p <= 6) ? 1 : -1;
+              if (_pt === 3) s += _sign * missingPawns * 3;  // bishop: +3cp per missing pawn
+              if (_pt === 2) s -= _sign * missingPawns * 2;  // knight: -2cp per missing pawn
+            }
+          }
 
           // ── Per-piece evaluation ────────────────────────────────────────────
           for (let r = 0; r < 8; r++)for (let c = 0; c < 8; c++) {
@@ -8923,7 +8954,7 @@ limitations under the License.
                 bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
               }
 
-              // 👑 v2.25.2: ESCOLTA DE PEONES PASADOS PROPIOS
+              // 👑 v2.25.3: ESCOLTA DE PEONES PASADOS PROPIOS
               // El rey debe ponerse delante del peón avanzado para abrirle camino
               const myPawnC = isW ? WP : BP;
               for (let pr = 0; pr < 8; pr++) {
