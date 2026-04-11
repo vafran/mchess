@@ -542,6 +542,7 @@ async function runTournament() {
         const t = msg.text();
         if (msg.type() === 'error') console.log('🌐 Error:', t.slice(0, 120));
         else if (t.includes('NPS:')) console.log('   🧠', t.replace(/.*?Real depth:/, 'depth:').trim());
+        else if (t.includes('Book exit')) console.log('   ⚠️  ' + t);
     });
     console.log('🌐 Loading page...');
     await sharedPage.goto('file://' + CONFIG.htmlFile);
