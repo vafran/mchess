@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.4
+Monolith Chess v2.25.6
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.4</title>
+  <title>Monolith Chess v2.25.6</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.4 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.6 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2828,16 +2828,34 @@ limitations under the License.
           }
           const currentId = ++window._wkLastRequestId;
           let settled = false;
+          let bestSoFar = null; // 📡 Updated after each completed depth
           const t = setTimeout(() => {
             console.log("⚠️ Safety timer triggered.");
-            if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+            if (!settled) {
+              settled = true;
+              worker.terminate();
+              chessEngineWorker = null;
+              if (bestSoFar) {
+                // Worker froze but we have a valid move from a completed depth — use it
+                console.log(`📡 Using bestSoFar from d${bestSoFar.completedDepth} (worker froze)`);
+                resolve({ moves: bestSoFar.moves, completedDepth: bestSoFar.completedDepth, maxDepth: _depth, isPartial: true });
+              } else {
+                resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true });
+              }
+            }
           }, timeoutRes + 15000);
 
           worker.onmessage = function (e) {
             // 🛡️ Ignorar mensajes de búsquedas canceladas o peticiones antiguas
             if (e.data.requestId && e.data.requestId !== currentId) return;
 
-            if (e.data.action === 'result') {
+            if (e.data.action === ‘bestSoFar’) {
+              // Incremental update — store best move found so far (don’t settle yet)
+              bestSoFar = { moves: e.data.moves, completedDepth: e.data.completedDepth };
+              return;
+            }
+
+            if (e.data.action === ‘result’) {
               clearTimeout(t);
               if (!settled) {
                 settled = true;
@@ -2849,18 +2867,18 @@ limitations under the License.
                   isPartial: !!e.data.isPartial
                 });
               }
-            } else if (e.data.action === 'error') {
+            } else if (e.data.action === ‘error’) {
               // Worker hit an uncaught exception — resolve fast instead of waiting 45s
-              console.log('⚠️ Worker error (resolved fast):', e.data.error);
+              console.log(‘⚠️ Worker error (resolved fast):’, e.data.error);
               clearTimeout(t);
-              if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+              if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: bestSoFar ? bestSoFar.moves : [], completedDepth: bestSoFar ? bestSoFar.completedDepth : 0, maxDepth: _depth, isPartial: true }); }
             }
           };
           worker.onerror = function (ev) {
             // Catches uncaught worker exceptions that don’t go through onmessage
-            console.log('⚠️ Uncaught worker error:', ev.message);
+            console.log(‘⚠️ Uncaught worker error:’, ev.message);
             clearTimeout(t);
-            if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+            if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: bestSoFar ? bestSoFar.moves : [], completedDepth: bestSoFar ? bestSoFar.completedDepth : 0, maxDepth: _depth, isPartial: true }); }
           };
           worker.postMessage({
             action: 'search',
@@ -3932,7 +3950,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.4", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.6", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -8473,7 +8491,7 @@ limitations under the License.
           const wIni = matDiff < -200 ? 1.04 : 1.0;
           const bIni = matDiff > 200 ? 1.04 : 1.0;
 
-          // 🛑 v2.25.4: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
+          // 🛑 v2.25.6: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
           // Evita que el motor simplifique a finales que no se pueden ganar
           // (Rey+Caballo vs Rey, Rey+Alfil vs Rey → evaluación 0 inmediata)
           const wPawnTotal = wP[0]+wP[1]+wP[2]+wP[3]+wP[4]+wP[5]+wP[6]+wP[7];
@@ -8964,7 +8982,7 @@ limitations under the License.
                 bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
               }
 
-              // 👑 v2.25.4: ESCOLTA DE PEONES PASADOS PROPIOS
+              // 👑 v2.25.6: ESCOLTA DE PEONES PASADOS PROPIOS
               // El rey debe ponerse delante del peón avanzado para abrirle camino
               const myPawnC = isW ? WP : BP;
               for (let pr = 0; pr < 8; pr++) {
@@ -10596,6 +10614,10 @@ limitations under the License.
 
                 bestOptions = currentDepthScores.slice(0, multiPV);
 
+                // 📡 bestSoFar: send best move after each completed depth so the
+                // main thread always has a valid fallback if the worker freezes/crashes.
+                postMessage({ action: 'bestSoFar', moves: bestOptions, completedDepth: d, requestId });
+
                 // ⏱️ SOFT DEADLINE REAL
                 bestMovesHistory.push(bestOptions[0].move);
                 bestScoresHistory.push(bestOptions[0].score);
@@ -10911,9 +10933,10 @@ limitations under the License.
           // causing valid worker moves to appear "illegal" and triggering stack-overflow fallbacks.
           if (!move) {
             // Fallback: búsqueda síncrona de emergencia (evita capturar a ciegas)
-            console.warn('⚠️ Worker no respondió. Usando búsqueda síncrona de emergencia.');
-            const emergencyDepth = currentDifficulty === 'grandmaster' ? 3 : 2;
-            move = findBestMoveFor(aiColor, emergencyDepth, 0, 2000, currentDifficulty) || null;
+            // Depth 2 fijo (depth 3 puede congelar móvil lento), sin límite de tiempo
+            // para garantizar que siempre termina — el random nunca debe ejecutarse.
+            console.warn('⚠️ Worker no respondió. Usando búsqueda síncrona de emergencia (d2, sin límite).');
+            move = findBestMoveFor(aiColor, 2, 0, Number.MAX_SAFE_INTEGER, currentDifficulty) || null;
             // Último recurso: jugada legal aleatoria
             if (!move) {
               const legalFall = getLegalMovesForColorInPlace(aiColor);
