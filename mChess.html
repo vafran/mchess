@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.6
+Monolith Chess v2.25.7
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.6</title>
+  <title>Monolith Chess v2.25.7</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.6 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.7 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3950,7 +3950,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.6", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.7", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7503,6 +7503,14 @@ limitations under the License.
         }
       }
 
+      // Precompute pawn counts per square color (for bad bishop — avoids O(64×bishops) inner scan)
+      let _wPawnsLight = 0, _wPawnsDark = 0, _bPawnsLight = 0, _bPawnsDark = 0;
+      for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+        const _pp = brd[_r][_c];
+        if (_pp === 'P') { if ((_r+_c)%2===0) _wPawnsLight++; else _wPawnsDark++; }
+        else if (_pp === 'p') { if ((_r+_c)%2===0) _bPawnsLight++; else _bPawnsDark++; }
+      }
+
       let wKing = null, bKing = null;
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
@@ -7572,11 +7580,9 @@ limitations under the License.
 
           if (type === 'B') {
             const bSqColor = (r + c) % 2;
-            const ownPawn = isW ? 'P' : 'p';
-            let ownOnSameColor = 0;
-            for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
-              if (brd[_r][_c] === ownPawn && (_r + _c) % 2 === bSqColor) ownOnSameColor++;
-            }
+            const ownOnSameColor = isW
+              ? (bSqColor === 0 ? _wPawnsLight : _wPawnsDark)
+              : (bSqColor === 0 ? _bPawnsLight : _bPawnsDark);
             if (ownOnSameColor > 2) bonus -= (ownOnSameColor - 2) * Math.round(8 * (0.5 + 0.5 * eg));
           }
 
@@ -7597,8 +7603,8 @@ limitations under the License.
               }
               if (supported && !enemyCanAttack) isOutpost = true;
             }
-            if (isOutpost) bonus += 140;
-            else if (isAdvanced) bonus -= 15; // FIX v2.24.0: -40 was too harsh, caused unnecessary retreats
+            if (isOutpost) bonus += 65; // synced with worker value
+            else if (isAdvanced) bonus -= 15;
           }
 
           // ── FIX v2.23.0: Rook Endgame Activity ──────────────────────────────────────
@@ -8491,7 +8497,7 @@ limitations under the License.
           const wIni = matDiff < -200 ? 1.04 : 1.0;
           const bIni = matDiff > 200 ? 1.04 : 1.0;
 
-          // 🛑 v2.25.6: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
+          // 🛑 v2.25.7: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
           // Evita que el motor simplifique a finales que no se pueden ganar
           // (Rey+Caballo vs Rey, Rey+Alfil vs Rey → evaluación 0 inmediata)
           const wPawnTotal = wP[0]+wP[1]+wP[2]+wP[3]+wP[4]+wP[5]+wP[6]+wP[7];
@@ -8679,6 +8685,14 @@ limitations under the License.
               if (_pt === 3) s += _sign * missingPawns * 3;  // bishop: +3cp per missing pawn
               if (_pt === 2) s -= _sign * missingPawns * 2;  // knight: -2cp per missing pawn
             }
+          }
+
+          // ── Precompute pawn counts per square color (for bad bishop — avoids O(64×bishops) inner scan) ──
+          let wPawnsLight = 0, wPawnsDark = 0, bPawnsLight = 0, bPawnsDark = 0;
+          for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+            const _pp = b[_r*8+_c];
+            if (_pp === WP) { if ((_r+_c)%2===0) wPawnsLight++; else wPawnsDark++; }
+            else if (_pp === BP) { if ((_r+_c)%2===0) bPawnsLight++; else bPawnsDark++; }
           }
 
           // ── Per-piece evaluation ────────────────────────────────────────────
@@ -8923,7 +8937,7 @@ limitations under the License.
               if (isOutpost) {
                 bonus += 65;
               } else if (isAdvanced) {
-                bonus -= 40; // Penalize blindly jumping ahead without pawn support
+                bonus -= 15; // synced with evaluateBoard() fix v2.24.0 (-40 was too harsh)
               }
             }
 
@@ -8945,16 +8959,11 @@ limitations under the License.
               // Previously (+21 vs -18) = 39cp — barely visible vs 300cp piece value.
               bonus += (mob - 6) * 8;
 
-              // 🟠 BAD BISHOP: penalize bishop when own pawns block its diagonals
-              // A bishop on light squares is "bad" if many own pawns sit on light squares.
-              // sq color for this bishop: (r+c) % 2
+              // 🟠 BAD BISHOP: uses precomputed pawn-per-color counts (no inner loop)
               const bishopSqColor = (r + c) % 2;
-              const ownPawn = isW ? WP : BP;
-              let ownPawnsOnSameColor = 0;
-              for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
-                if (b[_r*8+_c] === ownPawn && (_r + _c) % 2 === bishopSqColor) ownPawnsOnSameColor++;
-              }
-              // -8cp per blocked pawn, scaled by endgame (worse in endgame with fewer pieces)
+              const ownPawnsOnSameColor = isW
+                ? (bishopSqColor === 0 ? wPawnsLight : wPawnsDark)
+                : (bishopSqColor === 0 ? bPawnsLight : bPawnsDark);
               if (ownPawnsOnSameColor > 2) bonus -= (ownPawnsOnSameColor - 2) * Math.round(8 * (0.5 + 0.5 * eg));
             }
             // Anti Opening Shuffle now evaluated globally via wUndevelopedMinors
@@ -8982,7 +8991,7 @@ limitations under the License.
                 bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
               }
 
-              // 👑 v2.25.6: ESCOLTA DE PEONES PASADOS PROPIOS
+              // 👑 v2.25.7: ESCOLTA DE PEONES PASADOS PROPIOS
               // El rey debe ponerse delante del peón avanzado para abrirle camino
               const myPawnC = isW ? WP : BP;
               for (let pr = 0; pr < 8; pr++) {
