@@ -2805,7 +2805,7 @@ limitations under the License.
                   outerHang: for (let _r = 0; _r < 8; _r++) {
                     for (let _c = 0; _c < 8; _c++) {
                       const _p = brd[_r][_c];
-                      if (!_p) continue;
+                      if (!_p || _p === ' ') continue;
                       const _pu = _p.toUpperCase();
                       if (_pu === 'P' || _pu === 'K' || _pu === 'Q') continue; // only N/B/R
                       const _isOwnPiece = isWhite ? (_p === _p.toUpperCase()) : (_p === _p.toLowerCase());
