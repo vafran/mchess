@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.7
+Monolith Chess v2.25.8
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.7</title>
+  <title>Monolith Chess v2.25.8</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.7 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.8 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3950,7 +3950,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.7", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.8", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -8497,7 +8497,7 @@ limitations under the License.
           const wIni = matDiff < -200 ? 1.04 : 1.0;
           const bIni = matDiff > 200 ? 1.04 : 1.0;
 
-          // 🛑 v2.25.7: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
+          // 🛑 v2.25.8: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
           // Evita que el motor simplifique a finales que no se pueden ganar
           // (Rey+Caballo vs Rey, Rey+Alfil vs Rey → evaluación 0 inmediata)
           const wPawnTotal = wP[0]+wP[1]+wP[2]+wP[3]+wP[4]+wP[5]+wP[6]+wP[7];
@@ -8991,7 +8991,7 @@ limitations under the License.
                 bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
               }
 
-              // 👑 v2.25.7: ESCOLTA DE PEONES PASADOS PROPIOS
+              // 👑 v2.25.8: ESCOLTA DE PEONES PASADOS PROPIOS
               // El rey debe ponerse delante del peón avanzado para abrirle camino
               const myPawnC = isW ? WP : BP;
               for (let pr = 0; pr < 8; pr++) {
@@ -9158,8 +9158,17 @@ limitations under the License.
                 workerKSRaw -= stormPoints * 20; // max = 6×20 = 120 cp
               }
 
-              // 4. Attacker pressure — capped coefficient
-              const kPenalty = Math.min(120, attackers * 8);
+              // 4. Attacker pressure — non-linear S-curve (v2.25.8)
+              // OLD linear formula (attackers*8) gave same reward per attacker regardless of
+              // how many were already present: Q+B=32cp, Q+R=40cp — small enough to justify
+              // speculative piece sacrifices (Bxf7+ style) at depth 11+.
+              // NEW S-curve: first 1-2 attackers give near-zero penalty (lone attacker = no real
+              // threat), penalty accelerates steeply at 5-9 units (critical mass) then flattens
+              // at cap.  Q alone (3 units) = 6cp, Q+B (4) = 13cp, Q+R (5) = 24cp,
+              // Q+R+N+B (7) = 60cp, Q+2R+2B+N (11) = 128cp.
+              // Index = attackWeight (Q=3, R=2, N/B/P=1).
+              const KS_CURVE = [0, 0, 2, 6, 13, 24, 40, 60, 83, 103, 118, 128, 136, 141, 145, 148, 150];
+              const kPenalty = KS_CURVE[Math.min(attackers, KS_CURVE.length - 1)];
               workerKSRaw -= kPenalty * (1 - eg);
 
               // 5. Open files near castled king with enemy major
