@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.16
+Monolith Chess v2.25.17
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.16</title>
+  <title>Monolith Chess v2.25.17</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.16 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.17 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3998,7 +3998,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.16", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.17", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7765,7 +7765,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.16 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.17 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -7778,7 +7778,7 @@ limitations under the License.
             if (_u === 'Q' || _u === 'K') continue;
             if (_p === _u) { // white piece (uppercase)
               if (_u === 'P') {
-                if (eg < 0.30) {
+                if (eg < 0.65) {
                   const _atkN = (_r > 1 && _c > 0 && brd[_r-2][_c-1] === 'n') ||
                                 (_r > 1 && _c < 7 && brd[_r-2][_c+1] === 'n') ||
                                 (_r > 0 && _c > 1 && brd[_r-1][_c-2] === 'n') ||
@@ -7801,7 +7801,7 @@ limitations under the License.
               }
             } else { // black piece (lowercase)
               if (_u === 'P') {
-                if (eg < 0.30) {
+                if (eg < 0.65) {
                   const _atkN = (_r < 6 && _c > 0 && brd[_r+2][_c-1] === 'N') ||
                                 (_r < 6 && _c < 7 && brd[_r+2][_c+1] === 'N') ||
                                 (_r < 7 && _c > 1 && brd[_r+1][_c-2] === 'N') ||
@@ -9660,7 +9660,7 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE PENALTY (v2.25.16) ─────────────────────────────────
+          // ── HANGING PIECE PENALTY (v2.25.17) ─────────────────────────────────
           // Fix 1: piece (N/B/R) attacked by enemy pawn, no pawn OR piece defense.
           // Penalty = PV_I[_pt] (full piece value: N→325, B→350, R→500).
           // Uses isAtk() to check for any friendly piece defender before penalizing.
@@ -9675,8 +9675,8 @@ limitations under the License.
               if (_pt === 5 || _pt === 6) continue; // skip Q, K
               if (_p <= 6) { // white piece
                 if (_pt === 1) {
-                  // Fix 2: white pawn attacked by black knight, opening only
-                  if (eg < 0.30) {
+                  // Fix 2: white pawn attacked by black knight, opening+middlegame (eg<0.65)
+                  if (eg < 0.65) {
                     const _atkN = (_r > 1 && _c > 0 && b[(_r-2)*8+(_c-1)] === BN) ||
                                   (_r > 1 && _c < 7 && b[(_r-2)*8+(_c+1)] === BN) ||
                                   (_r > 0 && _c > 1 && b[(_r-1)*8+(_c-2)] === BN) ||
@@ -9699,8 +9699,8 @@ limitations under the License.
                 }
               } else { // black piece
                 if (_pt === 1) {
-                  // Fix 2: black pawn attacked by white knight, opening only
-                  if (eg < 0.30) {
+                  // Fix 2: black pawn attacked by white knight, opening+middlegame (eg<0.65)
+                  if (eg < 0.65) {
                     const _atkN = (_r < 6 && _c > 0 && b[(_r+2)*8+(_c-1)] === WN) ||
                                   (_r < 6 && _c < 7 && b[(_r+2)*8+(_c+1)] === WN) ||
                                   (_r < 7 && _c > 1 && b[(_r+1)*8+(_c-2)] === WN) ||
@@ -9725,7 +9725,7 @@ limitations under the License.
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.16) ────────────────────────────────
+          // ── NARROW MATERIAL ANCHOR (v2.25.17) ────────────────────────────────
           // Only active in the very early opening (eg<0.10, almost no captures yet)
           // and only when genuinely down a piece (matDiff < -280, i.e. knight or more).
           // Prevents phantom compensation: engine won't convince itself a hanging piece
