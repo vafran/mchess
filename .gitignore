@@ -29,6 +29,7 @@ partidas_guardadas/
 /tournament_results.json
 /stockfish_tests/tournament_results.json
 /stockfish_tests/*.json
+!/stockfish_tests/fen_replay_wins_draws.json
 /engine_patches.js
 /stockfish_tests/engine_patches.js
 
