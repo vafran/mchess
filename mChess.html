@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.15
+Monolith Chess v2.25.16
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.15</title>
+  <title>Monolith Chess v2.25.16</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.15 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.16 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3998,7 +3998,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.15", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.16", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7765,7 +7765,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.15 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.16 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -9660,7 +9660,7 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE PENALTY (v2.25.15) ─────────────────────────────────
+          // ── HANGING PIECE PENALTY (v2.25.16) ─────────────────────────────────
           // Fix 1: piece (N/B/R) attacked by enemy pawn, no pawn OR piece defense.
           // Penalty = PV_I[_pt] (full piece value: N→325, B→350, R→500).
           // Uses isAtk() to check for any friendly piece defender before penalizing.
@@ -9725,7 +9725,7 @@ limitations under the License.
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.15) ────────────────────────────────
+          // ── NARROW MATERIAL ANCHOR (v2.25.16) ────────────────────────────────
           // Only active in the very early opening (eg<0.10, almost no captures yet)
           // and only when genuinely down a piece (matDiff < -280, i.e. knight or more).
           // Prevents phantom compensation: engine won't convince itself a hanging piece
@@ -10868,6 +10868,33 @@ limitations under the License.
               if (analysisPartial) break;
             }
 
+            // ── ROOT-LEVEL SEE ANTI-BLUNDER FILTER ────────────────────────
+            // Run BEFORE the non-repetition filter so bestOptions is already
+            // clean when finalOptions is derived from it.
+            // If the top move immediately hangs a piece (SEE < -50 on a quiet
+            // move), discard it and use the next-best from scoredRoot.
+            // Safety net against TT collisions, cold-start depth-1 stale
+            // scores, and eval anomalies that slip through the main search.
+            {
+              let _safeIdx = 0;
+              const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
+              for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
+                const _m = _sr[_i].move;
+                try {
+                  const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
+                  if (_moveSee >= -50) { _safeIdx = _i; break; }
+                } catch(e) { _safeIdx = 0; break; }
+              }
+              if (_safeIdx > 0) {
+                const _safeMove = _sr[_safeIdx].move;
+                if (!bestOptions.some(o =>
+                  o.move.fr === _safeMove.fr && o.move.fc === _safeMove.fc &&
+                  o.move.tr === _safeMove.tr && o.move.tc === _safeMove.tc)) {
+                  bestOptions = [_sr[_safeIdx]];
+                }
+              }
+            }
+
             // Final anti-repetition filter: exclude already-seen positions
             // IMPORTANT: uses stringHash() to match the same key used when building gameHashCount
             const nonRep = bestOptions.filter(o => {
@@ -10910,35 +10937,6 @@ limitations under the License.
               }
             }
 
-
-            // ── ROOT-LEVEL SEE ANTI-BLUNDER FILTER ────────────────────────
-            // After all depth iterations, run a fast SEE check on the top move.
-            // If the chosen move immediately hangs a piece (SEE < -100cp on a quiet move),
-            // discard it and use the next-best from scoredRoot.
-            // This is a safety net against TT collisions, cold-start depth-1 stale scores,
-            // and any evaluation anomaly that slips through the main search.
-            // Cost: one SEE call (O(N) board scan) — negligible.
-            {
-              let _safeIdx = 0;
-              const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
-              for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
-                const _m = _sr[_i].move;
-                try {
-                  const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
-                  if (_moveSee >= -50) { _safeIdx = _i; break; } // move is safe (capturas y silenciosas)
-                } catch(e) { _safeIdx = 0; break; }
-                // Move hangs a piece for nothing — skip it and try next
-              }
-              if (_safeIdx > 0) {
-                // Best move was a blunder — use the safe alternative
-                const _safeMove = _sr[_safeIdx].move;
-                if (!bestOptions.some(o =>
-                  o.move.fr === _safeMove.fr && o.move.fc === _safeMove.fc &&
-                  o.move.tr === _safeMove.tr && o.move.tc === _safeMove.tc)) {
-                  bestOptions = [_sr[_safeIdx]];
-                }
-              }
-            }
             const _totalN = searchNodes + qSearchNodes;
             const _ms = Date.now() - searchStartTime;
             const _nps = _ms > 0 ? Math.floor((_totalN / _ms) * 1000) : 0;
