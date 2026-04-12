@@ -472,9 +472,16 @@ async function runTournament() {
     CONFIG.depths = depths;
     CONFIG.selectedLevel = selectedLevel;
 
-    const htmlBase = path.basename(CONFIG.htmlFile, '.html');
+    // Extract mChess version from HTML title tag (e.g. "Monolith Chess v2.25.32" → "v2.25.32")
+    let mchessVer = '';
+    try {
+        const htmlSrc = fs.readFileSync(CONFIG.htmlFile, 'utf8');
+        const m = htmlSrc.match(/<title>Monolith Chess (v[\d.]+)<\/title>/);
+        if (m) mchessVer = '_' + m[1];
+    } catch (_) {}
     const modeTag = (fenReplayMode && fenList.length > 0) ? '_fenreplay' : '';
-    CONFIG.logFile = path.join(__dirname, `tournament_${htmlBase}_d${depths.join('_')}_${fenReplayMode && fenList.length > 0 ? fenList.length : n}g${modeTag}.json`);
+    const gameCount = fenReplayMode && fenList.length > 0 ? fenList.length : n;
+    CONFIG.logFile = path.join(__dirname, `tournament_mChess${mchessVer}_d${depths.join('_')}_${gameCount}g${modeTag}.json`);
 
     console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${depths.length} depth(s)`);
     depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
