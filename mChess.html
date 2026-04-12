@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.27
+Monolith Chess v2.25.28
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.27</title>
+  <title>Monolith Chess v2.25.28</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.27 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.28 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3378,9 +3378,9 @@ limitations under the License.
     };
 
     // Piece values used by the Profesor for trade evaluation and hanging-piece detection.
-    // Calibrated to match the worker's tapered averages (mgPV/egPV at ~50% game phase):
-    //   2 minors (315+330=645) > R+P (510+100=610) ✓   B(330) > N(315) ✓
-    const PIECE_VALUES = { P: 100, N: 315, B: 330, R: 510, Q: 885, K: 20000 };
+    // v2.25.28: unified with Worker values (MG_I/PV in worker) to eliminate SEE disagreements
+    // between the book-exit filter (main thread) and the actual move engine (worker).
+    const PIECE_VALUES = { P: 100, N: 325, B: 335, R: 500, Q: 900, K: 20000 };
 
     // ── Main-thread SEE (Static Exchange Evaluation) ─────────────────────────
     // Used by Hawk Eye and getImmediateReplyRisk for accurate exchange evaluation.
@@ -4005,7 +4005,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.27", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.28", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -5754,7 +5754,7 @@ limitations under the License.
 
       // ── Apertura Viena: continuaciones (Nc3) ────────────────────────────────
       // mChess tenía Nc3 en el libro pero ninguna continuación — el motor calculaba
-      // libremente y terminaba jugando Bb5→Bd3 (bloqueando d2). Añadido v2.25.27.
+      // libremente y terminaba jugando Bb5→Bd3 (bloqueando d2). Añadido v2.25.28.
       "e4,e5,Nc3,Nf6": [
         { m: "f4",   w: 8,  name: "Viena: gambito diferido",        desc: "Plan agresivo. Prepara f5 o estructura tipo Gambito de Rey." },
         { m: "Bc4",  w: 7,  name: "Viena: Bc4 agresivo",            desc: "El alfil apunta a f7. Transposición a la Italiana con Nc3." },
@@ -6887,7 +6887,7 @@ limitations under the License.
       ],
 
       // ══════════════════════════════════════════════════════════════════════════
-      // EXPANSIÓN ALTA PRIORIDAD — v2.25.27
+      // EXPANSIÓN ALTA PRIORIDAD — v2.25.28
       // ══════════════════════════════════════════════════════════════════════════
 
       // ── Defensa Petrov: continuaciones ──────────────────────────────────────
@@ -7952,7 +7952,7 @@ limitations under the License.
         'Dragón Siciliano': 'Sicilian Dragon',
         'Dragón Inglés': 'English Dragon',
         'Londres Sólido': 'Solid London',
-        // ── v2.25.27: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
+        // ── v2.25.28: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
         // Petrov
         'Petrov: variante principal': 'Petrov: Main Line',
         'Petrov: variante agresiva': 'Petrov: Aggressive Variation',
@@ -8521,7 +8521,7 @@ limitations under the License.
       }
 
       // Bishop blocking own central pawn (e.g. Be3 with Pe2 unmoved = development error)
-      // v2.25.27: raised 40→70 cp — engine was choosing structural damage over tactical complications
+      // v2.25.28: raised 40→70 cp — engine was choosing structural damage over tactical complications
       if (eg < 0.5) {
         if (brd[5][4] === 'B' && brd[6][4] === 'P') score -= 70; // Be3 + Pe2
         if (brd[5][3] === 'B' && brd[6][3] === 'P') score -= 70; // Bd3 + Pd2
@@ -8719,7 +8719,7 @@ limitations under the License.
             const kPen = Math.min(120, attackers * attackers * 8);
             kingSafetyRaw -= kPen * (1 - eg);
             // 4. Open/semi-open files near castled king with enemy major piece
-            // v2.25.27: also penalise semi-open files (friendly pawn still present but
+            // v2.25.28: also penalise semi-open files (friendly pawn still present but
             // enemy rook/queen already on the file — one trade away from invasion).
             // Fully open = 1 unit, semi-open = 0.5 unit; cost raised 25→35 cp/unit.
             if (c >= 5 || c <= 2) {
@@ -8761,7 +8761,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.27 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.28 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -8914,7 +8914,7 @@ limitations under the License.
         const targetVal = targetPiece && targetPiece !== ' ' ? (PIECE_VALUES[targetPiece.toUpperCase()] || 0) : 0;
         const isPromo = activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
 
-        // SEE pruning (v2.25.27): skip losing captures (e.g. QxP defended by pawn).
+        // SEE pruning (v2.25.28): skip losing captures (e.g. QxP defended by pawn).
         // Promotions and checks (targetVal=0) bypass this filter.
         if (!isPromo && targetVal > 0) {
           const seeVal = see(activeBoard, m.tr, m.tc, m.fr, m.fc);
@@ -9012,7 +9012,12 @@ limitations under the License.
       if (isSearchTimedOut()) return evaluateBoard(activeBoard, diffLevel);
 
       const side = isMaximizing ? 'w' : 'b';
-      const hash = side + activeBoard.flat().join('');
+      // v2.25.28: include castling rights + en-passant in hash to prevent stale TT hits
+      // when two positions differ only in castling availability or EP square.
+      const crStr = (castlingRights?.wK ? '1' : '0') + (castlingRights?.wQ ? '1' : '0')
+                  + (castlingRights?.bK ? '1' : '0') + (castlingRights?.bQ ? '1' : '0');
+      const epStr = enPassantTarget ? (enPassantTarget[0] + enPassantTarget[1]) : '-';
+      const hash = side + crStr + epStr + activeBoard.flat().join('');
 
       const alphaOrig = alpha;
       if (tt.has(hash)) {
@@ -9049,8 +9054,8 @@ limitations under the License.
           const nullScore = minimax(null, depth - 1 - R, alpha, beta, !isMaximizing, diffLevel, false);
           turn = savedTurn;
           enPassantTarget = savedEP;
-          if (isMaximizing && nullScore >= beta) return beta;
-          if (!isMaximizing && nullScore <= alpha) return alpha;
+          if (isMaximizing && nullScore >= beta) return nullScore;   // v2.25.28: fail-soft (was: beta)
+          if (!isMaximizing && nullScore <= alpha) return nullScore; // v2.25.28: fail-soft (was: alpha)
         }
       }
 
@@ -9088,15 +9093,19 @@ limitations under the License.
           // ── PVS: first move at full window ──────────────────────────────
           score = minimax(null, depth - 1 + ext, alpha, beta, !isMaximizing, diffLevel);
         } else if (doLMR) {
-          // LMR with null window
+          // LMR with null window — v2.25.28: correct window per side (mirrors worker)
           const reduction = idx >= 6 ? 2 : 1;
-          score = minimax(null, depth - 1 - reduction, alpha, alpha + 1, !isMaximizing, diffLevel);
+          const lmrA = isMaximizing ? alpha     : beta - 1;
+          const lmrB = isMaximizing ? alpha + 1 : beta;
+          score = minimax(null, depth - 1 - reduction, lmrA, lmrB, !isMaximizing, diffLevel);
           if (score > alpha && score < beta) {
             score = minimax(null, depth - 1 + ext, alpha, beta, !isMaximizing, diffLevel);
           }
         } else {
-          // ── PVS: null window for remaining moves ─────────────────────────
-          score = minimax(null, depth - 1 + ext, alpha, alpha + 1, !isMaximizing, diffLevel);
+          // ── PVS: null window for remaining moves — v2.25.28: correct per side ──
+          const pvA = isMaximizing ? alpha     : beta - 1;
+          const pvB = isMaximizing ? alpha + 1 : beta;
+          score = minimax(null, depth - 1 + ext, pvA, pvB, !isMaximizing, diffLevel);
           if (score > alpha && score < beta) {
             score = minimax(null, depth - 1 + ext, alpha, beta, !isMaximizing, diffLevel);
           }
@@ -9690,7 +9699,7 @@ limitations under the License.
           }
 
           // Bishop blocking own central pawn (opening/middlegame — eg < 0.5)
-          // v2.25.27: raised 40→70 cp — engine was choosing structural damage over tactical complications
+          // v2.25.28: raised 40→70 cp — engine was choosing structural damage over tactical complications
           if (eg < 0.5) {
             if (b[5*8+4] === WB && b[6*8+4] === WP) s -= 70; // Be3 + Pe2
             if (b[5*8+3] === WB && b[6*8+3] === WP) s -= 70; // Bd3 + Pd2
@@ -10295,7 +10304,7 @@ limitations under the License.
               workerKSRaw -= kPenalty * (1 - eg);
 
               // 5. Open/semi-open files near castled king with enemy major
-              // v2.25.27: semi-open penalty added (enemy major on file even with friendly pawn).
+              // v2.25.28: semi-open penalty added (enemy major on file even with friendly pawn).
               // Fully open = 1 unit, semi-open = 0.5 unit; cost raised 25→35 cp/unit.
               if (c >= 5 || c <= 2) {
                 const filesToCheck = c >= 5 ? [5, 6, 7] : [0, 1, 2];
@@ -10669,7 +10678,7 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.27) ──────────────
+          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.28) ──────────────
           // Uses SEE to detect any piece in a losing exchange (not just pawn attacks).
           // Covers: Nxd5 (knight into defended square), g4 Nxg4 (pawn hung to
           // knight), Bc5 attacked by Nd4, rook attacked by bishop, etc.
@@ -10743,7 +10752,7 @@ limitations under the License.
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.27) ────────────────────────────────
+          // ── NARROW MATERIAL ANCHOR (v2.25.28) ────────────────────────────────
           // Active in opening/early middlegame (eg<0.30) when down a piece (matDiff < -200).
           // Prevents phantom compensation: engine won't convince itself a sacrifice
           // is worth it because of speculative positional continuations.
