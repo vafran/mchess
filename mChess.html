@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.21
+Monolith Chess v2.25.22
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.21</title>
+  <title>Monolith Chess v2.25.22</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.21 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.22 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2794,7 +2794,7 @@ limitations under the License.
                 }
                 const bookMove = legalMvs.find(m => getMoveNotation(tempBoard, color, m, tempCR) === chosenEntry.m);
                 if (bookMove) {
-                  // ── v2.25.21: Hanging-piece book-exit (SEE-based) ────────────
+                  // ── v2.25.22: Hanging-piece book-exit (SEE-based) ────────────
                   // Before trusting the book, check if any own N/B/R is in a
                   // losing exchange (SEE > 50 from enemy's perspective).
                   // Covers pawn attacks, knight forks, bishop pins, etc.
@@ -4005,7 +4005,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.21", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.22", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -5934,6 +5934,220 @@ limitations under the License.
         { m: "c6", w: 5, name: "Pirc: variante checa", desc: "Estructura sólida. El negro juega ...d5 más adelante." }
       ],
 
+      // ── Pirc: continuaciones tras g6 ────────────────────────────────────────
+      // CRÍTICO: el juego vs bot 2700 salió de libro aquí → blunders Ng4/Nh5/Bc8
+      "e4,d6,d4,Nf6,Nc3,g6": [
+        { m: "Bg5", w: 9, name: "Pirc: sistema Bg5+Qd2", desc: "Sistema agresivo. Blancas preparan Qd2 y enroque largo con ataque de peones." },
+        { m: "f4",  w: 8, name: "Pirc: ataque austríaco", desc: "El avance más ambicioso. Prepara e5 para expulsar el Nf6." },
+        { m: "Be2", w: 7, name: "Pirc: variante clásica", desc: "Desarrollo sólido. Prepara enroque y plan f4 más tarde." },
+        { m: "Be3", w: 6, name: "Pirc: sistema Be3", desc: "Plan sólido preparando Qd2 sin la clavada de Bg5." },
+        { m: "Bc4", w: 5, name: "Pirc: sistema Bc4", desc: "El alfil apunta a f7. Plan agresivo." }
+      ],
+      // ── Sistema Bg5+Qd2 (el del juego perdido) ──────────────────────────────
+      "e4,d6,d4,Nf6,Nc3,g6,Bg5": [
+        { m: "Bg7", w: 10, name: "Pirc vs Bg5: fianchetto", desc: "El negro completa el fianchetto. El alfil g7 contrarrestará el centro." },
+        { m: "h6",  w: 5,  name: "Pirc vs Bg5: h6", desc: "Expulsa al alfil antes de completar el fianchetto." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7": [
+        { m: "Qd2",  w: 10, name: "Pirc: Qd2 agresivo", desc: "Prepara enroque largo y ataque con peones h4-h5." },
+        { m: "f3",   w: 6,  name: "Pirc: f3 preparando e5", desc: "Sistema agresivo. Prepara e5 para empujar el Nf6." },
+        { m: "Nf3",  w: 5,  name: "Pirc: desarrollo normal", desc: "El blanco se desarrolla sin comprometerse todavía." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2": [
+        { m: "c6",   w: 10, name: "Pirc vs Qd2: c6 sólido", desc: "La respuesta correcta. Prepara d5 para contrarrestar el centro y frena el ataque." },
+        { m: "Nc6",  w: 8,  name: "Pirc vs Qd2: Nc6", desc: "Desarrollo activo. El caballo presiona d4 y el centro blanco." },
+        { m: "h6",   w: 6,  name: "Pirc vs Qd2: h6", desc: "Cuestiona el alfil antes del enroque." },
+        { m: "O-O",  w: 5,  name: "Pirc vs Qd2: enroque rápido", desc: "El rey queda seguro antes del contrajuego." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2,c6": [
+        { m: "O-O-O", w: 10, name: "Pirc: enroque largo blanco", desc: "Blancas enrocan largo. Comienza el duelo de ataques en flancos opuestos." },
+        { m: "f3",    w: 7,  name: "Pirc: f3 ante c6", desc: "Consolidación antes del ataque." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2,c6,O-O-O": [
+        { m: "Nbd7", w: 10, name: "Pirc: Nbd7 plan sólido", desc: "Desarrollo correcto. Prepara e5 o b5 para el contrajuego." },
+        { m: "b5",   w: 7,  name: "Pirc: b5 contrajuego inmediato", desc: "Contrajuego en el flanco de dama. Posición muy aguda." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2,c6,O-O-O,Nbd7": [
+        { m: "h4",  w: 10, name: "Pirc: h4 ataque", desc: "Blancas lanzan el ataque inmediatamente con h4-h5." },
+        { m: "f3",  w: 8,  name: "Pirc: f3 preparando e5", desc: "El blanco consolida antes del ataque." },
+        { m: "Nf3", w: 6,  name: "Pirc: Nf3 desarrollo", desc: "Desarrollo natural antes de atacar." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2,Nc6": [
+        { m: "O-O-O", w: 10, name: "Pirc: enroque largo vs Nc6", desc: "Blancas enrocan y preparan el ataque." },
+        { m: "Nf3",   w: 7,  name: "Pirc: Nf3 vs Nc6", desc: "Desarrollo tranquilo." }
+      ],
+      // ── Ataque Austríaco (f4) ───────────────────────────────────────────────
+      "e4,d6,d4,Nf6,Nc3,g6,f4": [
+        { m: "Bg7", w: 10, name: "Pirc austríaco: Bg7", desc: "El negro completa el fianchetto. La respuesta más sólida." },
+        { m: "c5",  w: 5,  name: "Pirc austríaco: c5 contrajuego", desc: "Ataque al centro antes de completar el desarrollo." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,f4,Bg7": [
+        { m: "Nf3",  w: 10, name: "Pirc austríaco: Nf3 normal", desc: "Desarrollo natural. Prepara Be2+O-O." },
+        { m: "e5",   w: 7,  name: "Pirc austríaco: e5 agresivo", desc: "Ataca al Nf6 inmediatamente." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,f4,Bg7,Nf3": [
+        { m: "O-O",  w: 10, name: "Pirc austríaco: enroque negro", desc: "Enroque rápido. El rey queda seguro." },
+        { m: "c5",   w: 7,  name: "Pirc austríaco: c5 contrajuego", desc: "Contrajuego central activo." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,f4,Bg7,Nf3,O-O": [
+        { m: "Be2",  w: 10, name: "Pirc austríaco: Be2+O-O", desc: "Desarrollo sólido. Blancas preparan e5." },
+        { m: "Bd3",  w: 7,  name: "Pirc austríaco: Bd3", desc: "Alfil activo apuntando al enroque negro." }
+      ],
+      // ── Sistema Clásico Be2 ─────────────────────────────────────────────────
+      "e4,d6,d4,Nf6,Nc3,g6,Be2": [
+        { m: "Bg7", w: 10, name: "Pirc clásico: Bg7", desc: "El negro completa el fianchetto." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Be2,Bg7": [
+        { m: "Nf3",  w: 10, name: "Pirc clásico: Nf3", desc: "Desarrollo natural. Prepara O-O." },
+        { m: "Bg5",  w: 6,  name: "Pirc clásico: Bg5 tardío", desc: "El blanco clava el Nf6 más tarde." },
+        { m: "O-O",  w: 5,  name: "Pirc clásico: enroque directo", desc: "El blanco enroca antes de desarrollar el caballo de rey." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Be2,Bg7,Nf3": [
+        { m: "O-O",  w: 10, name: "Pirc clásico: enroque negro", desc: "El negro enroca. Partida posicional equilibrada." },
+        { m: "Nc6",  w: 6,  name: "Pirc clásico: Nc6 activo", desc: "Desarrollo del caballo antes del enroque." }
+      ],
+      "e4,d6,d4,Nf6,Nc3,g6,Be2,Bg7,Nf3,O-O": [
+        { m: "O-O",  w: 10, name: "Pirc clásico: ambos enrocan", desc: "Juego posicional. Blancas buscan avance f4." },
+        { m: "h3",   w: 6,  name: "Pirc clásico: h3 preventivo", desc: "Previene Bg4. Plan tranquilo antes de f4." }
+      ],
+      // ── Defensa Moderna (e4,g6) continuaciones ──────────────────────────────
+      "e4,g6,d4": [
+        { m: "Bg7",  w: 10, name: "Moderna: fianchetto", desc: "El negro completa el fianchetto. El alfil dominará la diagonal larga." },
+        { m: "d6",   w: 8,  name: "Moderna: transposición al Pirc", desc: "El negro transpone al Pirc con d6." }
+      ],
+      "e4,g6,d4,Bg7": [
+        { m: "Nc3",  w: 10, name: "Moderna: Nc3 clásico", desc: "Desarrollo principal." },
+        { m: "Nf3",  w: 8,  name: "Moderna: Nf3 tranquilo", desc: "Desarrollo del caballo de rey." },
+        { m: "c4",   w: 5,  name: "Moderna: Maróczy Bind", desc: "El blanco construye un fuerte centro con e4+c4+d4." }
+      ],
+      "e4,g6,d4,Bg7,Nc3": [
+        { m: "d6",   w: 10, name: "Moderna → Pirc", desc: "Transposición al Pirc clásico." },
+        { m: "c5",   w: 8,  name: "Moderna: c5 contrajuego", desc: "El negro ataca el centro directamente." },
+        { m: "d5",   w: 5,  name: "Moderna: d5 activo", desc: "El negro desafía el centro." }
+      ],
+      "e4,g6,d4,Bg7,Nc3,d6": [
+        { m: "Nf3",  w: 10, name: "Pirc (orden Moderna): Nf3", desc: "Transpone al Pirc clásico." },
+        { m: "Bg5",  w: 8,  name: "Pirc (orden Moderna): Bg5+Qd2", desc: "Sistema agresivo." },
+        { m: "f4",   w: 7,  name: "Pirc (orden Moderna): ataque austríaco", desc: "El ataque austríaco más agresivo." }
+      ],
+
+      // ── Siciliana: Variante Rossolimo (completamente faltante) ───────────────
+      "e4,c5,Nf3,Nc6,Bb5": [
+        { m: "e6",   w: 10, name: "Siciliana Rossolimo: e6 sólido", desc: "La respuesta más sólida. El negro mantiene la estructura." },
+        { m: "g6",   w: 9,  name: "Siciliana Rossolimo: fianchetto", desc: "El negro prepara Bg7. Plan dinámico." },
+        { m: "d6",   w: 7,  name: "Siciliana Rossolimo: d6", desc: "El negro prepara Bd7 para cuestionar el alfil." },
+        { m: "a6",   w: 5,  name: "Siciliana Rossolimo: a6", desc: "El negro expulsa el alfil inmediatamente." }
+      ],
+      "e4,c5,Nf3,Nc6,Bb5,e6": [
+        { m: "O-O",   w: 10, name: "Rossolimo: enroque blanco", desc: "Posición sólida. El blanco mantendrá la tensión." },
+        { m: "Bxc6",  w: 7,  name: "Rossolimo: cambio de alfil", desc: "El blanco dobla los peones del negro." }
+      ],
+      "e4,c5,Nf3,Nc6,Bb5,e6,O-O": [
+        { m: "Nge7",  w: 10, name: "Rossolimo: Nge7 clásico", desc: "El negro no bloquea el alfil de c8. Plan flexible." },
+        { m: "Nf6",   w: 7,  name: "Rossolimo: Nf6 activo", desc: "El negro desarrolla el caballo activamente." }
+      ],
+      "e4,c5,Nf3,Nc6,Bb5,g6": [
+        { m: "Bxc6",  w: 10, name: "Rossolimo vs g6: cambio temprano", desc: "El blanco cambia antes del fianchetto negro." },
+        { m: "O-O",   w: 8,  name: "Rossolimo vs g6: enroque", desc: "El blanco enroca. Plan tranquilo." }
+      ],
+      "e4,c5,Nf3,Nc6,Bb5,g6,Bxc6": [
+        { m: "dxc6",  w: 10, name: "Rossolimo: recaptura con peón d", desc: "El negro recaptura con el peón d para un centro fuerte." },
+        { m: "bxc6",  w: 6,  name: "Rossolimo: recaptura con peón b", desc: "El negro recaptura con b para abrir la columna b." }
+      ],
+      "e4,c5,Nf3,Nc6,Bb5,d6": [
+        { m: "Bxc6+", w: 10, name: "Rossolimo vs d6: cambio", desc: "El blanco cambia el alfil doblando los peones." },
+        { m: "O-O",   w: 8,  name: "Rossolimo vs d6: enroque", desc: "Enroque tranquilo manteniendo el alfil." },
+        { m: "c3",    w: 6,  name: "Rossolimo vs d6: c3 plan", desc: "El blanco mantiene la tensión con c3." }
+      ],
+
+      // ── Siciliana Najdorf: continuaciones base ───────────────────────────────
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6": [
+        { m: "Nc3",  w: 10, name: "Najdorf: posición base", desc: "La posición principal. Negras siguen con a6 (Najdorf)." },
+        { m: "f3",   w: 5,  name: "Najdorf: English Attack base", desc: "Preparando Be3 y Qd2." }
+      ],
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3": [
+        { m: "a6",   w: 10, name: "Defensa Najdorf", desc: "La jugada más popular del mundo. Previene Nb5 y prepara b5 o e5." },
+        { m: "e6",   w: 7,  name: "Siciliana Scheveningen", desc: "Estructura Scheveningen. Muy sólida." },
+        { m: "g6",   w: 6,  name: "Siciliana Dragón (transposición)", desc: "Transposición al Dragón." },
+        { m: "Nc6",  w: 5,  name: "Siciliana Clásica", desc: "Desarrollo del caballo de dama. Plan sólido." }
+      ],
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,a6": [
+        { m: "Bg5",  w: 10, name: "Najdorf: variante Inglesa", desc: "La variante más popular del Najdorf. Lleva a posiciones muy ricas." },
+        { m: "Be3",  w: 8,  name: "Najdorf: English Attack", desc: "El ataque inglés. Muy agudo y popular." },
+        { m: "f3",   w: 7,  name: "Najdorf: sistema f3", desc: "Prepara Be3 y Qd2. Plan agresivo." },
+        { m: "Bc4",  w: 5,  name: "Najdorf: Bc4 variante Fischer", desc: "El alfil apunta a f7. Plan agresivo." }
+      ],
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,a6,Bg5": [
+        { m: "e6",   w: 10, name: "Najdorf vs Bg5: e6 clásico", desc: "El negro consolida con e6. La línea más jugada del Najdorf." },
+        { m: "Nbd7", w: 6,  name: "Najdorf vs Bg5: Nbd7", desc: "El negro desarrolla el otro caballo." }
+      ],
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,a6,Be3": [
+        { m: "e5",   w: 10, name: "Najdorf English Attack: e5 principal", desc: "El negro expulsa el caballo de d4 y gana espacio." },
+        { m: "Nbd7", w: 6,  name: "Najdorf English Attack: Nbd7", desc: "Desarrollo del caballo antes de e5." }
+      ],
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,a6,Be3,e5": [
+        { m: "Nb3",  w: 10, name: "Najdorf English Attack: Nb3 retiro", desc: "El caballo se retira a b3. Plan sólido." },
+        { m: "Nf5",  w: 7,  name: "Najdorf: Nf5 agresivo", desc: "El caballo salta a f5 de forma agresiva." }
+      ],
+      // ── Siciliana Scheveningen ───────────────────────────────────────────────
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,e6": [
+        { m: "Be2",  w: 10, name: "Scheveningen: variante Keres", desc: "Desarrollo sólido. El blanco prepara g4-g5 o f4." },
+        { m: "f4",   w: 8,  name: "Scheveningen: ataque inglés", desc: "El blanco prepara el ataque con peones." },
+        { m: "g4",   w: 6,  name: "Scheveningen: ataque Keres", desc: "Avance agresivo de peón. Ataque directo." }
+      ],
+
+      // ── Ruy López: continuaciones profundas ─────────────────────────────────
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4": [
+        { m: "Nf6",  w: 10, name: "Ruy López: variante abierta", desc: "El negro desarrolla el caballo atacando e4." },
+        { m: "d6",   w: 5,  name: "Ruy López: variante Steinitz", desc: "El negro refuerza e5 con d6." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6": [
+        { m: "O-O",  w: 10, name: "Ruy López: enroque", desc: "La continuación más popular." },
+        { m: "d3",   w: 5,  name: "Ruy López: sistema tranquilo", desc: "El blanco no presiona de inmediato." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O": [
+        { m: "Nxe4", w: 8,  name: "Ruy López Abierta", desc: "El negro captura el peón. Posición muy táctica." },
+        { m: "Be7",  w: 10, name: "Ruy López Cerrada", desc: "El negro prepara el enroque. Posición estratégica." },
+        { m: "b5",   w: 6,  name: "Ruy López: b5 activo", desc: "El negro expulsa el alfil ganando espacio." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Nxe4": [
+        { m: "d4",   w: 10, name: "Ruy López Abierta: d4 principal", desc: "El blanco abre el centro." },
+        { m: "Re1",  w: 7,  name: "Ruy López Abierta: Re1", desc: "El blanco recupera el peón con la torre." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7": [
+        { m: "Re1",  w: 10, name: "Ruy López Cerrada: Re1", desc: "Prepara d4 con la torre reforzando e5." },
+        { m: "d3",   w: 6,  name: "Ruy López: sistema tranquilo", desc: "Plan sólido sin d4 inmediato." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1": [
+        { m: "b5",   w: 10, name: "Ruy López Cerrada: b5 expulsa", desc: "El negro expulsa el alfil. Posición muy conocida." },
+        { m: "O-O",  w: 8,  name: "Ruy López Cerrada: enroque negro", desc: "El negro enroca. Partida posicional." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1,b5": [
+        { m: "Bb3",  w: 10, name: "Ruy López Cerrada: Bb3", desc: "El alfil se retira a b3 manteniendo la diagonal." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1,b5,Bb3": [
+        { m: "d6",   w: 10, name: "Ruy López Cerrada: d6", desc: "El negro refuerza e5. Plan sólido." },
+        { m: "O-O",  w: 8,  name: "Ruy López Cerrada: enroque negro", desc: "El negro enroca antes de d6." }
+      ],
+
+      // ── Dos Caballos: continuaciones tras Ng5,d5,exd5 ───────────────────────
+      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5,exd5": [
+        { m: "Na5",  w: 10, name: "Dos Caballos: Na5 principal", desc: "Ataca el alfil y prepara Nxc4. La respuesta más sólida." },
+        { m: "Nxd5", w: 7,  name: "Dos Caballos: Nxd5 agresivo", desc: "El negro recaptura centralizando el caballo." },
+        { m: "b5",   w: 5,  name: "Dos Caballos: Gambito Ulvestad", desc: "El negro ofrece el peón b para contrajuego activo." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5,exd5,Na5": [
+        { m: "Bb5+", w: 10, name: "Dos Caballos: Bb5+ tempo", desc: "El blanco da jaque para ganar tempo antes de d6." },
+        { m: "d6",   w: 7,  name: "Dos Caballos: d6 peón pasado", desc: "El blanco mantiene el peón pasado de d5." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5,exd5,Na5,Bb5+": [
+        { m: "c6",   w: 10, name: "Dos Caballos: c6 defensa", desc: "El negro bloquea el jaque. La única jugada razonable." }
+      ],
+      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5,exd5,Na5,Bb5+,c6": [
+        { m: "dxc6", w: 10, name: "Dos Caballos: apertura principal", desc: "El blanco captura el peón. Posición táctica muy conocida." },
+        { m: "d6",   w: 7,  name: "Dos Caballos: d6 alternativo", desc: "El blanco mantiene la tensión con d6." }
+      ],
+
       // 1.e4 Nf6 — Alekhine
       "e4,Nf6": [
         { m: "e5", w: 10, name: "Defensa Alekhine: variante principal", desc: "El blanco avanza el peón atacando el caballo. El juego se complica." },
@@ -6937,6 +7151,112 @@ limitations under the License.
         'Defensa Caro-Kann': 'Caro-Kann Defense',
         'Defensa Escandinava': 'Scandinavian Defense',
         'Defensa Pirc': 'Pirc Defense',
+        'Pirc: sistema Bg5+Qd2': 'Pirc: Bg5+Qd2 System',
+        'Pirc: ataque austríaco': 'Pirc: Austrian Attack',
+        'Pirc: variante clásica': 'Pirc: Classical Variation',
+        'Pirc: sistema Be3': 'Pirc: Be3 System',
+        'Pirc: sistema Bc4': 'Pirc: Bc4 System',
+        'Pirc vs Bg5: fianchetto': 'Pirc vs Bg5: Fianchetto',
+        'Pirc vs Bg5: h6': 'Pirc vs Bg5: h6',
+        'Pirc: Qd2 agresivo': 'Pirc: Aggressive Qd2',
+        'Pirc: f3 preparando e5': 'Pirc: f3 Preparing e5',
+        'Pirc: desarrollo normal': 'Pirc: Normal Development',
+        'Pirc vs Qd2: c6 sólido': 'Pirc vs Qd2: Solid c6',
+        'Pirc vs Qd2: Nc6': 'Pirc vs Qd2: Nc6',
+        'Pirc vs Qd2: h6': 'Pirc vs Qd2: h6',
+        'Pirc vs Qd2: enroque rápido': 'Pirc vs Qd2: Quick Castling',
+        'Pirc: enroque largo blanco': 'Pirc: White Long Castles',
+        'Pirc: f3 ante c6': 'Pirc: f3 vs c6',
+        'Pirc: Nbd7 plan sólido': 'Pirc: Solid Nbd7 Plan',
+        'Pirc: b5 contrajuego inmediato': 'Pirc: Immediate b5 Counterplay',
+        'Pirc: h4 ataque': 'Pirc: h4 Attack',
+        'Pirc: f3 consolidando': 'Pirc: f3 Consolidating',
+        'Pirc: Nf3 desarrollo': 'Pirc: Nf3 Development',
+        'Pirc: enroque largo vs Nc6': 'Pirc: Long Castle vs Nc6',
+        'Pirc: Nf3 vs Nc6': 'Pirc: Nf3 vs Nc6',
+        'Pirc austríaco: Bg7': 'Pirc Austrian: Bg7',
+        'Pirc austríaco: c5 contrajuego': 'Pirc Austrian: c5 Counterplay',
+        'Pirc austríaco: Nf3 normal': 'Pirc Austrian: Normal Nf3',
+        'Pirc austríaco: e5 agresivo': 'Pirc Austrian: Aggressive e5',
+        'Pirc austríaco: enroque negro': 'Pirc Austrian: Black Castles',
+        'Pirc austríaco: c5 tarde': 'Pirc Austrian: Late c5',
+        'Pirc austríaco: Be2+O-O': 'Pirc Austrian: Be2+O-O',
+        'Pirc austríaco: Bd3': 'Pirc Austrian: Bd3',
+        'Pirc clásico: Bg7': 'Pirc Classical: Bg7',
+        'Pirc clásico: Nf3': 'Pirc Classical: Nf3',
+        'Pirc clásico: Bg5 tardío': 'Pirc Classical: Late Bg5',
+        'Pirc clásico: enroque directo': 'Pirc Classical: Direct Castle',
+        'Pirc clásico: enroque negro': 'Pirc Classical: Black Castles',
+        'Pirc clásico: Nc6 activo': 'Pirc Classical: Active Nc6',
+        'Pirc clásico: ambos enrocan': 'Pirc Classical: Both Castle',
+        'Pirc clásico: h3 preventivo': 'Pirc Classical: Preventive h3',
+        'Moderna: fianchetto': 'Modern: Fianchetto',
+        'Moderna: transposición al Pirc': 'Modern: Transposition to Pirc',
+        'Moderna: Nc3 clásico': 'Modern: Classical Nc3',
+        'Moderna: Nf3 tranquilo': 'Modern: Quiet Nf3',
+        'Moderna: Maróczy Bind': 'Modern: Maróczy Bind',
+        'Moderna → Pirc': 'Modern → Pirc',
+        'Moderna: c5 contrajuego': 'Modern: c5 Counterplay',
+        'Moderna: d5 activo': 'Modern: Active d5',
+        'Pirc (orden Moderna): Nf3': 'Pirc (Modern order): Nf3',
+        'Pirc (orden Moderna): Bg5+Qd2': 'Pirc (Modern order): Bg5+Qd2',
+        'Pirc (orden Moderna): ataque austríaco': 'Pirc (Modern order): Austrian Attack',
+        'Siciliana Rossolimo: e6 sólido': 'Sicilian Rossolimo: Solid e6',
+        'Siciliana Rossolimo: fianchetto': 'Sicilian Rossolimo: Fianchetto',
+        'Siciliana Rossolimo: d6': 'Sicilian Rossolimo: d6',
+        'Siciliana Rossolimo: a6': 'Sicilian Rossolimo: a6',
+        'Rossolimo: enroque blanco': 'Rossolimo: White Castles',
+        'Rossolimo: cambio de alfil': 'Rossolimo: Bishop Exchange',
+        'Rossolimo: Nge7 clásico': 'Rossolimo: Classical Nge7',
+        'Rossolimo: Nf6 activo': 'Rossolimo: Active Nf6',
+        'Rossolimo vs g6: cambio temprano': 'Rossolimo vs g6: Early Exchange',
+        'Rossolimo vs g6: enroque': 'Rossolimo vs g6: Castling',
+        'Rossolimo: recaptura con peón d': 'Rossolimo: Recapture with d-pawn',
+        'Rossolimo: recaptura con peón b': 'Rossolimo: Recapture with b-pawn',
+        'Rossolimo vs d6: cambio': 'Rossolimo vs d6: Exchange',
+        'Rossolimo vs d6: enroque': 'Rossolimo vs d6: Castling',
+        'Rossolimo vs d6: c3 plan': 'Rossolimo vs d6: c3 Plan',
+        'Najdorf: posición base': 'Najdorf: Base Position',
+        'Najdorf: English Attack base': 'Najdorf: English Attack Base',
+        'Defensa Najdorf': 'Najdorf Defense',
+        'Siciliana Scheveningen': 'Sicilian Scheveningen',
+        'Siciliana Dragón (transposición)': 'Sicilian Dragon (Transposition)',
+        'Siciliana Clásica': 'Classical Sicilian',
+        'Najdorf: variante Inglesa': 'Najdorf: English Variation',
+        'Najdorf: English Attack': 'Najdorf: English Attack',
+        'Najdorf: sistema f3': 'Najdorf: f3 System',
+        'Najdorf: Bc4 variante Fischer': 'Najdorf: Fischer Bc4',
+        'Najdorf vs Bg5: e6 clásico': 'Najdorf vs Bg5: Classical e6',
+        'Najdorf vs Bg5: Nbd7': 'Najdorf vs Bg5: Nbd7',
+        'Najdorf English Attack: e5 principal': 'Najdorf English Attack: Main e5',
+        'Najdorf English Attack: Nbd7': 'Najdorf English Attack: Nbd7',
+        'Najdorf English Attack: Nb3 retiro': 'Najdorf English Attack: Nb3 Retreat',
+        'Najdorf: Nf5 agresivo': 'Najdorf: Aggressive Nf5',
+        'Scheveningen: variante Keres': 'Scheveningen: Keres Attack',
+        'Scheveningen: ataque inglés': 'Scheveningen: English Attack',
+        'Scheveningen: ataque Keres': 'Scheveningen: Keres Attack g4',
+        'Ruy López: variante abierta': 'Ruy López: Open Variation',
+        'Ruy López: variante Steinitz': 'Ruy López: Steinitz Variation',
+        'Ruy López: enroque': 'Ruy López: Castling',
+        'Ruy López: sistema tranquilo': 'Ruy López: Quiet System',
+        'Ruy López Abierta': 'Open Ruy López',
+        'Ruy López Cerrada': 'Closed Ruy López',
+        'Ruy López: b5 activo': 'Ruy López: Active b5',
+        'Ruy López Abierta: d4 principal': 'Open Ruy López: Main d4',
+        'Ruy López Abierta: Re1': 'Open Ruy López: Re1',
+        'Ruy López Cerrada: Re1': 'Closed Ruy López: Re1',
+        'Ruy López Cerrada: b5 expulsa': 'Closed Ruy López: b5 Drives Out',
+        'Ruy López Cerrada: enroque negro': 'Closed Ruy López: Black Castles',
+        'Ruy López Cerrada: Bb3': 'Closed Ruy López: Bb3',
+        'Ruy López Cerrada: d6': 'Closed Ruy López: d6',
+        'Dos Caballos: Na5 principal': 'Two Knights: Main Na5',
+        'Dos Caballos: Nxd5 agresivo': 'Two Knights: Aggressive Nxd5',
+        'Dos Caballos: Gambito Ulvestad': 'Two Knights: Ulvestad Gambit',
+        'Dos Caballos: Bb5+ tempo': 'Two Knights: Bb5+ Tempo',
+        'Dos Caballos: d6 peón pasado': 'Two Knights: d6 Passed Pawn',
+        'Dos Caballos: c6 defensa': 'Two Knights: c6 Defense',
+        'Dos Caballos: apertura principal': 'Two Knights: Main Opening',
+        'Dos Caballos: d6 alternativo': 'Two Knights: Alternative d6',
         'Defensa Moderna': 'Modern Defense',
         'Defensa Alekhine': "Alekhine Defense",
         'Apertura de Juego Abierto': 'Open Game Opening',
@@ -7856,7 +8176,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.21 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.22 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -8009,7 +8329,7 @@ limitations under the License.
         const targetVal = targetPiece && targetPiece !== ' ' ? (PIECE_VALUES[targetPiece.toUpperCase()] || 0) : 0;
         const isPromo = activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
 
-        // SEE pruning (v2.25.21): skip losing captures (e.g. QxP defended by pawn).
+        // SEE pruning (v2.25.22): skip losing captures (e.g. QxP defended by pawn).
         // Promotions and checks (targetVal=0) bypass this filter.
         if (!isPromo && targetVal > 0) {
           const seeVal = see(activeBoard, m.tr, m.tc, m.fr, m.fc);
@@ -9764,7 +10084,7 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.21) ──────────────
+          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.22) ──────────────
           // Uses SEE to detect any piece in a losing exchange (not just pawn attacks).
           // Covers: Nxd5 (knight into defended square), g4 Nxg4 (pawn hung to
           // knight), Bc5 attacked by Nd4, rook attacked by bishop, etc.
@@ -9838,7 +10158,7 @@ limitations under the License.
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.21) ────────────────────────────────
+          // ── NARROW MATERIAL ANCHOR (v2.25.22) ────────────────────────────────
           // Only active in the very early opening (eg<0.10, almost no captures yet)
           // and only when genuinely down a piece (matDiff < -280, i.e. knight or more).
           // Prevents phantom compensation: engine won't convince itself a hanging piece
