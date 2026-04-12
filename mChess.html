@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.17
+Monolith Chess v2.25.20
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.17</title>
+  <title>Monolith Chess v2.25.20</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.17 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.20 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2794,11 +2794,10 @@ limitations under the License.
                 }
                 const bookMove = legalMvs.find(m => getMoveNotation(tempBoard, color, m, tempCR) === chosenEntry.m);
                 if (bookMove) {
-                  // ── v2.25.14: Hanging-piece book-exit ────────────────────────
-                  // Before trusting the book, check if any own piece (N/B/R/Q) is
-                  // attacked by an enemy pawn without a friendly pawn to defend it.
-                  // If so, the book position is already "off script" (enemy played a
-                  // surprise pawn attack) — fall through to the engine instead.
+                  // ── v2.25.20: Hanging-piece book-exit (SEE-based) ────────────
+                  // Before trusting the book, check if any own N/B/R is in a
+                  // losing exchange (SEE > 50 from enemy's perspective).
+                  // Covers pawn attacks, knight forks, bishop pins, etc.
                   let ownPieceHanging = false;
                   const brd = tempBoard;
                   const isWhite = color === 'w';
@@ -2810,25 +2809,33 @@ limitations under the License.
                       if (_pu === 'P' || _pu === 'K' || _pu === 'Q') continue; // only N/B/R
                       const _isOwnPiece = isWhite ? (_p === _p.toUpperCase()) : (_p === _p.toLowerCase());
                       if (!_isOwnPiece) continue;
+                      // Convert char board to flat int board for see()
+                      const _C2I = {' ':0,'P':1,'N':2,'B':3,'R':4,'Q':5,'K':6,'p':9,'n':10,'b':11,'r':12,'q':13,'k':14};
+                      const _bFlat = new Int8Array(64);
+                      for (let _i = 0; _i < 8; _i++) for (let _j = 0; _j < 8; _j++) _bFlat[_i*8+_j] = _C2I[brd[_i][_j]] || 0;
+                      // Find cheapest enemy attacker using pawn check first (fast path)
+                      const _eSide = isWhite ? 'b' : 'w';
+                      let _fR = -1, _fC = -1;
                       if (isWhite) {
-                        // attacked by BP at (_r-1, _c±1)
-                        const _atk = (_r > 0 && _c > 0 && brd[_r-1][_c-1] === 'p') ||
-                                     (_r > 0 && _c < 7 && brd[_r-1][_c+1] === 'p');
-                        if (_atk) {
-                          const _def = (_r < 7 && _c > 0 && brd[_r+1][_c-1] === 'P') ||
-                                       (_r < 7 && _c < 7 && brd[_r+1][_c+1] === 'P');
-                          if (!_def) { ownPieceHanging = true; break outerHang; }
-                        }
+                        // enemy pawn attacks from row _r-1
+                        if (_r > 0 && _c > 0 && brd[_r-1][_c-1] === 'p') { _fR = _r-1; _fC = _c-1; }
+                        else if (_r > 0 && _c < 7 && brd[_r-1][_c+1] === 'p') { _fR = _r-1; _fC = _c+1; }
                       } else {
-                        // attacked by WP at (_r+1, _c±1)
-                        const _atk = (_r < 7 && _c > 0 && brd[_r+1][_c-1] === 'P') ||
-                                     (_r < 7 && _c < 7 && brd[_r+1][_c+1] === 'P');
-                        if (_atk) {
-                          const _def = (_r > 0 && _c > 0 && brd[_r-1][_c-1] === 'p') ||
-                                       (_r > 0 && _c < 7 && brd[_r-1][_c+1] === 'p');
-                          if (!_def) { ownPieceHanging = true; break outerHang; }
+                        if (_r < 7 && _c > 0 && brd[_r+1][_c-1] === 'P') { _fR = _r+1; _fC = _c-1; }
+                        else if (_r < 7 && _c < 7 && brd[_r+1][_c+1] === 'P') { _fR = _r+1; _fC = _c+1; }
+                      }
+                      // If no pawn attacker, use see() with full board — find any attacker
+                      if (_fR === -1) {
+                        // Knight attacker check
+                        const _eKn = isWhite ? 'n' : 'N';
+                        for (const [_dr,_dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+                          const _nr=_r+_dr,_nc=_c+_dc;
+                          if (_nr>=0&&_nr<8&&_nc>=0&&_nc<8&&brd[_nr][_nc]===_eKn){_fR=_nr;_fC=_nc;break;}
                         }
                       }
+                      if (_fR === -1) continue; // no cheap attacker found
+                      const _seeVal = see(_bFlat, _r, _c, _fR, _fC);
+                      if (_seeVal > 50) { ownPieceHanging = true; break outerHang; }
                     }
                   }
                   if (ownPieceHanging) {
@@ -3998,7 +4005,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.17", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.20", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -7447,9 +7454,9 @@ limitations under the License.
       searchContext.active = true;
       searchContext.deadline = Date.now() + timeoutMs;
       searchContext.timedOut = false;
-      // Reset search tables so stale data from previous positions doesn't pollute ordering
-      killerMoves = Array(64).fill(null).map(() => []);
-      historyTable = Array(64).fill(null).map(() => Array(64).fill(0));
+      // Age history scores (divide by 4) to preserve relative ordering while preventing overflow
+      // and allowing new moves to overtake stale data. Killers are kept as-is across moves.
+      for (let i = 0; i < 64; i++) for (let j = 0; j < 64; j++) historyTable[i][j] >>= 2;
       // Note: tt is intentionally NOT cleared — stale entries can still help move ordering
       // and may match transpositions in the current search. MAX_TT_SIZE eviction handles capacity.
     }
@@ -7765,7 +7772,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.17 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.20 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -7917,6 +7924,13 @@ limitations under the License.
         const targetPiece = activeBoard[m.tr][m.tc];
         const targetVal = targetPiece && targetPiece !== ' ' ? (PIECE_VALUES[targetPiece.toUpperCase()] || 0) : 0;
         const isPromo = activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
+
+        // SEE pruning (v2.25.20): skip losing captures (e.g. QxP defended by pawn).
+        // Promotions and checks (targetVal=0) bypass this filter.
+        if (!isPromo && targetVal > 0) {
+          const seeVal = see(activeBoard, m.tr, m.tc, m.fr, m.fc);
+          if (seeVal < -50) continue;
+        }
 
         // Skip hopeless captures (not promotions)
         if (!isPromo) {
@@ -9660,72 +9674,81 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE PENALTY (v2.25.17) ─────────────────────────────────
-          // Fix 1: piece (N/B/R) attacked by enemy pawn, no pawn OR piece defense.
-          // Penalty = PV_I[_pt] (full piece value: N→325, B→350, R→500).
-          // Uses isAtk() to check for any friendly piece defender before penalizing.
-          // Fix 2: own undefended pawn attacked by enemy knight in opening (eg<0.30).
-          // Catches g4 vs Nf6 style blunders where a pawn is hung to a knight.
-          // Board: row0=rank8, row7=rank1. BP at (r,c) attacks (r+1,c±1).
+          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.20) ──────────────
+          // Uses SEE to detect any piece in a losing exchange (not just pawn attacks).
+          // Covers: Nxd5 (knight into defended square), g4 Nxg4 (pawn hung to
+          // knight), Bc5 attacked by Nd4, rook attacked by bishop, etc.
+          //
+          // For each own P/N/B/R: find the cheapest enemy attacker, call SEE.
+          // If SEE > 50 → enemy profitably captures → penalize by min(see, PV)*0.6.
+          // Factor 0.6 avoids double-counting with tree search.
+          // Queens/Kings excluded. Only eg < 0.65.
           if (eg < 0.65) {
             for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
               const _p = b[_r*8+_c];
               if (!_p || _p === 0) continue;
               const _pt = _p & 7;
               if (_pt === 5 || _pt === 6) continue; // skip Q, K
-              if (_p <= 6) { // white piece
-                if (_pt === 1) {
-                  // Fix 2: white pawn attacked by black knight, opening+middlegame (eg<0.65)
-                  if (eg < 0.65) {
-                    const _atkN = (_r > 1 && _c > 0 && b[(_r-2)*8+(_c-1)] === BN) ||
-                                  (_r > 1 && _c < 7 && b[(_r-2)*8+(_c+1)] === BN) ||
-                                  (_r > 0 && _c > 1 && b[(_r-1)*8+(_c-2)] === BN) ||
-                                  (_r > 0 && _c < 6 && b[(_r-1)*8+(_c+2)] === BN);
-                    if (_atkN) {
-                      const _defP = (_r < 7 && _c > 0 && b[(_r+1)*8+(_c-1)] === WP) ||
-                                    (_r < 7 && _c < 7 && b[(_r+1)*8+(_c+1)] === WP);
-                      if (!_defP) s -= 80; // undefended pawn attacked by knight
-                    }
-                  }
-                } else {
-                  // Fix 1: white minor/rook attacked by black pawn
-                  const _atk = (_r > 0 && _c > 0 && b[(_r-1)*8+(_c-1)] === BP) ||
-                               (_r > 0 && _c < 7 && b[(_r-1)*8+(_c+1)] === BP);
-                  if (_atk) {
-                    const _def = (_r < 7 && _c > 0 && b[(_r+1)*8+(_c-1)] === WP) ||
-                                 (_r < 7 && _c < 7 && b[(_r+1)*8+(_c+1)] === WP);
-                    if (!_def && !isAtk(state, _r, _c, 'w')) s -= PV_I[_pt];
+              const _isWhite = _p <= 6;
+              const _eSide = _isWhite ? 'b' : 'w';
+              // Quick pre-filter: any enemy attacker?
+              if (!isAtk(state, _r, _c, _eSide)) continue;
+              // Find cheapest enemy attacker (same logic as see() step 1)
+              let _fR = -1, _fC = -1, _fV = 2e9;
+              const _eP = _eSide === 'w' ? WP : BP;
+              const _eN = _eSide === 'w' ? WN : BN;
+              const _eB = _eSide === 'w' ? WB : BB;
+              const _eR = _eSide === 'w' ? WR : BR;
+              const _eQ = _eSide === 'w' ? WQ : BQ;
+              // Pawn
+              const _pd = _eSide === 'w' ? 1 : -1;
+              for (const _dc of [-1, 1]) {
+                const _pr = _r + _pd, _pc = _c + _dc;
+                if (_pr >= 0 && _pr < 8 && _pc >= 0 && _pc < 8 && b[_pr*8+_pc] === _eP) {
+                  _fR = _pr; _fC = _pc; _fV = 100; break;
+                }
+              }
+              // Knight
+              if (_fV > 325) {
+                for (const [_dr, _dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+                  const _nr = _r+_dr, _nc = _c+_dc;
+                  if (_nr>=0&&_nr<8&&_nc>=0&&_nc<8&&b[_nr*8+_nc]===_eN){_fR=_nr;_fC=_nc;_fV=325;break;}
+                }
+              }
+              // Bishop/Queen diagonal
+              if (_fV > 335) {
+                outer_b: for (const [_dr,_dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+                  let _nr=_r+_dr,_nc=_c+_dc;
+                  while(_nr>=0&&_nr<8&&_nc>=0&&_nc<8){
+                    const _t=b[_nr*8+_nc];
+                    if(_t!==0){if(_t===_eB&&_fV>335){_fR=_nr;_fC=_nc;_fV=335;break outer_b;}
+                               if(_t===_eQ&&_fV>900){_fR=_nr;_fC=_nc;_fV=900;} break;}
+                    _nr+=_dr;_nc+=_dc;
                   }
                 }
-              } else { // black piece
-                if (_pt === 1) {
-                  // Fix 2: black pawn attacked by white knight, opening+middlegame (eg<0.65)
-                  if (eg < 0.65) {
-                    const _atkN = (_r < 6 && _c > 0 && b[(_r+2)*8+(_c-1)] === WN) ||
-                                  (_r < 6 && _c < 7 && b[(_r+2)*8+(_c+1)] === WN) ||
-                                  (_r < 7 && _c > 1 && b[(_r+1)*8+(_c-2)] === WN) ||
-                                  (_r < 7 && _c < 6 && b[(_r+1)*8+(_c+2)] === WN);
-                    if (_atkN) {
-                      const _defP = (_r > 0 && _c > 0 && b[(_r-1)*8+(_c-1)] === BP) ||
-                                    (_r > 0 && _c < 7 && b[(_r-1)*8+(_c+1)] === BP);
-                      if (!_defP) s += 80; // undefended pawn attacked by knight
-                    }
-                  }
-                } else {
-                  // Fix 1: black minor/rook attacked by white pawn
-                  const _atk = (_r < 7 && _c > 0 && b[(_r+1)*8+(_c-1)] === WP) ||
-                               (_r < 7 && _c < 7 && b[(_r+1)*8+(_c+1)] === WP);
-                  if (_atk) {
-                    const _def = (_r > 0 && _c > 0 && b[(_r-1)*8+(_c-1)] === BP) ||
-                                 (_r > 0 && _c < 7 && b[(_r-1)*8+(_c+1)] === BP);
-                    if (!_def && !isAtk(state, _r, _c, 'b')) s += PV_I[_pt];
+              }
+              // Rook/Queen straight
+              if (_fV > 500) {
+                outer_r: for (const [_dr,_dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+                  let _nr=_r+_dr,_nc=_c+_dc;
+                  while(_nr>=0&&_nr<8&&_nc>=0&&_nc<8){
+                    const _t=b[_nr*8+_nc];
+                    if(_t!==0){if(_t===_eR&&_fV>500){_fR=_nr;_fC=_nc;_fV=500;break outer_r;}
+                               if(_t===_eQ&&_fV>900){_fR=_nr;_fC=_nc;_fV=900;} break;}
+                    _nr+=_dr;_nc+=_dc;
                   }
                 }
+              }
+              if (_fR === -1) continue; // no attacker found (isAtk was king-only)
+              const _seeVal = see(b, _r, _c, _fR, _fC);
+              if (_seeVal > 50) {
+                const _pen = Math.round(Math.min(_seeVal, PV_I[_pt]) * 0.6);
+                if (_isWhite) s -= _pen; else s += _pen;
               }
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.17) ────────────────────────────────
+          // ── NARROW MATERIAL ANCHOR (v2.25.20) ────────────────────────────────
           // Only active in the very early opening (eg<0.10, almost no captures yet)
           // and only when genuinely down a piece (matDiff < -280, i.e. knight or more).
           // Prevents phantom compensation: engine won't convince itself a hanging piece
