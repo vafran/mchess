@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.24
+Monolith Chess v2.25.25
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.24</title>
+  <title>Monolith Chess v2.25.25</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.24 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.25 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2794,7 +2794,7 @@ limitations under the License.
                 }
                 const bookMove = legalMvs.find(m => getMoveNotation(tempBoard, color, m, tempCR) === chosenEntry.m);
                 if (bookMove) {
-                  // ── v2.25.24: Hanging-piece book-exit (SEE-based) ────────────
+                  // ── v2.25.25: Hanging-piece book-exit (SEE-based) ────────────
                   // Before trusting the book, check if any own N/B/R is in a
                   // losing exchange (SEE > 50 from enemy's perspective).
                   // Covers pawn attacks, knight forks, bishop pins, etc.
@@ -4005,7 +4005,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.24", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.25", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -6848,7 +6848,7 @@ limitations under the License.
       ],
 
       // ══════════════════════════════════════════════════════════════════════════
-      // EXPANSIÓN ALTA PRIORIDAD — v2.25.24
+      // EXPANSIÓN ALTA PRIORIDAD — v2.25.25
       // ══════════════════════════════════════════════════════════════════════════
 
       // ── Defensa Petrov: continuaciones ──────────────────────────────────────
@@ -7894,7 +7894,7 @@ limitations under the License.
         'Dragón Siciliano': 'Sicilian Dragon',
         'Dragón Inglés': 'English Dragon',
         'Londres Sólido': 'Solid London',
-        // ── v2.25.24: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
+        // ── v2.25.25: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
         // Petrov
         'Petrov: variante principal': 'Petrov: Main Line',
         'Petrov: variante agresiva': 'Petrov: Aggressive Variation',
@@ -8701,7 +8701,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.24 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.25 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -8854,7 +8854,7 @@ limitations under the License.
         const targetVal = targetPiece && targetPiece !== ' ' ? (PIECE_VALUES[targetPiece.toUpperCase()] || 0) : 0;
         const isPromo = activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
 
-        // SEE pruning (v2.25.24): skip losing captures (e.g. QxP defended by pawn).
+        // SEE pruning (v2.25.25): skip losing captures (e.g. QxP defended by pawn).
         // Promotions and checks (targetVal=0) bypass this filter.
         if (!isPromo && targetVal > 0) {
           const seeVal = see(activeBoard, m.tr, m.tc, m.fr, m.fc);
@@ -10609,7 +10609,7 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.24) ──────────────
+          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.25) ──────────────
           // Uses SEE to detect any piece in a losing exchange (not just pawn attacks).
           // Covers: Nxd5 (knight into defended square), g4 Nxg4 (pawn hung to
           // knight), Bc5 attacked by Nd4, rook attacked by bishop, etc.
@@ -10677,22 +10677,21 @@ limitations under the License.
               if (_fR === -1) continue; // no attacker found (isAtk was king-only)
               const _seeVal = see(b, _r, _c, _fR, _fC);
               if (_seeVal > 50) {
-                const _pen = Math.round(Math.min(_seeVal, PV_I[_pt]) * 0.6);
+                const _pen = Math.round(Math.min(_seeVal, PV_I[_pt]) * 0.85);
                 if (_isWhite) s -= _pen; else s += _pen;
               }
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.24) ────────────────────────────────
-          // Only active in the very early opening (eg<0.10, almost no captures yet)
-          // and only when genuinely down a piece (matDiff < -280, i.e. knight or more).
-          // Prevents phantom compensation: engine won't convince itself a hanging piece
-          // is worth ignoring because it found exciting-looking positional continuations.
-          // Much narrower than the v2.25.12 anchor (eg<0.45, -200) that hurt middlegame.
-          if (eg < 0.10 && matDiff < -280) {
+          // ── NARROW MATERIAL ANCHOR (v2.25.25) ────────────────────────────────
+          // Active in opening/early middlegame (eg<0.30) when down a piece (matDiff < -200).
+          // Prevents phantom compensation: engine won't convince itself a sacrifice
+          // is worth it because of speculative positional continuations.
+          // Extended from eg<0.10/-280 to eg<0.30/-200 to catch speculative Nxf7/Bxf7 patterns.
+          if (eg < 0.30 && matDiff < -200) {
             const cap = matDiff + Math.round(Math.abs(matDiff) * 0.4);
             if (s > cap) s = cap;
-          } else if (eg < 0.10 && matDiff > 280) {
+          } else if (eg < 0.30 && matDiff > 200) {
             const cap = matDiff - Math.round(Math.abs(matDiff) * 0.4);
             if (s < cap) s = cap;
           }
