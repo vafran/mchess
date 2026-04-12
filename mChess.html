@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.23
+Monolith Chess v2.25.24
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.23</title>
+  <title>Monolith Chess v2.25.24</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.23 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.24 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2794,7 +2794,7 @@ limitations under the License.
                 }
                 const bookMove = legalMvs.find(m => getMoveNotation(tempBoard, color, m, tempCR) === chosenEntry.m);
                 if (bookMove) {
-                  // ── v2.25.23: Hanging-piece book-exit (SEE-based) ────────────
+                  // ── v2.25.24: Hanging-piece book-exit (SEE-based) ────────────
                   // Before trusting the book, check if any own N/B/R is in a
                   // losing exchange (SEE > 50 from enemy's perspective).
                   // Covers pawn attacks, knight forks, bishop pins, etc.
@@ -4005,7 +4005,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.23", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.24", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -6607,7 +6607,23 @@ limitations under the License.
       "e4,e6,d4,d5,Nc3,Bb4": [
         { m: "e5",   w: 10, name: "Francesa Winawer: avance de peón", desc: "El blanco gana espacio cerrando el centro. Línea más agresiva." },
         { m: "Bd3",  w: 7,  name: "Francesa Winawer: sistema Nimzovich", desc: "El blanco desarrolla el alfil a d3. Plan sólido." },
-        { m: "a3",   w: 5,  name: "Francesa Winawer: fuerza el cambio", desc: "El blanco fuerza al alfil a tomar el caballo." }
+        { m: "a3",   w: 5,  name: "Francesa Winawer: fuerza el cambio", desc: "El blanco fuerza al alfil a tomar el caballo." },
+        { m: "Qg4",  w: 3,  name: "Francesa Winawer: ataque Qg4", desc: "Jugada agresiva. Amenaza Qxg7 si el negro no reacciona bien." }
+      ],
+      // ── Winawer: respuesta correcta a 4.Qg4 ────────────────────────────────
+      "e4,e6,d4,d5,Nc3,Bb4,Qg4": [
+        { m: "Kf8",  w: 10, name: "Winawer vs Qg4: Kf8", desc: "La mejor respuesta. El rey protege g7 y el alfil se mantiene en b4. Si Qxg7 viene Qxd4 con contrajuego." },
+        { m: "g6",   w: 7,  name: "Winawer vs Qg4: g6", desc: "Bloquea la amenaza Qxg7. El negro sigue con Nf6." },
+        { m: "Qd7",  w: 4,  name: "Winawer vs Qg4: Qd7", desc: "Protege g7 pasivamente. Menos activo que Kf8." }
+      ],
+      "e4,e6,d4,d5,Nc3,Bb4,Qg4,Kf8": [
+        { m: "Nf6",  w: 10, name: "Winawer Kf8: Nf6 activo", desc: "Desarrolla el caballo atacando e4. Si Qxg7 Rg8 atrapa la dama." },
+        { m: "a5",   w: 6,  name: "Winawer Kf8: a5 expansión", desc: "Gana espacio en el flanco de dama y prepara Na6-c5." },
+        { m: "Nc6",  w: 5,  name: "Winawer Kf8: Nc6 desarrollo", desc: "Desarrolla el caballo presionando d4." }
+      ],
+      "e4,e6,d4,d5,Nc3,Bb4,Qg4,g6": [
+        { m: "Nf6",  w: 10, name: "Winawer g6: Nf6 desarrollo", desc: "Ataca e4 y completa el desarrollo." },
+        { m: "Nc6",  w: 7,  name: "Winawer g6: Nc6 presión", desc: "Presiona d4 y desarrolla." }
       ],
       "e4,e6,d4,d5,Nc3,Nf6": [
         { m: "e5",   w: 10, name: "Francesa Clásica: variante de avance", desc: "El blanco gana espacio. Posición cerrada estratégica." },
@@ -6832,7 +6848,7 @@ limitations under the License.
       ],
 
       // ══════════════════════════════════════════════════════════════════════════
-      // EXPANSIÓN ALTA PRIORIDAD — v2.25.23
+      // EXPANSIÓN ALTA PRIORIDAD — v2.25.24
       // ══════════════════════════════════════════════════════════════════════════
 
       // ── Defensa Petrov: continuaciones ──────────────────────────────────────
@@ -7650,6 +7666,18 @@ limitations under the License.
         'Francesa: variante Winawer': 'French: Winawer Variation',
         'Francesa: variante clásica': 'French: Classical Variation',
         'Francesa: variante Rubinstein': 'French: Rubinstein Variation',
+        'Francesa Winawer: avance de peón': 'French Winawer: Pawn Advance',
+        'Francesa Winawer: sistema Nimzovich': 'French Winawer: Nimzovich System',
+        'Francesa Winawer: fuerza el cambio': 'French Winawer: Forces Exchange',
+        'Francesa Winawer: ataque Qg4': 'French Winawer: Qg4 Attack',
+        'Winawer vs Qg4: Kf8': 'Winawer vs Qg4: Kf8',
+        'Winawer vs Qg4: g6': 'Winawer vs Qg4: g6',
+        'Winawer vs Qg4: Qd7': 'Winawer vs Qg4: Qd7',
+        'Winawer Kf8: Nf6 activo': 'Winawer Kf8: Active Nf6',
+        'Winawer Kf8: a5 expansión': 'Winawer Kf8: a5 Expansion',
+        'Winawer Kf8: Nc6 desarrollo': 'Winawer Kf8: Nc6 Development',
+        'Winawer g6: Nf6 desarrollo': 'Winawer g6: Nf6 Development',
+        'Winawer g6: Nc6 presión': 'Winawer g6: Nc6 Pressure',
         'Tarrasch: variante clásica': 'Tarrasch: Classical Variation',
         'Tarrasch: variante abierta': 'Tarrasch: Open Variation',
         'Caro-Kann: variante de dos caballos': 'Caro-Kann: Two Knights',
@@ -7866,7 +7894,7 @@ limitations under the License.
         'Dragón Siciliano': 'Sicilian Dragon',
         'Dragón Inglés': 'English Dragon',
         'Londres Sólido': 'Solid London',
-        // ── v2.25.23: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
+        // ── v2.25.24: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
         // Petrov
         'Petrov: variante principal': 'Petrov: Main Line',
         'Petrov: variante agresiva': 'Petrov: Aggressive Variation',
@@ -8673,7 +8701,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.23 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.24 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -8826,7 +8854,7 @@ limitations under the License.
         const targetVal = targetPiece && targetPiece !== ' ' ? (PIECE_VALUES[targetPiece.toUpperCase()] || 0) : 0;
         const isPromo = activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
 
-        // SEE pruning (v2.25.23): skip losing captures (e.g. QxP defended by pawn).
+        // SEE pruning (v2.25.24): skip losing captures (e.g. QxP defended by pawn).
         // Promotions and checks (targetVal=0) bypass this filter.
         if (!isPromo && targetVal > 0) {
           const seeVal = see(activeBoard, m.tr, m.tc, m.fr, m.fc);
@@ -10581,7 +10609,7 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.23) ──────────────
+          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.24) ──────────────
           // Uses SEE to detect any piece in a losing exchange (not just pawn attacks).
           // Covers: Nxd5 (knight into defended square), g4 Nxg4 (pawn hung to
           // knight), Bc5 attacked by Nd4, rook attacked by bishop, etc.
@@ -10655,7 +10683,7 @@ limitations under the License.
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.23) ────────────────────────────────
+          // ── NARROW MATERIAL ANCHOR (v2.25.24) ────────────────────────────────
           // Only active in the very early opening (eg<0.10, almost no captures yet)
           // and only when genuinely down a piece (matDiff < -280, i.e. knight or more).
           // Prevents phantom compensation: engine won't convince itself a hanging piece
