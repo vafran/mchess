@@ -8463,11 +8463,12 @@ limitations under the License.
       }
 
       // Bishop blocking own central pawn (e.g. Be3 with Pe2 unmoved = development error)
+      // v2.25.26: raised 40→70 cp — engine was choosing structural damage over tactical complications
       if (eg < 0.5) {
-        if (brd[5][4] === 'B' && brd[6][4] === 'P') score -= 40; // Be3 + Pe2
-        if (brd[5][3] === 'B' && brd[6][3] === 'P') score -= 40; // Bd3 + Pd2
-        if (brd[2][4] === 'b' && brd[1][4] === 'p') score += 40; // be6 + pe7
-        if (brd[2][3] === 'b' && brd[1][3] === 'p') score += 40; // bd6 + pd7
+        if (brd[5][4] === 'B' && brd[6][4] === 'P') score -= 70; // Be3 + Pe2
+        if (brd[5][3] === 'B' && brd[6][3] === 'P') score -= 70; // Bd3 + Pd2
+        if (brd[2][4] === 'b' && brd[1][4] === 'p') score += 70; // be6 + pe7
+        if (brd[2][3] === 'b' && brd[1][3] === 'p') score += 70; // bd6 + pd7
       }
 
       let wBishopsCount = 0, bBishopsCount = 0;
@@ -9631,12 +9632,12 @@ limitations under the License.
           }
 
           // Bishop blocking own central pawn (opening/middlegame — eg < 0.5)
-          // e.g. Be3 with Pe2 unmoved → -40cp; mirror for Black
+          // v2.25.26: raised 40→70 cp — engine was choosing structural damage over tactical complications
           if (eg < 0.5) {
-            if (b[5*8+4] === WB && b[6*8+4] === WP) s -= 40; // Be3 + Pe2
-            if (b[5*8+3] === WB && b[6*8+3] === WP) s -= 40; // Bd3 + Pd2
-            if (b[2*8+4] === BB && b[1*8+4] === BP) s += 40; // be6 + pe7
-            if (b[2*8+3] === BB && b[1*8+3] === BP) s += 40; // bd6 + pd7
+            if (b[5*8+4] === WB && b[6*8+4] === WP) s -= 70; // Be3 + Pe2
+            if (b[5*8+3] === WB && b[6*8+3] === WP) s -= 70; // Bd3 + Pd2
+            if (b[2*8+4] === BB && b[1*8+4] === BP) s += 70; // be6 + pe7
+            if (b[2*8+3] === BB && b[1*8+3] === BP) s += 70; // bd6 + pd7
           }
 
           // ── Phase 4: Pawn structure via pawn hash cache ──
