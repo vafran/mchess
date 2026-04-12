@@ -5653,12 +5653,6 @@ limitations under the License.
       "e4,e5,Qh5,Nc6,Bc4": [
         { m: "g6", w: 10, name: "Bloqueo del Mate", desc: "Expulsa a la dama y bloquea el ataque sobre f7. ¡El pastor se tiene que ir a casa!" }
       ],
-      "e4,e5,Nf3,Nc6,Bb5": [
-        { m: "a6", w: 10, name: "Defensa Ruy López", desc: "La jugada teórica. Ataca al alfil y gana espacio en el flanco de dama." }
-      ],
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O": [
-        { m: "Be7", w: 10, name: "Ruy López, Variante Cerrada", desc: "El negro prepara el enroque y defiende el peón de e5. Una posición sólida y estratégica." }
-      ],
       "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1,b5,Bb3,d6,c3,O-O,h3": [
         { m: "Na5", w: 10, name: "Ruy López, Ataque Marshall", desc: "El negro ataca el alfil y prepara el contrajuego con ...c5. Una posición dinámica y táctica." }
       ],
@@ -5787,59 +5781,10 @@ limitations under the License.
         { m: "a6", w: 6, name: "Siciliana: inicio Najdorf", desc: "Comienzo del Najdorf. Evita Bb5+ y prepara b5." },
         { m: "g6", w: 5, name: "Siciliana: Dragón", desc: "Comienza el Dragón. El negro desarrolla el alfil en g7." }
       ],
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6": [
-        { m: "Nc3", w: 10, name: "Siciliana: variante Scheveningen/Najdorf", desc: "El blanco desarrolla el caballo. La jugada más flexible." },
-        { m: "f3", w: 5, name: "Siciliana: ataque inglés", desc: "El blanco prepara Be3 y g4 para un ataque de rey agresivo." }
-      ],
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3": [
-        { m: "a6", w: 10, name: "Variante Najdorf", desc: "Najdorf clásico. Prepara b5 y expansión en el flanco de dama." },
-        { m: "e6", w: 8, name: "Variante Scheveningen", desc: "Sólido. El negro construye una base central con e6-d6." },
-        { m: "g6", w: 6, name: "Dragón Yugoslavo", desc: "El plan más agresivo del Dragón. Prepara enroque largo para el blanco." }
-      ],
       "e4,c5,Nf3,Nc6": [
         { m: "d4", w: 10, name: "Siciliana clásica abierta", desc: "La línea principal contra la Siciliana clásica." },
         { m: "Bb5", w: 6, name: "Siciliana: variante Rossolimo", desc: "Evita las complicaciones. El blanco cambia alfil por caballo." },
         { m: "Nc3", w: 4, name: "Siciliana: sistema cerrado", desc: "Desarrollo tranquilo sin d4 inmediato." }
-      ],
-
-      // 1.e4 e6 — Defensa Francesa
-      "e4,e6": [
-        { m: "d4", w: 10, name: "Defensa Francesa: variante principal", desc: "Ocupa el centro. Las negras planean ...d5 para crear tensión." },
-        { m: "d3", w: 4, name: "Defensa Francesa: sistema King", desc: "El blanco adopta un plan tranquilo, evitando las líneas teóricas." }
-      ],
-      "e4,e6,d4": [
-        { m: "d5", w: 10, name: "Defensa Francesa: ataque al centro", desc: "El negro ataca e4 con d5. Ahora el blanco debe decidir su plan." }
-      ],
-      "e4,e6,d4,d5": [
-        { m: "Nc3", w: 10, name: "Francesa: variante Winawer/Clásica", desc: "Defiende e4. El negro puede clavar con ...Bb4 (Winawer)." },
-        { m: "Nd2", w: 8, name: "Francesa: variante Tarrasch", desc: "Defiende e4 sin bloquear el alfil de c1. Plan sólido." },
-        { m: "e5", w: 6, name: "Francesa: variante de avance", desc: "Cede el centro pero gana espacio. Plan de ataque de rey." },
-        { m: "exd5", w: 4, name: "Francesa: variante de cambio", desc: "Elimina la tensión central. Posición equilibrada." }
-      ],
-      "e4,e6,d4,d5,Nc3": [
-        { m: "Bb4", w: 10, name: "Francesa: variante Winawer", desc: "Clava el caballo y presiona e4. Muy agudo y complejo." },
-        { m: "Nf6", w: 8, name: "Francesa: variante clásica", desc: "Desarrollo natural. Presiona e4 con el caballo." },
-        { m: "dxe4", w: 4, name: "Francesa: variante Rubinstein", desc: "Elimina la tensión. El negro busca un juego simple." }
-      ],
-      "e4,e6,d4,d5,Nd2": [
-        { m: "Nf6", w: 10, name: "Tarrasch: variante clásica", desc: "Desarrollo natural. El negro lucha por el centro." },
-        { m: "c5", w: 8, name: "Tarrasch: variante abierta", desc: "Ataca el centro blanco directamente." }
-      ],
-
-      // 1.e4 c6 — Caro-Kann
-      "e4,c6": [
-        { m: "d4", w: 10, name: "Defensa Caro-Kann", desc: "La línea principal. Blancas ocupan centro y negras buscan estructura muy sólida." },
-        { m: "Nc3", w: 6, name: "Caro-Kann: variante de dos caballos", desc: "Desarrollo flexible sin comprometer aún el peón d." },
-        { m: "c4", w: 4, name: "Caro-Kann: enfoque de espacio", desc: "El blanco gana espacio y retrasa definición central." }
-      ],
-      "e4,c6,d4": [
-        { m: "d5", w: 10, name: "Caro-Kann: continuación principal", desc: "El negro ataca el centro tal como planeó con c6." }
-      ],
-      "e4,c6,d4,d5": [
-        { m: "Nc3", w: 10, name: "Caro-Kann: variante clásica", desc: "Defiende e4 y presiona el centro negro." },
-        { m: "Nd2", w: 7, name: "Caro-Kann: variante Karpov", desc: "Desarrollo tranquilo sin comprometer el alfil de c1." },
-        { m: "e5", w: 5, name: "Caro-Kann: variante de avance", desc: "Gana espacio en el centro. La lucha se traslada a los flancos." },
-        { m: "exd5", w: 3, name: "Caro-Kann: variante de cambio", desc: "Simplifica el centro. Posición equilibrada." }
       ],
 
       // 1.e4 d5 — Defensa Escandinava
@@ -6642,7 +6587,8 @@ limitations under the License.
       // ── Defensa Francesa ─────────────────────────────────────────────────────────
       "e4,e6": [
         { m: "d4",   w: 10, name: "Defensa Francesa: entrada principal", desc: "El blanco ocupa el centro. La forma más popular de continuar." },
-        { m: "Nf3",  w: 4,  name: "Defensa Francesa: plan tranquilo", desc: "El blanco desarrolla antes de comprometerse con d4." }
+        { m: "Nf3",  w: 4,  name: "Defensa Francesa: plan tranquilo", desc: "El blanco desarrolla antes de comprometerse con d4." },
+        { m: "d3",   w: 3,  name: "Defensa Francesa: sistema King", desc: "El blanco adopta un plan tranquilo, evitando las líneas teóricas." }
       ],
       "e4,e6,d4": [
         { m: "d5",   w: 10, name: "Francesa: estructura normal", desc: "El negro establece la estructura central clásica de la Francesa." }
@@ -6683,7 +6629,8 @@ limitations under the License.
       // ── Defensa Caro-Kann ────────────────────────────────────────────────────────
       "e4,c6": [
         { m: "d4",   w: 10, name: "Caro-Kann: entrada principal", desc: "El blanco ocupa el centro. La línea más directa." },
-        { m: "Nc3",  w: 5,  name: "Caro-Kann: variante dos caballos", desc: "Desarrollo del caballo. Plan flexible." }
+        { m: "Nc3",  w: 5,  name: "Caro-Kann: variante dos caballos", desc: "Desarrollo del caballo. Plan flexible." },
+        { m: "c4",   w: 3,  name: "Caro-Kann: enfoque de espacio", desc: "El blanco gana espacio y retrasa la definición central." }
       ],
       "e4,c6,d4": [
         { m: "d5",   w: 10, name: "Caro-Kann: estructura principal", desc: "El negro establece el centro. Plan sólido y clásico." }
