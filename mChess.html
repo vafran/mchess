@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.26
+Monolith Chess v2.25.27
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.26</title>
+  <title>Monolith Chess v2.25.27</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.26 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.27 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -4005,7 +4005,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.26", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.27", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -5752,6 +5752,45 @@ limitations under the License.
         { m: "d4", w: 5, name: "Defensa Petrov: ataque Steinitz", desc: "Ataque central directo." }
       ],
 
+      // ── Apertura Viena: continuaciones (Nc3) ────────────────────────────────
+      // mChess tenía Nc3 en el libro pero ninguna continuación — el motor calculaba
+      // libremente y terminaba jugando Bb5→Bd3 (bloqueando d2). Añadido v2.25.27.
+      "e4,e5,Nc3,Nf6": [
+        { m: "f4",   w: 8,  name: "Viena: gambito diferido",        desc: "Plan agresivo. Prepara f5 o estructura tipo Gambito de Rey." },
+        { m: "Bc4",  w: 7,  name: "Viena: Bc4 agresivo",            desc: "El alfil apunta a f7. Transposición a la Italiana con Nc3." },
+        { m: "Nf3",  w: 5,  name: "Cuatro Caballos: variante clásica", desc: "Cuatro Caballos. Juego simétrico y teórico." }
+      ],
+      "e4,e5,Nc3,Nc6": [
+        { m: "f4",   w: 10, name: "Gambito Viena: f4 agresivo",     desc: "El ataque más enérgico. Amenaza f5 y abre líneas." },
+        { m: "Bc4",  w: 8,  name: "Viena: Bc4 clásico",             desc: "Plan posicional. El alfil apunta a la diagonal c4-f7." },
+        { m: "Nf3",  w: 5,  name: "Cuatro Caballos: clásico",       desc: "Cuatro Caballos. Posición simétrica y equilibrada." }
+      ],
+      "e4,e5,Nc3,Bc5": [
+        { m: "Nf3",  w: 10, name: "Viena vs Bc5: Nf3",              desc: "Desarrollo natural. Puede derivar en Italiana o continuar con d3." },
+        { m: "Bc4",  w: 8,  name: "Viena vs Bc5: Bc4 simétrico",    desc: "El blanco responde simétricamente. Posición equilibrada." }
+      ],
+      // CRITICAL: bishop retreat safety net — prevents Bd3 blocking d2
+      "e4,e5,Nc3,Nf6,Bb5,c6": [
+        { m: "Ba4",  w: 10, name: "Viena Bb5: Ba4 retiro",          desc: "El alfil mantiene la presión desde a4. Evita bloquear el peón d2." },
+        { m: "Be2",  w: 4,  name: "Viena Bb5: Be2 consolidar",      desc: "Retirada segura y sólida. Sin bloquear el centro." }
+      ],
+      // Black responses when mChess plays Black in Vienna lines
+      "e4,e5,Nc3,Nf6,f4": [
+        { m: "d5",   w: 10, name: "Viena gambito: d5 contrajuego",  desc: "Contraataque central inmediato. La respuesta más enérgica." },
+        { m: "Nc6",  w: 7,  name: "Viena gambito: Nc6 desarrollo",  desc: "Desarrollo natural. Mantiene la tensión." },
+        { m: "exf4", w: 5,  name: "Viena gambito: aceptado",        desc: "El negro acepta el gambito, apostando por la defensa." }
+      ],
+      "e4,e5,Nc3,Nc6,f4": [
+        { m: "exf4", w: 8,  name: "Gambito Viena: aceptado",        desc: "El negro acepta el peón. Juego táctico." },
+        { m: "d6",   w: 8,  name: "Gambito Viena: defensa d6",      desc: "El negro se defiende sólidamente." },
+        { m: "Nf6",  w: 7,  name: "Gambito Viena: Nf6 contrajuego", desc: "El negro contraataca el peón e4." }
+      ],
+      "e4,e5,Nc3,Nf6,Bc4": [
+        { m: "Nc6",  w: 10, name: "Viena-Italiana: Nc6 sólido",     desc: "Desarrollo natural. Presiona el peón e4." },
+        { m: "Bc5",  w: 8,  name: "Viena-Italiana: Bc5 activo",     desc: "El negro desarrolla el alfil activamente." },
+        { m: "Nxe4", w: 4,  name: "Viena-Italiana: Nxe4 gambito",   desc: "El negro toma el peón. Línea arriesgada pero táctica." }
+      ],
+
       // 1.e4 c5 — Siciliana
       "e4,c5": [
         { m: "Nf3", w: 10, name: "Defensa Siciliana: apertura abierta", desc: "La forma más popular de continuar. Lleva a muchas variantes." },
@@ -6848,7 +6887,7 @@ limitations under the License.
       ],
 
       // ══════════════════════════════════════════════════════════════════════════
-      // EXPANSIÓN ALTA PRIORIDAD — v2.25.26
+      // EXPANSIÓN ALTA PRIORIDAD — v2.25.27
       // ══════════════════════════════════════════════════════════════════════════
 
       // ── Defensa Petrov: continuaciones ──────────────────────────────────────
@@ -7590,6 +7629,25 @@ limitations under the License.
         'Defensa Alekhine': "Alekhine Defense",
         'Apertura de Juego Abierto': 'Open Game Opening',
         'Apertura Viena': 'Vienna Opening',
+        'Viena: gambito diferido': 'Vienna: Delayed Gambit',
+        'Viena: Bc4 agresivo': 'Vienna: Aggressive Bc4',
+        'Viena: Bc4 clásico': 'Vienna: Classical Bc4',
+        'Cuatro Caballos: variante clásica': 'Four Knights: Classical Variation',
+        'Cuatro Caballos: clásico': 'Four Knights: Classical',
+        'Gambito Viena: f4 agresivo': 'Vienna Gambit: Aggressive f4',
+        'Viena vs Bc5: Nf3': 'Vienna vs Bc5: Nf3',
+        'Viena vs Bc5: Bc4 simétrico': 'Vienna vs Bc5: Symmetric Bc4',
+        'Viena Bb5: Ba4 retiro': 'Vienna Bb5: Ba4 Retreat',
+        'Viena Bb5: Be2 consolidar': 'Vienna Bb5: Be2 Consolidate',
+        'Viena gambito: d5 contrajuego': 'Vienna Gambit: d5 Counterplay',
+        'Viena gambito: Nc6 desarrollo': 'Vienna Gambit: Nc6 Development',
+        'Viena gambito: aceptado': 'Vienna Gambit: Accepted',
+        'Gambito Viena: aceptado': 'Vienna Gambit: Accepted',
+        'Gambito Viena: defensa d6': 'Vienna Gambit: d6 Defense',
+        'Gambito Viena: Nf6 contrajuego': 'Vienna Gambit: Nf6 Counterplay',
+        'Viena-Italiana: Nc6 sólido': 'Vienna-Italian: Solid Nc6',
+        'Viena-Italiana: Bc5 activo': 'Vienna-Italian: Active Bc5',
+        'Viena-Italiana: Nxe4 gambito': 'Vienna-Italian: Nxe4 Gambit',
         'Gambito de Rey': "King's Gambit",
         'Apertura Italiana (directa)': 'Italian Opening (direct)',
         'Defensa Normal': 'Normal Defense',
@@ -7894,7 +7952,7 @@ limitations under the License.
         'Dragón Siciliano': 'Sicilian Dragon',
         'Dragón Inglés': 'English Dragon',
         'Londres Sólido': 'Solid London',
-        // ── v2.25.26: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
+        // ── v2.25.27: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
         // Petrov
         'Petrov: variante principal': 'Petrov: Main Line',
         'Petrov: variante agresiva': 'Petrov: Aggressive Variation',
@@ -8463,7 +8521,7 @@ limitations under the License.
       }
 
       // Bishop blocking own central pawn (e.g. Be3 with Pe2 unmoved = development error)
-      // v2.25.26: raised 40→70 cp — engine was choosing structural damage over tactical complications
+      // v2.25.27: raised 40→70 cp — engine was choosing structural damage over tactical complications
       if (eg < 0.5) {
         if (brd[5][4] === 'B' && brd[6][4] === 'P') score -= 70; // Be3 + Pe2
         if (brd[5][3] === 'B' && brd[6][3] === 'P') score -= 70; // Bd3 + Pd2
@@ -8661,7 +8719,7 @@ limitations under the License.
             const kPen = Math.min(120, attackers * attackers * 8);
             kingSafetyRaw -= kPen * (1 - eg);
             // 4. Open/semi-open files near castled king with enemy major piece
-            // v2.25.26: also penalise semi-open files (friendly pawn still present but
+            // v2.25.27: also penalise semi-open files (friendly pawn still present but
             // enemy rook/queen already on the file — one trade away from invasion).
             // Fully open = 1 unit, semi-open = 0.5 unit; cost raised 25→35 cp/unit.
             if (c >= 5 || c <= 2) {
@@ -8703,7 +8761,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.26 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.27 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -8856,7 +8914,7 @@ limitations under the License.
         const targetVal = targetPiece && targetPiece !== ' ' ? (PIECE_VALUES[targetPiece.toUpperCase()] || 0) : 0;
         const isPromo = activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
 
-        // SEE pruning (v2.25.26): skip losing captures (e.g. QxP defended by pawn).
+        // SEE pruning (v2.25.27): skip losing captures (e.g. QxP defended by pawn).
         // Promotions and checks (targetVal=0) bypass this filter.
         if (!isPromo && targetVal > 0) {
           const seeVal = see(activeBoard, m.tr, m.tc, m.fr, m.fc);
@@ -9632,7 +9690,7 @@ limitations under the License.
           }
 
           // Bishop blocking own central pawn (opening/middlegame — eg < 0.5)
-          // v2.25.26: raised 40→70 cp — engine was choosing structural damage over tactical complications
+          // v2.25.27: raised 40→70 cp — engine was choosing structural damage over tactical complications
           if (eg < 0.5) {
             if (b[5*8+4] === WB && b[6*8+4] === WP) s -= 70; // Be3 + Pe2
             if (b[5*8+3] === WB && b[6*8+3] === WP) s -= 70; // Bd3 + Pd2
@@ -10237,7 +10295,7 @@ limitations under the License.
               workerKSRaw -= kPenalty * (1 - eg);
 
               // 5. Open/semi-open files near castled king with enemy major
-              // v2.25.26: semi-open penalty added (enemy major on file even with friendly pawn).
+              // v2.25.27: semi-open penalty added (enemy major on file even with friendly pawn).
               // Fully open = 1 unit, semi-open = 0.5 unit; cost raised 25→35 cp/unit.
               if (c >= 5 || c <= 2) {
                 const filesToCheck = c >= 5 ? [5, 6, 7] : [0, 1, 2];
@@ -10611,7 +10669,7 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.26) ──────────────
+          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.27) ──────────────
           // Uses SEE to detect any piece in a losing exchange (not just pawn attacks).
           // Covers: Nxd5 (knight into defended square), g4 Nxg4 (pawn hung to
           // knight), Bc5 attacked by Nd4, rook attacked by bishop, etc.
@@ -10685,7 +10743,7 @@ limitations under the License.
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.26) ────────────────────────────────
+          // ── NARROW MATERIAL ANCHOR (v2.25.27) ────────────────────────────────
           // Active in opening/early middlegame (eg<0.30) when down a piece (matDiff < -200).
           // Prevents phantom compensation: engine won't convince itself a sacrifice
           // is worth it because of speculative positional continuations.
