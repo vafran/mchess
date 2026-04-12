@@ -8277,11 +8277,8 @@ limitations under the License.
         ['torre', 'rook'], ['dama', 'queen'], ['rey', 'king']
       ];
 
-      concepts.forEach(([es, en]) => {
-        out = out.replace(new RegExp(es, 'gi'), en);
-      });
-
-      return out;
+      // No exact translation found — return empty rather than garbled partial Spanish
+      return '';
     }
 
     function getLocalizedPieceName(pieceChar) {
