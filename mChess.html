@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.25.25
+Monolith Chess v2.25.26
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.25.25</title>
+  <title>Monolith Chess v2.25.26</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.25 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.26 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -4005,7 +4005,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.25.25", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.26", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -6848,7 +6848,7 @@ limitations under the License.
       ],
 
       // ══════════════════════════════════════════════════════════════════════════
-      // EXPANSIÓN ALTA PRIORIDAD — v2.25.25
+      // EXPANSIÓN ALTA PRIORIDAD — v2.25.26
       // ══════════════════════════════════════════════════════════════════════════
 
       // ── Defensa Petrov: continuaciones ──────────────────────────────────────
@@ -7894,7 +7894,7 @@ limitations under the License.
         'Dragón Siciliano': 'Sicilian Dragon',
         'Dragón Inglés': 'English Dragon',
         'Londres Sólido': 'Solid London',
-        // ── v2.25.25: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
+        // ── v2.25.26: Petrov, Scotch, Grand Prix, London, KID, QGA, Benoni, Nimzo, Caro-Kann ──
         // Petrov
         'Petrov: variante principal': 'Petrov: Main Line',
         'Petrov: variante agresiva': 'Petrov: Aggressive Variation',
@@ -8659,23 +8659,24 @@ limitations under the License.
             // 3. Attacker pressure — reduced coefficient (8 vs 15) and lower cap (120 vs 250)
             const kPen = Math.min(120, attackers * attackers * 8);
             kingSafetyRaw -= kPen * (1 - eg);
-            // 4. Open files near castled king with enemy major piece
+            // 4. Open/semi-open files near castled king with enemy major piece
+            // v2.25.26: also penalise semi-open files (friendly pawn still present but
+            // enemy rook/queen already on the file — one trade away from invasion).
+            // Fully open = 1 unit, semi-open = 0.5 unit; cost raised 25→35 cp/unit.
             if (c >= 5 || c <= 2) {
               const filesToCheck = c >= 5 ? [5, 6, 7] : [0, 1, 2];
               let openFilesThreat = 0;
               for (const fc of filesToCheck) {
                 let hasPawn = false;
                 for (let fr = 0; fr < 8; fr++) { if (brd[fr][fc] === (isW ? 'P' : 'p')) { hasPawn = true; break; } }
-                if (!hasPawn) {
-                  let enemyMajor = false;
-                  for (let fr = 0; fr < 8; fr++) {
-                    const pc = brd[fr][fc];
-                    if (pc === (isW ? 'r' : 'R') || pc === (isW ? 'q' : 'Q')) { enemyMajor = true; break; }
-                  }
-                  if (enemyMajor) openFilesThreat += 1;
+                let enemyMajor = false;
+                for (let fr = 0; fr < 8; fr++) {
+                  const pc = brd[fr][fc];
+                  if (pc === (isW ? 'r' : 'R') || pc === (isW ? 'q' : 'Q')) { enemyMajor = true; break; }
                 }
+                if (enemyMajor) openFilesThreat += hasPawn ? 0.5 : 1;
               }
-              kingSafetyRaw -= openFilesThreat * 25;
+              kingSafetyRaw -= openFilesThreat * 35;
             }
             // ★ HARD CAP — the entire king-safety bucket is bounded at ±150 cp
             bonus += Math.max(-150, Math.min(150, kingSafetyRaw));
@@ -8701,7 +8702,7 @@ limitations under the License.
         }
       }
 
-      // ── HANGING PIECE PENALTY (v2.25.25 — main-thread mirror) ───────────────
+      // ── HANGING PIECE PENALTY (v2.25.26 — main-thread mirror) ───────────────
       // Mirrors the worker's hanging-piece logic. Uses char board ('P'/'p' etc.)
       // isSquareAttacked(r,c,'b',brd) = any WHITE piece attacks (r,c) = defends it.
       // isSquareAttacked(r,c,'w',brd) = any BLACK piece attacks (r,c) = defends it.
@@ -8854,7 +8855,7 @@ limitations under the License.
         const targetVal = targetPiece && targetPiece !== ' ' ? (PIECE_VALUES[targetPiece.toUpperCase()] || 0) : 0;
         const isPromo = activeBoard[m.fr][m.fc].toUpperCase() === 'P' && (m.tr === 0 || m.tr === 7);
 
-        // SEE pruning (v2.25.25): skip losing captures (e.g. QxP defended by pawn).
+        // SEE pruning (v2.25.26): skip losing captures (e.g. QxP defended by pawn).
         // Promotions and checks (targetVal=0) bypass this filter.
         if (!isPromo && targetVal > 0) {
           const seeVal = see(activeBoard, m.tr, m.tc, m.fr, m.fc);
@@ -10234,7 +10235,9 @@ limitations under the License.
               const kPenalty = KS_CURVE[Math.min(attackers, KS_CURVE.length - 1)];
               workerKSRaw -= kPenalty * (1 - eg);
 
-              // 5. Open files near castled king with enemy major
+              // 5. Open/semi-open files near castled king with enemy major
+              // v2.25.26: semi-open penalty added (enemy major on file even with friendly pawn).
+              // Fully open = 1 unit, semi-open = 0.5 unit; cost raised 25→35 cp/unit.
               if (c >= 5 || c <= 2) {
                 const filesToCheck = c >= 5 ? [5, 6, 7] : [0, 1, 2];
                 let openFilesThreat = 0;
@@ -10243,17 +10246,15 @@ limitations under the License.
                   for (let fr = 0; fr < 8; fr++) {
                     if (b[fr*8+fc] === (isW ? WP : BP)) { hasFriendlyPawn = true; break; }
                   }
-                  if (!hasFriendlyPawn) {
-                    let enemyMajorOnFile = false;
-                    for (let fr = 0; fr < 8; fr++) {
-                      if (b[fr*8+fc] === (isW ? BR : WR) || b[fr*8+fc] === (isW ? BQ : WQ)) {
-                        enemyMajorOnFile = true; break;
-                      }
+                  let enemyMajorOnFile = false;
+                  for (let fr = 0; fr < 8; fr++) {
+                    if (b[fr*8+fc] === (isW ? BR : WR) || b[fr*8+fc] === (isW ? BQ : WQ)) {
+                      enemyMajorOnFile = true; break;
                     }
-                    if (enemyMajorOnFile) openFilesThreat += 1;
                   }
+                  if (enemyMajorOnFile) openFilesThreat += hasFriendlyPawn ? 0.5 : 1;
                 }
-                workerKSRaw -= openFilesThreat * 25;
+                workerKSRaw -= openFilesThreat * 35;
               }
               // ★ HARD CAP — entire king-safety bucket bounded at ±150 cp
               bonus += Math.max(-150, Math.min(150, workerKSRaw));
@@ -10609,7 +10610,7 @@ limitations under the License.
             }
           }
 
-          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.25) ──────────────
+          // ── HANGING PIECE / LOSING EXCHANGE PENALTY (v2.25.26) ──────────────
           // Uses SEE to detect any piece in a losing exchange (not just pawn attacks).
           // Covers: Nxd5 (knight into defended square), g4 Nxg4 (pawn hung to
           // knight), Bc5 attacked by Nd4, rook attacked by bishop, etc.
@@ -10683,7 +10684,7 @@ limitations under the License.
             }
           }
 
-          // ── NARROW MATERIAL ANCHOR (v2.25.25) ────────────────────────────────
+          // ── NARROW MATERIAL ANCHOR (v2.25.26) ────────────────────────────────
           // Active in opening/early middlegame (eg<0.30) when down a piece (matDiff < -200).
           // Prevents phantom compensation: engine won't convince itself a sacrifice
           // is worth it because of speculative positional continuations.
