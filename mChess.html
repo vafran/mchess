@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.24.1
+Monolith Chess v2.25.12
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.24.1</title>
+  <title>Monolith Chess v2.25.12</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.24.1 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.25.12 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2757,12 +2757,13 @@ limitations under the License.
           tempBoard.push(r);
         }
 
-        // Asignar al tablero global esperado por el motor
-        board = tempBoard;
+        // 🛡️ RACE FIX: Use local vars — do NOT mutate global board/castleRights/enPassantTarget.
+        // Two concurrent askWiseKing calls (arena + UI) race and corrupt each other's state.
+        // JS is single-threaded: save/restore around sync calls is atomic (no await in between).
         const color = parts[1];
         const cr = parts[2];
-        castleRights = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
-        enPassantTarget = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
+        const tempCR = { K: cr.includes('K'), Q: cr.includes('Q'), k: cr.includes('k'), q: cr.includes('q') };
+        const tempEP = parts[3] !== '-' ? [8 - parseInt(parts[3][1]), 'abcdefgh'.indexOf(parts[3][0])] : null;
 
         // Apertura
         const historyKey = historyArr.join(',');
@@ -2775,9 +2776,13 @@ limitations under the License.
             const skipBook = false;
 
             if (!skipBook) {
+              // Temporarily set globals for getLegalMovesForColorInPlace (sync, no await — safe)
+              const _sb = board, _scr = castleRights, _sep = enPassantTarget;
+              board = tempBoard; castleRights = tempCR; enPassantTarget = tempEP;
               const legalMvs = getLegalMovesForColorInPlace(color);
+              board = _sb; castleRights = _scr; enPassantTarget = _sep;
               const validBookMoves = valid.filter(entry =>
-                legalMvs.some(m => getMoveNotation(board, color, m, castleRights) === entry.m)
+                legalMvs.some(m => getMoveNotation(tempBoard, color, m, tempCR) === entry.m)
               );
 
               if (validBookMoves.length > 0) {
@@ -2788,15 +2793,57 @@ limitations under the License.
                   randomWeight -= (entry.w || 1);
                   if (randomWeight <= 0) { chosenEntry = entry; break; }
                 }
-                const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
+                const bookMove = legalMvs.find(m => getMoveNotation(tempBoard, color, m, tempCR) === chosenEntry.m);
                 if (bookMove) {
-                  console.log("📖 Move selected from the book:", chosenEntry.m);
-                  const cols = 'abcdefgh';
-                  const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
-                  const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
-                  console.log("🎯 UCI:", uci);
-                  window._lastSearchDepth = { completedDepth: 'book', maxDepth: 'book', isPartial: false };
-                  return uci;
+                  // ── v2.25.12: Hanging-piece book-exit ────────────────────────
+                  // Before trusting the book, check if any own piece (N/B/R/Q) is
+                  // attacked by an enemy pawn without a friendly pawn to defend it.
+                  // If so, the book position is already "off script" (enemy played a
+                  // surprise pawn attack) — fall through to the engine instead.
+                  let ownPieceHanging = false;
+                  const brd = tempBoard;
+                  const isWhite = color === 'w';
+                  outerHang: for (let _r = 0; _r < 8; _r++) {
+                    for (let _c = 0; _c < 8; _c++) {
+                      const _p = brd[_r][_c];
+                      if (!_p) continue;
+                      const _pu = _p.toUpperCase();
+                      if (_pu === 'P' || _pu === 'K' || _pu === 'Q') continue; // only N/B/R
+                      const _isOwnPiece = isWhite ? (_p === _p.toUpperCase()) : (_p === _p.toLowerCase());
+                      if (!_isOwnPiece) continue;
+                      if (isWhite) {
+                        // attacked by BP at (_r-1, _c±1)
+                        const _atk = (_r > 0 && _c > 0 && brd[_r-1][_c-1] === 'p') ||
+                                     (_r > 0 && _c < 7 && brd[_r-1][_c+1] === 'p');
+                        if (_atk) {
+                          const _def = (_r < 7 && _c > 0 && brd[_r+1][_c-1] === 'P') ||
+                                       (_r < 7 && _c < 7 && brd[_r+1][_c+1] === 'P');
+                          if (!_def) { ownPieceHanging = true; break outerHang; }
+                        }
+                      } else {
+                        // attacked by WP at (_r+1, _c±1)
+                        const _atk = (_r < 7 && _c > 0 && brd[_r+1][_c-1] === 'P') ||
+                                     (_r < 7 && _c < 7 && brd[_r+1][_c+1] === 'P');
+                        if (_atk) {
+                          const _def = (_r > 0 && _c > 0 && brd[_r-1][_c-1] === 'p') ||
+                                       (_r > 0 && _c < 7 && brd[_r-1][_c+1] === 'p');
+                          if (!_def) { ownPieceHanging = true; break outerHang; }
+                        }
+                      }
+                    }
+                  }
+                  if (ownPieceHanging) {
+                    console.log('⚠️ Book exit: own piece hanging — deferring to engine');
+                    // fall through to engine search below
+                  } else {
+                    console.log("📖 Move selected from the book:", chosenEntry.m);
+                    const cols = 'abcdefgh';
+                    const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && tempBoard[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
+                    const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
+                    console.log("🎯 UCI:", uci);
+                    window._lastSearchDepth = { completedDepth: 'book', maxDepth: 'book', isPartial: false };
+                    return uci;
+                  }
                 }
               }
             } else {
@@ -2823,14 +2870,32 @@ limitations under the License.
           }
           const currentId = ++window._wkLastRequestId;
           let settled = false;
+          let bestSoFar = null; // 📡 Updated after each completed depth
           const t = setTimeout(() => {
             console.log("⚠️ Safety timer triggered.");
-            if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+            if (!settled) {
+              settled = true;
+              worker.terminate();
+              chessEngineWorker = null;
+              if (bestSoFar) {
+                // Worker froze but we have a valid move from a completed depth — use it
+                console.log(`📡 Using bestSoFar from d${bestSoFar.completedDepth} (worker froze)`);
+                resolve({ moves: bestSoFar.moves, completedDepth: bestSoFar.completedDepth, maxDepth: _depth, isPartial: true });
+              } else {
+                resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true });
+              }
+            }
           }, timeoutRes + 15000);
 
           worker.onmessage = function (e) {
             // 🛡️ Ignorar mensajes de búsquedas canceladas o peticiones antiguas
             if (e.data.requestId && e.data.requestId !== currentId) return;
+
+            if (e.data.action === 'bestSoFar') {
+              // Incremental update — store best move found so far (don't settle yet)
+              bestSoFar = { moves: e.data.moves, completedDepth: e.data.completedDepth };
+              return;
+            }
 
             if (e.data.action === 'result') {
               clearTimeout(t);
@@ -2848,21 +2913,21 @@ limitations under the License.
               // Worker hit an uncaught exception — resolve fast instead of waiting 45s
               console.log('⚠️ Worker error (resolved fast):', e.data.error);
               clearTimeout(t);
-              if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+              if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: bestSoFar ? bestSoFar.moves : [], completedDepth: bestSoFar ? bestSoFar.completedDepth : 0, maxDepth: _depth, isPartial: true }); }
             }
           };
           worker.onerror = function (ev) {
-            // Catches uncaught worker exceptions that don’t go through onmessage
+            // Catches uncaught worker exceptions that don't go through onmessage
             console.log('⚠️ Uncaught worker error:', ev.message);
             clearTimeout(t);
-            if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
+            if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: bestSoFar ? bestSoFar.moves : [], completedDepth: bestSoFar ? bestSoFar.completedDepth : 0, maxDepth: _depth, isPartial: true }); }
           };
           worker.postMessage({
             action: 'search',
             board: tempBoard,
             turn: color,
-            castleRights,
-            enPassantTarget,
+            castleRights: tempCR,
+            enPassantTarget: tempEP,
             depth: _depth, multiPV: 1, timeout: timeoutRes,
             requestId: currentId,
             positionHashes: [...positionHashes],
@@ -2873,11 +2938,14 @@ limitations under the License.
         if (!results || !results.moves || results.moves.length === 0) {
           console.log("❌ Motor returned empty array.");
           // ⚠️ FALLBACK: Return random legal move
+          const _sb2 = board, _scr2 = castleRights, _sep2 = enPassantTarget;
+          board = tempBoard; castleRights = tempCR; enPassantTarget = tempEP;
           const legalMvs = getLegalMovesForColorInPlace(color);
+          board = _sb2; castleRights = _scr2; enPassantTarget = _sep2;
           if (legalMvs && legalMvs.length > 0) {
             const fallbackMove = legalMvs[0];
             const cols = 'abcdefgh';
-            const promotion = (fallbackMove.tr === 0 || fallbackMove.tr === 7) && board[fallbackMove.fr][fallbackMove.fc].toUpperCase() === 'P' ? 'q' : '';
+            const promotion = (fallbackMove.tr === 0 || fallbackMove.tr === 7) && tempBoard[fallbackMove.fr][fallbackMove.fc].toUpperCase() === 'P' ? 'q' : '';
             const uci = cols[fallbackMove.fc] + (8 - fallbackMove.fr) + cols[fallbackMove.tc] + (8 - fallbackMove.tr) + promotion;
             console.log("⚠️ Using fallback move:", uci);
             window._lastSearchDepth = { completedDepth: 0, maxDepth: _depth, isPartial: true };
@@ -2892,7 +2960,7 @@ limitations under the License.
         // 🛡️ FIX: Traducir códigos numéricos de promoción (del motor) a strings antes de usar toLowerCase()
         const INT_TO_PROMO = {2:'n',3:'b',4:'r',5:'q',10:'n',11:'b',12:'r',13:'q', 'N':'n', 'B':'b', 'R':'r', 'Q':'q'};
         const rawPromo = (m.promo && typeof m.promo === 'number') ? INT_TO_PROMO[m.promo] : m.promo;
-        const promotion = (m.tr === 0 || m.tr === 7) && board[m.fr][m.fc].toUpperCase() === 'P' ? (rawPromo ? rawPromo.toLowerCase() : 'q') : '';
+        const promotion = (m.tr === 0 || m.tr === 7) && tempBoard[m.fr][m.fc].toUpperCase() === 'P' ? (rawPromo ? rawPromo.toLowerCase() : 'q') : '';
 
         const uci = cols[m.fc] + (8 - m.fr) + cols[m.tc] + (8 - m.tr) + promotion;
         // Expose depth info so arena_tournament.js can read it via page.evaluate
@@ -2973,6 +3041,7 @@ limitations under the License.
     let lastTrainingTipPly = -99;
     let lastTrainingTipText = '';
     let fenPositionLoaded = false; // true when position was loaded from FEN, not played from start
+    let fenGameActive = false;     // true for the whole duration of a FEN-loaded game — disables opening book
     let playerColor = 'w';
     let boardFlipped = false;
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
@@ -3418,7 +3487,7 @@ limitations under the License.
         bookOne: 'In this theoretical position you have one recommended line:',
         suggestMove: 'I suggest moving your',
         professorSays: 'Coach says:',
-        partial: '⏱️ Partial analysis due to time limit (10s).', emergencyCoachLine: '🛟 I’ll give you a clear, safe move right now.',
+        partial: '⏱️ Partial analysis due to time limit (10s).', emergencyCoachLine: '🛟 I\'ll give you a clear, safe move right now.',
         continueAnalysis: 'Continue analysis (+10s)',
         noCompute: 'I could not compute the Coach recommendation.',
         trainingEnabled: 'Training Mode enabled 🎓',
@@ -3923,10 +3992,11 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.24.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.25.12", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
+      fenGameActive = false;     // normal game — opening book is active
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
       aiSearchGeneration++;
@@ -5566,6 +5636,12 @@ limitations under the License.
       "e4,e5,Qh5,Nc6,Bc4": [
         { m: "g6", w: 10, name: "Bloqueo del Mate", desc: "Expulsa a la dama y bloquea el ataque sobre f7. ¡El pastor se tiene que ir a casa!" }
       ],
+      "e4,e5,Nf3,Nc6,Bb5": [
+        { m: "a6", w: 10, name: "Defensa Ruy López", desc: "La jugada teórica. Ataca al alfil y gana espacio en el flanco de dama." }
+      ],
+      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O": [
+        { m: "Be7", w: 10, name: "Ruy López, Variante Cerrada", desc: "El negro prepara el enroque y defiende el peón de e5. Una posición sólida y estratégica." }
+      ],
       "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1,b5,Bb3,d6,c3,O-O,h3": [
         { m: "Na5", w: 10, name: "Ruy López, Ataque Marshall", desc: "El negro ataca el alfil y prepara el contrajuego con ...c5. Una posición dinámica y táctica." }
       ],
@@ -5665,45 +5741,6 @@ limitations under the License.
         { m: "d4", w: 5, name: "Defensa Petrov: ataque Steinitz", desc: "Ataque central directo." }
       ],
 
-      // ── Apertura Viena: continuaciones (Nc3) ────────────────────────────────
-      // mChess tenía Nc3 en el libro pero ninguna continuación — el motor calculaba
-      // libremente y terminaba jugando Bb5→Bd3 (bloqueando d2). Añadido v2.25.32.
-      "e4,e5,Nc3,Nf6": [
-        { m: "f4",   w: 8,  name: "Viena: gambito diferido",        desc: "Plan agresivo. Prepara f5 o estructura tipo Gambito de Rey." },
-        { m: "Bc4",  w: 7,  name: "Viena: Bc4 agresivo",            desc: "El alfil apunta a f7. Transposición a la Italiana con Nc3." },
-        { m: "Nf3",  w: 5,  name: "Cuatro Caballos: variante clásica", desc: "Cuatro Caballos. Juego simétrico y teórico." }
-      ],
-      "e4,e5,Nc3,Nc6": [
-        { m: "f4",   w: 10, name: "Gambito Viena: f4 agresivo",     desc: "El ataque más enérgico. Amenaza f5 y abre líneas." },
-        { m: "Bc4",  w: 8,  name: "Viena: Bc4 clásico",             desc: "Plan posicional. El alfil apunta a la diagonal c4-f7." },
-        { m: "Nf3",  w: 5,  name: "Cuatro Caballos: clásico",       desc: "Cuatro Caballos. Posición simétrica y equilibrada." }
-      ],
-      "e4,e5,Nc3,Bc5": [
-        { m: "Nf3",  w: 10, name: "Viena vs Bc5: Nf3",              desc: "Desarrollo natural. Puede derivar en Italiana o continuar con d3." },
-        { m: "Bc4",  w: 8,  name: "Viena vs Bc5: Bc4 simétrico",    desc: "El blanco responde simétricamente. Posición equilibrada." }
-      ],
-      // CRITICAL: bishop retreat safety net — prevents Bd3 blocking d2
-      "e4,e5,Nc3,Nf6,Bb5,c6": [
-        { m: "Ba4",  w: 10, name: "Viena Bb5: Ba4 retiro",          desc: "El alfil mantiene la presión desde a4. Evita bloquear el peón d2." },
-        { m: "Be2",  w: 4,  name: "Viena Bb5: Be2 consolidar",      desc: "Retirada segura y sólida. Sin bloquear el centro." }
-      ],
-      // Black responses when mChess plays Black in Vienna lines
-      "e4,e5,Nc3,Nf6,f4": [
-        { m: "d5",   w: 10, name: "Viena gambito: d5 contrajuego",  desc: "Contraataque central inmediato. La respuesta más enérgica." },
-        { m: "Nc6",  w: 7,  name: "Viena gambito: Nc6 desarrollo",  desc: "Desarrollo natural. Mantiene la tensión." },
-        { m: "exf4", w: 5,  name: "Viena gambito: aceptado",        desc: "El negro acepta el gambito, apostando por la defensa." }
-      ],
-      "e4,e5,Nc3,Nc6,f4": [
-        { m: "exf4", w: 8,  name: "Gambito Viena: aceptado",        desc: "El negro acepta el peón. Juego táctico." },
-        { m: "d6",   w: 8,  name: "Gambito Viena: defensa d6",      desc: "El negro se defiende sólidamente." },
-        { m: "Nf6",  w: 7,  name: "Gambito Viena: Nf6 contrajuego", desc: "El negro contraataca el peón e4." }
-      ],
-      "e4,e5,Nc3,Nf6,Bc4": [
-        { m: "Nc6",  w: 10, name: "Viena-Italiana: Nc6 sólido",     desc: "Desarrollo natural. Presiona el peón e4." },
-        { m: "Bc5",  w: 8,  name: "Viena-Italiana: Bc5 activo",     desc: "El negro desarrolla el alfil activamente." },
-        { m: "Nxe4", w: 4,  name: "Viena-Italiana: Nxe4 gambito",   desc: "El negro toma el peón. Línea arriesgada pero táctica." }
-      ],
-
       // 1.e4 c5 — Siciliana
       "e4,c5": [
         { m: "Nf3", w: 10, name: "Defensa Siciliana: apertura abierta", desc: "La forma más popular de continuar. Lleva a muchas variantes." },
@@ -5733,10 +5770,59 @@ limitations under the License.
         { m: "a6", w: 6, name: "Siciliana: inicio Najdorf", desc: "Comienzo del Najdorf. Evita Bb5+ y prepara b5." },
         { m: "g6", w: 5, name: "Siciliana: Dragón", desc: "Comienza el Dragón. El negro desarrolla el alfil en g7." }
       ],
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6": [
+        { m: "Nc3", w: 10, name: "Siciliana: variante Scheveningen/Najdorf", desc: "El blanco desarrolla el caballo. La jugada más flexible." },
+        { m: "f3", w: 5, name: "Siciliana: ataque inglés", desc: "El blanco prepara Be3 y g4 para un ataque de rey agresivo." }
+      ],
+      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3": [
+        { m: "a6", w: 10, name: "Variante Najdorf", desc: "Najdorf clásico. Prepara b5 y expansión en el flanco de dama." },
+        { m: "e6", w: 8, name: "Variante Scheveningen", desc: "Sólido. El negro construye una base central con e6-d6." },
+        { m: "g6", w: 6, name: "Dragón Yugoslavo", desc: "El plan más agresivo del Dragón. Prepara enroque largo para el blanco." }
+      ],
       "e4,c5,Nf3,Nc6": [
         { m: "d4", w: 10, name: "Siciliana clásica abierta", desc: "La línea principal contra la Siciliana clásica." },
         { m: "Bb5", w: 6, name: "Siciliana: variante Rossolimo", desc: "Evita las complicaciones. El blanco cambia alfil por caballo." },
         { m: "Nc3", w: 4, name: "Siciliana: sistema cerrado", desc: "Desarrollo tranquilo sin d4 inmediato." }
+      ],
+
+      // 1.e4 e6 — Defensa Francesa
+      "e4,e6": [
+        { m: "d4", w: 10, name: "Defensa Francesa: variante principal", desc: "Ocupa el centro. Las negras planean ...d5 para crear tensión." },
+        { m: "d3", w: 4, name: "Defensa Francesa: sistema King", desc: "El blanco adopta un plan tranquilo, evitando las líneas teóricas." }
+      ],
+      "e4,e6,d4": [
+        { m: "d5", w: 10, name: "Defensa Francesa: ataque al centro", desc: "El negro ataca e4 con d5. Ahora el blanco debe decidir su plan." }
+      ],
+      "e4,e6,d4,d5": [
+        { m: "Nc3", w: 10, name: "Francesa: variante Winawer/Clásica", desc: "Defiende e4. El negro puede clavar con ...Bb4 (Winawer)." },
+        { m: "Nd2", w: 8, name: "Francesa: variante Tarrasch", desc: "Defiende e4 sin bloquear el alfil de c1. Plan sólido." },
+        { m: "e5", w: 6, name: "Francesa: variante de avance", desc: "Cede el centro pero gana espacio. Plan de ataque de rey." },
+        { m: "exd5", w: 4, name: "Francesa: variante de cambio", desc: "Elimina la tensión central. Posición equilibrada." }
+      ],
+      "e4,e6,d4,d5,Nc3": [
+        { m: "Bb4", w: 10, name: "Francesa: variante Winawer", desc: "Clava el caballo y presiona e4. Muy agudo y complejo." },
+        { m: "Nf6", w: 8, name: "Francesa: variante clásica", desc: "Desarrollo natural. Presiona e4 con el caballo." },
+        { m: "dxe4", w: 4, name: "Francesa: variante Rubinstein", desc: "Elimina la tensión. El negro busca un juego simple." }
+      ],
+      "e4,e6,d4,d5,Nd2": [
+        { m: "Nf6", w: 10, name: "Tarrasch: variante clásica", desc: "Desarrollo natural. El negro lucha por el centro." },
+        { m: "c5", w: 8, name: "Tarrasch: variante abierta", desc: "Ataca el centro blanco directamente." }
+      ],
+
+      // 1.e4 c6 — Caro-Kann
+      "e4,c6": [
+        { m: "d4", w: 10, name: "Defensa Caro-Kann", desc: "La línea principal. Blancas ocupan centro y negras buscan estructura muy sólida." },
+        { m: "Nc3", w: 6, name: "Caro-Kann: variante de dos caballos", desc: "Desarrollo flexible sin comprometer aún el peón d." },
+        { m: "c4", w: 4, name: "Caro-Kann: enfoque de espacio", desc: "El blanco gana espacio y retrasa definición central." }
+      ],
+      "e4,c6,d4": [
+        { m: "d5", w: 10, name: "Caro-Kann: continuación principal", desc: "El negro ataca el centro tal como planeó con c6." }
+      ],
+      "e4,c6,d4,d5": [
+        { m: "Nc3", w: 10, name: "Caro-Kann: variante clásica", desc: "Defiende e4 y presiona el centro negro." },
+        { m: "Nd2", w: 7, name: "Caro-Kann: variante Karpov", desc: "Desarrollo tranquilo sin comprometer el alfil de c1." },
+        { m: "e5", w: 5, name: "Caro-Kann: variante de avance", desc: "Gana espacio en el centro. La lucha se traslada a los flancos." },
+        { m: "exd5", w: 3, name: "Caro-Kann: variante de cambio", desc: "Simplifica el centro. Posición equilibrada." }
       ],
 
       // 1.e4 d5 — Defensa Escandinava
@@ -5756,63 +5842,6 @@ limitations under the License.
         { m: "Qd8", w: 3, name: "Escandinava: variante pasiva", desc: "La dama regresa. El negro pierde un tempo." }
       ],
 
-      // ── Escandinava: continuaciones tras Qd6 ────────────────────────────────
-      // White plays d4 or Nf3 — Black must develop, NOT retreat queen to d8
-      "e4,d5,exd5,Qxd5,Nc3,Qd6": [
-        { m: "d4", w: 10, name: "Escandinava Qd6: centro", desc: "Blancas controlan el centro. Negras desarrollan con Nf6." },
-        { m: "Nf3", w: 8, name: "Escandinava Qd6: desarrollo", desc: "Desarrollo natural. Negras siguen con Nf6 o g6." },
-        { m: "d3", w: 5, name: "Escandinava Qd6: sistema lento", desc: "Blancas construyen despacio. Negras igualan fácilmente con Nf6." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qd6,d4": [
-        { m: "Nf6", w: 10, name: "Escandinava Qd6: Nf6 desarrollo", desc: "Desarrollo correcto. El caballo presiona e4 y prepara enroque." },
-        { m: "c6", w: 7, name: "Escandinava Qd6: c6 sólido", desc: "Solidez antes de desarrollar. Prepara Nd7, Ngf6." },
-        { m: "Nc6", w: 5, name: "Escandinava Qd6: Nc6", desc: "Desarrollo directo del caballo de dama." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qd6,Nf3": [
-        { m: "Nf6", w: 10, name: "Escandinava Qd6: Nf6", desc: "Desarrollo simétrico. El caballo sale y protege el flanco de rey." },
-        { m: "g6", w: 7, name: "Escandinava Qd6: fianchetto", desc: "Preparando Bg7 para solidez a largo plazo." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qd6,d3": [
-        { m: "Nf6", w: 10, name: "Escandinava Qd6: Nf6 vs d3", desc: "Desarrollo normal. Blancas sin presión inmediata." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qd6,d4,Nf6": [
-        { m: "Nf3", w: 10, name: "Escandinava Qd6: Nf3", desc: "Desarrollo blanco clásico. Negras siguen con g6 o Bg4." },
-        { m: "Bd3", w: 7, name: "Escandinava Qd6: Bd3", desc: "El alfil apunta al flanco de rey. Negras juegan Bg4 o g6." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qd6,d4,Nf6,Nf3": [
-        { m: "g6", w: 10, name: "Escandinava Qd6: sistema fianchetto", desc: "Fianchetto sólido. El alfil en g7 domina la diagonal larga." },
-        { m: "Bg4", w: 8, name: "Escandinava Qd6: presión al Nf3", desc: "Pin sobre el caballo, aumentando la presión central." },
-        { m: "a6", w: 6, name: "Escandinava Qd6: a6", desc: "Preparando b5 para contrarrestar en el flanco de dama." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qd6,d4,Nf6,Nf3,g6": [
-        { m: "Bd3", w: 10, name: "Escandinava Qd6: Bd3 vs fianchetto", desc: "Desarrollo sólido. Blancas preparan enroque y juego central." }
-      ],
-
-      // ── Escandinava: continuaciones tras Qa5 ────────────────────────────────
-      "e4,d5,exd5,Qxd5,Nc3,Qa5": [
-        { m: "d4", w: 10, name: "Escandinava Qa5: centro", desc: "Blancas toman el centro. Negras desarrollan con Nf6." },
-        { m: "Nf3", w: 8, name: "Escandinava Qa5: Nf3", desc: "Desarrollo natural. Negras siguen con Nf6." },
-        { m: "Bc4", w: 6, name: "Escandinava Qa5: Bc4", desc: "El alfil apunta a f7. Negras deben ser precisos." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qa5,d4": [
-        { m: "Nf6", w: 10, name: "Escandinava Qa5: Nf6", desc: "Desarrollo principal. El caballo presiona el centro." },
-        { m: "e5", w: 6, name: "Escandinava Qa5: e5 contrajuego", desc: "Contrajuego en el centro. Dinámico pero arriesgado." },
-        { m: "c6", w: 5, name: "Escandinava Qa5: c6 sólido", desc: "Solidez clásica. Prepara el desarrollo del caballo." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qa5,Nf3": [
-        { m: "Nf6", w: 10, name: "Escandinava Qa5: Nf6 vs Nf3", desc: "Desarrollo natural. Negras igualan cómodamente." },
-        { m: "Bg4", w: 7, name: "Escandinava Qa5: Bg4", desc: "Pin sobre el caballo Nf3. Presión central." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qa5,d4,Nf6": [
-        { m: "Nf3", w: 10, name: "Escandinava Qa5: Nf3 vs Nf6", desc: "Desarrollo continuo. Partida igualada." },
-        { m: "Bd2", w: 7, name: "Escandinava Qa5: Bd2", desc: "Evitar pin y preparar enroque largo." }
-      ],
-      "e4,d5,exd5,Qxd5,Nc3,Qa5,d4,Nf6,Nf3": [
-        { m: "Bf5", w: 10, name: "Escandinava Qa5: Bf5 activo", desc: "El alfil sale activo antes del enroque. Plan sólido." },
-        { m: "Bg4", w: 8, name: "Escandinava Qa5: Bg4", desc: "Pin sobre Nf3. Complicaciones dinámicas." },
-        { m: "c6", w: 6, name: "Escandinava Qa5: c6 tarde", desc: "Solidez defensiva antes de desarrollar el otro alfil." }
-      ],
-
       // 1.e4 d6 — Pirc
       "e4,d6": [
         { m: "d4", w: 10, name: "Defensa Pirc/Moderna", desc: "El blanco ocupa el centro. El negro buscará atacarlo después." },
@@ -5829,220 +5858,6 @@ limitations under the License.
       "e4,d6,d4,Nf6,Nc3": [
         { m: "g6", w: 10, name: "Pirc: variante clásica", desc: "El negro prepara el fianchetto. Plan hipermoderno." },
         { m: "c6", w: 5, name: "Pirc: variante checa", desc: "Estructura sólida. El negro juega ...d5 más adelante." }
-      ],
-
-      // ── Pirc: continuaciones tras g6 ────────────────────────────────────────
-      // CRÍTICO: el juego vs bot 2700 salió de libro aquí → blunders Ng4/Nh5/Bc8
-      "e4,d6,d4,Nf6,Nc3,g6": [
-        { m: "Bg5", w: 9, name: "Pirc: sistema Bg5+Qd2", desc: "Sistema agresivo. Blancas preparan Qd2 y enroque largo con ataque de peones." },
-        { m: "f4",  w: 8, name: "Pirc: ataque austríaco", desc: "El avance más ambicioso. Prepara e5 para expulsar el Nf6." },
-        { m: "Be2", w: 7, name: "Pirc: variante clásica", desc: "Desarrollo sólido. Prepara enroque y plan f4 más tarde." },
-        { m: "Be3", w: 6, name: "Pirc: sistema Be3", desc: "Plan sólido preparando Qd2 sin la clavada de Bg5." },
-        { m: "Bc4", w: 5, name: "Pirc: sistema Bc4", desc: "El alfil apunta a f7. Plan agresivo." }
-      ],
-      // ── Sistema Bg5+Qd2 (el del juego perdido) ──────────────────────────────
-      "e4,d6,d4,Nf6,Nc3,g6,Bg5": [
-        { m: "Bg7", w: 10, name: "Pirc vs Bg5: fianchetto", desc: "El negro completa el fianchetto. El alfil g7 contrarrestará el centro." },
-        { m: "h6",  w: 5,  name: "Pirc vs Bg5: h6", desc: "Expulsa al alfil antes de completar el fianchetto." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7": [
-        { m: "Qd2",  w: 10, name: "Pirc: Qd2 agresivo", desc: "Prepara enroque largo y ataque con peones h4-h5." },
-        { m: "f3",   w: 6,  name: "Pirc: f3 preparando e5", desc: "Sistema agresivo. Prepara e5 para empujar el Nf6." },
-        { m: "Nf3",  w: 5,  name: "Pirc: desarrollo normal", desc: "El blanco se desarrolla sin comprometerse todavía." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2": [
-        { m: "c6",   w: 10, name: "Pirc vs Qd2: c6 sólido", desc: "La respuesta correcta. Prepara d5 para contrarrestar el centro y frena el ataque." },
-        { m: "Nc6",  w: 8,  name: "Pirc vs Qd2: Nc6", desc: "Desarrollo activo. El caballo presiona d4 y el centro blanco." },
-        { m: "h6",   w: 6,  name: "Pirc vs Qd2: h6", desc: "Cuestiona el alfil antes del enroque." },
-        { m: "O-O",  w: 5,  name: "Pirc vs Qd2: enroque rápido", desc: "El rey queda seguro antes del contrajuego." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2,c6": [
-        { m: "O-O-O", w: 10, name: "Pirc: enroque largo blanco", desc: "Blancas enrocan largo. Comienza el duelo de ataques en flancos opuestos." },
-        { m: "f3",    w: 7,  name: "Pirc: f3 ante c6", desc: "Consolidación antes del ataque." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2,c6,O-O-O": [
-        { m: "Nbd7", w: 10, name: "Pirc: Nbd7 plan sólido", desc: "Desarrollo correcto. Prepara e5 o b5 para el contrajuego." },
-        { m: "b5",   w: 7,  name: "Pirc: b5 contrajuego inmediato", desc: "Contrajuego en el flanco de dama. Posición muy aguda." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2,c6,O-O-O,Nbd7": [
-        { m: "h4",  w: 10, name: "Pirc: h4 ataque", desc: "Blancas lanzan el ataque inmediatamente con h4-h5." },
-        { m: "f3",  w: 8,  name: "Pirc: f3 preparando e5", desc: "El blanco consolida antes del ataque." },
-        { m: "Nf3", w: 6,  name: "Pirc: Nf3 desarrollo", desc: "Desarrollo natural antes de atacar." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Bg5,Bg7,Qd2,Nc6": [
-        { m: "O-O-O", w: 10, name: "Pirc: enroque largo vs Nc6", desc: "Blancas enrocan y preparan el ataque." },
-        { m: "Nf3",   w: 7,  name: "Pirc: Nf3 vs Nc6", desc: "Desarrollo tranquilo." }
-      ],
-      // ── Ataque Austríaco (f4) ───────────────────────────────────────────────
-      "e4,d6,d4,Nf6,Nc3,g6,f4": [
-        { m: "Bg7", w: 10, name: "Pirc austríaco: Bg7", desc: "El negro completa el fianchetto. La respuesta más sólida." },
-        { m: "c5",  w: 5,  name: "Pirc austríaco: c5 contrajuego", desc: "Ataque al centro antes de completar el desarrollo." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,f4,Bg7": [
-        { m: "Nf3",  w: 10, name: "Pirc austríaco: Nf3 normal", desc: "Desarrollo natural. Prepara Be2+O-O." },
-        { m: "e5",   w: 7,  name: "Pirc austríaco: e5 agresivo", desc: "Ataca al Nf6 inmediatamente." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,f4,Bg7,Nf3": [
-        { m: "O-O",  w: 10, name: "Pirc austríaco: enroque negro", desc: "Enroque rápido. El rey queda seguro." },
-        { m: "c5",   w: 7,  name: "Pirc austríaco: c5 contrajuego", desc: "Contrajuego central activo." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,f4,Bg7,Nf3,O-O": [
-        { m: "Be2",  w: 10, name: "Pirc austríaco: Be2+O-O", desc: "Desarrollo sólido. Blancas preparan e5." },
-        { m: "Bd3",  w: 7,  name: "Pirc austríaco: Bd3", desc: "Alfil activo apuntando al enroque negro." }
-      ],
-      // ── Sistema Clásico Be2 ─────────────────────────────────────────────────
-      "e4,d6,d4,Nf6,Nc3,g6,Be2": [
-        { m: "Bg7", w: 10, name: "Pirc clásico: Bg7", desc: "El negro completa el fianchetto." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Be2,Bg7": [
-        { m: "Nf3",  w: 10, name: "Pirc clásico: Nf3", desc: "Desarrollo natural. Prepara O-O." },
-        { m: "Bg5",  w: 6,  name: "Pirc clásico: Bg5 tardío", desc: "El blanco clava el Nf6 más tarde." },
-        { m: "O-O",  w: 5,  name: "Pirc clásico: enroque directo", desc: "El blanco enroca antes de desarrollar el caballo de rey." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Be2,Bg7,Nf3": [
-        { m: "O-O",  w: 10, name: "Pirc clásico: enroque negro", desc: "El negro enroca. Partida posicional equilibrada." },
-        { m: "Nc6",  w: 6,  name: "Pirc clásico: Nc6 activo", desc: "Desarrollo del caballo antes del enroque." }
-      ],
-      "e4,d6,d4,Nf6,Nc3,g6,Be2,Bg7,Nf3,O-O": [
-        { m: "O-O",  w: 10, name: "Pirc clásico: ambos enrocan", desc: "Juego posicional. Blancas buscan avance f4." },
-        { m: "h3",   w: 6,  name: "Pirc clásico: h3 preventivo", desc: "Previene Bg4. Plan tranquilo antes de f4." }
-      ],
-      // ── Defensa Moderna (e4,g6) continuaciones ──────────────────────────────
-      "e4,g6,d4": [
-        { m: "Bg7",  w: 10, name: "Moderna: fianchetto", desc: "El negro completa el fianchetto. El alfil dominará la diagonal larga." },
-        { m: "d6",   w: 8,  name: "Moderna: transposición al Pirc", desc: "El negro transpone al Pirc con d6." }
-      ],
-      "e4,g6,d4,Bg7": [
-        { m: "Nc3",  w: 10, name: "Moderna: Nc3 clásico", desc: "Desarrollo principal." },
-        { m: "Nf3",  w: 8,  name: "Moderna: Nf3 tranquilo", desc: "Desarrollo del caballo de rey." },
-        { m: "c4",   w: 5,  name: "Moderna: Maróczy Bind", desc: "El blanco construye un fuerte centro con e4+c4+d4." }
-      ],
-      "e4,g6,d4,Bg7,Nc3": [
-        { m: "d6",   w: 10, name: "Moderna → Pirc", desc: "Transposición al Pirc clásico." },
-        { m: "c5",   w: 8,  name: "Moderna: c5 contrajuego", desc: "El negro ataca el centro directamente." },
-        { m: "d5",   w: 5,  name: "Moderna: d5 activo", desc: "El negro desafía el centro." }
-      ],
-      "e4,g6,d4,Bg7,Nc3,d6": [
-        { m: "Nf3",  w: 10, name: "Pirc (orden Moderna): Nf3", desc: "Transpone al Pirc clásico." },
-        { m: "Bg5",  w: 8,  name: "Pirc (orden Moderna): Bg5+Qd2", desc: "Sistema agresivo." },
-        { m: "f4",   w: 7,  name: "Pirc (orden Moderna): ataque austríaco", desc: "El ataque austríaco más agresivo." }
-      ],
-
-      // ── Siciliana: Variante Rossolimo (completamente faltante) ───────────────
-      "e4,c5,Nf3,Nc6,Bb5": [
-        { m: "e6",   w: 10, name: "Siciliana Rossolimo: e6 sólido", desc: "La respuesta más sólida. El negro mantiene la estructura." },
-        { m: "g6",   w: 9,  name: "Siciliana Rossolimo: fianchetto", desc: "El negro prepara Bg7. Plan dinámico." },
-        { m: "d6",   w: 7,  name: "Siciliana Rossolimo: d6", desc: "El negro prepara Bd7 para cuestionar el alfil." },
-        { m: "a6",   w: 5,  name: "Siciliana Rossolimo: a6", desc: "El negro expulsa el alfil inmediatamente." }
-      ],
-      "e4,c5,Nf3,Nc6,Bb5,e6": [
-        { m: "O-O",   w: 10, name: "Rossolimo: enroque blanco", desc: "Posición sólida. El blanco mantendrá la tensión." },
-        { m: "Bxc6",  w: 7,  name: "Rossolimo: cambio de alfil", desc: "El blanco dobla los peones del negro." }
-      ],
-      "e4,c5,Nf3,Nc6,Bb5,e6,O-O": [
-        { m: "Nge7",  w: 10, name: "Rossolimo: Nge7 clásico", desc: "El negro no bloquea el alfil de c8. Plan flexible." },
-        { m: "Nf6",   w: 7,  name: "Rossolimo: Nf6 activo", desc: "El negro desarrolla el caballo activamente." }
-      ],
-      "e4,c5,Nf3,Nc6,Bb5,g6": [
-        { m: "Bxc6",  w: 10, name: "Rossolimo vs g6: cambio temprano", desc: "El blanco cambia antes del fianchetto negro." },
-        { m: "O-O",   w: 8,  name: "Rossolimo vs g6: enroque", desc: "El blanco enroca. Plan tranquilo." }
-      ],
-      "e4,c5,Nf3,Nc6,Bb5,g6,Bxc6": [
-        { m: "dxc6",  w: 10, name: "Rossolimo: recaptura con peón d", desc: "El negro recaptura con el peón d para un centro fuerte." },
-        { m: "bxc6",  w: 6,  name: "Rossolimo: recaptura con peón b", desc: "El negro recaptura con b para abrir la columna b." }
-      ],
-      "e4,c5,Nf3,Nc6,Bb5,d6": [
-        { m: "Bxc6+", w: 10, name: "Rossolimo vs d6: cambio", desc: "El blanco cambia el alfil doblando los peones." },
-        { m: "O-O",   w: 8,  name: "Rossolimo vs d6: enroque", desc: "Enroque tranquilo manteniendo el alfil." },
-        { m: "c3",    w: 6,  name: "Rossolimo vs d6: c3 plan", desc: "El blanco mantiene la tensión con c3." }
-      ],
-
-      // ── Siciliana Najdorf: continuaciones base ───────────────────────────────
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6": [
-        { m: "Nc3",  w: 10, name: "Najdorf: posición base", desc: "La posición principal. Negras siguen con a6 (Najdorf)." },
-        { m: "f3",   w: 5,  name: "Najdorf: English Attack base", desc: "Preparando Be3 y Qd2." }
-      ],
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3": [
-        { m: "a6",   w: 10, name: "Defensa Najdorf", desc: "La jugada más popular del mundo. Previene Nb5 y prepara b5 o e5." },
-        { m: "e6",   w: 7,  name: "Siciliana Scheveningen", desc: "Estructura Scheveningen. Muy sólida." },
-        { m: "g6",   w: 6,  name: "Siciliana Dragón (transposición)", desc: "Transposición al Dragón." },
-        { m: "Nc6",  w: 5,  name: "Siciliana Clásica", desc: "Desarrollo del caballo de dama. Plan sólido." }
-      ],
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,a6": [
-        { m: "Bg5",  w: 10, name: "Najdorf: variante Inglesa", desc: "La variante más popular del Najdorf. Lleva a posiciones muy ricas." },
-        { m: "Be3",  w: 8,  name: "Najdorf: English Attack", desc: "El ataque inglés. Muy agudo y popular." },
-        { m: "f3",   w: 7,  name: "Najdorf: sistema f3", desc: "Prepara Be3 y Qd2. Plan agresivo." },
-        { m: "Bc4",  w: 5,  name: "Najdorf: Bc4 variante Fischer", desc: "El alfil apunta a f7. Plan agresivo." }
-      ],
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,a6,Bg5": [
-        { m: "e6",   w: 10, name: "Najdorf vs Bg5: e6 clásico", desc: "El negro consolida con e6. La línea más jugada del Najdorf." },
-        { m: "Nbd7", w: 6,  name: "Najdorf vs Bg5: Nbd7", desc: "El negro desarrolla el otro caballo." }
-      ],
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,a6,Be3": [
-        { m: "e5",   w: 10, name: "Najdorf English Attack: e5 principal", desc: "El negro expulsa el caballo de d4 y gana espacio." },
-        { m: "Nbd7", w: 6,  name: "Najdorf English Attack: Nbd7", desc: "Desarrollo del caballo antes de e5." }
-      ],
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,a6,Be3,e5": [
-        { m: "Nb3",  w: 10, name: "Najdorf English Attack: Nb3 retiro", desc: "El caballo se retira a b3. Plan sólido." },
-        { m: "Nf5",  w: 7,  name: "Najdorf: Nf5 agresivo", desc: "El caballo salta a f5 de forma agresiva." }
-      ],
-      // ── Siciliana Scheveningen ───────────────────────────────────────────────
-      "e4,c5,Nf3,d6,d4,cxd4,Nxd4,Nf6,Nc3,e6": [
-        { m: "Be2",  w: 10, name: "Scheveningen: variante Keres", desc: "Desarrollo sólido. El blanco prepara g4-g5 o f4." },
-        { m: "f4",   w: 8,  name: "Scheveningen: ataque inglés", desc: "El blanco prepara el ataque con peones." },
-        { m: "g4",   w: 6,  name: "Scheveningen: ataque Keres", desc: "Avance agresivo de peón. Ataque directo." }
-      ],
-
-      // ── Ruy López: continuaciones profundas ─────────────────────────────────
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4": [
-        { m: "Nf6",  w: 10, name: "Ruy López: variante abierta", desc: "El negro desarrolla el caballo atacando e4." },
-        { m: "d6",   w: 5,  name: "Ruy López: variante Steinitz", desc: "El negro refuerza e5 con d6." }
-      ],
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6": [
-        { m: "O-O",  w: 10, name: "Ruy López: enroque", desc: "La continuación más popular." },
-        { m: "d3",   w: 5,  name: "Ruy López: sistema tranquilo", desc: "El blanco no presiona de inmediato." }
-      ],
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O": [
-        { m: "Nxe4", w: 8,  name: "Ruy López Abierta", desc: "El negro captura el peón. Posición muy táctica." },
-        { m: "Be7",  w: 10, name: "Ruy López Cerrada", desc: "El negro prepara el enroque. Posición estratégica." },
-        { m: "b5",   w: 6,  name: "Ruy López: b5 activo", desc: "El negro expulsa el alfil ganando espacio." }
-      ],
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Nxe4": [
-        { m: "d4",   w: 10, name: "Ruy López Abierta: d4 principal", desc: "El blanco abre el centro." },
-        { m: "Re1",  w: 7,  name: "Ruy López Abierta: Re1", desc: "El blanco recupera el peón con la torre." }
-      ],
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7": [
-        { m: "Re1",  w: 10, name: "Ruy López Cerrada: Re1", desc: "Prepara d4 con la torre reforzando e5." },
-        { m: "d3",   w: 6,  name: "Ruy López: sistema tranquilo", desc: "Plan sólido sin d4 inmediato." }
-      ],
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1": [
-        { m: "b5",   w: 10, name: "Ruy López Cerrada: b5 expulsa", desc: "El negro expulsa el alfil. Posición muy conocida." },
-        { m: "O-O",  w: 8,  name: "Ruy López Cerrada: enroque negro", desc: "El negro enroca. Partida posicional." }
-      ],
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1,b5": [
-        { m: "Bb3",  w: 10, name: "Ruy López Cerrada: Bb3", desc: "El alfil se retira a b3 manteniendo la diagonal." }
-      ],
-      "e4,e5,Nf3,Nc6,Bb5,a6,Ba4,Nf6,O-O,Be7,Re1,b5,Bb3": [
-        { m: "d6",   w: 10, name: "Ruy López Cerrada: d6", desc: "El negro refuerza e5. Plan sólido." },
-        { m: "O-O",  w: 8,  name: "Ruy López Cerrada: enroque negro", desc: "El negro enroca antes de d6." }
-      ],
-
-      // ── Dos Caballos: continuaciones tras Ng5,d5,exd5 ───────────────────────
-      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5,exd5": [
-        { m: "Na5",  w: 10, name: "Dos Caballos: Na5 principal", desc: "Ataca el alfil y prepara Nxc4. La respuesta más sólida." },
-        { m: "Nxd5", w: 7,  name: "Dos Caballos: Nxd5 agresivo", desc: "El negro recaptura centralizando el caballo." },
-        { m: "b5",   w: 5,  name: "Dos Caballos: Gambito Ulvestad", desc: "El negro ofrece el peón b para contrajuego activo." }
-      ],
-      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5,exd5,Na5": [
-        { m: "Bb5+", w: 10, name: "Dos Caballos: Bb5+ tempo", desc: "El blanco da jaque para ganar tempo antes de d6." },
-        { m: "d6",   w: 7,  name: "Dos Caballos: d6 peón pasado", desc: "El blanco mantiene el peón pasado de d5." }
-      ],
-      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5,exd5,Na5,Bb5+": [
-        { m: "c6",   w: 10, name: "Dos Caballos: c6 defensa", desc: "El negro bloquea el jaque. La única jugada razonable." }
-      ],
-      "e4,e5,Nf3,Nc6,Bc4,Nf6,Ng5,d5,exd5,Na5,Bb5+,c6": [
-        { m: "dxc6", w: 10, name: "Dos Caballos: apertura principal", desc: "El blanco captura el peón. Posición táctica muy conocida." },
-        { m: "d6",   w: 7,  name: "Dos Caballos: d6 alternativo", desc: "El blanco mantiene la tensión con d6." }
       ],
 
       // 1.e4 Nf6 — Alekhine
@@ -6539,8 +6354,7 @@ limitations under the License.
       // ── Defensa Francesa ─────────────────────────────────────────────────────────
       "e4,e6": [
         { m: "d4",   w: 10, name: "Defensa Francesa: entrada principal", desc: "El blanco ocupa el centro. La forma más popular de continuar." },
-        { m: "Nf3",  w: 4,  name: "Defensa Francesa: plan tranquilo", desc: "El blanco desarrolla antes de comprometerse con d4." },
-        { m: "d3",   w: 3,  name: "Defensa Francesa: sistema King", desc: "El blanco adopta un plan tranquilo, evitando las líneas teóricas." }
+        { m: "Nf3",  w: 4,  name: "Defensa Francesa: plan tranquilo", desc: "El blanco desarrolla antes de comprometerse con d4." }
       ],
       "e4,e6,d4": [
         { m: "d5",   w: 10, name: "Francesa: estructura normal", desc: "El negro establece la estructura central clásica de la Francesa." }
@@ -6559,23 +6373,7 @@ limitations under the License.
       "e4,e6,d4,d5,Nc3,Bb4": [
         { m: "e5",   w: 10, name: "Francesa Winawer: avance de peón", desc: "El blanco gana espacio cerrando el centro. Línea más agresiva." },
         { m: "Bd3",  w: 7,  name: "Francesa Winawer: sistema Nimzovich", desc: "El blanco desarrolla el alfil a d3. Plan sólido." },
-        { m: "a3",   w: 5,  name: "Francesa Winawer: fuerza el cambio", desc: "El blanco fuerza al alfil a tomar el caballo." },
-        { m: "Qg4",  w: 3,  name: "Francesa Winawer: ataque Qg4", desc: "Jugada agresiva. Amenaza Qxg7 si el negro no reacciona bien." }
-      ],
-      // ── Winawer: respuesta correcta a 4.Qg4 ────────────────────────────────
-      "e4,e6,d4,d5,Nc3,Bb4,Qg4": [
-        { m: "Kf8",  w: 10, name: "Winawer vs Qg4: Kf8", desc: "La mejor respuesta. El rey protege g7 y el alfil se mantiene en b4. Si Qxg7 viene Qxd4 con contrajuego." },
-        { m: "g6",   w: 7,  name: "Winawer vs Qg4: g6", desc: "Bloquea la amenaza Qxg7. El negro sigue con Nf6." },
-        { m: "Qd7",  w: 4,  name: "Winawer vs Qg4: Qd7", desc: "Protege g7 pasivamente. Menos activo que Kf8." }
-      ],
-      "e4,e6,d4,d5,Nc3,Bb4,Qg4,Kf8": [
-        { m: "Nf6",  w: 10, name: "Winawer Kf8: Nf6 activo", desc: "Desarrolla el caballo atacando e4. Si Qxg7 Rg8 atrapa la dama." },
-        { m: "a5",   w: 6,  name: "Winawer Kf8: a5 expansión", desc: "Gana espacio en el flanco de dama y prepara Na6-c5." },
-        { m: "Nc6",  w: 5,  name: "Winawer Kf8: Nc6 desarrollo", desc: "Desarrolla el caballo presionando d4." }
-      ],
-      "e4,e6,d4,d5,Nc3,Bb4,Qg4,g6": [
-        { m: "Nf6",  w: 10, name: "Winawer g6: Nf6 desarrollo", desc: "Ataca e4 y completa el desarrollo." },
-        { m: "Nc6",  w: 7,  name: "Winawer g6: Nc6 presión", desc: "Presiona d4 y desarrolla." }
+        { m: "a3",   w: 5,  name: "Francesa Winawer: fuerza el cambio", desc: "El blanco fuerza al alfil a tomar el caballo." }
       ],
       "e4,e6,d4,d5,Nc3,Nf6": [
         { m: "e5",   w: 10, name: "Francesa Clásica: variante de avance", desc: "El blanco gana espacio. Posición cerrada estratégica." },
@@ -6597,8 +6395,7 @@ limitations under the License.
       // ── Defensa Caro-Kann ────────────────────────────────────────────────────────
       "e4,c6": [
         { m: "d4",   w: 10, name: "Caro-Kann: entrada principal", desc: "El blanco ocupa el centro. La línea más directa." },
-        { m: "Nc3",  w: 5,  name: "Caro-Kann: variante dos caballos", desc: "Desarrollo del caballo. Plan flexible." },
-        { m: "c4",   w: 3,  name: "Caro-Kann: enfoque de espacio", desc: "El blanco gana espacio y retrasa la definición central." }
+        { m: "Nc3",  w: 5,  name: "Caro-Kann: variante dos caballos", desc: "Desarrollo del caballo. Plan flexible." }
       ],
       "e4,c6,d4": [
         { m: "d5",   w: 10, name: "Caro-Kann: estructura principal", desc: "El negro establece el centro. Plan sólido y clásico." }
@@ -6797,372 +6594,6 @@ limitations under the License.
       "f4,Nf6": [
         { m: "Nf3",  w: 10, name: "Bird vs Nf6: simetría de caballos", desc: "Ambos desarrollan caballos." },
         { m: "e3",   w: 7,  name: "Bird vs Nf6: plan sólido", desc: "El blanco consolida antes de desarrollar." }
-      ],
-
-      // ══════════════════════════════════════════════════════════════════════════
-      // EXPANSIÓN ALTA PRIORIDAD — v2.25.32
-      // ══════════════════════════════════════════════════════════════════════════
-
-      // ── Defensa Petrov: continuaciones ──────────────────────────────────────
-      "e4,e5,Nf3,Nf6,Nxe5": [
-        { m: "d6",   w: 10, name: "Petrov: variante principal", desc: "Ataca el caballo y recupera e5. La línea teórica correcta." },
-        { m: "Nxe4", w: 4,  name: "Petrov: variante agresiva", desc: "El negro captura inmediatamente. Peligroso sin cálculo preciso." }
-      ],
-      "e4,e5,Nf3,Nf6,Nxe5,d6": [
-        { m: "Nf3",  w: 10, name: "Petrov: Nf3 seguro", desc: "El caballo retrocede a f3 de forma segura." },
-        { m: "Nc4",  w: 6,  name: "Petrov: Nc4 activo", desc: "El caballo va a c4 manteniendo la actividad." }
-      ],
-      "e4,e5,Nf3,Nf6,Nxe5,d6,Nf3": [
-        { m: "Nxe4", w: 10, name: "Petrov: recaptura en e4", desc: "El negro recupera el peón. Posición igualada." }
-      ],
-      "e4,e5,Nf3,Nf6,Nxe5,d6,Nf3,Nxe4": [
-        { m: "d4",   w: 10, name: "Petrov: d4 clásico", desc: "El blanco ocupa el centro. Plan activo." },
-        { m: "Bd3",  w: 7,  name: "Petrov: Bd3 contra el caballo", desc: "Presiona el caballo en e4." }
-      ],
-      "e4,e5,Nf3,Nf6,Nxe5,d6,Nf3,Nxe4,d4": [
-        { m: "d5",   w: 10, name: "Petrov: d5 simétrico", desc: "El negro ocupa el centro simétricamente. Posición equilibrada." },
-        { m: "Be7",  w: 6,  name: "Petrov: Be7 desarrollo sólido", desc: "El negro prepara el enroque." }
-      ],
-      "e4,e5,Nf3,Nf6,d4": [
-        { m: "Nxe4", w: 10, name: "Petrov: acepta el gambito de centro", desc: "El negro captura el peón e4. Posición táctica." },
-        { m: "exd4", w: 7,  name: "Petrov: intercambio central", desc: "El negro captura en d4. Transposición a la Escocesa." },
-        { m: "d5",   w: 5,  name: "Petrov: contragolpe d5", desc: "El negro contraataca en el centro." }
-      ],
-
-      // ── Apertura Escocesa: árbol completo ───────────────────────────────────
-      "e4,e5,Nf3,Nc6,d4": [
-        { m: "exd4", w: 10, name: "Escocesa: apertura", desc: "El negro acepta la apertura del centro." },
-        { m: "d6",   w: 3,  name: "Escocesa: plan pasivo", desc: "El negro evita la apertura del centro." }
-      ],
-      "e4,e5,Nf3,Nc6,d4,exd4": [
-        { m: "Nxd4", w: 10, name: "Apertura Escocesa", desc: "El blanco recaptura con el caballo. La Escocesa clásica." },
-        { m: "Bc4",  w: 7,  name: "Gambito Escocés", desc: "El blanco no recaptura. Plan gambiteado." }
-      ],
-      "e4,e5,Nf3,Nc6,d4,exd4,Nxd4": [
-        { m: "Bc5",  w: 10, name: "Escocesa: variante clásica", desc: "El negro desarrolla el alfil activamente. La línea más sólida." },
-        { m: "Nf6",  w: 8,  name: "Escocesa: variante Schmidt", desc: "El negro desarrolla el caballo atacando e4." },
-        { m: "Qh4",  w: 5,  name: "Escocesa: variante agresiva", desc: "La dama sale agresivamente." },
-        { m: "g6",   w: 4,  name: "Escocesa: variante Paulsen", desc: "El negro prepara el fianchetto." }
-      ],
-      "e4,e5,Nf3,Nc6,d4,exd4,Nxd4,Bc5": [
-        { m: "Be3",  w: 10, name: "Escocesa clásica: Be3", desc: "El blanco desarrolla el alfil y presiona el de c5." },
-        { m: "Nb3",  w: 8,  name: "Escocesa clásica: Nb3", desc: "El caballo se retira atacando al alfil." },
-        { m: "Nxc6", w: 5,  name: "Escocesa clásica: cambio", desc: "El blanco cambia el caballo doblando peones." }
-      ],
-      "e4,e5,Nf3,Nc6,d4,exd4,Nxd4,Bc5,Be3": [
-        { m: "Qf6",  w: 10, name: "Escocesa: Qf6 activa", desc: "La dama sale activa presionando f2." },
-        { m: "Nf6",  w: 7,  name: "Escocesa: Nf6 desarrollo", desc: "El negro desarrolla el caballo." }
-      ],
-      "e4,e5,Nf3,Nc6,d4,exd4,Nxd4,Nf6": [
-        { m: "Nc3",  w: 10, name: "Escocesa vs Nf6: Nc3", desc: "El blanco desarrolla el otro caballo." },
-        { m: "Nxc6", w: 7,  name: "Escocesa vs Nf6: cambio", desc: "El blanco cambia para doblar peones." },
-        { m: "f3",   w: 5,  name: "Escocesa vs Nf6: f3 agresivo", desc: "El blanco prepara e5 para expulsar el caballo." }
-      ],
-      "e4,e5,Nf3,Nc6,d4,exd4,Nxd4,Nf6,Nc3": [
-        { m: "Bb4",  w: 10, name: "Escocesa-Cuatro Caballos: Bb4", desc: "El negro clava el caballo. Plan posicional activo." },
-        { m: "Bc5",  w: 8,  name: "Escocesa-Cuatro Caballos: Bc5", desc: "El negro desarrolla el alfil centralmente." },
-        { m: "d5",   w: 6,  name: "Escocesa: contragolpe d5", desc: "El negro contraataca en el centro." }
-      ],
-      // Gambito Escocés
-      "e4,e5,Nf3,Nc6,d4,exd4,Bc4": [
-        { m: "Bc5",  w: 10, name: "Gambito Escocés: Bc5 sólido", desc: "El negro desarrolla activamente." },
-        { m: "Nf6",  w: 8,  name: "Gambito Escocés: Nf6", desc: "El negro desarrolla el caballo atacando e4." },
-        { m: "d6",   w: 5,  name: "Gambito Escocés: d6 pasivo", desc: "El negro defiende pasivamente." }
-      ],
-
-      // ── Siciliana: Grand Prix Attack (e4,c5,Nc3) ────────────────────────────
-      "e4,c5,Nc3": [
-        { m: "Nc6",  w: 10, name: "Siciliana: Grand Prix base", desc: "El negro desarrolla el caballo. Respuesta más natural." },
-        { m: "d6",   w: 8,  name: "Siciliana Grand Prix: d6", desc: "El negro prepara Nf6 y g6." },
-        { m: "e6",   w: 7,  name: "Siciliana Grand Prix: e6 sólido", desc: "El negro consolida el centro." },
-        { m: "g6",   w: 5,  name: "Siciliana Grand Prix: fianchetto", desc: "El negro prepara Bg7." }
-      ],
-      "e4,c5,Nc3,Nc6": [
-        { m: "f4",   w: 10, name: "Grand Prix Attack", desc: "El ataque más agresivo. Prepara f5 o Nf3+Bc4." },
-        { m: "Nf3",  w: 8,  name: "Siciliana: Nf3 tranquilo", desc: "Desarrollo natural antes de comprometerse." },
-        { m: "g3",   w: 5,  name: "Siciliana: fianchetto blanco", desc: "Plan posicional con fianchetto." },
-        { m: "Bb5",  w: 6,  name: "Rossolimo con Nc3", desc: "Variante de clavada. Plan similar al Rossolimo." }
-      ],
-      "e4,c5,Nc3,Nc6,f4": [
-        { m: "g6",   w: 10, name: "Grand Prix: fianchetto negro", desc: "El negro prepara Bg7 para contrarrestar." },
-        { m: "e6",   w: 8,  name: "Grand Prix: e6 sólido", desc: "El negro consolida antes del contrajuego." },
-        { m: "d6",   w: 7,  name: "Grand Prix: d6", desc: "El negro se prepara para Nf6." }
-      ],
-      "e4,c5,Nc3,Nc6,f4,g6": [
-        { m: "Nf3",  w: 10, name: "Grand Prix: Nf3 desarrollo", desc: "Desarrollo natural. Prepara Bc4 o Bb5." },
-        { m: "Bc4",  w: 7,  name: "Grand Prix: Bc4 agresivo", desc: "El alfil apunta a f7. Plan muy agresivo." }
-      ],
-      "e4,c5,Nc3,Nc6,f4,g6,Nf3": [
-        { m: "Bg7",  w: 10, name: "Grand Prix: Bg7 fianchetto", desc: "El negro completa el fianchetto." }
-      ],
-      "e4,c5,Nc3,Nc6,f4,g6,Nf3,Bg7": [
-        { m: "Bc4",  w: 10, name: "Grand Prix: Bc4 plan", desc: "El alfil apunta a f7. Preparando O-O." },
-        { m: "Bb5",  w: 8,  name: "Grand Prix: Bb5 clavada", desc: "El blanco clava el caballo c6." }
-      ],
-      "e4,c5,Nc3,d6": [
-        { m: "f4",   w: 10, name: "Grand Prix vs d6: f4", desc: "Plan agresivo. Prepara Nf3 y Bc4." },
-        { m: "Nf3",  w: 8,  name: "Grand Prix vs d6: Nf3", desc: "Desarrollo natural." }
-      ],
-      "e4,c5,Nc3,e6": [
-        { m: "f4",   w: 8,  name: "Grand Prix vs e6: f4", desc: "El ataque Grand Prix también funciona contra e6." },
-        { m: "Nf3",  w: 10, name: "Grand Prix vs e6: Nf3", desc: "Desarrollo natural. Puede derivar en Siciliana normal." },
-        { m: "d4",   w: 7,  name: "Grand Prix vs e6: d4", desc: "El blanco abre el centro directamente." }
-      ],
-      "e4,c5,Nc3,g6": [
-        { m: "d4",   w: 10, name: "Siciliana Dragon Acelerado", desc: "El blanco abre el centro. Transposición al Dragón." },
-        { m: "f4",   w: 7,  name: "Grand Prix vs g6: f4", desc: "Plan agresivo de flanco antes del centro." }
-      ],
-
-      // ── Sistema de Londres: profundización ──────────────────────────────────
-      "d4,d5,Bf4,Nf6,e3": [
-        { m: "e6",   w: 10, name: "Londres: e6 sólido", desc: "El negro consolida con e6. Plan clásico." },
-        { m: "c5",   w: 8,  name: "Londres: c5 contrajuego", desc: "El negro ataca el centro." },
-        { m: "Bf5",  w: 6,  name: "Londres: intercambio de alfiles", desc: "El negro desarrolla el alfil simétricamente." }
-      ],
-      "d4,d5,Bf4,Nf6,e3,e6": [
-        { m: "Nf3",  w: 10, name: "Londres: Nf3 desarrollo", desc: "Desarrollo natural del caballo." },
-        { m: "Bd3",  w: 8,  name: "Londres: Bd3 activo", desc: "El alfil sale activo a d3." }
-      ],
-      "d4,d5,Bf4,Nf6,e3,e6,Nf3": [
-        { m: "c5",   w: 10, name: "Londres: c5 ruptura", desc: "El negro ataca el centro blanco." },
-        { m: "Bd6",  w: 8,  name: "Londres: Bd6 intercambio", desc: "El negro propone el intercambio de alfiles." },
-        { m: "Nbd7", w: 6,  name: "Londres: Nbd7 desarrollo", desc: "Desarrollo del caballo de dama." }
-      ],
-      "d4,d5,Bf4,Nf6,e3,e6,Nf3,Bd6": [
-        { m: "Bg3",  w: 10, name: "Londres: Bg3 retira", desc: "El alfil se retira a g3 manteniendo la diagonal." },
-        { m: "Bxd6", w: 7,  name: "Londres: cambio de alfiles", desc: "El blanco acepta el cambio." }
-      ],
-      "d4,d5,Bf4,Nf6,e3,e6,Nf3,c5": [
-        { m: "c3",   w: 10, name: "Londres vs c5: c3 sólido", desc: "El blanco refuerza el centro." },
-        { m: "Nbd2", w: 8,  name: "Londres vs c5: Nbd2", desc: "El blanco desarrolla el caballo de dama." }
-      ],
-      "d4,d5,Bf4,c5": [
-        { m: "e3",   w: 10, name: "Londres vs c5: e3", desc: "Consolidación del centro." },
-        { m: "Nf3",  w: 8,  name: "Londres vs c5: Nf3", desc: "Desarrollo natural." },
-        { m: "c3",   w: 6,  name: "Londres vs c5: c3 refuerzo", desc: "El blanco refuerza el centro antes de recapturar." }
-      ],
-      "d4,d5,Bf4,c5,e3": [
-        { m: "Nc6",  w: 10, name: "Londres vs c5,e3: Nc6", desc: "El negro desarrolla el caballo." },
-        { m: "Nf6",  w: 8,  name: "Londres vs c5,e3: Nf6", desc: "Desarrollo del caballo de rey." }
-      ],
-      "d4,Nf6,Nf3,e6,Bf4": [
-        { m: "c5",   w: 10, name: "Londres vs Nf6,e6: c5", desc: "El negro ataca el centro directamente." },
-        { m: "d5",   w: 8,  name: "Londres vs Nf6,e6: d5", desc: "El negro ocupa el centro." },
-        { m: "b6",   w: 5,  name: "Londres vs Nf6,e6: b6", desc: "El negro prepara Bb7." }
-      ],
-      "d4,Nf6,Nf3,e6,Bf4,d5": [
-        { m: "e3",   w: 10, name: "Londres: e3 plan estándar", desc: "El blanco consolida. Plan Londres clásico." },
-        { m: "Nbd2", w: 7,  name: "Londres: Nbd2 desarrollo", desc: "El blanco desarrolla el caballo de dama." }
-      ],
-
-      // ── India de Rey: sistema clásico con e4 ────────────────────────────────
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4": [
-        { m: "d6",   w: 10, name: "India de Rey: posición base", desc: "La estructura clásica de la India de Rey." },
-        { m: "d5",   w: 5,  name: "Grünfeld: d5 transposición", desc: "Transposición a la Defensa Grünfeld." },
-        { m: "O-O",  w: 4,  name: "India de Rey: enroque directo", desc: "El negro enroca antes de d6." }
-      ],
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6": [
-        { m: "Nf3",  w: 10, name: "India de Rey: Nf3 clásico", desc: "El blanco completa el desarrollo. Muchas variantes." },
-        { m: "Be2",  w: 8,  name: "India de Rey: Be2 clásico", desc: "Desarrollo sólido. Prepara O-O." },
-        { m: "f3",   w: 6,  name: "India de Rey: ataque Sámisch", desc: "Preparando Be3 y Qd2. Plan muy agresivo." },
-        { m: "f4",   w: 5,  name: "India de Rey: ataque cuatro peones", desc: "El ataque más agresivo con cuatro peones." }
-      ],
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6,Nf3": [
-        { m: "O-O",  w: 10, name: "India de Rey: enroque negro", desc: "El negro enroca. La continuación más natural." },
-        { m: "Nbd7", w: 6,  name: "India de Rey: Nbd7", desc: "El negro desarrolla el caballo antes del enroque." }
-      ],
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6,Nf3,O-O": [
-        { m: "Be2",  w: 10, name: "India de Rey: sistema clásico", desc: "Desarrollo sólido. Prepara O-O y luego h3 o d5." },
-        { m: "h3",   w: 7,  name: "India de Rey: h3 preventivo", desc: "Previene Bg4. Preparando Be3 o g4." },
-        { m: "Bd3",  w: 5,  name: "India de Rey: Bd3 activo", desc: "El alfil sale a d3." }
-      ],
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6,Nf3,O-O,Be2": [
-        { m: "e5",   w: 10, name: "India de Rey: e5 clásico", desc: "El negro avanza e5. La estructura más característica." },
-        { m: "Nbd7", w: 8,  name: "India de Rey: Nbd7 flexible", desc: "El negro prepara e5 o c6." },
-        { m: "c5",   w: 6,  name: "India de Rey: c5 benoni", desc: "Transposición a estructuras benonianas." }
-      ],
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6,Nf3,O-O,Be2,e5": [
-        { m: "O-O",  w: 10, name: "India de Rey: enroque blanco", desc: "El blanco enroca. Comienza la lucha posicional." },
-        { m: "d5",   w: 8,  name: "India de Rey: d5 cierra", desc: "El blanco cierra el centro con d5." }
-      ],
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6,Nf3,O-O,Be2,e5,O-O": [
-        { m: "Na5",  w: 10, name: "India de Rey: Na5 plan Sveinn", desc: "El caballo ataca el alfil c4 buscando contrajuego." },
-        { m: "Nc6",  w: 8,  name: "India de Rey: Nc6 central", desc: "El caballo va al centro." },
-        { m: "Nbd7", w: 6,  name: "India de Rey: Nbd7 flexible", desc: "El negro se desarrolla sin comprometerse." }
-      ],
-      // Sámisch Attack
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6,f3": [
-        { m: "O-O",  w: 10, name: "Sámisch: enroque negro", desc: "El negro enroca buscando el contrajuego con c5 o e5." },
-        { m: "c5",   w: 7,  name: "Sámisch: c5 contrajuego", desc: "El negro ataca el centro antes del enroque." },
-        { m: "e5",   w: 5,  name: "Sámisch: e5 activo", desc: "El negro avanza en el centro." }
-      ],
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6,f3,O-O": [
-        { m: "Be3",  w: 10, name: "Sámisch: Be3+Qd2", desc: "El blanco completa el plan Sámisch con Be3." },
-        { m: "Bg5",  w: 6,  name: "Sámisch: Bg5 agresivo", desc: "El blanco clava el Nf6." }
-      ],
-      "d4,Nf6,c4,g6,Nc3,Bg7,e4,d6,f3,O-O,Be3": [
-        { m: "c5",   w: 10, name: "Sámisch: c5 contrajuego", desc: "El negro contraataca el centro." },
-        { m: "e5",   w: 8,  name: "Sámisch: e5 central", desc: "El negro avanza en el centro." },
-        { m: "Nc6",  w: 6,  name: "Sámisch: Nc6 desarrollo", desc: "El negro desarrolla el caballo." }
-      ],
-
-      // ── Gambito de Dama Aceptado ─────────────────────────────────────────────
-      "d4,d5,c4,dxc4": [
-        { m: "Nf3",  w: 10, name: "GDA: desarrollo principal", desc: "El blanco desarrolla el caballo. Plan más flexible." },
-        { m: "e3",   w: 8,  name: "GDA: e3 sólido", desc: "El blanco consolida antes de recuperar el peón." },
-        { m: "e4",   w: 5,  name: "GDA: e4 agresivo", desc: "El blanco ocupa el centro agresivamente." }
-      ],
-      "d4,d5,c4,dxc4,Nf3": [
-        { m: "Nf6",  w: 10, name: "GDA: Nf6 desarrollo", desc: "El negro desarrolla el caballo. Plan natural." },
-        { m: "e6",   w: 8,  name: "GDA: e6 sólido", desc: "El negro consolida con e6 antes de desarrollar." },
-        { m: "c5",   w: 6,  name: "GDA: c5 agresivo", desc: "El negro ataca el centro directamente." },
-        { m: "a6",   w: 5,  name: "GDA: a6 plan Tolush-Geller", desc: "Prepara b5 para retener el peón." }
-      ],
-      "d4,d5,c4,dxc4,Nf3,Nf6": [
-        { m: "e3",   w: 10, name: "GDA: e3+Bxc4", desc: "El blanco prepara recuperar el peón con el alfil." },
-        { m: "Nc3",  w: 7,  name: "GDA: Nc3 desarrollo rápido", desc: "Desarrollo agresivo del caballo." }
-      ],
-      "d4,d5,c4,dxc4,Nf3,Nf6,e3": [
-        { m: "e6",   w: 10, name: "GDA: e6 plan clásico", desc: "El negro consolida. Plan más sólido del GDA." },
-        { m: "Bg4",  w: 7,  name: "GDA: Bg4 pin", desc: "El negro clava el caballo Nf3." }
-      ],
-      "d4,d5,c4,dxc4,Nf3,Nf6,e3,e6": [
-        { m: "Bxc4", w: 10, name: "GDA: Bxc4 recupera", desc: "El blanco recupera el peón con ventaja de desarrollo." }
-      ],
-      "d4,d5,c4,dxc4,e3": [
-        { m: "Nf6",  w: 10, name: "GDA: Nf6 vs e3", desc: "El negro desarrolla el caballo." },
-        { m: "e5",   w: 7,  name: "GDA: e5 contrajuego", desc: "El negro ataca el centro inmediatamente." },
-        { m: "c5",   w: 5,  name: "GDA: c5 ruptura", desc: "El negro presiona d4." }
-      ],
-      "d4,d5,c4,dxc4,e3,Nf6": [
-        { m: "Bxc4", w: 10, name: "GDA: recupera el peón", desc: "El blanco recupera el peón. Plan clásico." },
-        { m: "Nf3",  w: 7,  name: "GDA: Nf3 desarrollo", desc: "El blanco se desarrolla antes de recuperar." }
-      ],
-      "d4,d5,c4,dxc4,e3,e5": [
-        { m: "Bxc4", w: 10, name: "GDA: Bxc4 vs e5", desc: "El blanco recupera el peón ignorando e5." },
-        { m: "dxe5", w: 7,  name: "GDA: acepta el sacrificio", desc: "El blanco acepta el gambito negro." }
-      ],
-
-      // ── Defensa Benoni Moderna: profundización ───────────────────────────────
-      "d4,c5,d5,e5": [
-        { m: "Nc3",  w: 10, name: "Benoni: Nc3 clásico", desc: "El blanco desarrolla el caballo. La continuación principal." },
-        { m: "e4",   w: 7,  name: "Benoni: e4 agresivo", desc: "El blanco ocupa el centro agresivamente." }
-      ],
-      "d4,c5,d5,e5,Nc3": [
-        { m: "d6",   w: 10, name: "Benoni: d6 estructura", desc: "El negro establece la estructura benoni." },
-        { m: "Nf6",  w: 7,  name: "Benoni: Nf6 desarrollo", desc: "El negro desarrolla el caballo." }
-      ],
-      "d4,c5,d5,e5,Nc3,d6": [
-        { m: "e4",   w: 10, name: "Benoni: e4 ocupa el centro", desc: "El blanco ocupa el centro con cuatro peones." },
-        { m: "Nf3",  w: 8,  name: "Benoni: Nf3 desarrollo", desc: "Desarrollo del caballo antes de comprometerse." }
-      ],
-      "d4,c5,d5,e5,Nc3,d6,e4": [
-        { m: "Nf6",  w: 10, name: "Benoni: Nf6 desarrollo", desc: "El negro desarrolla el caballo. Plan clásico." },
-        { m: "Be7",  w: 6,  name: "Benoni: Be7 sólido", desc: "Desarrollo del alfil antes de enrocarse." }
-      ],
-      "d4,c5,d5,e5,Nc3,d6,e4,Nf6": [
-        { m: "f3",   w: 10, name: "Benoni: ataque Sámisch-Benoni", desc: "Plan agresivo con f3-Be3-Qd2." },
-        { m: "Be2",  w: 8,  name: "Benoni: Be2 clásico", desc: "Desarrollo sólido preparando enroque." },
-        { m: "Nf3",  w: 7,  name: "Benoni: Nf3 tranquilo", desc: "El blanco se desarrolla normalmente." }
-      ],
-      // Benoni desde el orden Nf6
-      "d4,Nf6,c4,c5,d5": [
-        { m: "e6",   w: 10, name: "Benoni Moderna: e6", desc: "El negro desafía el centro. La Benoni Moderna." },
-        { m: "g6",   w: 8,  name: "Benoni: fianchetto", desc: "El negro prepara Bg7." }
-      ],
-      "d4,Nf6,c4,c5,d5,e6": [
-        { m: "Nc3",  w: 10, name: "Benoni: Nc3 principal", desc: "El blanco desarrolla el caballo." },
-        { m: "dxe6", w: 7,  name: "Benoni: acepta el gambito", desc: "El blanco acepta la tensión." }
-      ],
-      "d4,Nf6,c4,c5,d5,e6,Nc3": [
-        { m: "exd5", w: 10, name: "Benoni: apertura", desc: "El negro abre el centro." }
-      ],
-      "d4,Nf6,c4,c5,d5,e6,Nc3,exd5": [
-        { m: "cxd5", w: 10, name: "Benoni Moderna: cxd5", desc: "El blanco recaptura. La estructura característica de la Benoni." }
-      ],
-
-      // ── Defensa Nimzoindia: profundización ───────────────────────────────────
-      "d4,Nf6,c4,e6,Nc3,Bb4,e3,O-O": [
-        { m: "Bd3",  w: 10, name: "Nimzo Rubinstein: Bd3", desc: "El alfil se desarrolla a d3. Plan clásico." },
-        { m: "Be2",  w: 7,  name: "Nimzo Rubinstein: Be2", desc: "Desarrollo sólido del alfil." },
-        { m: "Nge2", w: 5,  name: "Nimzo Rubinstein: Nge2", desc: "El caballo se desarrolla evitando la clavada." }
-      ],
-      "d4,Nf6,c4,e6,Nc3,Bb4,e3,O-O,Bd3": [
-        { m: "c5",   w: 10, name: "Nimzo: c5 contrajuego", desc: "El negro ataca el centro." },
-        { m: "d5",   w: 8,  name: "Nimzo: d5 central", desc: "El negro ocupa el centro." },
-        { m: "b6",   w: 5,  name: "Nimzo: b6 plan Fianchetto", desc: "El negro prepara Bb7." }
-      ],
-      "d4,Nf6,c4,e6,Nc3,Bb4,e3,O-O,Bd3,c5": [
-        { m: "Nf3",  w: 10, name: "Nimzo: Nf3 vs c5", desc: "Desarrollo natural del caballo." },
-        { m: "a3",   w: 7,  name: "Nimzo: a3 fuerza la decisión", desc: "El blanco fuerza al alfil a decidir." }
-      ],
-      "d4,Nf6,c4,e6,Nc3,Bb4,e3,O-O,Bd3,d5": [
-        { m: "Nf3",  w: 10, name: "Nimzo: Nf3 vs d5", desc: "Desarrollo natural." },
-        { m: "cxd5", w: 7,  name: "Nimzo Exchange: cxd5", desc: "El blanco simplifica el centro." }
-      ],
-      "d4,Nf6,c4,e6,Nc3,Bb4,Qc2,O-O": [
-        { m: "Nf3",  w: 10, name: "Nimzo clásica: Nf3", desc: "Desarrollo natural. La continuación más popular." },
-        { m: "a3",   w: 8,  name: "Nimzo clásica: a3", desc: "El blanco fuerza la decisión del alfil." },
-        { m: "Bg5",  w: 5,  name: "Nimzo clásica: Bg5", desc: "El blanco clava el Nf6." }
-      ],
-      "d4,Nf6,c4,e6,Nc3,Bb4,Qc2,O-O,Nf3": [
-        { m: "c5",   w: 10, name: "Nimzo clásica: c5 contrajuego", desc: "El negro ataca el centro." },
-        { m: "d5",   w: 8,  name: "Nimzo clásica: d5", desc: "El negro ocupa el centro." }
-      ],
-      "d4,Nf6,c4,e6,Nc3,Bb4,a3": [
-        { m: "Bxc3+", w: 10, name: "Nimzo Sámisch: Bxc3+", desc: "El negro cambia el alfil. El blanco tiene el par de alfiles." }
-      ],
-      "d4,Nf6,c4,e6,Nc3,Bb4,a3,Bxc3+": [
-        { m: "bxc3",  w: 10, name: "Nimzo Sámisch: bxc3 recaptura", desc: "El blanco recaptura con el peón. Centro fuerte pero estructura doblada." }
-      ],
-      "d4,Nf6,c4,e6,Nc3,Bb4,a3,Bxc3+,bxc3": [
-        { m: "c5",   w: 10, name: "Nimzo Sámisch: c5 plan", desc: "El negro ataca el centro para compensar el par de alfiles blanco." },
-        { m: "O-O",  w: 7,  name: "Nimzo Sámisch: enroque", desc: "El negro enroca antes de atacar." }
-      ],
-
-      // ── Caro-Kann: profundización ────────────────────────────────────────────
-      "e4,c6,d4,d5,Nc3,dxe4,Nxe4,Bf5,Ng3,Bg6": [
-        { m: "h4",   w: 10, name: "Caro-Kann: h4 ataque al alfil", desc: "El blanco presiona el alfil en g6 inmediatamente." },
-        { m: "Nf3",  w: 7,  name: "Caro-Kann: Nf3 desarrollo", desc: "El blanco desarrolla antes de atacar el alfil." }
-      ],
-      "e4,c6,d4,d5,Nc3,dxe4,Nxe4,Bf5,Ng3,Bg6,h4": [
-        { m: "h6",   w: 10, name: "Caro-Kann: h6 defiende el alfil", desc: "El negro protege el alfil con h6." },
-        { m: "h5",   w: 5,  name: "Caro-Kann: h5 agresivo", desc: "El negro contraataca con h5. Muy agudo." }
-      ],
-      "e4,c6,d4,d5,Nc3,dxe4,Nxe4,Bf5,Ng3,Bg6,h4,h6": [
-        { m: "Nf3",  w: 10, name: "Caro-Kann: Nf3 tras h6", desc: "Desarrollo natural continuando la presión." },
-        { m: "Bd3",  w: 7,  name: "Caro-Kann: Bd3 intercambio", desc: "El blanco propone el intercambio de alfiles." }
-      ],
-      "e4,c6,d4,d5,Nc3,dxe4,Nxe4,Nf6": [
-        { m: "Nxf6+", w: 10, name: "Caro-Kann: cambio en f6", desc: "El blanco cambia el caballo." },
-        { m: "Ng3",   w: 7,  name: "Caro-Kann: Ng3 vs Nf6", desc: "El caballo se retira a g3." }
-      ],
-      "e4,c6,d4,d5,Nc3,dxe4,Nxe4,Nf6,Nxf6+": [
-        { m: "exf6",  w: 10, name: "Caro-Kann: exf6 abre diagonal", desc: "El negro recaptura abriendo la diagonal del alfil c8." },
-        { m: "gxf6",  w: 6,  name: "Caro-Kann: gxf6 sólido", desc: "El negro recaptura con el peón g." }
-      ],
-      "e4,c6,d4,d5,Nd2,dxe4": [
-        { m: "Nxe4",  w: 10, name: "Caro-Kann Spassky: Nxe4 principal", desc: "El blanco recaptura con el caballo." }
-      ],
-      "e4,c6,d4,d5,Nd2,dxe4,Nxe4": [
-        { m: "Bf5",  w: 10, name: "Caro-Kann Spassky: Bf5 activo", desc: "El negro desarrolla el alfil activamente." },
-        { m: "Nf6",  w: 8,  name: "Caro-Kann Spassky: Nf6", desc: "El negro desarrolla el caballo." },
-        { m: "Nd7",  w: 6,  name: "Caro-Kann Spassky: variante Karpov", desc: "El negro prepara Ngf6." }
-      ],
-      "e4,c6,d4,d5,Nd2,dxe4,Nxe4,Bf5": [
-        { m: "Ng3",  w: 10, name: "Caro-Kann Spassky: Ng3 expulsa", desc: "El caballo expulsa el alfil." },
-        { m: "Bd3",  w: 7,  name: "Caro-Kann Spassky: Bd3", desc: "El blanco propone el cambio de alfiles." }
-      ],
-      "e4,c6,d4,d5,Nd2,dxe4,Nxe4,Nd7": [
-        { m: "Nf3",  w: 10, name: "Caro-Kann variante Karpov: Nf3", desc: "Desarrollo natural. La continuación más popular." },
-        { m: "Bc4",  w: 7,  name: "Caro-Kann: Bc4 activo", desc: "El alfil sale activamente." }
-      ],
-      "e4,c6,d4,d5,Nd2,dxe4,Nxe4,Nd7,Nf3": [
-        { m: "Ngf6", w: 10, name: "Caro-Kann Karpov: Ngf6", desc: "El negro desarrolla el segundo caballo." }
-      ],
-      "e4,c6,d4,d5,Nd2,dxe4,Nxe4,Nd7,Nf3,Ngf6": [
-        { m: "Nxf6+", w: 10, name: "Caro-Kann: cambio clásico", desc: "El blanco cambia el caballo. Plan más sólido." },
-        { m: "Bd3",   w: 7,  name: "Caro-Kann: Bd3 desarrollo", desc: "El blanco desarrolla el alfil." }
       ]
 
     };
@@ -8085,6 +7516,14 @@ limitations under the License.
         if (bP[c] > 0 && (c === 0 || bP[c - 1] === 0) && (c === 7 || bP[c + 1] === 0)) score += 50;
       }
 
+      // Bishop blocking own central pawn (e.g. Be3 with Pe2 unmoved = development error)
+      if (eg < 0.5) {
+        if (brd[5][4] === 'B' && brd[6][4] === 'P') score -= 40; // Be3 + Pe2
+        if (brd[5][3] === 'B' && brd[6][3] === 'P') score -= 40; // Bd3 + Pd2
+        if (brd[2][4] === 'b' && brd[1][4] === 'p') score += 40; // be6 + pe7
+        if (brd[2][3] === 'b' && brd[1][3] === 'p') score += 40; // bd6 + pd7
+      }
+
       let wBishopsCount = 0, bBishopsCount = 0;
       for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
         if (brd[r][c] === 'B') wBishopsCount++;
@@ -8092,6 +7531,27 @@ limitations under the License.
       }
       if (wBishopsCount >= 2) score += 40;
       if (bBishopsCount >= 2) score -= 40;
+
+      // Knight vs Bishop dynamic adjustment — same logic as worker
+      const _totalPawns = wP.reduce((a,b)=>a+b,0) + bP.reduce((a,b)=>a+b,0);
+      const _missing = 16 - _totalPawns;
+      if (_missing !== 0) {
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+          const p = brd[r][c]; if (!p || p === ' ') continue;
+          const _sign = (p === p.toUpperCase()) ? 1 : -1;
+          const _u = p.toUpperCase();
+          if (_u === 'B') score += _sign * _missing * 3;
+          if (_u === 'N') score -= _sign * _missing * 2;
+        }
+      }
+
+      // Precompute pawn counts per square color (for bad bishop — avoids O(64×bishops) inner scan)
+      let _wPawnsLight = 0, _wPawnsDark = 0, _bPawnsLight = 0, _bPawnsDark = 0;
+      for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+        const _pp = brd[_r][_c];
+        if (_pp === 'P') { if ((_r+_c)%2===0) _wPawnsLight++; else _wPawnsDark++; }
+        else if (_pp === 'p') { if ((_r+_c)%2===0) _bPawnsLight++; else _bPawnsDark++; }
+      }
 
       let wKing = null, bKing = null;
       for (let r = 0; r < 8; r++) {
@@ -8160,6 +7620,14 @@ limitations under the License.
             }
           }
 
+          if (type === 'B') {
+            const bSqColor = (r + c) % 2;
+            const ownOnSameColor = isW
+              ? (bSqColor === 0 ? _wPawnsLight : _wPawnsDark)
+              : (bSqColor === 0 ? _bPawnsLight : _bPawnsDark);
+            if (ownOnSameColor > 2) bonus -= (ownOnSameColor - 2) * Math.round(8 * (0.5 + 0.5 * eg));
+          }
+
           if (type === 'N') {
             let isOutpost = false;
             let isAdvanced = (isW && r <= 3) || (!isW && r >= 4);
@@ -8177,8 +7645,8 @@ limitations under the License.
               }
               if (supported && !enemyCanAttack) isOutpost = true;
             }
-            if (isOutpost) bonus += 140;
-            else if (isAdvanced) bonus -= 15; // FIX v2.24.0: -40 was too harsh, caused unnecessary retreats
+            if (isOutpost) bonus += 65; // synced with worker value
+            else if (isAdvanced) bonus -= 15;
           }
 
           // ── FIX v2.23.0: Rook Endgame Activity ──────────────────────────────────────
@@ -9071,6 +8539,35 @@ limitations under the License.
           const wIni = matDiff < -200 ? 1.04 : 1.0;
           const bIni = matDiff > 200 ? 1.04 : 1.0;
 
+          // 🛑 v2.25.12: DETECCIÓN DE EMPATES TEÓRICOS (Material Insuficiente)
+          // Evita que el motor simplifique a finales que no se pueden ganar
+          // (Rey+Caballo vs Rey, Rey+Alfil vs Rey → evaluación 0 inmediata)
+          const wPawnTotal = wP[0]+wP[1]+wP[2]+wP[3]+wP[4]+wP[5]+wP[6]+wP[7];
+          const bPawnTotal = bP[0]+bP[1]+bP[2]+bP[3]+bP[4]+bP[5]+bP[6]+bP[7];
+          if (wPawnTotal === 0 && bPawnTotal === 0) {
+            // EG_I[2]=280 (caballo), EG_I[3]=340 (alfil) — ambos < 400 → empate muerto
+            if (wMat < 400 && bMat < 400) return 0;
+          }
+          // 🛑 Maldición del alfil del color equivocado (peón de torre + alfil del color malo)
+          if (wPawnTotal === 1 && bMat === 0 && bPawnTotal === 0 && wMat < 400) {
+            if (wP[0] === 1 || wP[7] === 1) {
+              const pCol = wP[0] === 1 ? 0 : 7;
+              const promoSqColor = (0 + pCol) % 2;
+              let bishopSqColor = -1;
+              for (let i = 0; i < 64; i++) { if (b[i] === WB) { bishopSqColor = (Math.floor(i/8) + (i%8)) % 2; break; } }
+              if (bishopSqColor !== -1 && bishopSqColor !== promoSqColor) return 0;
+            }
+          }
+          if (bPawnTotal === 1 && wMat === 0 && wPawnTotal === 0 && bMat < 400) {
+            if (bP[0] === 1 || bP[7] === 1) {
+              const pCol = bP[0] === 1 ? 0 : 7;
+              const promoSqColor = (7 + pCol) % 2;
+              let bishopSqColor = -1;
+              for (let i = 0; i < 64; i++) { if (b[i] === BB) { bishopSqColor = (Math.floor(i/8) + (i%8)) % 2; break; } }
+              if (bishopSqColor !== -1 && bishopSqColor !== promoSqColor) return 0;
+            }
+          }
+
           // 🪓 INCENTIVO DE SIMPLIFICACIÓN (Trading)
           // Cuando el bando ganador (ventaja > 150cp) intercambia piezas, 'eg' sube
           // acercándose a 1. Premiamos ese movimiento inflando la ventaja * eg * 0.4.
@@ -9115,6 +8612,15 @@ limitations under the License.
               for (let r = 2; r < 8; r++) { if (b[r*8+fc] === BP) { bFlankMoved = true; break; } }
               if (bFlankMoved && b[1*8+fc] !== BP) s += bUndevelopedMinors * 8;
             }
+          }
+
+          // Bishop blocking own central pawn (opening/middlegame — eg < 0.5)
+          // e.g. Be3 with Pe2 unmoved → -40cp; mirror for Black
+          if (eg < 0.5) {
+            if (b[5*8+4] === WB && b[6*8+4] === WP) s -= 40; // Be3 + Pe2
+            if (b[5*8+3] === WB && b[6*8+3] === WP) s -= 40; // Bd3 + Pd2
+            if (b[2*8+4] === BB && b[1*8+4] === BP) s += 40; // be6 + pe7
+            if (b[2*8+3] === BB && b[1*8+3] === BP) s += 40; // bd6 + pd7
           }
 
           // ── Phase 4: Pawn structure via pawn hash cache ──
@@ -9204,6 +8710,32 @@ limitations under the License.
           // Having both bishops is worth ~30 centipawns, more in open positions
           if (wBishops >= 2) s += 40;
           if (bBishops >= 2) s -= 40;
+
+          // ── Knight vs Bishop dynamic adjustment (open/closed position) ─────
+          // PeSTO tapers on piece count (ph), not pawn count. We need an extra
+          // signal: more pawns on board → knights better (can hop over); fewer
+          // pawns → bishops better (long diagonals are clear).
+          // +3cp per bishop / -2cp per knight for each pawn missing from the board.
+          // Max effect at 0 pawns: bishop +48cp, knight -32cp (≈+80cp swing).
+          const totalPawns = wPawnTotal + bPawnTotal;
+          const missingPawns = 16 - totalPawns;
+          if (missingPawns !== 0) {
+            for (let _r = 0; _r < 8; _r++)for (let _c = 0; _c < 8; _c++) {
+              const _p = b[_r*8+_c]; if (!_p || _p === 0) continue;
+              const _pt = _p & 7;
+              const _sign = (_p > 0 && _p <= 6) ? 1 : -1;
+              if (_pt === 3) s += _sign * missingPawns * 3;  // bishop: +3cp per missing pawn
+              if (_pt === 2) s -= _sign * missingPawns * 2;  // knight: -2cp per missing pawn
+            }
+          }
+
+          // ── Precompute pawn counts per square color (for bad bishop — avoids O(64×bishops) inner scan) ──
+          let wPawnsLight = 0, wPawnsDark = 0, bPawnsLight = 0, bPawnsDark = 0;
+          for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+            const _pp = b[_r*8+_c];
+            if (_pp === WP) { if ((_r+_c)%2===0) wPawnsLight++; else wPawnsDark++; }
+            else if (_pp === BP) { if ((_r+_c)%2===0) bPawnsLight++; else bPawnsDark++; }
+          }
 
           // ── Per-piece evaluation ────────────────────────────────────────────
           for (let r = 0; r < 8; r++)for (let c = 0; c < 8; c++) {
@@ -9447,7 +8979,7 @@ limitations under the License.
               if (isOutpost) {
                 bonus += 65;
               } else if (isAdvanced) {
-                bonus -= 40; // Penalize blindly jumping ahead without pawn support
+                bonus -= 15; // synced with evaluateBoard() fix v2.24.0 (-40 was too harsh)
               }
             }
 
@@ -9469,16 +9001,11 @@ limitations under the License.
               // Previously (+21 vs -18) = 39cp — barely visible vs 300cp piece value.
               bonus += (mob - 6) * 8;
 
-              // 🟠 BAD BISHOP: penalize bishop when own pawns block its diagonals
-              // A bishop on light squares is "bad" if many own pawns sit on light squares.
-              // sq color for this bishop: (r+c) % 2
+              // 🟠 BAD BISHOP: uses precomputed pawn-per-color counts (no inner loop)
               const bishopSqColor = (r + c) % 2;
-              const ownPawn = isW ? WP : BP;
-              let ownPawnsOnSameColor = 0;
-              for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
-                if (b[_r*8+_c] === ownPawn && (_r + _c) % 2 === bishopSqColor) ownPawnsOnSameColor++;
-              }
-              // -8cp per blocked pawn, scaled by endgame (worse in endgame with fewer pieces)
+              const ownPawnsOnSameColor = isW
+                ? (bishopSqColor === 0 ? wPawnsLight : wPawnsDark)
+                : (bishopSqColor === 0 ? bPawnsLight : bPawnsDark);
               if (ownPawnsOnSameColor > 2) bonus -= (ownPawnsOnSameColor - 2) * Math.round(8 * (0.5 + 0.5 * eg));
             }
             // Anti Opening Shuffle now evaluated globally via wUndevelopedMinors
@@ -9504,6 +9031,24 @@ limitations under the License.
               if (closestEnemyPawn < 999) {
                 // King near enemy pawns in endgame = good for attacking them
                 bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
+              }
+
+              // 👑 v2.25.12: ESCOLTA DE PEONES PASADOS PROPIOS
+              // El rey debe ponerse delante del peón avanzado para abrirle camino
+              const myPawnC = isW ? WP : BP;
+              for (let pr = 0; pr < 8; pr++) {
+                for (let pc = 0; pc < 8; pc++) {
+                  if (b[pr*8+pc] === myPawnC) {
+                    // Peón en mitad del tablero rival (avanzado)
+                    if ((isW && pr <= 4) || (!isW && pr >= 3)) {
+                      const distToPawn = Math.max(Math.abs(r - pr), Math.abs(c - pc));
+                      const isAhead = isW ? (r <= pr) : (r >= pr);
+                      if (isAhead && distToPawn <= 2) {
+                        bonus += Math.round(40 * eg); // +40cp por escoltar de cerca
+                      }
+                    }
+                  }
+                }
               }
             }
 
@@ -9655,8 +9200,17 @@ limitations under the License.
                 workerKSRaw -= stormPoints * 20; // max = 6×20 = 120 cp
               }
 
-              // 4. Attacker pressure — capped coefficient
-              const kPenalty = Math.min(120, attackers * 8);
+              // 4. Attacker pressure — non-linear S-curve (v2.25.12)
+              // OLD linear formula (attackers*8) gave same reward per attacker regardless of
+              // how many were already present: Q+B=32cp, Q+R=40cp — small enough to justify
+              // speculative piece sacrifices (Bxf7+ style) at depth 11+.
+              // NEW S-curve: first 1-2 attackers give near-zero penalty (lone attacker = no real
+              // threat), penalty accelerates steeply at 5-9 units (critical mass) then flattens
+              // at cap.  Q alone (3 units) = 6cp, Q+B (4) = 13cp, Q+R (5) = 24cp,
+              // Q+R+N+B (7) = 60cp, Q+2R+2B+N (11) = 128cp.
+              // Index = attackWeight (Q=3, R=2, N/B/P=1).
+              const KS_CURVE = [0, 0, 2, 6, 13, 24, 40, 60, 83, 103, 118, 128, 136, 141, 145, 148, 150];
+              const kPenalty = KS_CURVE[Math.min(attackers, KS_CURVE.length - 1)];
               workerKSRaw -= kPenalty * (1 - eg);
 
               // 5. Open files near castled king with enemy major
@@ -9821,9 +9375,9 @@ limitations under the License.
               if (_p <= 6 && (_u===2||_u===3||_u===4||_u===5)) wMaj++;
               else if (_p >= 9 && (_u===2||_u===3||_u===4||_u===5)) bMaj++;
             }
-            // Trigger if one side has at least 1 piece and the other has none
-            const wMopup = (wMaj >= 1 && bMaj === 0) || (s > 500 && eg > 0.6);
-            const bMopup = (bMaj >= 1 && wMaj === 0) || (s < -500 && eg > 0.6);
+            // Trigger si una ventaja aplastante (+400cp) o pieza sola vs rey
+            const wMopup = (wMaj >= 1 && bMaj === 0) || (s > 400 && eg > 0.6);
+            const bMopup = (bMaj >= 1 && wMaj === 0) || (s < -400 && eg > 0.6);
             if (wMopup || bMopup) {
               const wk = state.wKing || findKing(b, 'w');
               const bk = state.bKing || findKing(b, 'b');
@@ -9831,9 +9385,10 @@ limitations under the License.
                 const [wKr, wKc] = wk, [bKr, bKc] = bk;
                 const wKorner = Math.max(Math.abs(wKr-3.5), Math.abs(wKc-3.5));
                 const bKorner = Math.max(Math.abs(bKr-3.5), Math.abs(bKc-3.5));
-                const kingProx = 14 - Math.max(Math.abs(wKr-bKr), Math.abs(wKc-bKc));
-                if (wMopup) s += Math.round((47 * bKorner + 16 * kingProx) * eg);
-                if (bMopup) s -= Math.round((47 * wKorner + 16 * kingProx) * eg);
+                // Manhattan distance (más preciso que Chebyshev para acorralamiento)
+                const kingProx = 14 - (Math.abs(wKr-bKr) + Math.abs(wKc-bKc));
+                if (wMopup) s += Math.round((50 * bKorner + 20 * kingProx) * eg);
+                if (bMopup) s -= Math.round((50 * wKorner + 20 * kingProx) * eg);
               }
             }
           }
@@ -10030,6 +9585,61 @@ limitations under the License.
                 if (state.turn === 'b') s += oppBonus;  // white has opposition (black must move)
                 else s -= oppBonus; // black has opposition (white must move)
               }
+            }
+          }
+
+          // ── HANGING PIECE PENALTY (v2.25.12) ─────────────────────────────────
+          // Penalises a minor/rook that is attacked by an enemy pawn but NOT defended
+          // by a friendly pawn.  Key case: Ng5 attacked by h6 pawn — the engine kept
+          // playing Nc3 because the resulting position (down a knight) still scored okay.
+          // Board convention: row 0 = rank 8 (black home), row 7 = rank 1 (white home).
+          //   Black pawn at (r,c) attacks (r+1, c±1).
+          //   White pawn at (r,c) attacks (r-1, c±1).
+          // So white piece at (R,C) is attacked by BP at (R-1, C±1);
+          //    defended by WP at (R+1, C±1).
+          // Penalty = half the "excess" piece value above a pawn (N→112, B→117, R→200).
+          // Queens excluded — they always have piece-based defenders.
+          // Only middlegame / early endgame (eg < 0.65).
+          if (eg < 0.65) {
+            for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+              const _p = b[_r*8+_c];
+              if (!_p || _p === 0) continue;
+              const _pt = _p & 7;
+              if (_pt === 1 || _pt === 5 || _pt === 6) continue; // skip P, Q, K
+              if (_p <= 6) { // white piece
+                const _atk = (_r > 0 && _c > 0 && b[(_r-1)*8+(_c-1)] === BP) ||
+                             (_r > 0 && _c < 7 && b[(_r-1)*8+(_c+1)] === BP);
+                if (_atk) {
+                  const _def = (_r < 7 && _c > 0 && b[(_r+1)*8+(_c-1)] === WP) ||
+                               (_r < 7 && _c < 7 && b[(_r+1)*8+(_c+1)] === WP);
+                  if (!_def) s -= Math.round((PV_I[_pt] - 100) * 0.85);
+                }
+              } else { // black piece
+                const _atk = (_r < 7 && _c > 0 && b[(_r+1)*8+(_c-1)] === WP) ||
+                             (_r < 7 && _c < 7 && b[(_r+1)*8+(_c+1)] === WP);
+                if (_atk) {
+                  const _def = (_r > 0 && _c > 0 && b[(_r-1)*8+(_c-1)] === BP) ||
+                               (_r > 0 && _c < 7 && b[(_r-1)*8+(_c+1)] === BP);
+                  if (!_def) s += Math.round((PV_I[_pt] - 100) * 0.85);
+                }
+              }
+            }
+          }
+
+          // ⚓ MATERIAL ANCHOR (v2.25.12)
+          // Once a speculative sacrifice is made, the hanging-piece penalty disappears
+          // (the piece is gone) and positional bonuses can make the losing line look good.
+          // Fix: in opening/early-middlegame, cap score improvement when down >200cp of
+          // non-pawn/king material. "Phantom compensation" (active bishop after losing a
+          // knight) can raise score by at most 40% of the material deficit, not more.
+          // Board convention (row0=rank8) already described above.
+          if (eg < 0.45) {
+            if (matDiff < -200) {
+              const cap = matDiff + Math.round(Math.abs(matDiff) * 0.4); // e.g. -315 → -189
+              if (s > cap) s = cap;
+            } else if (matDiff > 200) {
+              const cap = matDiff - Math.round(Math.abs(matDiff) * 0.4);
+              if (s < cap) s = cap;
             }
           }
 
@@ -10929,7 +10539,7 @@ limitations under the License.
             let prevBestScore = 0; // For aspiration windows
 
             // ✨ Improvement 1: Soft time limit.
-            // Don’t START a new depth iteration if we have used more than 60% of our budget.
+            // Don't START a new depth iteration if we have used more than 60% of our budget.
             // This ensures we always return the last *completed* depth result, which is
             // significantly better than an aborted partial result from a deeper iteration.
             // Immediate exit if there is only one legal move — no quality cost.
@@ -10945,7 +10555,7 @@ limitations under the License.
             let completedDepth = 0; // 📊 Real depth actually completed (vs maxDepth = target)
 
             for (let d = 1; d <= maxDepth; d++) {
-              if (Date.now() >= deadline) { analysisPartial = true; break; }
+              if (d > 1 && Date.now() >= deadline) { analysisPartial = true; break; } // d=1 siempre completa
               if (d > 3 && Date.now() >= softDeadline) { break; } // soft limit
 
               // ⚡ FRENO PREDICTIVO (EBF): Estimate cost of next depth and skip if it won't finish.
@@ -11004,7 +10614,12 @@ limitations under the License.
                     // prevBestScore < -500 means we are down >5 pawns — accept the lifeline
                     scoreForMe = prevBestScore < -500 ? 0 : -9000;
                   } else if (reps === 1) {
-                    scoreForMe = 0; // 2nd repetition — treat as draw, engine decides contextually
+                    // v2.25.12: mild deterrent (-20) instead of exact draw (0).
+                    // Stops aimless king shuttles (Kh1↔Kg1) when the engine is slightly losing:
+                    // it kept oscillating hoping for a 3-fold draw that SF never allowed.
+                    // -20cp is still far better than truly lost positions (<-500), so the engine
+                    // still accepts repetitions as a lifeline when actually in serious trouble.
+                    scoreForMe = -20;
                   } else {
                     let rawScore;
                     // Note: do NOT push child hash here — minimax's internal push handles it.
@@ -11119,6 +10734,10 @@ limitations under the License.
 
                 bestOptions = currentDepthScores.slice(0, multiPV);
 
+                // 📡 bestSoFar: send best move after each completed depth so the
+                // main thread always has a valid fallback if the worker freezes/crashes.
+                postMessage({ action: 'bestSoFar', moves: bestOptions, completedDepth: d, requestId });
+
                 // ⏱️ SOFT DEADLINE REAL
                 bestMovesHistory.push(bestOptions[0].move);
                 bestScoresHistory.push(bestOptions[0].score);
@@ -11208,10 +10827,10 @@ limitations under the License.
               const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
               for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
                 const _m = _sr[_i].move;
-                const _isCapture = state.board[_m.tr*8+_m.tc] !== 0;
-                if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
-                const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
-                if (_moveSee >= -100) { _safeIdx = _i; break; } // move is safe
+                try {
+                  const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
+                  if (_moveSee >= -50) { _safeIdx = _i; break; } // move is safe (capturas y silenciosas)
+                } catch(e) { _safeIdx = 0; break; }
                 // Move hangs a piece for nothing — skip it and try next
               }
               if (_safeIdx > 0) {
@@ -11283,6 +10902,18 @@ limitations under the License.
 
     function engineSearch(color, depth, multiPV, timeoutMs, forcedMove = null) {
       const myGen = aiSearchGeneration; // 🔴 RACE FIX: snapshot generation at search start
+      // 🛡️ STALE-RESULT FIX: tag each request so onmessage ignores results from older searches.
+      // Without this, if two engineSearch calls share the worker, the second call's onmessage
+      // overwrites the first's — and may receive the FIRST search's result (for a stale board),
+      // causing the engine to apply a move that was calculated for the wrong position.
+      if (!window._engineSearchReqId) window._engineSearchReqId = 0;
+      const myReqId = ++window._engineSearchReqId;
+      // Snapshot board/state at call-time — avoids any later global mutation affecting the message
+      const _boardSnap = deepCopy(board);
+      const _crSnap = { ...castleRights };
+      const _epSnap = enPassantTarget ? [...enPassantTarget] : null;
+      const _phSnap = [...positionHashes];
+      const _hmSnap = halfMoveClock;
       return new Promise((resolve) => {
         let worker;
         try {
@@ -11307,6 +10938,8 @@ limitations under the License.
         const timer = setTimeout(() => done([]), timeoutMs + 4000);
         worker.onmessage = function (evt) {
           const data = evt.data || {};
+          // 🛡️ Ignore results from earlier/superseded searches
+          if (data.requestId != null && data.requestId !== myReqId) return;
           clearTimeout(timer);
           if (data.action === 'result') done(data.moves || []);
           else if (data.action === 'error') {
@@ -11320,14 +10953,15 @@ limitations under the License.
         };
         worker.postMessage({
           action: 'search',
-          board: deepCopy(board),
+          board: _boardSnap,
           turn: color,
-          castleRights: { ...castleRights },
-          enPassantTarget: enPassantTarget ? [...enPassantTarget] : null,
+          castleRights: _crSnap,
+          enPassantTarget: _epSnap,
           depth, multiPV, timeout: timeoutMs,
-          positionHashes: [...positionHashes],
+          positionHashes: _phSnap,
           forcedMove: forcedMove,
-          halfMoveClock: halfMoveClock  
+          halfMoveClock: _hmSnap,
+          requestId: myReqId
         });
       });
     }
@@ -11363,10 +10997,10 @@ limitations under the License.
       try {
         let move = null;
 
-        // 1. Opening book
+        // 1. Opening book — SKIP if loaded from FEN (book keys assume initial position, not arbitrary FEN)
         let forcedBookMove = null;
-        if (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
-          (currentDifficulty === 'medium' && history.length <= 4)) {
+        if (!fenGameActive && (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
+          (currentDifficulty === 'medium' && history.length <= 4))) {
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
           const bookEntries = OPENING_BOOK[historyKey];
           if (bookEntries && bookEntries.length > 0) {
@@ -11418,17 +11052,17 @@ limitations under the License.
           // The UI's getLegalMovesForColorInPlace() can miss some moves (e.g. castling edge cases)
           // causing valid worker moves to appear "illegal" and triggering stack-overflow fallbacks.
           if (!move) {
-            // Fallback layer 1: UI legal moves
-            const legalFall = getLegalMovesForColorInPlace(aiColor);
-            if (legalFall.length > 0) {
-              // Pick the move with the best quick score (captures first, then any)
-              legalFall.sort((a, b) => {
-                const aCapture = (board[a.tr] && board[a.tr][a.tc] && board[a.tr][a.tc] !== ' ') ? 1 : 0;
-                const bCapture = (board[b.tr] && board[b.tr][b.tc] && board[b.tr][b.tc] !== ' ') ? 1 : 0;
-                return bCapture - aCapture;
-              });
-              move = legalFall[0];
-              console.warn('⚠️ Engine returned null — using UI fallback move:', move);
+            // Fallback: búsqueda síncrona de emergencia (evita capturar a ciegas)
+            // Depth 2 fijo (depth 3 puede congelar móvil lento), sin límite de tiempo
+            // para garantizar que siempre termina — el random nunca debe ejecutarse.
+            console.warn('⚠️ Worker no respondió. Usando búsqueda síncrona de emergencia (d2, sin límite).');
+            move = findBestMoveFor(aiColor, 2, 0, Number.MAX_SAFE_INTEGER, currentDifficulty) || null;
+            // Último recurso: jugada legal aleatoria
+            if (!move) {
+              const legalFall = getLegalMovesForColorInPlace(aiColor);
+              if (legalFall.length > 0) {
+                move = legalFall[Math.floor(Math.random() * legalFall.length)];
+              }
             }
           }
 
@@ -12213,6 +11847,7 @@ limitations under the License.
       // Clear memory and style
       commentaryLog = [];
       resetCommentaryStyleMemory();
+      window._commentaryEvalBucket = ''; // reset so eval announcements replay correctly
 
       // 🔒 Temporarily suppress blunder/brilliant re-evaluation on historical moves.
       // addCommentaryEntry uses window.snapshotBeforeHumanMove (stale — points to the
@@ -12268,14 +11903,15 @@ limitations under the License.
       // If there is no real history and no explicit move, we are in the first move
       if (currentHistory.length === 0 && !lastMove) {
         commentaryLog = [];
+        window._commentaryEvalBucket = ''; // reset eval bucket on new game
         resetCommentaryStyleMemory();
         const intros = {
           en: [
-            '🎙️ "Board ready! Let’s play calm and smart."',
+            '🎙️ "Board ready! Let\'s play calm and smart."',
             '🎙️ "Great! Start by developing your pieces."',
             '🎙️ "New game! Check safety before each move."',
             '🎙️ "Take your time. Good moves are better than fast moves."',
-            '🎙️ "Fresh start! Let’s fight for the center."'
+            '🎙️ "Fresh start! Let\'s fight for the center."'
           ],
           es: [
             '🎙️ "¡Tablero listo! Juguemos con calma y cabeza."',
@@ -12290,26 +11926,42 @@ limitations under the License.
         return;
       }
 
-      // 🧠 EVALUATION LOGIC (The new thing so it reacts to the script)
-      if (evalScore !== null) {
-          const moveCount = currentHistory.length;
-          let dynamicComment = "";
-          
-          if (moveCount > 6) {
-              if (evalScore > 400) {
-                  dynamicComment = lang === 'en' ? "White is dominating the board completely." : "Las Blancas dominan el tablero por completo. Presión asfixiante.";
-              } else if (evalScore < -400) {
-                  dynamicComment = lang === 'en' ? "Black is crushing the position. A clear advantage." : "Las Negras están aplastando la posición. Ventaja clarísima.";
-              } else if (evalScore > 150) {
-                  dynamicComment = lang === 'en' ? "White has a solid advantage here." : "Las Blancas tienen una sólida ventaja aquí.";
-              } else if (evalScore < -150) {
-                  dynamicComment = lang === 'en' ? "Black is pressing and holds a good edge." : "Las Negras presionan y mantienen una buena ventaja.";
-              } else if (Math.abs(evalScore) < 50 && moveCount > 15) {
-                  dynamicComment = lang === 'en' ? "The tension is palpable. Perfect equality." : "La tensión es palpable. Igualdad absoluta en la mesa.";
-              }
-          }
+      // 🧠 EVALUATION CONTEXT — only fires when the advantage BUCKET changes.
+      // This prevents the same phrase repeating on every move.
+      // When bucket is unchanged, fall through to move-specific commentary (varied).
+      if (evalScore !== null && currentHistory.length > 6) {
+          let bucket = '';
+          if      (evalScore >  400)                                   bucket = 'w_crush';
+          else if (evalScore >  150)                                   bucket = 'w_win';
+          else if (evalScore < -400)                                   bucket = 'b_crush';
+          else if (evalScore < -150)                                   bucket = 'b_win';
+          else if (Math.abs(evalScore) < 50 && currentHistory.length > 15) bucket = 'equal';
 
-          if (dynamicComment) {
+          if (bucket && bucket !== (window._commentaryEvalBucket || '')) {
+              window._commentaryEvalBucket = bucket;
+              const evalPools = {
+                  w_crush: {
+                      es: ["Las Blancas dominan el tablero por completo. Presión asfixiante.", "Las blancas controlan cada rincón del tablero.", "El tablero es territorio blanco.", "Aplastante superioridad blanca."],
+                      en: ["White dominates the board completely.", "White controls every corner of the board.", "The board belongs to White.", "A crushing White advantage."]
+                  },
+                  w_win: {
+                      es: ["Las Blancas tienen una ventaja sólida.", "La presión blanca va en aumento.", "Las blancas llevan las riendas de la partida.", "Ventaja técnica en manos blancas."],
+                      en: ["White has a solid advantage.", "White's pressure is building.", "White has the upper hand.", "A technical edge for White."]
+                  },
+                  b_crush: {
+                      es: ["Las Negras están aplastando la posición. Ventaja clarísima.", "Ventaja arrolladora para las negras.", "El tablero se inclina claramente hacia las negras.", "Las negras con control total de la situación."],
+                      en: ["Black is crushing the position. A clear advantage.", "An overwhelming advantage for Black.", "The board tilts heavily toward Black.", "Black in total control."]
+                  },
+                  b_win: {
+                      es: ["Las Negras presionan y mantienen una buena ventaja.", "Las negras llevan el ritmo de la partida.", "Ventaja técnica para las negras.", "Las negras presionan con fuerza."],
+                      en: ["Black is pressing and holds a good edge.", "Black controls the tempo.", "A technical edge for Black.", "Black is pressing hard."]
+                  },
+                  equal: {
+                      es: ["La tensión es palpable. Igualdad absoluta en la mesa.", "Equilibrio perfecto entre los dos bandos.", "Ninguno cede terreno. Todo por decidir.", "Partida igualada: la diferencia la hará un error o una brillantez."],
+                      en: ["The tension is palpable. Perfect equality.", "A perfect balance between both sides.", "Neither gives an inch. Everything to play for.", "Level game: one mistake or one brilliant move will decide it."]
+                  }
+              };
+              const dynamicComment = getRnd(evalPools[bucket][lang], `eval_${bucket}`);
               const now = new Date();
               const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
               commentaryLog.unshift({ html: `🎙️ ${dynamicComment}`, time: timeStr, tone: 'serious' });
@@ -12322,8 +11974,9 @@ limitations under the License.
                   </div>
                 </div>
               `).join('');
-              return; 
+              return;
           }
+          // Bucket unchanged → fall through to move-specific commentary
       }
 
       // ── Castling
@@ -13202,8 +12855,11 @@ limitations under the License.
         const merged = [];
         // Metemos el libro primero
         bookOpts.forEach(o => { merged.push(o); seen.add(formatMoveLabel(o.move)); });
-        // Add AI move if not duplicated
-        goodOptions.forEach(o => { if (!seen.has(formatMoveLabel(o.move))) merged.push({ ...o, isBook: false }); });
+        // Add AI move if not duplicated — also add to seen to prevent duplicates within goodOptions
+        goodOptions.forEach(o => {
+          const lbl = formatMoveLabel(o.move);
+          if (!seen.has(lbl)) { merged.push({ ...o, isBook: false }); seen.add(lbl); }
+        });
 
         // 📌 SEE-BASED FREE CAPTURE GUARANTEE: if the engine missed a winning or equal capture
         // (e.g. because it prioritised other lines), inject it so the Professor always shows it.
@@ -13344,8 +13000,12 @@ limitations under the License.
           // Checkmate always wins — sort to top unconditionally
           if (a.isMate && !b.isMate) return -1;
           if (!a.isMate && b.isMate) return 1;
-          if (Math.abs((a.tacticalPenalty || 0) - (b.tacticalPenalty || 0)) > 5) {
-            return (a.tacticalPenalty || 0) - (b.tacticalPenalty || 0);
+          // seeFree captures are already validated as winning — treat their penalty as 0 so
+          // a hanging-queen capture like Qxd8 is never buried behind a quiet move.
+          const aTacPen = a.seeFree ? 0 : (a.tacticalPenalty || 0);
+          const bTacPen = b.seeFree ? 0 : (b.tacticalPenalty || 0);
+          if (Math.abs(aTacPen - bTacPen) > 5) {
+            return aTacPen - bTacPen;
           }
           if (history.length <= 10) {
             if (a.isBook && !b.isBook) return -1;
@@ -13354,7 +13014,7 @@ limitations under the License.
           }
           const aScore = a.score !== undefined ? a.score : (a.isBook ? 30 : 0);
           const bScore = b.score !== undefined ? b.score : (b.isBook ? 30 : 0);
-          return (bScore - (b.tacticalPenalty || 0)) - (aScore - (a.tacticalPenalty || 0));
+          return (bScore - bTacPen) - (aScore - aTacPen);
         });
 
         // 🛡️ 4. SITUATION AWARENESS — scan ALL hanging pieces, warn about the most valuable one.
@@ -14797,12 +14457,74 @@ limitations under the License.
       const isEdgeOrCorner = m.tr === 0 || m.tr === 7 || m.tc === 0 || m.tc === 7;
 
       if (piece === 'N' || piece === 'B') {
+        const toSq = sqName(m.tr, m.tc);
+        const fromSq = sqName(m.fr, m.fc);
+        const pieceName = getLocalizedPieceName(movingPiece);
+
+        // Find the most valuable enemy piece threatened from the new square
+        let bestThreat = null;
+        for (const nx of afterMyMoves) {
+          if (nx.fr !== m.tr || nx.fc !== m.tc) continue;
+          const victim = copy[nx.tr][nx.tc];
+          if (!victim || victim === ' ' || colorOf(victim) !== enemyColor) continue;
+          const vVal = PIECE_VALUES[victim.toUpperCase()] || 0;
+          if (vVal >= 100 && (!bestThreat || vVal > bestThreat.vVal))
+            bestThreat = { victim, vVal, sq: sqName(nx.tr, nx.tc) };
+        }
+
         if (newMobility > oldMobility && !isEdgeOrCorner) {
+          if (bestThreat) {
+            const victimName = getLocalizedPieceName(bestThreat.victim);
+            return withQS(en
+              ? `🌱 ${pieceName} to ${toSq} — gains mobility and threatens the ${victimName} on ${bestThreat.sq}.`
+              : `🌱 ${pieceName} a ${toSq} — gana movilidad y amenaza al ${victimName} en ${bestThreat.sq}.`);
+          }
           return withQS(en ? "🌱 You develop the piece, maximizing its active diagonals/squares." : "🌱 Gran desarrollo: colocas la pieza en su máxima actividad radiante.");
         } else if (isEdgeOrCorner) {
-          return withQS(en ? "🔄 You maneuver the piece towards the flank." : "🔄 Maniobra cerrada: llevas la pieza hacia el flanco buscando otro ángulo.");
+          // Fianchetto: bishop to b2/g2 (white) or b7/g7 (black)
+          if (piece === 'B') {
+            const isFianchetto = (color === 'w' && m.tr === 6 && (m.tc === 1 || m.tc === 6)) ||
+                                 (color === 'b' && m.tr === 1 && (m.tc === 1 || m.tc === 6));
+            if (isFianchetto) {
+              const side = m.tc === 1 ? (en ? 'queenside' : 'ala de dama') : (en ? 'kingside' : 'ala de rey');
+              return withQS(en
+                ? `🏹 Fianchetto! ${pieceName} on ${toSq} dominates the long diagonal on the ${side}.`
+                : `🏹 ¡Fianchetto! ${pieceName} en ${toSq} domina la diagonal larga del ${side}.`);
+            }
+          }
+          if (bestThreat) {
+            const victimName = getLocalizedPieceName(bestThreat.victim);
+            return withQS(en
+              ? `🔄 ${pieceName} to ${toSq}, attacking the ${victimName} on ${bestThreat.sq} from the flank.`
+              : `🔄 ${pieceName} a ${toSq} atacando al ${victimName} en ${bestThreat.sq} desde el flanco.`);
+          }
+          if (piece === 'N') {
+            // Show best next jump toward center
+            let bestNext = null, bestDist = 999;
+            for (const nx of afterMyMoves) {
+              if (nx.fr !== m.tr || nx.fc !== m.tc) continue;
+              const d = Math.abs(3.5 - nx.tr) + Math.abs(3.5 - nx.tc);
+              if (d < bestDist) { bestDist = d; bestNext = sqName(nx.tr, nx.tc); }
+            }
+            if (bestNext) {
+              return withQS(en
+                ? `🔄 ${pieceName} maneuvers to ${toSq} — next it can jump to ${bestNext} toward the center.`
+                : `🔄 ${pieceName} maniobra a ${toSq} — en el siguiente turno puede saltar a ${bestNext} hacia el centro.`);
+            }
+          }
+          return withQS(en
+            ? `🔄 ${pieceName} repositions to ${toSq} from the flank.`
+            : `🔄 ${pieceName} se reposiciona a ${toSq} desde el flanco.`);
         } else {
-          return withQS(en ? "🧭 You reposition the piece looking for a solid scheme." : "🧭 Reciclaje posicional: mueves la pieza buscando un esquema más sólido.");
+          if (bestThreat) {
+            const victimName = getLocalizedPieceName(bestThreat.victim);
+            return withQS(en
+              ? `🎯 ${pieceName} to ${toSq}, pressuring the ${victimName} on ${bestThreat.sq}.`
+              : `🎯 ${pieceName} a ${toSq} ejerciendo presión sobre el ${victimName} en ${bestThreat.sq}.`);
+          }
+          return withQS(en
+            ? `🧭 ${pieceName} repositions from ${fromSq} to ${toSq}.`
+            : `🧭 ${pieceName} se reposiciona de ${fromSq} a ${toSq}.`);
         }
       }
 
@@ -16744,6 +16466,7 @@ limitations under the License.
         window.snapshotAfterHumanMove = null;
         window.snapshotBeforeRules = null;
         fenPositionLoaded = true; // tell the Professor this isn't move-0 of a normal game
+        fenGameActive = true;     // 🛡️ disable opening book — book keys assume initial position, not this FEN
 
         // ✨ FIX: Limpiar al Profesor al cargar nuevo FEN
         const pList = document.getElementById('professorList');
