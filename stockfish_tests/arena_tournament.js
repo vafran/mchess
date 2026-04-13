@@ -77,9 +77,8 @@ class DepthStats {
         this.dW = 0; this.dB = 0; // draws
     }
     add(result, mChessColor, moves, reason, pgn, phase) {
-        const blunders = detectBlunders(pgn, mChessColor);
         this.games.push({
-            result, mChessColor, moves, reason, pgn, phase, blunders,
+            result, mChessColor, moves, reason, pgn, phase,
             ts: new Date().toISOString()
         });
         const w = mChessColor === 'w';
@@ -133,17 +132,6 @@ class DepthStats {
                 : (avgNps / 1000).toFixed(0) + 'k n/s';
             console.log(`     Avg NPS: ${npsDisp}  (${this.npsLog.length} samples)`);
         }
-        // Blunder summary
-        const allBlunders = this.games.flatMap(g => g.blunders || []);
-        const openingBlunders = allBlunders.filter(b => b.phase === 'opening');
-        const midBlunders = allBlunders.filter(b => b.phase === 'middlegame');
-        const endBlunders = allBlunders.filter(b => b.phase === 'endgame');
-        const blunderPerGame = this.total() > 0 ? (allBlunders.length / this.total()).toFixed(2) : '0.00';
-        console.log(`     Blunders: ${allBlunders.length} total (${blunderPerGame}/game) | opening:${openingBlunders.length} mid:${midBlunders.length} end:${endBlunders.length}`);
-        if (allBlunders.length > 0) {
-            const worst = allBlunders.sort((a, b) => b.netLoss - a.netLoss).slice(0, 3);
-            worst.forEach(b => console.log(`       ⚠️  m${b.moveNum} ${b.san} (${b.piece.toUpperCase()} -${b.netLoss}pts) [${b.phase}]`));
-        }
     }
 }
 
@@ -187,66 +175,6 @@ function detectPhase(game) {
     if (m <= 16) return 'opening';
     if (pieces <= 10) return 'endgame';
     return 'middlegame';
-}
-
-// ── Blunder detection ─────────────────────────────────────────
-// A blunder is: mChess moves a non-pawn piece (non-capture) to square S,
-// and within 3 half-moves opponent captures that piece, with net loss >= 2pts.
-const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
-
-function detectBlunders(pgn, mChessColor) {
-    if (!pgn) return [];
-    const chess = new Chess();
-    try { chess.loadPgn(pgn); } catch (_) { return []; }
-    const moves = chess.history({ verbose: true });
-    const blunders = [];
-
-    for (let i = 0; i < moves.length; i++) {
-        const mv = moves[i];
-        if (mv.color !== mChessColor) continue;   // only mChess moves
-        if (mv.piece === 'p') continue;            // skip pawn moves
-        if (mv.captured) continue;                 // skip captures (exchanges)
-
-        const pieceVal = PIECE_VALUES[mv.piece] || 0;
-        if (pieceVal < 2) continue;
-
-        const destSq = mv.to;
-
-        // Find first opponent capture on destSq within next 3 half-moves
-        let capturedBy = null, capturedAtIdx = -1;
-        for (let j = 1; j <= 3 && i + j < moves.length; j++) {
-            const nx = moves[i + j];
-            if (nx.color !== mChessColor && nx.to === destSq && nx.captured) {
-                capturedBy = nx; capturedAtIdx = i + j;
-                break;
-            }
-        }
-        if (!capturedBy) continue;
-
-        // Check if mChess recaptured on destSq within 2 half-moves after
-        let recaptureVal = 0;
-        for (let j = capturedAtIdx + 1; j <= capturedAtIdx + 2 && j < moves.length; j++) {
-            const rc = moves[j];
-            if (rc.color === mChessColor && rc.to === destSq && rc.captured) {
-                recaptureVal = PIECE_VALUES[capturedBy.piece] || 0;
-                break;
-            }
-        }
-
-        const netLoss = pieceVal - recaptureVal;
-        if (netLoss >= 2) {
-            const moveNum = Math.floor(i / 2) + 1;
-            blunders.push({
-                moveNum,
-                san: mv.san,
-                piece: mv.piece,
-                pieceVal,
-                netLoss,
-                phase: moveNum <= 15 ? 'opening' : (moveNum <= 40 ? 'middlegame' : 'endgame'),
-            });
-        }
-    }
-    return blunders;
 }
 
 // ── askWiseKing concurrency guard ─────────────────────────────────────────────
@@ -433,152 +361,112 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
     stats.add(result, mChessColor, game.history().length, reason, game.pgn(), phase);
 }
 
-// ── Parse CLI args for --batch mode ──────────────────────────
-// Usage: node arena_tournament.js --batch [--depth 7] [--games 20]
-//        [--level grandmaster] [--html ../mChess.html] [--fen file.json]
-function parseCLIArgs() {
-    const argv = process.argv.slice(2);
-    const args = { batch: false, depth: null, games: null, level: null, html: null, fen: null };
-    for (let i = 0; i < argv.length; i++) {
-        if (argv[i] === '--batch') args.batch = true;
-        else if (argv[i] === '--depth' && argv[i + 1]) args.depth = argv[++i];
-        else if (argv[i] === '--games' && argv[i + 1]) args.games = parseInt(argv[++i]);
-        else if (argv[i] === '--level' && argv[i + 1]) args.level = argv[++i];
-        else if (argv[i] === '--html' && argv[i + 1]) args.html = argv[++i];
-        else if (argv[i] === '--fen' && argv[i + 1]) args.fen = argv[++i];
-    }
-    return args;
-}
-
 // ── Main tournament runner ────────────────────────────────────
 async function runTournament() {
     console.log('╔' + '═'.repeat(62) + '╗');
     console.log('║       🏆 TOURNAMENT v2 — mChess vs Stockfish 🏆          ║');
     console.log('╚' + '═'.repeat(62) + '╝');
 
-    const cliArgs = parseCLIArgs();
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ask = q => new Promise(r => rl.question(q, r));
 
-    let fenReplayMode, selectedLevel, depths, fenList = [], n;
+    // ── Mode selection ────────────────────────────────────────
+    console.log('\nSelect mode:');
+    console.log('  1) Normal tournament  (full games from opening)');
+    console.log('  2) FEN replay         (reproduce specific positions)');
+    const modeAns = (await ask('Choose 1-2 (enter=1): ')).trim();
+    const fenReplayMode = modeAns === '2';
 
-    if (cliArgs.batch) {
-        // ── Batch / non-interactive mode ──────────────────────
-        console.log('\n[batch mode — skipping interactive prompts]');
-        fenReplayMode = !!cliArgs.fen;
-        const LEVEL_MAP = { 'easy': 'easy', 'medium': 'medium', 'hard': 'hard', 'grandmaster': 'grandmaster' };
-        selectedLevel = LEVEL_MAP[cliArgs.level] || 'grandmaster';
-        if (cliArgs.html) CONFIG.htmlFile = path.resolve(__dirname, cliArgs.html);
-        depths = cliArgs.depth
-            ? cliArgs.depth.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20)
-            : [7];
-        if (fenReplayMode) {
-            const raw = JSON.parse(fs.readFileSync(path.resolve(__dirname, cliArgs.fen), 'utf8'));
+    // ── mChess level ─────────────────────────────────────────
+    console.log('\nSelect mChess level:');
+    console.log('  1) Chick       (easy)');
+    console.log('  2) Student     (medium)');
+    console.log('  3) Wizard      (hard)');
+    console.log('  4) Wise King   (grandmaster) ← recommended');
+    const levelAns = (await ask('Choose 1-4 (enter=4): ')).trim();
+    const LEVEL_MAP = { '1': 'easy', '2': 'medium', '3': 'hard', '4': 'grandmaster' };
+    const selectedLevel = LEVEL_MAP[levelAns] || 'grandmaster';
+    console.log(`✅ mChess level: ${selectedLevel}`);
+
+    // ── HTML file ─────────────────────────────────────────────
+    console.log('\nPath to mChess HTML file:');
+    console.log('  (leave blank to use default: ../mChess.html)');
+    const htmlAns = (await ask('HTML path: ')).trim();
+    if (htmlAns) CONFIG.htmlFile = path.resolve(__dirname, htmlAns);
+    console.log(`✅ File: ${CONFIG.htmlFile}`);
+
+    // ── Stockfish depths ──────────────────────────────────────
+    console.log('\nSelect Stockfish depth(s) — lower = weaker = more accurate ELO estimate:');
+    console.log('  d5  → ~1600 ELO  (if mChess wins too many at d7)');
+    console.log('  d6  → ~1750 ELO');
+    console.log('  d7  → ~1900 ELO  ← recommended baseline');
+    console.log('  d8  → ~2000 ELO  ← recommended for strong versions');
+    console.log('  d9  → ~2100 ELO');
+    console.log('  d10 → ~2200 ELO  (very strong, mostly losses)');
+    console.log('  You can enter multiple depths: e.g. 7,8');
+    const depthAns = (await ask('Depth(s) 1-15 (enter=7): ')).trim();
+    const depths = depthAns
+        ? depthAns.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20)
+        : [7];
+    depths.forEach(d => console.log(`✅ Stockfish d${d} → ~${sfELO(d)} ELO`));
+
+    // ── FEN replay: load positions ────────────────────────────
+    let fenList = []; // { fen, mChessColor }
+    if (fenReplayMode) {
+        console.log('\n📌 FEN REPLAY MODE');
+        console.log('  Enter one FEN per line. Format: <FEN> [w|b]');
+        console.log('  The color (w/b) is who mChess plays AS in that position.');
+        console.log('  If omitted, mChess plays the side to move in the FEN.');
+        console.log('  Or enter a path to a JSON file: [{ "fen": "...", "color": "w" }, ...]');
+        console.log('  Leave blank and press Enter to finish.\n');
+        const firstLine = (await ask('FEN / JSON file path: ')).trim();
+        if (firstLine.endsWith('.json')) {
+            const raw = JSON.parse(fs.readFileSync(path.resolve(__dirname, firstLine), 'utf8'));
             fenList = raw.map(e => ({ fen: e.fen, mChessColor: e.color || e.fen.split(' ')[1] }));
-            n = fenList.length;
-            console.log(`✅ FEN replay: ${fenList.length} positions × d${depths.join(',')}`);
-        } else {
-            n = Math.max(2, cliArgs.games || 20);
-            console.log(`✅ Normal tournament: ${n} games × d${depths.join(',')}`);
-        }
-        console.log(`✅ Level: ${selectedLevel} | File: ${CONFIG.htmlFile}`);
-    } else {
-        // ── Interactive mode ──────────────────────────────────
-        const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-        const ask = q => new Promise(r => rl.question(q, r));
-
-        // Mode selection
-        console.log('\nSelect mode:');
-        console.log('  1) Normal tournament  (full games from opening)');
-        console.log('  2) FEN replay         (reproduce specific positions)');
-        const modeAns = (await ask('Choose 1-2 (enter=1): ')).trim();
-        fenReplayMode = modeAns === '2';
-
-        // mChess level
-        console.log('\nSelect mChess level:');
-        console.log('  1) Chick       (easy)');
-        console.log('  2) Student     (medium)');
-        console.log('  3) Wizard      (hard)');
-        console.log('  4) Wise King   (grandmaster) ← recommended');
-        const levelAns = (await ask('Choose 1-4 (enter=4): ')).trim();
-        const LEVEL_MAP = { '1': 'easy', '2': 'medium', '3': 'hard', '4': 'grandmaster' };
-        selectedLevel = LEVEL_MAP[levelAns] || 'grandmaster';
-        console.log(`✅ mChess level: ${selectedLevel}`);
-
-        // HTML file
-        console.log('\nPath to mChess HTML file:');
-        console.log('  (leave blank to use default: ../mChess.html)');
-        const htmlAns = (await ask('HTML path: ')).trim();
-        if (htmlAns) CONFIG.htmlFile = path.resolve(__dirname, htmlAns);
-        console.log(`✅ File: ${CONFIG.htmlFile}`);
-
-        // Stockfish depths
-        console.log('\nSelect Stockfish depth(s) — lower = weaker = more accurate ELO estimate:');
-        console.log('  d5  → ~1600 ELO  (if mChess wins too many at d7)');
-        console.log('  d6  → ~1750 ELO');
-        console.log('  d7  → ~1900 ELO  ← recommended baseline');
-        console.log('  d8  → ~2000 ELO  ← recommended for strong versions');
-        console.log('  d9  → ~2100 ELO');
-        console.log('  d10 → ~2200 ELO  (very strong, mostly losses)');
-        console.log('  You can enter multiple depths: e.g. 7,8');
-        const depthAns = (await ask('Depth(s) 1-15 (enter=7): ')).trim();
-        depths = depthAns
-            ? depthAns.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20)
-            : [7];
-        depths.forEach(d => console.log(`✅ Stockfish d${d} → ~${sfELO(d)} ELO`));
-
-        // FEN replay: load positions
-        if (fenReplayMode) {
-            console.log('\n📌 FEN REPLAY MODE');
-            console.log('  Enter one FEN per line. Format: <FEN> [w|b]');
-            console.log('  The color (w/b) is who mChess plays AS in that position.');
-            console.log('  If omitted, mChess plays the side to move in the FEN.');
-            console.log('  Or enter a path to a JSON file: [{ "fen": "...", "color": "w" }, ...]');
-            console.log('  Leave blank and press Enter to finish.\n');
-            const firstLine = (await ask('FEN / JSON file path: ')).trim();
-            if (firstLine.endsWith('.json')) {
-                const raw = JSON.parse(fs.readFileSync(path.resolve(__dirname, firstLine), 'utf8'));
-                fenList = raw.map(e => ({ fen: e.fen, mChessColor: e.color || e.fen.split(' ')[1] }));
-                console.log(`✅ Loaded ${fenList.length} positions from ${firstLine}`);
-            } else if (firstLine) {
-                const lines = [firstLine];
-                // eslint-disable-next-line no-constant-condition
-                while (true) {
-                    const line = (await ask('FEN (blank to finish): ')).trim();
-                    if (!line) break;
-                    lines.push(line);
+            console.log(`✅ Loaded ${fenList.length} positions from ${firstLine}`);
+        } else if (firstLine) {
+            const lines = [firstLine];
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                const line = (await ask('FEN (blank to finish): ')).trim();
+                if (!line) break;
+                lines.push(line);
+            }
+            fenList = lines.map(line => {
+                const parts = line.split(/\s+/);
+                // last token may be 'w' or 'b' (color override), rest is FEN
+                const lastTok = parts[parts.length - 1];
+                let color, fen;
+                if (lastTok === 'w' || lastTok === 'b') {
+                    color = lastTok;
+                    fen = parts.slice(0, -1).join(' ');
+                } else {
+                    fen = parts.join(' ');
+                    color = fen.split(' ')[1]; // side to move in FEN
                 }
-                fenList = lines.map(line => {
-                    const parts = line.split(/\s+/);
-                    const lastTok = parts[parts.length - 1];
-                    let color, fen;
-                    if (lastTok === 'w' || lastTok === 'b') {
-                        color = lastTok; fen = parts.slice(0, -1).join(' ');
-                    } else {
-                        fen = parts.join(' '); color = fen.split(' ')[1];
-                    }
-                    return { fen, mChessColor: color };
-                });
-                console.log(`✅ ${fenList.length} position(s) loaded`);
-            }
-            if (fenList.length === 0) {
-                console.log('⚠️  No FENs entered — switching to normal tournament mode.');
-            }
+                return { fen, mChessColor: color };
+            });
+            console.log(`✅ ${fenList.length} position(s) loaded`);
         }
-
-        // Number of games (normal mode only)
-        n = fenList.length > 0 ? fenList.length * depths.length : 0;
-        if (!fenReplayMode || fenList.length === 0) {
-            console.log('\nNumber of games per depth:');
-            console.log('  10 games → ±108 ELO precision  (~50-90 min on average PC)');
-            console.log('  20 games → ±76  ELO precision  (~2-3h)   ← recommended');
-            const nAns = (await ask('Games per depth (enter=10): ')).trim();
-            n = Math.max(2, parseInt(nAns) || 10);
-            console.log(`✅ ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
-        } else {
-            console.log(`\n✅ ${fenList.length} position(s) × ${depths.length} depth(s) = ${n} total games`);
+        if (fenList.length === 0) {
+            console.log('⚠️  No FENs entered — switching to normal tournament mode.');
         }
-
-        rl.close();
     }
+
+    // ── Number of games (normal mode only) ───────────────────
+    let n = fenList.length > 0 ? fenList.length * depths.length : 0;
+    if (!fenReplayMode || fenList.length === 0) {
+        console.log('\nNumber of games per depth:');
+        console.log('  10 games → ±108 ELO precision  (~50-90 min on average PC)');
+        console.log('  20 games → ±76  ELO precision  (~2-3h)   ← recommended');
+        const nAns = (await ask('Games per depth (enter=10): ')).trim();
+        n = Math.max(2, parseInt(nAns) || 10);
+        console.log(`✅ ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
+    } else {
+        console.log(`\n✅ ${fenList.length} position(s) × ${depths.length} depth(s) = ${n} total games`);
+    }
+
+    rl.close();
 
     CONFIG.numGames = n;
     CONFIG.depths = depths;
@@ -619,28 +507,20 @@ async function runTournament() {
                 timestamp: new Date().toISOString(),
                 status: done ? 'complete' : `partial_${gameNum}_of_${total}`,
                 config: { numGames: n, depths },
-                byDepth: Object.fromEntries(depths.map(d => {
-                    const allB = statsMap[d].games.flatMap(g => g.blunders || []);
-                    return [d, {
-                        sfELO: sfELO(d),
-                        estimatedELO: statsMap[d].estimateELO(),
-                        eloCI: statsMap[d].eloCI(),
-                        score: statsMap[d].score(),
-                        wins: statsMap[d].wins(),
-                        losses: statsMap[d].losses(),
-                        draws: statsMap[d].draws(),
-                        blunders: { total: allB.length, opening: allB.filter(b => b.phase === 'opening').length, middlegame: allB.filter(b => b.phase === 'middlegame').length, endgame: allB.filter(b => b.phase === 'endgame').length },
-                        games: statsMap[d].games,
-                    }];
-                })),
+                byDepth: Object.fromEntries(depths.map(d => [d, {
+                    sfELO: sfELO(d),
+                    estimatedELO: statsMap[d].estimateELO(),
+                    eloCI: statsMap[d].eloCI(),
+                    score: statsMap[d].score(),
+                    wins: statsMap[d].wins(),
+                    losses: statsMap[d].losses(),
+                    draws: statsMap[d].draws(),
+                    games: statsMap[d].games,
+                }])),
                 combined: totalN > 0 ? {
                     gamesPlayed: totalN,
                     wins: totalW, losses: totalL, draws: totalD,
                     score: ((totalW + 0.5 * totalD) / totalN).toFixed(3),
-                    blunders: (() => {
-                        const ab = allGamesFlat.flatMap(g => g.blunders || []);
-                        return { total: ab.length, opening: ab.filter(b => b.phase === 'opening').length, middlegame: ab.filter(b => b.phase === 'middlegame').length, endgame: ab.filter(b => b.phase === 'endgame').length };
-                    })(),
                 } : null,
             }, null, 2));
         } catch (e) { console.error('⚠️  Partial save failed:', e.message); }
@@ -748,10 +628,7 @@ async function runTournament() {
             savePartial(i + 1, total, false);
             const gs = statsMap[depth];
             if (gs.total() > 0) {
-                const lastGame = gs.games[gs.games.length - 1];
-                const lb = lastGame && lastGame.blunders ? lastGame.blunders.length : 0;
-                const totalB = gs.games.flatMap(g => g.blunders || []).length;
-                console.log(`   💾 Saved: W:${gs.wins()} L:${gs.losses()} D:${gs.draws()} | ELO ~${gs.estimateELO()} [${gs.eloCI()[0]}..${gs.eloCI()[1]}] | blunders this game:${lb} total:${totalB}`);
+                console.log(`   💾 Saved: W:${gs.wins()} L:${gs.losses()} D:${gs.draws()} | ELO ~${gs.estimateELO()} [${gs.eloCI()[0]}..${gs.eloCI()[1]}]`);
             }
             await new Promise(r => setTimeout(r, 1500));
         }
