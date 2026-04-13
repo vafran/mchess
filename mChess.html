@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.24.1
+Monolith Chess v2.22.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.24.1</title>
+  <title>Monolith Chess v2.22.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.24.1 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2589,12 +2589,11 @@ limitations under the License.
   <!-- Confirmation Modal -->
   <div class="confirm-modal" id="confirmModal">
     <div class="confirm-box">
-      <h3>⚠️ ¿Reiniciar partida?</h3>
-      <p>¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.</p>
+      <h3 id="confirmModalTitle">⚠️ ¿Reiniciar partida?</h3>
+      <p id="confirmModalDesc">¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.</p>
       <div class="confirm-buttons">
-        <button class="btn btn-secondary" onclick="hideConfirmDialog()">Oops, cancelar</button>
-        <button class="btn btn-primary" style="background: var(--danger);" onclick="confirmResetGame()">Sí,
-          reiniciar</button>
+        <button class="btn btn-secondary" id="confirmModalCancel" onclick="hideConfirmDialog()">Oops, cancelar</button>
+        <button class="btn btn-primary" id="confirmModalOk" style="background: var(--danger);" onclick="confirmResetGame()">Sí, reiniciar</button>
       </div>
     </div>
   </div>
@@ -2694,7 +2693,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.24.0</div>
+        v2.21.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -2790,13 +2789,51 @@ limitations under the License.
                 }
                 const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
                 if (bookMove) {
-                  console.log("📖 Move selected from the book:", chosenEntry.m);
-                  const cols = 'abcdefgh';
-                  const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
-                  const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
-                  console.log("🎯 UCI:", uci);
-                  window._lastSearchDepth = { completedDepth: 'book', maxDepth: 'book', isPartial: false };
-                  return uci;
+                  // ── v2.22.0: Hanging-piece book-exit (SEE-based) ─────────────
+                  // If any own N/B/R is losing an exchange (SEE > 50 from enemy
+                  // perspective), the position is already "off-script" — let the
+                  // engine handle it instead of blindly following the book.
+                  let ownPieceHanging = false;
+                  const _isWhite = color === 'w';
+                  outerHang: for (let _r = 0; _r < 8; _r++) {
+                    for (let _c = 0; _c < 8; _c++) {
+                      const _p = board[_r][_c];
+                      if (!_p || _p === ' ') continue;
+                      const _pu = _p.toUpperCase();
+                      if (_pu === 'P' || _pu === 'K' || _pu === 'Q') continue; // only N/B/R
+                      const _isOwn = _isWhite ? (_p === _p.toUpperCase()) : (_p === _p.toLowerCase());
+                      if (!_isOwn) continue;
+                      let _fR = -1, _fC = -1;
+                      if (_isWhite) {
+                        if (_r > 0 && _c > 0 && board[_r-1][_c-1] === 'p') { _fR = _r-1; _fC = _c-1; }
+                        else if (_r > 0 && _c < 7 && board[_r-1][_c+1] === 'p') { _fR = _r-1; _fC = _c+1; }
+                      } else {
+                        if (_r < 7 && _c > 0 && board[_r+1][_c-1] === 'P') { _fR = _r+1; _fC = _c-1; }
+                        else if (_r < 7 && _c < 7 && board[_r+1][_c+1] === 'P') { _fR = _r+1; _fC = _c+1; }
+                      }
+                      if (_fR === -1) {
+                        const _eKn = _isWhite ? 'n' : 'N';
+                        for (const [_dr,_dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+                          const _nr=_r+_dr,_nc=_c+_dc;
+                          if (_nr>=0&&_nr<8&&_nc>=0&&_nc<8&&board[_nr][_nc]===_eKn){_fR=_nr;_fC=_nc;break;}
+                        }
+                      }
+                      if (_fR === -1) continue;
+                      if (see(board, _r, _c, _fR, _fC) > 50) { ownPieceHanging = true; break outerHang; }
+                    }
+                  }
+                  if (ownPieceHanging) {
+                    console.log('⚠️ Book exit: own piece hanging — deferring to engine');
+                    // fall through to engine search
+                  } else {
+                    console.log("📖 Move selected from the book:", chosenEntry.m);
+                    const cols = 'abcdefgh';
+                    const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
+                    const uci = cols[bookMove.fc] + (8 - bookMove.fr) + cols[bookMove.tc] + (8 - bookMove.tr) + promotion;
+                    console.log("🎯 UCI:", uci);
+                    window._lastSearchDepth = { completedDepth: 'book', maxDepth: 'book', isPartial: false };
+                    return uci;
+                  }
                 }
               }
             } else {
@@ -3387,7 +3424,11 @@ limitations under the License.
         aiCaptureSmall: '¡Uy! ¡Te pillé! 😜|¡Buen intento! 🤭|¡Ñam ñam! 😋|¡Eso fue mío! 🎯|¡Sorpresa! 🎉|¡A mi colección! 🏆',
         aiCaptureBig: '¡WOW! ¡Capturé tu Dama! 👑😱|¡Tu Torre es mía! 🏰🤖|¡Adiós Alfil! ✨🤭|¡Caballo capturado! 🐴💨',
         loadFen: '🏁 Cargar Posición (FEN)',
-        fenLibTitle: 'Librería de Posiciones'
+        fenLibTitle: 'Librería de Posiciones',
+        confirmRestartTitle: '⚠️ ¿Reiniciar partida?',
+        confirmRestartDesc: '¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.',
+        confirmRestartCancel: 'Oops, cancelar',
+        confirmRestartOk: 'Sí, reiniciar'
 
       },
       en: {
@@ -3431,7 +3472,11 @@ limitations under the License.
         aiCaptureSmall: 'Gotcha! 😜|Nice try! 🤭|Yum yum! 😋|That was mine! 🎯|Surprise! 🎉|Into my collection! 🏆',
         aiCaptureBig: 'WOW! I captured your Queen! 👑😱|Your Rook is mine! 🏰🤖|Goodbye Bishop! ✨🤭|Knight captured! 🐴💨',
         loadFen: '🏁 Load Position (FEN)',
-        fenLibTitle: 'Position Library'
+        fenLibTitle: 'Position Library',
+        confirmRestartTitle: '⚠️ Restart game?',
+        confirmRestartDesc: 'Are you sure you want to start over? You will lose all your current progress on this board.',
+        confirmRestartCancel: 'Oops, cancel',
+        confirmRestartOk: 'Yes, restart'
       }
     };
 
@@ -3923,7 +3968,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.24.1", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.22.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -4019,6 +4064,10 @@ limitations under the License.
         resetGame();
         return;
       }
+      document.getElementById('confirmModalTitle').textContent  = t('confirmRestartTitle');
+      document.getElementById('confirmModalDesc').textContent   = t('confirmRestartDesc');
+      document.getElementById('confirmModalCancel').textContent = t('confirmRestartCancel');
+      document.getElementById('confirmModalOk').textContent     = t('confirmRestartOk');
       document.getElementById('confirmModal').classList.add('show');
     }
 
@@ -5263,11 +5312,11 @@ limitations under the License.
     function undoMove() {
       if (aiThinking) return;
 
-      if (gameMode === 'ai' && (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster')) {
+      if (gameMode === 'ai' && currentDifficulty === 'hard') {
         playErrorSound();
         showToast(currentLanguage === 'en'
-          ? `Undo is disabled on ${currentDifficulty === 'hard' ? 'Hard' : 'Master'} level 🚫`
-          : `No se puede deshacer en nivel ${currentDifficulty === 'hard' ? 'Difícil' : 'Maestro'} 🚫`);
+          ? 'Undo is disabled on Hard level 🚫'
+          : 'No se puede deshacer en nivel Difícil 🚫');
         return;
       }
 
@@ -8125,14 +8174,14 @@ limitations under the License.
               const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
               bonus -= undeveloped * 70;
               if ((isW && r <= 4) || (!isW && r >= 3)) {
-                bonus -= 60; // FIX v2.24.0: synced with Worker (was 150, caused over-penalisation)
+                bonus -= 150;
               }
             }
           }
 
           if (type === 'Q' || type === 'R') {
             if (isSquareAttacked(r, c, isW ? 'b' : 'w', brd)) {
-              bonus -= (type === 'Q' ? 80 : 40); 
+              bonus -= (type === 'Q' ? 400 : 180);
             }
           }
 
@@ -8178,56 +8227,29 @@ limitations under the License.
               if (supported && !enemyCanAttack) isOutpost = true;
             }
             if (isOutpost) bonus += 140;
-            else if (isAdvanced) bonus -= 15; // FIX v2.24.0: -40 was too harsh, caused unnecessary retreats
+            else if (isAdvanced) bonus -= 40;
           }
 
-          // ── FIX v2.23.0: Rook Endgame Activity ──────────────────────────────────────
-          // Open-file & 7th-rank bonuses are computed here because wP/bP are already
-          // fully populated in the first pass (lines 7396-7410).
-          if (type === 'R') {
-            const myPawnsOnFile   = isW ? wP[c] : bP[c];
-            const theirPawnsOnFile = isW ? bP[c] : wP[c];
-            if (myPawnsOnFile === 0) {
-              // Open file: +40cp; semi-open: +20cp — FIX v2.24.0: synced with Worker values
-              bonus += theirPawnsOnFile === 0 ? 40 : 20;
-            }
-            // Rook on 7th rank (penetration into enemy territory)
-            // Scales from +12cp (early midgame) to +30cp (pure endgame)
-            const seventhRank = isW ? 1 : 6;
-            if (r === seventhRank) bonus += Math.round(30 * (0.4 + eg * 0.6));
-          }
-
-          // ── FIX v2.23.0: King Safety — Hard-Capped Bucket ────────────────────────────
-          // ROOT CAUSE OF POSITIONAL PANIC:
-          //   OLD formula: bonus -= storm * (attackers * 15)  → max = 6×9×15 = 810 cp
-          //   Combined with kPen (250 cp) + openFiles (105 cp) → up to 1165 cp total
-          //   That EXCEEDS the Queen (885 cp) → the engine sacrificed pieces to escape.
-          //
-          // FIX: accumulate all king-safety sub-scores into kingSafetyRaw, then
-          //   clamp the *entire bucket* to ±150 cp before adding to bonus.
-          //   Invariant guaranteed: no positional penalty > Knight (315 cp).
           if (type === 'K' && eg < 0.5) {
-            let kingSafetyRaw = 0;
             let attackers = 0;
             for (let dr = -1; dr <= 1; dr++) {
               for (let dc = -1; dc <= 1; dc++) {
                 const nr = r + dr, nc = c + dc;
                 if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-                  if (isSquareAttacked(nr, nc, isW ? 'b' : 'w', brd)) attackers++; // FIX v2.24.0: was isW?'w':'b' (counted own pieces — inverted!)
+                  if (isSquareAttacked(nr, nc, isW ? 'w' : 'b', brd)) attackers++;
                 }
               }
             }
-            // 1. Pawn shield: +30 cp per pawn directly in front of king (max +90 cp)
+            let shield = 0;
             const sRow = isW ? r - 1 : r + 1;
             if (sRow >= 0 && sRow < 8) {
               for (let dc = -1; dc <= 1; dc++) {
                 const nc = c + dc;
-                if (nc >= 0 && nc < 8 && brd[sRow][nc] === (isW ? 'P' : 'p')) kingSafetyRaw += 30;
+                if (nc >= 0 && nc < 8 && brd[sRow][nc] === (isW ? 'P' : 'p')) shield++;
               }
             }
-            // 2. Pawn storm on castled flank — FLAT penalty (FIX: no longer ×attackers)
-            //    Old: storm×attackers×15 → up to 810 cp
-            //    New: storm×20           → up to 120 cp  (and still capped by the bucket)
+            bonus += shield * 30; // FIX
+
             if (c >= 5 || c <= 2) {
               const startRank = isW ? 6 : 1;
               let storm = 0;
@@ -8240,12 +8262,11 @@ limitations under the License.
                   }
                 }
               }
-              kingSafetyRaw -= storm * 20; // max = 6×20 = 120 cp
+              bonus -= storm * (attackers * 15); // FIX
             }
-            // 3. Attacker pressure — reduced coefficient (8 vs 15) and lower cap (120 vs 250)
-            const kPen = Math.min(120, attackers * attackers * 8);
-            kingSafetyRaw -= kPen * (1 - eg);
-            // 4. Open files near castled king with enemy major piece
+            const kPen = Math.min(250, attackers * attackers * 15); // FIX
+            bonus -= kPen * (1 - eg);
+
             if (c >= 5 || c <= 2) {
               const filesToCheck = c >= 5 ? [5, 6, 7] : [0, 1, 2];
               let openFilesThreat = 0;
@@ -8261,27 +8282,8 @@ limitations under the License.
                   if (enemyMajor) openFilesThreat += 1;
                 }
               }
-              kingSafetyRaw -= openFilesThreat * 25;
+              bonus -= openFilesThreat * 35;
             }
-            // ★ HARD CAP — the entire king-safety bucket is bounded at ±150 cp
-            bonus += Math.max(-150, Math.min(150, kingSafetyRaw));
-          }
-
-          // ── FIX v2.23.0: King Endgame Activity ───────────────────────────────────────
-          // In the endgame the king must become an active piece and hunt enemy pawns.
-          // Bonus for proximity to nearest enemy pawn (max +35 cp at eg=1, adjacent).
-          if (type === 'K' && eg >= 0.5) {
-            let minDist = 14;
-            const ePawnChar = isW ? 'p' : 'P';
-            for (let pr = 0; pr < 8; pr++) {
-              for (let pc2 = 0; pc2 < 8; pc2++) {
-                if (brd[pr][pc2] === ePawnChar) {
-                  const d = Math.max(Math.abs(r - pr), Math.abs(c - pc2)); // FIX v2.24.0: Chebyshev (king steps), not Manhattan
-                  if (d < minDist) minDist = d;
-                }
-              }
-            }
-            if (minDist < 14) bonus += Math.round((7 - Math.min(minDist, 7)) * 5 * eg);
           }
           score += sign * (val + pst + bonus);
         }
@@ -8682,132 +8684,23 @@ limitations under the License.
         // pieceType: 1=P 2=N 3=B 4=R 5=Q 6=KMG  7=KEG (endgame king)
         // sq: white perspective = row*8+col  (row0=rank8, row7=rank1)
         // For black: flip sq → (7-row)*8+col
-        // 🥷 PeSTO tables — ML-optimized asymmetric PSTs (Ronald Friedrich)
-        const PST_P_MG = new Int16Array([
-          0,0,0,0,0,0,0,0,
-          98,134,61,95,68,126,34,-11,
-          -6,7,26,31,63,22,-23,23,
-          -14,13,6,21,23,12,17,-23,
-          -27,-2,-5,12,17,6,10,-25,
-          -26,-4,-4,-10,3,3,33,-12,
-          -35,-1,-20,-23,-15,24,38,-22,
-          0,0,0,0,0,0,0,0
-        ]);
-        const PST_P_EG = new Int16Array([
-          0,0,0,0,0,0,0,0,
-          178,173,158,134,147,132,165,187,
-          94,100,85,67,56,53,82,84,
-          32,24,13,5,-2,4,17,17,
-          13,9,-3,-7,-7,-8,3,-1,
-          4,7,-6,1,0,-5,-1,-8,
-          13,8,8,10,13,0,2,-7,
-          0,0,0,0,0,0,0,0
-        ]);
+        const PST_P_MG = new Int16Array([0,0,0,0,0,0,0,0,50,50,50,50,50,50,50,50,10,10,20,30,30,20,10,10,5,5,10,25,25,10,5,5,0,0,0,20,20,0,0,0,5,-5,-10,0,0,-10,-5,5,5,10,10,-20,-20,10,10,5,0,0,0,0,0,0,0,0]);
+        const PST_P_EG = new Int16Array([0,0,0,0,0,0,0,0,80,80,80,80,80,80,80,80,50,50,50,50,50,50,50,50,30,30,30,30,30,30,30,30,15,15,15,15,15,15,15,15,0,0,0,0,0,0,0,0,-5,-5,-5,-5,-5,-5,-5,-5,0,0,0,0,0,0,0,0]);
 
-        const PST_N_MG = new Int16Array([
-          -167,-89,-34,-49,61,-97,-15,-107,
-          -73,-41,72,36,23,62,7,-17,
-          -47,60,37,65,84,129,73,44,
-          -9,17,19,53,37,69,18,22,
-          -13,4,16,13,28,19,21,-8,
-          -23,-9,12,10,19,17,25,-16,
-          -29,-53,-12,-3,-1,18,-14,-19,
-          -105,-21,-58,-33,-17,-28,-19,-23
-        ]);
-        const PST_N_EG = new Int16Array([
-          -58,-38,-13,-28,-31,-27,-63,-99,
-          -25,-8,-25,-2,-9,-25,-24,-52,
-          -24,-20,10,9,-1,-9,-19,-41,
-          -17,3,22,22,22,11,8,-18,
-          -18,-6,16,25,16,17,4,-18,
-          -23,-3,-1,15,10,-3,-20,-22,
-          -42,-20,-10,-5,-2,-20,-23,-44,
-          -29,-51,-23,-15,-22,-18,-50,-64
-        ]);
+        const PST_N_MG = new Int16Array([-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,10,15,15,10,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50]);
+        const PST_N_EG = PST_N_MG; 
 
-        const PST_B_MG = new Int16Array([
-          -29,4,-82,-37,-25,-42,7,-8,
-          -26,16,-18,-13,30,59,18,-47,
-          -16,37,43,40,35,50,37,-2,
-          -4,5,19,50,37,37,7,-2,
-          -6,13,13,26,34,12,10,4,
-          0,15,15,15,14,27,18,10,
-          4,15,16,0,2,21,16,1,
-          -59,-78,-82,-76,-23,-107,-37,-50
-        ]);
-        const PST_B_EG = new Int16Array([
-          -14,-21,-11,-8,-7,-9,-17,-24,
-          -8,-4,7,-12,-3,-13,-4,-14,
-          2,-8,0,-1,-2,6,0,4,
-          -3,9,12,9,14,10,3,2,
-          -6,3,13,19,7,10,-3,-9,
-          -12,-3,8,10,13,3,-7,-15,
-          -14,-18,-7,-1,4,-9,-15,-27,
-          -23,-9,-23,-5,-9,-16,-5,-17
-        ]);
+        const PST_B_MG = new Int16Array([-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20]);
+        const PST_B_EG = PST_B_MG; 
 
-        const PST_R_MG = new Int16Array([
-          32,42,32,51,63,9,31,43,
-          27,32,58,62,80,67,26,44,
-          -5,19,26,36,17,45,61,16,
-          -24,-11,7,26,24,35,-8,-20,
-          -36,-26,-12,-1,9,-7,6,-23,
-          -45,-25,-16,-17,3,0,-5,-33,
-          -44,-16,-20,-9,-1,11,-6,-71,
-          -19,-13,1,17,16,7,-37,-26
-        ]);
-        const PST_R_EG = new Int16Array([
-          13,10,18,15,12,12,8,5,
-          11,13,13,11,-3,3,8,3,
-          7,7,7,5,4,-3,-5,-3,
-          4,3,13,1,2,1,-1,2,
-          3,5,8,4,-5,-6,-8,-11,
-          -4,0,-5,-1,-7,-12,-8,-16,
-          -6,-6,0,2,-9,-9,-11,-3,
-          -9,2,3,-1,-5,-13,4,-20
-        ]);
+        const PST_R_MG = new Int16Array([0,0,0,0,0,0,0,0,5,10,10,10,10,10,10,5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,0,0,5,5,5,5,0,0]);
+        const PST_R_EG = PST_R_MG;
 
-        const PST_Q_MG = new Int16Array([
-          -28,0,29,12,59,44,43,45,
-          -24,-39,-5,1,-16,57,28,54,
-          -13,-17,7,8,29,56,47,57,
-          -27,-27,-16,-16,-1,17,-2,1,
-          -9,-26,-9,-10,-2,-4,3,-3,
-          -14,2,-11,-2,-5,2,14,5,
-          -35,-8,11,2,8,15,-3,1,
-          -1,-18,-9,10,-15,-25,-31,-50
-        ]);
-        const PST_Q_EG = new Int16Array([
-          -9,22,22,27,27,19,10,20,
-          -17,20,32,41,58,25,30,0,
-          -20,6,9,49,47,35,19,9,
-          3,22,24,45,57,40,57,36,
-          -18,28,19,47,31,34,12,11,
-          16,20,27,29,9,33,14,5,
-          -22,-23,-30,-16,-16,-23,-36,-32,
-          -33,-28,-22,-43,-5,-32,-20,-41
-        ]);
+        const PST_Q_MG = new Int16Array([-20,-10,-10,-5,-5,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,5,5,5,0,-10,-5,0,5,5,5,5,0,-5,0,0,5,5,5,5,0,-5,-10,5,5,5,5,5,0,-10,-10,0,5,0,0,0,0,-10,-20,-10,-10,-5,-5,-10,-10,-20]);
+        const PST_Q_EG = new Int16Array([-20,-20,-20,-20,-20,-20,-20,-20,-20,-10,-10,-10,-10,-10,-10,-20,-20,-10,0,5,5,0,-10,-20,-20,-10,5,10,10,5,-10,-20,-20,-10,5,10,10,5,-10,-20,-20,-10,0,5,5,0,-10,-20,-20,-10,-10,-10,-10,-10,-10,-20,-20,-20,-20,-20,-20,-20,-20,-20]);
 
-        const PST_K_MG = new Int16Array([
-          -65,23,16,-15,-56,-34,2,13,
-          29,-1,-20,-7,-8,-4,-38,-29,
-          -9,24,2,-16,-20,6,22,-22,
-          -17,-20,-12,-27,-30,-25,-14,-36,
-          -49,-1,-27,-39,-46,-44,-33,-51,
-          -14,-14,-22,-46,-44,-30,-15,-27,
-          1,7,-8,-64,-43,-16,9,8,
-          -15,36,12,-54,8,-28,24,14
-        ]);
-        const PST_K_EG = new Int16Array([
-          -74,-35,-18,-18,-11,15,4,-17,
-          -12,17,14,17,17,38,23,11,
-          10,22,23,15,32,16,32,9,
-          -8,22,24,27,26,33,26,3,
-          18,-4,21,24,27,23,9,-11,
-          19,12,20,22,14,25,16,-18,
-          -27,11,4,13,14,4,-5,-17,
-          -53,-34,-21,-11,-28,-14,-24,-43
-        ]);
+        const PST_K_MG = new Int16Array([-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,20,20,0,0,0,0,20,20,20,30,10,0,0,10,30,20]);
+        const PST_K_EG = new Int16Array([-50,-40,-30,-20,-20,-30,-40,-50,-30,-20,-10,5,5,-10,-20,-30,-30,-5,25,40,40,25,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,40,55,55,40,-5,-30,-30,-5,25,40,40,25,-5,-30,-30,-20,-10,5,5,-10,-20,-30,-50,-40,-30,-20,-20,-30,-40,-50]);
 
         const PST_MG = [null, PST_P_MG, PST_N_MG, PST_B_MG, PST_R_MG, PST_Q_MG, PST_K_MG];
         const PST_EG = [null, PST_P_EG, PST_N_EG, PST_B_EG, PST_R_EG, PST_Q_EG, PST_K_EG];
@@ -9125,75 +9018,13 @@ limitations under the License.
             pawnScore = pawnCacheVal[pSlot]; // ✅ Cache hit
           } else {
             pawnScore = 0;
-
-            // ── Most-advanced pawn per file (needed for backward pawn detection) ──
-            // row 0 = rank 8 (black's back); row 7 = rank 1 (white's back).
-            // White advances toward row 0 → most advanced = lowest row.
-            // Black advances toward row 7 → most advanced = highest row.
-            const wFront = [8, 8, 8, 8, 8, 8, 8, 8]; // sentinel: 8 = no pawn
-            const bFront = [-1,-1,-1,-1,-1,-1,-1,-1]; // sentinel: -1 = no pawn
-            for (let r = 0; r < 8; r++) {
-              for (let fc = 0; fc < 8; fc++) {
-                const pp = b[r*8+fc];
-                if (pp === WP && r < wFront[fc]) wFront[fc] = r;
-                if (pp === BP && r > bFront[fc]) bFront[fc] = r;
-              }
-            }
-
-            // ── Pawn islands: each group of adjacent occupied files is one island ──
-            // Extra islands cost -15cp each (fragmented structure = harder to defend).
-            let wIslands = 0, bIslands = 0, wIn = false, bIn = false;
-            for (let fc = 0; fc < 8; fc++) {
-              if (wP[fc] > 0) { if (!wIn) { wIslands++; wIn = true; } } else wIn = false;
-              if (bP[fc] > 0) { if (!bIn) { bIslands++; bIn = true; } } else bIn = false;
-            }
-            if (wIslands > 1) pawnScore -= 15 * (wIslands - 1);
-            if (bIslands > 1) pawnScore += 15 * (bIslands - 1);
-
             for (let pcc = 0; pcc < 8; pcc++) {
               // Doubled pawns: -30cp per extra pawn on same file
               if (wP[pcc] > 1) pawnScore -= 30 * (wP[pcc] - 1);
               if (bP[pcc] > 1) pawnScore += 30 * (bP[pcc] - 1);
-
-              // Isolated pawns: flat -50cp
-              const wIso = wP[pcc] > 0 && (pcc === 0 || wP[pcc-1] === 0) && (pcc === 7 || wP[pcc+1] === 0);
-              const bIso = bP[pcc] > 0 && (pcc === 0 || bP[pcc-1] === 0) && (pcc === 7 || bP[pcc+1] === 0);
-              if (wIso) pawnScore -= 50;
-              if (bIso) pawnScore += 50;
-
-              // ── Backward pawns: -30cp ──────────────────────────────────────
-              // A pawn is backward if: it lags behind both adjacent file pawns
-              // AND the square directly ahead is controlled by an enemy pawn.
-              // This penalizes structural weaknesses that can't be fixed without tactics.
-              // Coordinate system: row 0 = rank 8, row 7 = rank 1.
-              //   White pawn at row fr → wants to advance to fr-1.
-              //   Black pawn at (r,c) attacks (r+1,c±1).
-              //   So (fr-1,pcc) is attacked by BP at row (fr-1)-1 = fr-2 on adjacent file.
-              if (wP[pcc] > 0 && !wIso) {
-                const fr = wFront[pcc];
-                const aheadR = fr - 1;
-                const lagging = (pcc === 0 || wFront[pcc-1] < fr) && (pcc === 7 || wFront[pcc+1] < fr);
-                if (lagging && aheadR >= 1) {
-                  const atkR = aheadR - 1; // row where BP must sit to attack aheadR
-                  const atkByBP = (pcc > 0 && b[atkR*8+(pcc-1)] === BP) ||
-                                  (pcc < 7 && b[atkR*8+(pcc+1)] === BP);
-                  if (atkByBP) pawnScore -= 30;
-                }
-              }
-              //   Black pawn at row fr → wants to advance to fr+1.
-              //   White pawn at (r,c) attacks (r-1,c±1).
-              //   So (fr+1,pcc) is attacked by WP at row (fr+1)+1 = fr+2 on adjacent file.
-              if (bP[pcc] > 0 && !bIso) {
-                const fr = bFront[pcc];
-                const aheadR = fr + 1;
-                const lagging = (pcc === 0 || bFront[pcc-1] > fr) && (pcc === 7 || bFront[pcc+1] > fr);
-                if (lagging && aheadR <= 6) {
-                  const atkR = aheadR + 1; // row where WP must sit to attack aheadR
-                  const atkByWP = (pcc > 0 && b[atkR*8+(pcc-1)] === WP) ||
-                                  (pcc < 7 && b[atkR*8+(pcc+1)] === WP);
-                  if (atkByWP) pawnScore += 30;
-                }
-              }
+              // Isolated pawns: flat -50cp (NOT scaled by count to avoid over-penalizing doubled+isolated)
+              if (wP[pcc] > 0 && (pcc === 0 || wP[pcc - 1] === 0) && (pcc === 7 || wP[pcc + 1] === 0)) pawnScore -= 50;
+              if (bP[pcc] > 0 && (pcc === 0 || bP[pcc - 1] === 0) && (pcc === 7 || bP[pcc + 1] === 0)) pawnScore += 50;
             }
             pawnCacheKey[pSlot * 2] = phL; pawnCacheKey[pSlot * 2 + 1] = phH;
             pawnCacheVal[pSlot] = pawnScore;
@@ -9270,10 +9101,11 @@ limitations under the License.
               }
             }
 
-            // 🚨 If the Queen is in danger, we penalize (but without going crazy)
+            // 🚨 Si la Dama está en peligro, penalizamos fuerte
             if (u === 5) {
               if (isAtk(state, r, c, isW ? 'b' : 'w')) {
-                bonus -= 50; 
+                const isDefended = isAtk(state, r, c, isW ? 'w' : 'b');
+                bonus -= isDefended ? 150 : 500;
               }
             }
 
@@ -9631,42 +9463,45 @@ limitations under the License.
                 bonus -= enemyMajors * 8; 
               }
 
-              // ── FIX v2.24.0: Worker King Safety — Hard-Capped Bucket ────────────────
-              // SAME ROOT CAUSE as main-thread fix (v2.23.0):
-              //   OLD: stormPoints * (attackers * 15) → max = 6×14×15 = 1260 cp (uncapped!)
-              // ALL sub-scores accumulate into workerKSRaw, then clamped to ±150 cp.
-              // Invariant: no king-safety penalty > Knight (315 cp).
-              let workerKSRaw = 0;
-
-              // 3. ZONE DISCIPLINE — pawn storm on castled flank (flat, no ×attackers)
+              // 🔒 3. ZONE DISCIPLINE (New Fix)
+              // We only penalize if the king is on a flank (already castled or almost)
               if (c >= 5 || c <= 2) {
                 const startRank = isW ? 6 : 1;
                 const dir = isW ? -1 : 1;
                 let stormPoints = 0;
+
                 for (let dc = -1; dc <= 1; dc++) {
                   const nc = c + dc;
                   if (nc < 0 || nc > 7) continue;
+
+                  // If the pawn in that column has advanced, there is "storm"
                   if (b[startRank*8+nc] !== (isW ? WP : BP)) {
+                    // If it advanced 1 square, we add 1 point. If it advanced more, we add 2.
                     if (b[(startRank + dir)*8+(nc)] === (isW ? WP : BP)) stormPoints += 1;
                     else stormPoints += 2;
                   }
                 }
-                // FIX: flat ×20, NOT ×attackers×15 (old formula reached 1260 cp)
-                workerKSRaw -= stormPoints * 20; // max = 6×20 = 120 cp
+                // Penalty: Recklessness (stormPoints) x Enemy Pressure (attackers)
+                // If there are 2 attackers and we have moved 2 pawns, that's -60 additional points.
+                bonus -= stormPoints * (attackers * 15);
               }
 
-              // 4. Attacker pressure — capped coefficient
-              const kPenalty = Math.min(120, attackers * 8);
-              workerKSRaw -= kPenalty * (1 - eg);
+              // 4. Maximum Dynamic Penalty (capped at 100cp — reduced from 150 to prevent piece sacrifices)
+              // Was: min(150, attackers×25) — too tempting to sacrifice a bishop for +143 king attack
+              // Now: min(100, attackers×20) — still dangerous but no longer worth a piece
+              const kPenalty = Math.min(60, attackers * 15);
+              bonus -= kPenalty * (1 - eg);
 
-              // 5. Open files near castled king with enemy major
+              // 5. Fear of Open Files over the Castled King
               if (c >= 5 || c <= 2) {
                 const filesToCheck = c >= 5 ? [5, 6, 7] : [0, 1, 2];
                 let openFilesThreat = 0;
                 for (const fc of filesToCheck) {
                   let hasFriendlyPawn = false;
                   for (let fr = 0; fr < 8; fr++) {
-                    if (b[fr*8+fc] === (isW ? WP : BP)) { hasFriendlyPawn = true; break; }
+                    if (b[fr*8+fc] === (isW ? WP : BP)) {
+                      hasFriendlyPawn = true; break;
+                    }
                   }
                   if (!hasFriendlyPawn) {
                     let enemyMajorOnFile = false;
@@ -9678,10 +9513,8 @@ limitations under the License.
                     if (enemyMajorOnFile) openFilesThreat += 1;
                   }
                 }
-                workerKSRaw -= openFilesThreat * 25;
+                bonus -= openFilesThreat * 15; // was 35 — reduced to avoid overvaluing open file threats
               }
-              // ★ HARD CAP — entire king-safety bucket bounded at ±150 cp
-              bonus += Math.max(-150, Math.min(150, workerKSRaw));
 
               // 6. 🌊 ENEMY PAWN STORM THREAT (h5-h4-h3 pattern)
               // If enemy pawns are storming the flank where our king sits, penalize heavily.
@@ -9822,8 +9655,8 @@ limitations under the License.
               else if (_p >= 9 && (_u===2||_u===3||_u===4||_u===5)) bMaj++;
             }
             // Trigger if one side has at least 1 piece and the other has none
-            const wMopup = (wMaj >= 1 && bMaj === 0) || (s > 500 && eg > 0.6);
-            const bMopup = (bMaj >= 1 && wMaj === 0) || (s < -500 && eg > 0.6);
+            const wMopup = (wMaj >= 1 || (s > 400 && eg > 0.8)) && bMaj === 0;
+            const bMopup = (bMaj >= 1 || (s < -400 && eg > 0.8)) && wMaj === 0;
             if (wMopup || bMopup) {
               const wk = state.wKing || findKing(b, 'w');
               const bk = state.bKing || findKing(b, 'b');
@@ -10598,17 +10431,6 @@ limitations under the License.
           if (depth <= 0) return quiesce(state, alpha, beta, maximizing, deadline);
           const color = maximizing ? 'w' : 'b';
           const checked = inChk(state, color);
-
-          // 🥷 ROBO 3: Reverse Futility Pruning (Static Null Move Pruning)
-          // Si estamos a baja profundidad, sin jaque, y no buscamos mates, 
-          // evaluamos estáticamente. Si ganamos por paliza, cortamos ANTES de generar jugadas.
-          if (depth <= 3 && !checked && Math.abs(beta) < 90000) {
-            const staticEval = evaluate(state);
-            const margin = 120 * depth; // Margen de seguridad: 120cp por nivel
-            if (maximizing && staticEval - margin >= beta) return staticEval - margin;
-            if (!maximizing && staticEval + margin <= alpha) return staticEval + margin;
-          }
-
           const moves = legalMoves(state, color);
           if (moves.length === 0) return checked ? (maximizing ? -99999 - depth : 99999 + depth) : 0;
 
@@ -10642,24 +10464,10 @@ limitations under the License.
                 if (!maximizing && nullScore <= alpha) { return nullScore; }
               } catch (e) { if (String(e) === 'TIMEOUT') throw e; }
               finally { state.turn = savedTurn; state.enPassantTarget = savedEP; state.hashL = savedHL; state.hashH = savedHH; }
-            }            
-          }
-
-          if (depth >= 4 && !hashMove && !checked) {
-            try {
-              // search at depth - 2. We don't use the result, we just fill the TT.
-              minimax(state, depth - 2, alpha, beta, maximizing, deadline, false, prevMove, plyFromRoot);
-              // We check if we have a good move saved
-              const iid_tte = ttGet(bkL, bkH);
-              if (iid_tte && iid_tte.bestMove) {
-                hashMove = iid_tte.bestMove;
-              }
-            } catch (e) { 
-              if (String(e) === 'TIMEOUT') throw e; 
             }
           }
 
-          // 🚀 Pre-calculate scores ONCE per node (avoids N·logN calls to moveScore in .sort)
+          // 🚀 Pre-calcular scores UNA VEZ por nodo (evita N·logN llamadas a moveScore en .sort)
           const scores = new Int32Array(moves.length);
           // Countermove: move that caused a beta-cutoff last time the opponent played prevMove
           const cm = prevMove ? counterMove[(prevMove.fr * 8 + prevMove.fc) * 64 + (prevMove.tr * 8 + prevMove.tc)] : null;
@@ -11500,20 +11308,17 @@ limitations under the License.
       if (!results.length) return null;
 
 
-      // 🎲 LÓGICA DE INYECCIÓN DE ERRORES "HUMANOS"
       if (mistakeChance > 0 && Math.random() < mistakeChance) {
-        if (results.length > 1) {
-          const bestScore = results[0].score;
-          // Guardrail: el error no puede costarnos más de 300cp respecto a la mejor jugada.
-          // Así evitamos que la IA regale la Dama solo por "querer equivocarse".
-          const plausibleMistakes = results.slice(1).filter(r => {
-            return Math.abs(bestScore - r.score) < 300;
+        const legal = getLegalMovesForColorInPlace(color);
+        if (legal.length > 1) {
+          const cutoff = Math.max(1, Math.floor(results.length * 0.7));
+          const weakPool = results.slice(cutoff);
+          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)].move;
+          const nonBest = legal.filter(m => {
+            const b = results[0] && results[0].move;
+            return !(b && m.fr === b.fr && m.fc === b.fc && m.tr === b.tr && m.tc === b.tc);
           });
-          if (plausibleMistakes.length > 0) {
-            const chosenMistake = plausibleMistakes[Math.floor(Math.random() * plausibleMistakes.length)];
-            console.log(`🎲 IA cometió un error "humano". Drop de ${Math.abs(bestScore - chosenMistake.score)}cp.`);
-            return chosenMistake.move;
-          }
+          if (nonBest.length > 0) return nonBest[Math.floor(Math.random() * Math.min(4, nonBest.length))];
         }
       }
       return results[0].move || null;
@@ -11695,26 +11500,22 @@ limitations under the License.
         endSearch();
       }
 
-      // 🎲 LÓGICA DE ERRORES (Fallback síncrono)
-      if (mistakeChance > 0 && Math.random() < mistakeChance) {
+      // Mistake: pick from the WEAKEST 30% of scored moves (plausible error, not random suicide).
+      // This mirrors the same logic used in getBestAIMoveAsync for the Worker path.
+      if (Math.random() < mistakeChance) {
         const allMoves = getLegalMovesForColorInPlace(color);
         if (allMoves.length > 1) {
-          // Puntuamos cada jugada legal superficialmente
+          // Score each legal move shallowly and build a weak pool (bottom 30%)
           const shallowScored = allMoves.map(m => {
             const prev = makeMoveOnBoard(m);
             const sc = evaluateBoard(board, 'medium');
             unmakeMove(prev);
             return { m, sc };
           });
-          // Ordenamos de mejor a peor
           shallowScored.sort((a, b) => color === 'w' ? b.sc - a.sc : a.sc - b.sc);
-          const bestScore = shallowScored[0].sc;
-          // Cogemos opciones subóptimas (quitando la mejor), limitando el desastre a 300cp
-          const plausibleMistakes = shallowScored.slice(1).filter(r => Math.abs(bestScore - r.sc) < 300);
-          if (plausibleMistakes.length > 0) {
-            const poolSize = Math.min(5, plausibleMistakes.length);
-            return plausibleMistakes[Math.floor(Math.random() * poolSize)].m;
-          }
+          const cutoff = Math.max(1, Math.floor(shallowScored.length * 0.7));
+          const weakPool = shallowScored.slice(cutoff); // bottom 30%
+          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)].m;
         }
       }
       return bestMoves[Math.floor(Math.random() * bestMoves.length)];
@@ -11758,22 +11559,7 @@ limitations under the License.
 
       scoredAtBestDepth.sort((a, b) => color === 'w' ? b.score - a.score : a.score - b.score);
       const bestScore = scoredAtBestDepth[0].score;
-      // ── FIX v2.23.1: Dynamic threshold — wide in opening, tight in endgame ──
-      // MATE GUARD: if the best move is a forced mate/mated score, threshold = 0
-      // so ONLY mate moves survive the filter. No alternatives shown.
-      // Opening  (≤ 8 plies):  15 cp — many moves are theoretically equivalent
-      // Early MG (9–20 plies): 10 cp — positions begin to differentiate
-      // Midgame  (21–40 plies): 6 cp — sharpness increases, precision matters
-      // Endgame  (≤10 pieces):  4 cp — every centipawn is decisive
-      const _ply = (typeof history !== 'undefined' ? history.length : 0);
-      const _eg  = isEndgameCheck(brd || board);
-      const _mateFound = Math.abs(bestScore) >= 19000;
-      const threshold = _mateFound ? 0
-                       : _eg       ? 4
-                       : _ply <= 8  ? 15
-                       : _ply <= 20 ? 10
-                       : _ply <= 40 ?  6
-                       :               4;
+      const threshold = 12;
       const filtered = scoredAtBestDepth.filter(item => color === 'w' ? (bestScore - item.score <= threshold) : (item.score - bestScore <= threshold));
       return filtered.slice(0, maxOptions);
     }
@@ -11910,16 +11696,18 @@ limitations under the License.
           // Checkmate — worst possible outcome for the side that just moved
           ev = color === 'w' ? -99999 : 99999;
         } else {
-          // 🛡️ SEE & SAFETY CHECK FOR THE ENEMY REPLY
+          // SEE-based exchange validation: if the enemy captures our piece but the
+          // exchange is losing for them (SEE < 0 from enemy's perspective), it's
+          // not a real threat — the enemy attacker will be lost in the recapture.
+          // Skip it entirely so it doesn't pollute worstEval / trigger a warning.
           const targetPiece = after[enemyMove.tr][enemyMove.tc];
           if (targetPiece && targetPiece !== ' ') {
-            // If it's a capture: check that they don't lose material by making it
             const seeFromEnemy = see(after, enemyMove.tr, enemyMove.tc, enemyMove.fr, enemyMove.fc);
-            if (seeFromEnemy < 0) continue;
-          } else {
-            // 🚨 FILTER ANTI-SUICIDES: If the enemy moves to an empty square, we check that they don't give away the piece
-            const safety = evaluateSquareSafety(enemyMove.tr, enemyMove.tc, enemyColor, afterReply, color);
-            if (!safety.isSafe) continue;
+            if (seeFromEnemy < 0) {
+              // Losing exchange for the enemy: they wouldn't play this move.
+              // Use continue so worstEval is never updated by a suicidal reply.
+              continue;
+            }
           }
         }
 
@@ -12248,25 +12036,18 @@ limitations under the License.
       }
     }
 
-    // 🎙️ COMMENTATOR
-    function addCommentaryEntry(explicitMove = null, moveHistory = null, evalScore = null) {
+    // 🎙️ COMENTARISTA
+    function addCommentaryEntry(explicitMove = null, moveHistory = null) {
       const list = document.getElementById('commentaryList');
       if (!list) return;
 
-      // 🛠️ FIX: Robust search for history in the global environment
-      let currentHistory = moveHistory;
-      if (!currentHistory) {
-          if (typeof history !== 'undefined' && Array.isArray(history)) currentHistory = history;
-          else if (typeof game !== 'undefined') currentHistory = game.history();
-          else currentHistory = []; // Final fallback
-      }
-
+      const currentHistory = moveHistory || history;
       const lastMove = explicitMove || (currentHistory.length > 0 ? currentHistory[currentHistory.length - 1] : null);
       const lang = currentLanguage === 'en' ? 'en' : 'es';
       const getRnd = (arr, buck) => pickFreshPhrase(arr, buck);
 
-      // If there is no real history and no explicit move, we are in the first move
-      if (currentHistory.length === 0 && !lastMove) {
+      // 1. INICIO DE PARTIDA
+      if (currentHistory.length === 0) {
         commentaryLog = [];
         resetCommentaryStyleMemory();
         const intros = {
@@ -12275,14 +12056,24 @@ limitations under the License.
             '🎙️ "Great! Start by developing your pieces."',
             '🎙️ "New game! Check safety before each move."',
             '🎙️ "Take your time. Good moves are better than fast moves."',
-            '🎙️ "Fresh start! Let’s fight for the center."'
+            '🎙️ "Fresh start! Let’s fight for the center."',
+            '🎙️ "Pieces are set. Time for good ideas, not rush moves."',
+            '🎙️ "Eyes on the board: defend first, then attack."',
+            '🎙️ "New battle! Knights and bishops want to get out early."',
+            '🎙️ "Let’s build a strong position one move at a time."',
+            '🎙️ "Show me your best chess today. Smart and steady!"'
           ],
           es: [
             '🎙️ "¡Tablero listo! Juguemos con calma y cabeza."',
             '🎙️ "¡Genial! Empieza desarrollando tus piezas."',
             '🎙️ "Partida nueva: mira la seguridad antes de mover."',
             '🎙️ "Sin prisa: una buena jugada vale más que una rápida."',
-            '🎙️ "¡Nueva batalla! Pelea por el centro desde el inicio."'
+            '🎙️ "¡Nueva batalla! Pelea por el centro desde el inicio."',
+            '🎙️ "Piezas listas. Hoy manda la buena idea."',
+            '🎙️ "Ojos en el tablero: primero defensa, luego ataque."',
+            '🎙️ "Caballos y alfiles quieren salir a jugar."',
+            '🎙️ "Construye una posición fuerte jugada a jugada."',
+            '🎙️ "A por una gran partida: calma, cálculo y diversión."'
           ]
         };
         const intro = getRnd(intros[lang], 'intro');
@@ -12290,43 +12081,7 @@ limitations under the License.
         return;
       }
 
-      // 🧠 EVALUATION LOGIC (The new thing so it reacts to the script)
-      if (evalScore !== null) {
-          const moveCount = currentHistory.length;
-          let dynamicComment = "";
-          
-          if (moveCount > 6) {
-              if (evalScore > 400) {
-                  dynamicComment = lang === 'en' ? "White is dominating the board completely." : "Las Blancas dominan el tablero por completo. Presión asfixiante.";
-              } else if (evalScore < -400) {
-                  dynamicComment = lang === 'en' ? "Black is crushing the position. A clear advantage." : "Las Negras están aplastando la posición. Ventaja clarísima.";
-              } else if (evalScore > 150) {
-                  dynamicComment = lang === 'en' ? "White has a solid advantage here." : "Las Blancas tienen una sólida ventaja aquí.";
-              } else if (evalScore < -150) {
-                  dynamicComment = lang === 'en' ? "Black is pressing and holds a good edge." : "Las Negras presionan y mantienen una buena ventaja.";
-              } else if (Math.abs(evalScore) < 50 && moveCount > 15) {
-                  dynamicComment = lang === 'en' ? "The tension is palpable. Perfect equality." : "La tensión es palpable. Igualdad absoluta en la mesa.";
-              }
-          }
-
-          if (dynamicComment) {
-              const now = new Date();
-              const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
-              commentaryLog.unshift({ html: `🎙️ ${dynamicComment}`, time: timeStr, tone: 'serious' });
-              if (commentaryLog.length > 15) commentaryLog.pop();
-              list.innerHTML = commentaryLog.map((entry, i) => `
-                <div class="commentary-entry" style="border-left: 4px solid ${i === 0 ? 'var(--accent)' : 'rgba(168,85,247,0.25)'}; padding: 6px 10px; background: rgba(168,85,247,${i === 0 ? '0.06' : '0.02'}); margin-bottom: 5px; opacity: ${i === 0 ? '1' : '0.6'};">
-                  <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <span class="hint-text" style="font-style: italic; font-size: ${i === 0 ? '0.95rem' : '0.82rem'};">${entry.html}</span>
-                    <span style="font-size:0.7rem; color:var(--text-light); margin-left:8px;">${entry.time}</span>
-                  </div>
-                </div>
-              `).join('');
-              return; 
-          }
-      }
-
-      // ── Castling
+      // ── Castling: handle before sqToRc which cannot parse 'O-O' ──────────────
       const normForCastle = lastMove.replace(/[+#]/g, '');
       if (normForCastle === 'O-O' || normForCastle === 'O-O-O') {
         const isShort = normForCastle === 'O-O';
@@ -12351,11 +12106,13 @@ limitations under the License.
         return;
       }
 
+      // ✨ FIX FINAL: Limpiar Jaques (+), Mates (#) Y Coronaciones (=Q) antes de leer la casilla
       const cleanMove = lastMove.replace(/[+#]/g, '').split('=')[0];
       const targetSq = cleanMove.slice(-2);
       const targetRc = sqToRc(targetSq);
 
-      if (!targetRc || !board || !board[targetRc[0]]) return;
+      // Anti-crash protection
+      if (!targetRc) return;
 
       const lastPieceMoved = board[targetRc[0]][targetRc[1]];
       const colorWhoMoved = colorOf(lastPieceMoved);
@@ -12369,6 +12126,7 @@ limitations under the License.
       const isPromotion = lastMove.includes('=');
       const pieceChar = lastMove.length > 2 && /[KQRBN]/.test(lastMove[0]) ? lastMove[0] : 'P';
 
+      // Opening and History
       let openingName = null, openingTechNote = '';
       const openingMatch = detectOpeningFromHistory(currentHistory, lastMove, board);
       if (isOpening && openingMatch && shouldAnnounceOpening(currentHistory, openingMatch, board)) {
@@ -12377,7 +12135,7 @@ limitations under the License.
       }
       const historicalMotif = detectHistoricalMotifFromHistory(currentHistory);
 
-      // 🧠 DICTIONARIES
+      // 🧠 NORMAL DICTIONARIES (3rd Person Narrative)
       const frasesSerias = {
         es: {
           P: ["Avance estratégico: el Peón refuerza la estructura en {sq}.", "Consolidando la posición con el avance a {sq}."],
@@ -12416,6 +12174,7 @@ limitations under the License.
         }
       };
 
+      // ⚔️ EXCLUSIVE DICTIONARIES FOR CAPTURES ({cap} token)
       const frasesCapturaSerias = {
         es: {
           P: ["El peón captura {cap} en {sq}.", "Ganancia de material: el peón toma {cap} en {sq}.", "El peón recoge a {cap} en {sq}."],
@@ -12460,26 +12219,30 @@ limitations under the License.
       let isHugeBlunder = false;
       let isBrilliant = false;
 
+      // 1. Extract Captured Piece
       if (isCapture) {
         const cementerio = colorWhoMoved === 'w' ? capturedByWhite : capturedByBlack;
-        if (cementerio && cementerio.length > 0) {
+        if (cementerio.length > 0) {
           capturedPieceChar = cementerio[cementerio.length - 1];
-          if (capturedPieceChar && capturedPieceChar.toUpperCase() === 'Q') isQueenCaptured = true;
+          if (capturedPieceChar.toUpperCase() === 'Q') isQueenCaptured = true;
         }
       }
 
-      // 📊 EVALUATION OF MOVE QUALITY (The Commentator's Quick Brain)
+      // 2. Evaluate Move Quality against the Engine
       if (window.snapshotBeforeHumanMove) {
-        try {
-          const evBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
-          const evAfter = evaluateBoard(board, 'hard');
-          const delta = colorWhoMoved === 'w' ? (evAfter - evBefore) : (evBefore - evAfter);
-          
-          if (delta <= -250) isHugeBlunder = true;
-          if (delta >= 200) isBrilliant = true;
-        } catch(e) {}
+        const evBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
+        const evAfter = evaluateBoard(board, 'hard');
+        // Delta from the perspective of the player who just moved
+        const delta = colorWhoMoved === 'w' ? (evAfter - evBefore) : (evBefore - evAfter);
+        if (delta <= -250) isHugeBlunder = true;
+        if (delta >= 200) isBrilliant = true;
       }
 
+
+      // 🎓 SCHOLAR'S MATE AVERTED: Black defends against Qh5/Bc4 attack
+      // Only fires for the Qh5 line (queen goes to h5), because Qf3 attacks f7 directly
+      // and g6 does NOT defend against it. Qf3 line ends with Qxf7# specialComment instead.
+      // ⚠️ NOTE: normalizedHistory/lastNorm MUST be declared before this block to avoid TDZ errors
       const normalizedHistory = currentHistory.map(m => m.replace(/[+#?!]/g, '').trim());
       const lastNorm = normalizedHistory.length ? normalizedHistory[normalizedHistory.length - 1] : '';
       const endsWithSequence = (seq) => {
@@ -12490,10 +12253,10 @@ limitations under the License.
 
       let isScholarAverted = false;
       if (isOpening && colorWhoMoved === 'b') {
-        const hasQThreat = normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3'); 
+        const hasQThreat = normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3'); // Qh5 and Qf3 Scholar lines
         const hasBishopThreat = normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5');
         const lastDefense = targetSq === 'g6' || targetSq === 'e6' || targetSq === 'e7' || targetSq === 'd5'
-          || targetSq === 'f6' || lastNorm === 'Nf6' || lastNorm === 'Nc6'; 
+          || targetSq === 'f6' || lastNorm === 'Nf6' || lastNorm === 'Nc6'; // f6/Nf6/Nc6 all protect f7
         if (hasQThreat && hasBishopThreat && lastDefense) {
           isScholarAverted = true;
         }
@@ -12509,11 +12272,14 @@ limitations under the License.
       } else if (lastMove.includes('#') && (lastNorm === 'Qxf7' || lastNorm === 'Qxf2') &&
                  normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5' || m === 'Qh5' || m === 'Qf3') &&
                  normalizedHistory.length <= 12) {
+        // Scholar's Mate: any Qxf7#/Qxf2# with a bishop developed and few moves played
         specialComment = lang === 'en'
           ? getRnd(["🔥 Scholar's Mate lands! Quick queen and bishop combo.", "🎬 Classic Scholar's Mate: Qxf7 ends it early.", "⚡ Fast finish! The f7 weakness sealed the deal."], 'special_scholar_mate')
           : getRnd(["🔥 ¡Jaque Pastor consumado! Dama y alfil, combinación letal.", "🎬 Jaque Pastor clásico: Qxf7 cierra la partida.", "⚡ ¡Final exprés! La debilidad en f7 fue decisiva."], 'special_scholar_mate');
       } else if (isOpening && (
+          // Queen last, bishop already in play
           ((lastNorm === 'Qh5' || lastNorm === 'Qf3' || lastNorm === 'Qf6') && normalizedHistory.some(m => m === 'Bc4' || m === 'Bc5')) ||
+          // Bishop last (Bc4), queen (Qf3/Qh5) already in play (most common order: e4→Qf3→Bc4)
           ((lastNorm === 'Bc4' || lastNorm === 'Bc5') && normalizedHistory.some(m => m === 'Qh5' || m === 'Qf3' || m === 'Qf6'))
         )) {
         specialComment = lang === 'en'
@@ -12527,8 +12293,14 @@ limitations under the License.
         specialComment = lang === 'en'
           ? getRnd(["🐴 Knight fork zone! f7/f2 is always tactical."], 'special_fork_zone')
           : getRnd(["🐴 ¡Zona de tenedor! f7/f2 siempre trae táctica."], 'special_fork_zone');
+      } else if (lastNorm === 'O-O' || lastNorm === 'O-O-O') {
+        specialTone = 'serious';
+        specialComment = lang === 'en'
+          ? (lastNorm === 'O-O' ? getRnd(["🛡️ Kingside castling completed: safer king, connected plan."], 'special_castle_short') : getRnd(["🏰 Long castling! Opposite-side attacks may start soon."], 'special_castle_long'))
+          : (lastNorm === 'O-O' ? getRnd(["🛡️ Enroque corto completado: rey más seguro y plan más claro."], 'special_castle_short') : getRnd(["🏰 ¡Enroque largo! Pueden venir ataques a bandos opuestos."], 'special_castle_long'));
       }
 
+      // 🎯 FINAL RESOLUTION
       let comment = "";
       let toneUsed = 'serious';
       let actionComment = "";
@@ -12536,14 +12308,15 @@ limitations under the License.
       if (isQueenCaptured) {
         toneUsed = 'funny';
         actionComment = lang === 'en'
-          ? getRnd(["💎 A massive blow! The Queen is captured.", "💎 Big hit! The Queen leaves the board."], 'queen_cap')
-          : getRnd(["💎 ¡Golpe brutal! Cae la Dama.", "💎 ¡Momento clave! La Dama abandona el tablero."], 'queen_cap');
+          ? getRnd(["💎 A massive blow! The Queen is captured.", "💎 Big hit! The Queen leaves the board.", "💎 Boom! That Queen capture changes the whole game."], 'queen_cap')
+          : getRnd(["💎 ¡Golpe brutal! Cae la Dama.", "💎 ¡Momento clave! La Dama abandona el tablero.", "💎 ¡Boom! Esta captura de Dama lo cambia todo."], 'queen_cap');
       }
       else if (isCapture && capturedPieceChar) {
         const isFunny = Math.random() < getCommentaryFunnyChance('capture');
         toneUsed = isFunny ? 'funny' : 'serious';
         const pool = isFunny ? frasesCapturaBromas[lang][pieceChar] : frasesCapturaSerias[lang][pieceChar];
 
+        // Inject captured piece name
         const capName = getLocalizedPieceName(capturedPieceChar);
         const capArt = getPieceArticle(capturedPieceChar, 'def');
         const capToken = lang === 'en' ? `the ${capName}` : `${capArt} ${capName}`;
@@ -12563,48 +12336,13 @@ limitations under the License.
         }
       }
 
-      // 🌟 DETECTION OF FAMOUS CHESS PLAYERS' STYLES
-      let styleComment = "";
-      
-      if (isBrilliant) {
-          styleComment = lang === 'en' 
-            ? " 🌪️ Pure Mikhail Tal! A chaotic and brilliant move." 
-            : " 🌪️ ¡A lo Mijaíl Tal! Una jugada de pura magia y caos en el tablero.";
-      } 
-      else if (pieceChar === 'P' && (targetSq === 'h4' || targetSq === 'h5' || targetSq === 'a4' || targetSq === 'a5') && currentHistory.length < 25 && !isCapture) {
-          styleComment = lang === 'en' 
-            ? " 🤖 AlphaZero style! Pushing the edge pawn to squeeze the opponent." 
-            : " 🤖 ¡Estilo AlphaZero! Empujando el peón de flanco temprano para asfixiar al rival.";
-      } 
-      else if (pieceChar === 'K' && (targetSq === 'h1' || targetSq === 'h8' || targetSq === 'b1' || targetSq === 'b8') && !isCastle && !isCapture && !isCheck) {
-          styleComment = lang === 'en' 
-            ? " 🐍 Tigran Petrosian would be proud. Pure prophylaxis." 
-            : " 🐍 Tigran Petrosian estaría orgulloso. Profilaxis preventiva de manual.";
-      } 
-      else if (pieceChar === 'P' && (targetSq === 'd5' || targetSq === 'e5' || targetSq === 'd4' || targetSq === 'e4') && isCapture && currentHistory.length > 10 && currentHistory.length < 30) {
-          styleComment = lang === 'en' 
-            ? " ⚔️ Garry Kasparov vibes! Exploding the center with aggression." 
-            : " ⚔️ ¡Vibras de Garry Kaspárov! Dinamitando el centro con pura agresividad.";
-      }
-      else if ((pieceChar === 'N' || pieceChar === 'B') && !isCapture && !isCheck && (targetSq.includes('4') || targetSq.includes('5'))) {
-          if (Math.random() < 0.15) {
-              styleComment = lang === 'en' 
-                ? " 🕸️ Anatoly Karpov style. Slowly improving the piece." 
-                : " 🕸️ Al estilo Anatoly Karpov. Mejorando la pieza poco a poco, tejiendo la red.";
-          }
-      }
-
-      // We add the style to the base action
-      if (styleComment && Math.random() < 0.60) {
-          actionComment += styleComment;
-      }
-
-      // 1. FINAL ASSIGNMENT OF THE BASE COMMENT
+      // Overrides — order matters: completed mate > promotion > special patterns > isScholarAverted
       if (isPromotion) {
         toneUsed = 'funny';
         comment = lang === 'en' ? getRnd(["👑 EPIC! A pawn reaches the end and promotes!"], 'promo') : getRnd(["👑 ¡ÉPICO! ¡Un peón ha logrado coronar!"], 'promo');
       }
       else if (specialComment) {
+        // Scholar's Mate completed (Qxf7#) must beat the isScholarAverted check below
         toneUsed = specialTone;
         comment = specialComment;
       }
@@ -12613,16 +12351,39 @@ limitations under the License.
         comment = lang === 'en' ? getRnd(["Did someone really think that Scholar's Mate would work?", "A Scholar's Mate attempt... completely denied."], 'scholar_stop') : getRnd(["¿Alguien pensaba que ese Pastor iba a funcionar?", "Intento de Jaque Pastor... totalmente neutralizado."], 'scholar_stop');
       }
       else if (openingName) {
+        // Use colorWhoMoved to frame the announcement correctly:
+        // White's moves establish openings; Black's moves choose defenses.
+        // Use a pool of varied phrases so it doesn't always say "Se plantea".
         const isWhiteMove = colorWhoMoved === 'w';
         if (lang === 'en') {
           const phrases = isWhiteMove
-            ? [`The game enters the **${openingName}**. ${openingTechNote}`, `White responds with the **${openingName}**.`]
-            : [`Black responds with the **${openingName}**. ${openingTechNote}`, `Black chooses the **${openingName}**.`];
+            ? [
+              `The game enters the **${openingName}**. ${openingTechNote}`,
+              `White responds with the **${openingName}**. ${openingTechNote}`,
+              `Opening confirmed: **${openingName}**. ${openingTechNote}`,
+              `Classic **${openingName}** on the board. ${openingTechNote}`,
+              `White continues with the **${openingName}**. ${openingTechNote}`,
+            ]
+            : [
+              `Black responds with the **${openingName}**. ${openingTechNote}`,
+              `Black chooses the **${openingName}**. ${openingTechNote}`,
+              `Black enters the **${openingName}**. ${openingTechNote}`,
+            ];
           comment = getRnd(phrases, 'opening_note');
         } else {
           const phrases = isWhiteMove
-            ? [`Se plantea la **${openingName}**. ${openingTechNote}`, `Las blancas responden con la **${openingName}**.`]
-            : [`Las negras responden con la **${openingName}**. ${openingTechNote}`, `Las negras eligen la **${openingName}**.`];
+            ? [
+              `Se plantea la **${openingName}**. ${openingTechNote}`,
+              `Las blancas responden con la **${openingName}**. ${openingTechNote}`,
+              `Apertura confirmada: **${openingName}**. ${openingTechNote}`,
+              `Clásica **${openingName}** en el tablero. ${openingTechNote}`,
+              `Las blancas continúan con la **${openingName}**. ${openingTechNote}`,
+            ]
+            : [
+              `Las negras responden con la **${openingName}**. ${openingTechNote}`,
+              `Las negras eligen la **${openingName}**. ${openingTechNote}`,
+              `El rival opta por la **${openingName}**. ${openingTechNote}`,
+            ];
           comment = getRnd(phrases, 'opening_note');
         }
       }
@@ -12633,27 +12394,30 @@ limitations under the License.
         comment = lang === 'en' ? getRnd(["Check! Precision is absolutely required now."], 'end_check') : getRnd(["¡Jaque! Ahora la precisión es absolutamente vital."], 'end_check');
       }
       else if (isCheck) {
+        // Check in middlegame — detect if it also creates a pin or discovered attack
         const checkPhrases = lang === 'en'
-          ? ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately."]
-          : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato."];
+          ? ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately.", "🎯 A direct check forces the opponent's hand — use the tempo!", "🔥 Check! Good forcing move — keep the pressure on.", "⚡ Check! The king is under fire — watch for tactical follow-ups."]
+          : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato.", "🎯 ¡Jaque directo! Forzamos al rival — ¡aprovecha el tempo!", "🔥 ¡Jaque! Buena jugada forzante — mantén la presión.", "⚡ ¡Jaque! El rey está bajo fuego — atento a los seguimientos tácticos."];
         comment = getRnd(checkPhrases, 'mid_check');
       }
       else {
         comment = actionComment;
       }
 
-      // 2. 📊 FINAL VISUAL LABELS (Commentator Style)
+      // 📊 Append Engine Quality Evaluation at the end
       if (isHugeBlunder) {
         comment += lang === 'en'
-          ? "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>Wait...</strong> Did they just blunder? That doesn't look good!</span>"
-          : "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>Un momento...</strong> ¿Acaba de cometer un error grave? ¡Eso tiene mala pinta!</span>";
+          ? "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>Blunder!</strong> A piece is left completely unprotected or advantage is lost.</span>"
+          : "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>¡Error grave!</strong> Una pieza queda sin defensa o se pierde la ventaja.</span>";
       } else if (isBrilliant) {
         comment += lang === 'en'
-          ? "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>Brilliant!</strong> The commentator is speechless!</span>"
-          : "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>¡Brillante!</strong> ¡El comentarista se ha quedado sin palabras!</span>";
+          ? "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>Brilliant move!</strong> A spectacular tactical vision.</span>"
+          : "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>¡Jugada brillante!</strong> Una visión táctica espectacular.</span>";
       }
 
-      // 3. Final rendering
+      // Renderizado
+
+      // Renderizado
       const now = new Date();
       const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
       commentaryLog.unshift({ html: comment, time: timeStr, tone: toneUsed });
@@ -12668,7 +12432,7 @@ limitations under the License.
       `).join('');
     }
 
-    // Function: switchTab
+    // ✨ Restored Auxiliary Function: switchTab
     function switchTab(tab) {
       activeTab = tab;
       document.getElementById('tabCommentary').classList.toggle('active', tab === 'commentary');
@@ -13388,7 +13152,7 @@ limitations under the License.
               const p = board[r][c];
               if (!p || p === ' ' || colorOf(p) !== sideToAnalyze) continue;
               const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-              if (pVal <= 100) continue; // skip anything below pawn
+              if (pVal < 100) continue; // skip anything below pawn
               const safety = evaluateSquareSafety(r, c, sideToAnalyze, board, enemyColor);
               if (!safety.isSafe && safety.attackers.length > 0) {
                 // SEE filter: only warn if the exchange is actually losing for us.
@@ -13759,39 +13523,11 @@ limitations under the License.
           if (isBook) {
             strategicIntent = `<strong>${simplifyForKids(opt.name || '')}</strong>: ${simplifyForKids(opt.desc || '')}`;
           } else if (opt.tacticalPenalty > 150) {
-            // 🛡️ IMPROVED SANITY CHECK: Detectar al Rey correctamente
-            
-            // If 'm.piece' doesn't exist, we try to see if the move name starts with 'R' (Rey) or 'K' (King)
-            // or if we know the board, look at the origin square (m.fr, m.fc)
-            const moveName = opt.name || (opt.move && opt.move.san) || "";
-            const isKingMove = (m.piece === 'k' || m.piece === 'K') || 
-                               (moveName.startsWith('R') || moveName.startsWith('K')) ||
-                               (typeof board !== 'undefined' && board[m.fr] && board[m.fr][m.fc] && 
-                                (board[m.fr][m.fc] === 'K' || board[m.fr][m.fc] === 'k'));
-
-            if (isKingMove) {
-                strategicIntent = en 
-                    ? "The King maneuvers to a safer square under heavy tactical pressure." 
-                    : "El Rey maniobra hacia una casilla más segura bajo fuerte presión táctica.";
-            } else {
-                // Defensive phrases assortment
-                const emergencyTexts = [
-                    "Un movimiento defensivo estricto para evitar pérdidas de material.",
-                    "Jugada de contención: prioriza la supervivencia ante las amenazas del rival.",
-                    "Una decisión prácticamente forzada por la tensión táctica del tablero.",
-                    "Movimiento de emergencia: la posición exige tapar agujeros antes que atacar."
-                ];
-                const engTexts = [
-                    "A strict defensive move to avoid material loss.",
-                    "Containment play: prioritizing survival against enemy threats.",
-                    "A decision practically forced by the board's tactical tension.",
-                    "Emergency move: the position demands patching holes before attacking."
-                ];
-                
-                // We use the coordinates to choose a phrase (so the same move always gives the same phrase)
-                const textIndex = (m.tr + m.tc) % 4; 
-                strategicIntent = en ? engTexts[textIndex] : emergencyTexts[textIndex];
-            }
+            // 🛡️ CONTROL DE CORDURA: Si la jugada pierde material grave (penalización alta), 
+            // prohibimos que el generador de texto busque intenciones "brillantes".
+            strategicIntent = en 
+                ? "An emergency move in a very difficult tactical situation." 
+                : "Un movimiento de emergencia en una situación táctica muy complicada.";
           } else {
             strategicIntent = simplifyForKids(getStrategicIntent(m, sideToAnalyze));
           }
@@ -13840,11 +13576,7 @@ limitations under the License.
         const emergencyMsg = displayList.some(opt => opt && opt.emergency)
           ? `<div style="margin-bottom:10px; padding:8px 10px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); font-size:0.82rem;">${t('emergencyCoachLine')}</div>`
           : '';
-        
-        // 🧠 MEMORY OF THE PROFESSOR: We save the moves we just suggested
-        window.lastProfessorSuggestions = displayList.map(opt => ({
-            fr: opt.move.fr, fc: opt.move.fc, tr: opt.move.tr, tc: opt.move.tc
-        }));
+
         pList.innerHTML = `${panicMsg}${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
 
       } catch (err) {
@@ -14141,8 +13873,8 @@ limitations under the License.
           // Depth 4 and 5000ms is more reliable on mobile than depth 5 at 6000ms.
           // At grandmaster level the Professor gets extra depth so its suggestions
           // match the quality of the AI engine (both run in the same Worker).
-          const profDepth = currentDifficulty === 'grandmaster' ? 30 : 7;
-          const profTimeout = currentDifficulty === 'grandmaster' ? 15000 : 5000;
+          const profDepth = currentDifficulty === 'grandmaster' ? 8 : 4;
+          const profTimeout = currentDifficulty === 'grandmaster' ? 12000 : 5000;
 
           // --- SNAPSHOT: capture position before launching the async Worker so
           //     we can validate the result belongs to the current position and
@@ -14396,19 +14128,17 @@ limitations under the License.
         return en ? "🔥 You attack the enemy king with a direct check." : "🔥 Atacas al rey enemigo con un jaque directo que fuerza su respuesta.";
       }
 
-      // 🏰 2. CASTLING
+      // 🏰 2. ENROQUE
       if (piece === 'K' && Math.abs(m.tc - m.fc) === 2) {
-        // Verificar si la columna del rey tiene al menos un peón de escudo
         const pawnChar = color === 'w' ? 'P' : 'p';
         let kingFileHasPawn = false;
-        for(let r = 0; r < 8; r++) { 
-          if (copy[r][m.tc] === pawnChar) kingFileHasPawn = true; 
+        for (let r = 0; r < 8; r++) {
+          if (copy[r][m.tc] === pawnChar) { kingFileHasPawn = true; break; }
         }
-        
         if (!kingFileHasPawn) {
-            return withQS(en 
-              ? "⚠️ Reckless castling: you move your king to a file with no pawn shield, walking directly into danger!" 
-              : "⚠️ Enroque temerario: llevas a tu rey a una columna sin escudo de peones, ¡caminando directo hacia el peligro!");
+          return withQS(en
+            ? "⚠️ Reckless castling: you move your king to a file with no pawn shield, walking directly into danger!"
+            : "⚠️ Enroque temerario: llevas a tu rey a una columna sin escudo de peones, ¡caminando directo hacia el peligro!");
         }
         return en ? "🏰 You castle to protect your king and connect your rooks." : "🏰 Te enrocas: pones a salvo al rey y preparas las torres para el combate.";
       }
@@ -14680,18 +14410,9 @@ limitations under the License.
           for (let c = minC + 1; c < maxC; c++) if (copy[m.tr][c] !== ' ') { clear = false; break; }
           if (clear) {
             const rankNum = 8 - m.tr;
-            // 🛡️ NEW: Differentiate between back rank defense and doubled rooks
-            const isBackRank = (color === 'w' && m.tr === 7) || (color === 'b' && m.tr === 0);
-            
-            if (isBackRank) {
-                return withQS(en
-                  ? `🛡️ Solid defense! Both rooks coordinate to protect your back rank.`
-                  : `🛡️ Defensa sólida: ambas torres se coordinan para proteger tu primera fila.`);
-            } else {
-                return withQS(en
-                  ? `🏗️ Excellent! Both rooks on rank ${rankNum} — doubled rooks control the entire row.`
-                  : `🏗️ ¡Excelente! Ambas torres en la fila ${rankNum} — torres dobladas controlan toda la fila.`);
-            }
+            return withQS(en
+              ? `🏗️ Excellent! Both rooks on rank ${rankNum} — doubled rooks control the entire row.`
+              : `🏗️ ¡Excelente! Ambas torres en la fila ${rankNum} — torres dobladas controlan toda la fila.`);
           }
         }
       }
@@ -14738,28 +14459,25 @@ limitations under the License.
       if (wasHanging && isSafeNow) {
         return withQS(en ? "🛡️ You rescue your piece moving it to a safe square." : "🛡️ Reacción crítica: rescatas tu pieza moviéndola a una casilla segura.");
       }
-      // Case B: this move shields OR defends another piece that was hanging
+      // Case B: this move shields another piece that was hanging
+      // Guard: only claim "shield" if the threatened piece is genuinely safer after the move,
+      // AND the attacker count on it actually decreased (prevents false positives where the
+      // move coincidentally changes an unrelated attacker geometry).
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
           const p = board[r][c];
           if (p === ' ' || colorOf(p) !== color) continue;
           if (r === m.fr && c === m.fc) continue; // skip the piece that moved
           const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-          if (pVal < 30) continue; 
-          
+          if (pVal < 30) continue; // only care about minor pieces and above
           const safetyBefore = evaluateSquareSafety(r, c, color, board, enemyColor);
-          if (safetyBefore.isSafe) continue; // piece was already safe
-          
+          if (safetyBefore.isSafe) continue; // piece was already safe — no rescue
           const safetyAfter = evaluateSquareSafety(r, c, color, copy, enemyColor);
-          
-          // 🛡️ FIX: Si la pieza no estaba segura antes, y ahora SÍ lo está, ¡la hemos defendido!
-          // Ya sea bloqueando al atacante o añadiendo un nuevo defensor (ej. Caballo defiende Peón).
-          if (safetyAfter.isSafe) {
-            const pieceName = getLocalizedPieceName(p);
-            const destSq = sqName(r, c);
+          // Require that the piece is now genuinely safe AND it has fewer attackers
+          if (safetyAfter.isSafe && safetyAfter.attackers.length < safetyBefore.attackers.length) {
             return withQS(en
-              ? `🛡️ Solid defense! This move actively protects your vulnerable ${pieceName} on ${destSq}.`
-              : `🛡️ Defensa sólida: con esta jugada proteges tu ${pieceName} en ${destSq}, que estaba bajo ataque.`);
+              ? `🛡️ This move shields your ${getLocalizedPieceName(p)}, reducing the threat against it.`
+              : `🛡️ Excelente defensa: esta jugada reduce la amenaza sobre tu ${getLocalizedPieceName(p)} vulnerable.`);
           }
         }
       }
@@ -14774,19 +14492,6 @@ limitations under the License.
             if (vVal > mVal || !evaluateSquareSafety(nextM.tr, nextM.tc, enemyColor, copy, color).isSafe) {
               return withQS(en ? `🎯 It forces the opponent to react by attacking the ${getLocalizedPieceName(victim)}.` : `🎯 Ganas un tiempo al ejercer fuerte presión sobre su ${getLocalizedPieceName(victim)}.`);
             }
-          }
-        }
-      }
-
-      // 🎯 11.5 EXPLOITING WEAK PAWN STRUCTURE (Radar de escudos rotos)
-      if (history.length > 10 && ['Q', 'B'].includes(piece) && target === ' ') {
-        const isAdvanced = (color === 'w' && m.tr <= 4) || (color === 'b' && m.tr >= 3);
-        if (isAdvanced) {
-          const evalDiff = evaluateBoard(copy, 'hard') * (color === 'w' ? 1 : -1);
-          if (evalDiff > 150) {
-            return withQS(en 
-              ? "🎯 Eye on the gap! This piece aims at the holes and weak pawns in the enemy camp." 
-              : "🎯 ¡Ojo al hueco! Esta pieza presiona los agujeros y peones débiles del campo rival.");
           }
         }
       }
@@ -15017,30 +14722,6 @@ limitations under the License.
         const moverColor = colorOf(pieceMoved);
         const enemyColor = moverColor === 'w' ? 'b' : 'w';
 
-        // 🧠 CHECKING MEMORY: Did you follow my recommendation?
-        if (window.lastProfessorSuggestions && window.lastProfessorSuggestions.length > 0) {
-            const leHicisteCaso = window.lastProfessorSuggestions.some(m => 
-                m.fr === humanMove.fr && m.fc === humanMove.fc && m.tr === humanMove.tr && m.tc === humanMove.tc
-            );
-
-            if (leHicisteCaso) {
-                const colorName = moverColor === 'w' ? (en ? 'White' : 'Blancas') : (en ? 'Black' : 'Negras');
-                const colorIcon = moverColor === 'w' ? '⬜' : '⬛';
-                const profPrefix = `${colorIcon} <strong>${en ? 'Coach to ' + colorName : 'Profesor a ' + colorName}:</strong>`;
-                
-                // 🛑 WE FORCE THE EXIT HERE. No tactics, no analysis, you got it right!
-                pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--success); padding-left:10px; background:rgba(34,197,94,0.05);">
-                  <span class="hint-icon">🌟</span>
-                  <span class="hint-text">
-                    ${profPrefix} ${en ? 'Excellent! You followed my recommendation.' : '¡Excelente! Has seguido mi recomendación al pie de la letra.'}
-                  </span></div>`;
-                
-                window.lastProfessorSuggestions = null; // Clear memory
-                finishProfessorThinking(); // Make sure the loader turns off
-                return; // Cut execution 100%
-            }
-        }
-        window.lastProfessorSuggestions = null; // Clear if not followed
         const hanging = getImmediateHangingAfterMove(humanMove, moverColor);
         const reply = getImmediateReplyRisk(humanMove, moverColor);
         const riskLevel = getMoveRiskLevel(humanMove, moverColor);
@@ -15070,13 +14751,7 @@ limitations under the License.
         const colorIcon = moverColor === 'w' ? '⬜' : '⬛';
         const profPrefix = `${colorIcon} <strong>${en ? 'Coach to ' + colorName : 'Profesor a ' + colorName}:</strong>`;
 
-        // 🧠 FIX: We evaluate if we really let a massive advantage slip away
-        const absEvalBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
-        const moverEvalBefore = moverColor === 'w' ? absEvalBefore : -absEvalBefore;
-        const missedWin = (moverEvalBefore >= 200 && effectiveDelta <= -200);
-
-        // 🛡️ SMART RULE: Do not punish with RED ERROR just for evaluation ghosts
-        if (lostPieces.length > 0 || isRealHanging || riskLevel === 'high' || reply.delta <= -90000 || missedWin) {
+        if (lostPieces.length > 0 || isRealHanging || effectiveDelta <= -200) {
           let reason = "";
 
           if (lostPieces.length > 0) {
@@ -15089,7 +14764,7 @@ limitations under the License.
               ? getLocalizedPieceName(hanging.attacker)
               : (en ? 'enemy piece' : 'pieza enemiga');
 
-            // We get the reason calculated by the mathematical brain
+            // Obtenemos el motivo que calculó el cerebro matemático
             const motivo = hanging.reason || 'indefensa';
 
             if (motivo === 'superada en número') {
@@ -15107,7 +14782,10 @@ limitations under the License.
             }
           } else {
             // ✨ FIX: Differentiate between "Blundering a piece" and "Missing a winning move"
-            if (missedWin) {
+            const absEvalBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
+            const moverEvalBefore = moverColor === 'w' ? absEvalBefore : -absEvalBefore;
+
+            if (moverEvalBefore >= 200 && effectiveDelta <= -200) {
               reason = en
                 ? `<br>📉 You missed a golden tactical opportunity! You focused on the opponent's last move and a much stronger attack slipped away.`
                 : `<br>📉 ¡Dejaste escapar una oportunidad táctica de oro! Te centraste en la última jugada del rival y se te escapó un ataque mucho más fuerte.`;
@@ -15175,26 +14853,19 @@ limitations under the License.
               const pName = getLocalizedPieceName(afterCopy[reply.replyMove.fr][reply.replyMove.fc]);
               const tName = sqName(reply.replyMove.tr, reply.replyMove.tc);
 
-              // ✨ FIX: Analysis of the threat with the temporary board
+              // ✨ FIX: Cambiamos temporalmente el tablero global para que getStrategicIntent analice la amenaza
               const tempBoard = board;
               board = afterCopy;
               let amenazaDesc = simplifyForKids(getStrategicIntent(reply.replyMove, enemyColor));
-              board = tempBoard;
+              board = tempBoard; // Restauramos el tablero inmediatamente
 
-              // 🔴 TONE FILTER (BILINGUAL): Detects if the text is too "nice"
-              const esBonitoES = amenazaDesc && (amenazaDesc.includes('armonía') || amenazaDesc.includes('solidifica') || amenazaDesc.includes('Mejora'));
-              const esBonitoEN = amenazaDesc && (amenazaDesc.includes('improves') || amenazaDesc.includes('solidifies') || amenazaDesc.includes('coordination'));
-
-              if (!amenazaDesc || esBonitoES || esBonitoEN) {
-                amenazaDesc = en 
-                  ? "It takes advantage of your broken pawn shield and the empty squares you left behind." 
-                  : "Aprovecha que has roto tu escudo de peones y dejado casillas sin defensa.";
+              if (!amenazaDesc) {
+                amenazaDesc = en ? "It wins material cleanly." : "Gana material limpiamente aprovechando tu posición.";
               }
 
-              // 🛡️ HONEST AND KID-FRIENDLY TEXT: Warns of danger
               reason += en
-                ? `<br><br>👁️ <em>The Coach spots a dangerous weak point: <strong>...${pName} to ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>The danger?</strong> ${amenazaDesc}</span>`
-                : `<br><br>👁️ <em>El Profesor ve un punto débil peligroso: <strong>...${pName} a ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>¿El peligro?</strong> ${amenazaDesc}</span>`;
+                ? `<br><br>👁️ <em>The Coach points out the opponent's best reply: <strong>...${pName} to ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>Why?</strong> ${amenazaDesc}</span>`
+                : `<br><br>👁️ <em>El Profesor señala la mejor respuesta del rival: <strong>...${pName} a ${tName}</strong>.</em><br><span style="color:var(--danger); font-size:0.85rem; margin-top:4px; display:inline-block;">⚠️ <strong>¿Por qué?</strong> ${amenazaDesc}</span>`;
               }
             setTimeout(clearArrows, 5500);
           } catch (e) { }
@@ -15280,7 +14951,6 @@ limitations under the License.
 
       pList.innerHTML = html;
     }
-
 
     function getLostMaterial(oldBrd, newBrd, color) {
       const lost = [];
