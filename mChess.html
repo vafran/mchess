@@ -12085,13 +12085,25 @@ limitations under the License.
       const normForCastle = lastMove.replace(/[+#]/g, '');
       if (normForCastle === 'O-O' || normForCastle === 'O-O-O') {
         const isShort = normForCastle === 'O-O';
-        const castleComment = lang === 'en'
+        // Check for reckless castling: king lands on a file with no friendly pawn shield
+        const castledColor = turn === 'w' ? 'b' : 'w'; // turn has already switched
+        const kingCol = isShort ? 6 : 2; // g-file for O-O, c-file for O-O-O
+        const pawnChar = castledColor === 'w' ? 'P' : 'p';
+        let kingFileHasPawn = false;
+        for (let r = 0; r < 8; r++) {
+          if (board[r][kingCol] === pawnChar) { kingFileHasPawn = true; break; }
+        }
+        const castleComment = !kingFileHasPawn
+          ? (lang === 'en'
+            ? "⚠️ Reckless castling! The king moved to a file with no pawn shield — it may be exposed to attack."
+            : "⚠️ ¡Enroque temerario! El rey se mueve a una columna sin escudo de peones, expuesto al ataque.")
+          : (lang === 'en'
           ? (isShort
             ? getRnd(["🛡️ Kingside castling completed: safer king, connected plan.", "✅ Good habit: castle and improve king safety.", "🏰 Short castling: safety first."], 'special_castle_short')
             : getRnd(["🏰 Long castling! Opposite-side attacks may start soon.", "🛡️ Queenside castling changes the battle plans.", "⚔️ Long castle on the board: expect sharp play."], 'special_castle_long'))
           : (isShort
             ? getRnd(["🛡️ Enroque corto completado: rey más seguro y plan más claro.", "✅ Buen hábito: enrocar y mejorar la seguridad del rey.", "🏰 Enroque corto: primero la seguridad."], 'special_castle_short')
-            : getRnd(["🏰 ¡Enroque largo! Pueden venir ataques a bandos opuestos.", "🛡️ El enroque largo cambia los planes de combate.", "⚔️ Enroque largo en el tablero: se viene ajedrez afilado."], 'special_castle_long'));
+            : getRnd(["🏰 ¡Enroque largo! Pueden venir ataques a bandos opuestos.", "🛡️ El enroque largo cambia los planes de combate.", "⚔️ Enroque largo en el tablero: se viene ajedrez afilado."], 'special_castle_long')));
         const now2 = new Date();
         const timeStr2 = now2.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
         commentaryLog.unshift({ html: castleComment, time: timeStr2, tone: 'serious' });
@@ -12169,7 +12181,7 @@ limitations under the License.
           N: ["Jumping around like a guy at a wedding.", "Knight's on a mission to find the only open shop at 2 AM."],
           B: ["Bishop's clearing the way like he's looking for a cinema seat.", "Sniper! Watching the board like a teacher during a math test."],
           R: ["The Rook is a wall. Nothing's getting through that.", "Control tower! Watching the board like a bouncer."],
-          Q: ["Right, here's the Boss. Act natural.", "La dama en {sq} dice: 'Aquí mando yo'."],
+          Q: ["Right, here's the Boss. Act natural.", "The queen on {sq} says: 'I run this board now'."],
           K: ["Safety first. The Monarch's tucked away."]
         }
       };
