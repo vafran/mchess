@@ -1,7 +1,7 @@
 # mChess (Monolith Chess) — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.25.32** | File: `mChess.html` (~16,496 lines, ~860 KB)  
+> Current version: **v2.22.0** (branch `feat/v2.22.0`) | `main` has v2.24.1 | File: `mChess.html` (~16,496 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---
@@ -24,7 +24,7 @@ mChess-public/
 ├── mChess.html              ← ENTIRE GAME (~860 KB, ~16,500 lines)
 ├── index.html               ← Redirect shim only
 ├── README.md / README_es.md ← Public-facing docs (EN/ES)
-├── GEMINI.md                ← THIS FILE (AI context document)
+├── CLAUDE.md                ← THIS FILE (AI context document)
 ├── pesto_tables.md          ← PeSTO PST values reference
 ├── low_diff_levels.md       ← Design notes for Easy/Medium difficulty tuning
 ├── stockfish.exe            ← Stockfish binary (Windows, ~111 MB) for arena tests
@@ -580,23 +580,25 @@ Worker SEE is used in:
 
 ```bash
 cd stockfish_tests
-node arena_tournament.js    # 20 games vs SF-1900 at depth 7, saves JSON
+node arena_tournament.js --batch --depth 7 --games 20   # batch mode (no prompts), saves JSON
+node arena_tournament.js --batch --depth 7 --games 30   # longer run for overnight
 node analyze_results.js     # ELO estimate + blunder stats
 node arena.js --fen "..." --color w --depth 7   # single FEN test
 ```
 
 Requires: Node.js, Puppeteer, `stockfish.exe` in `stockfish_tests/`.  
-Output: `tournament_mChess_d7_20g_<label>.json`
+Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from HTML title tag)
 
-### Tournament ELO History
+### Tournament ELO History (20 games, SF depth-7, JS blunder detector)
 
-| Version | Result vs SF-1900 | Est. ELO |
-|---------|-------------------|----------|
-| v2.21.0 | 0W 16L 4D | ~1530 |
-| v2.24.0 | 0W 15L 5D | ~1560 |
-| v2.25.0 | 0W 14L 6D | ~1580 |
-| v2.25.12 | 0W 14L 6D | ~1599 |
-| v2.25.30 | TBD (partial) | ~1620 est. |
+| Version | Result vs SF-1900 | Est. ELO | Blunders | Notes |
+|---------|-------------------|----------|----------|-------|
+| v2.21.0 | **2W 15L 3D** | **~1631** | 12 (0.60/g), 5 opening | ✅ **Stable baseline** — only version with wins |
+| v2.24.2 | 0W 14L 6D | ~1609 | 16 (0.80/g), 6 opening | Regression from v2.21 |
+| v2.25.12 | 0W 13L 7D | ~1631 | 14 (0.70/g), 1 opening | Same ELO as v2.21 but no wins; 1 opening blunder due to bigger book |
+| v2.22.0 | TBD (overnight run) | TBD | TBD | v2.21.0 engine + bigger book + UI fixes |
+
+**Primary metric: blunders per game** (especially opening blunders). A clean loss beats a draw with piece giveaways — the game is for a 9-year-old.
 
 ---
 
@@ -644,5 +646,12 @@ node arena.js --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq 
 
 ## Version Numbering
 
-`v2.MAJOR.MINOR` — updated manually.  
-`<title>` tag shows `v2.22.0` (UI label). Internal engine version tracked in worker comments — **always trust the latest worker comment** (currently v2.25.32). These diverge when hotfixes are applied without bumping the UI label.
+`v2.MAJOR.MINOR` — updated manually in the `<title>` tag and 3 other occurrences in the HTML.
+
+**Current branching strategy (strictly enforced):**
+- `main` = last tournament-validated version only (currently v2.24.1; v2.22.0 pending overnight test)
+- `feat/v2.22.0` = active development branch (v2.21.0 engine + bigger opening book + UI fixes)
+- Every engine change gets its own branch + 20-game tournament before merging to main
+- **Never commit engine changes directly to main**
+
+**v2.21.0** is the stable baseline stored at `stockfish_tests/mChessv2.21.0.html`. It is the only version that consistently wins real games vs SF depth-7.
