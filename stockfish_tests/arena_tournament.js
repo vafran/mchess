@@ -55,6 +55,7 @@ function detectBlunders(pgn, mChessColor) {
         if (mv.color !== mChessColor) continue;
         if (mv.piece === 'p') continue;
         if (mv.captured) continue;
+        if (mv.san.includes('+') || mv.san.includes('#')) continue; // skip checks — opponent can't freely capture
         const pieceVal = PIECE_VALUES[mv.piece] || 0;
         if (pieceVal < 2) continue;
         const destSq = mv.to;
