@@ -2789,43 +2789,6 @@ limitations under the License.
                 }
                 const bookMove = legalMvs.find(m => getMoveNotation(board, color, m, castleRights) === chosenEntry.m);
                 if (bookMove) {
-                  // ── v2.22.0: Hanging-piece book-exit (SEE-based) ─────────────
-                  // If any own N/B/R is losing an exchange (SEE > 50 from enemy
-                  // perspective), the position is already "off-script" — let the
-                  // engine handle it instead of blindly following the book.
-                  let ownPieceHanging = false;
-                  const _isWhite = color === 'w';
-                  outerHang: for (let _r = 0; _r < 8; _r++) {
-                    for (let _c = 0; _c < 8; _c++) {
-                      const _p = board[_r][_c];
-                      if (!_p || _p === ' ') continue;
-                      const _pu = _p.toUpperCase();
-                      if (_pu === 'P' || _pu === 'K' || _pu === 'Q') continue; // only N/B/R
-                      const _isOwn = _isWhite ? (_p === _p.toUpperCase()) : (_p === _p.toLowerCase());
-                      if (!_isOwn) continue;
-                      let _fR = -1, _fC = -1;
-                      if (_isWhite) {
-                        if (_r > 0 && _c > 0 && board[_r-1][_c-1] === 'p') { _fR = _r-1; _fC = _c-1; }
-                        else if (_r > 0 && _c < 7 && board[_r-1][_c+1] === 'p') { _fR = _r-1; _fC = _c+1; }
-                      } else {
-                        if (_r < 7 && _c > 0 && board[_r+1][_c-1] === 'P') { _fR = _r+1; _fC = _c-1; }
-                        else if (_r < 7 && _c < 7 && board[_r+1][_c+1] === 'P') { _fR = _r+1; _fC = _c+1; }
-                      }
-                      if (_fR === -1) {
-                        const _eKn = _isWhite ? 'n' : 'N';
-                        for (const [_dr,_dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
-                          const _nr=_r+_dr,_nc=_c+_dc;
-                          if (_nr>=0&&_nr<8&&_nc>=0&&_nc<8&&board[_nr][_nc]===_eKn){_fR=_nr;_fC=_nc;break;}
-                        }
-                      }
-                      if (_fR === -1) continue;
-                      if (see(board, _r, _c, _fR, _fC) > 50) { ownPieceHanging = true; break outerHang; }
-                    }
-                  }
-                  if (ownPieceHanging) {
-                    console.log('⚠️ Book exit: own piece hanging — deferring to engine');
-                    // fall through to engine search
-                  } else {
                     console.log("📖 Move selected from the book:", chosenEntry.m);
                     const cols = 'abcdefgh';
                     const promotion = (bookMove.tr === 0 || bookMove.tr === 7) && board[bookMove.fr][bookMove.fc].toUpperCase() === 'P' ? (bookMove.promo ? bookMove.promo.toLowerCase() : 'q') : '';
@@ -2833,7 +2796,6 @@ limitations under the License.
                     console.log("🎯 UCI:", uci);
                     window._lastSearchDepth = { completedDepth: 'book', maxDepth: 'book', isPartial: false };
                     return uci;
-                  }
                 }
               }
             } else {
