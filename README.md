@@ -23,11 +23,11 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 - **Zero friction.** No installation, no account, no internet required after the first download. Works on a 10-year-old laptop and a modern phone equally.
 - **Real chess, not a simplified version.** Full FIDE rules — en passant, castling, threefold repetition, the 50-move rule, all of it.
 - **Forgiving at the bottom, challenging at the top.** Easy and Medium let beginners feel what winning feels like. Hard and Wise King exist for when they are ready for a real test.
-- **Monolithic mastery.** Everything — engine, coach, opening book, training library, animations, sounds — lives in a single `.html` file of ~676 KB. Zero dependencies.
+- **Monolithic mastery.** Everything — engine, coach, opening book, training library, animations, sounds — lives in a single `.html` file of ~860 KB. Zero dependencies.
 
 ### Non-Goals
 
-- **Defeating titled players.** This is not Stockfish. The engine targets **~1900 ELO** at Wise King level (benchmark: vs Stockfish depth 7, 20-game tournament). Actual strength depends on the hardware running it.
+- **Defeating titled players.** This is not Stockfish. The engine reaches **~1709 ELO** at Wise King level (validated: 1W 8D 11L vs Stockfish depth 7, 20-game tournament, v2.22.2). Actual strength depends on the hardware running it.
 - **Online multiplayer.** Local play only.
 - **Advanced preparation tools.** The opening book is curated for teaching, not professional preparation.
 - **Benchmark performance.** Clean, readable JavaScript takes priority over micro-optimised techniques, though v2.1.0 introduced critical low-level bottlenecks fixes.
@@ -66,7 +66,7 @@ That is everything. The game handles the rest.
 
 6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Master — *Wise King* (~2000 ELO target)
+### 👑 Master — *Wise King* (~1709 ELO validated)
 
 **Target:** Strong club players and advanced amateurs.
 
@@ -82,7 +82,7 @@ Up to 30-ply depth (time-capped at 30s) · 0% mistakes · full book · full eval
 | 🐣 Easy | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medium | ~1010 | 4 | 20% | ±6 cp | first 2 moves | ✅ |
 | 🔥 Hard | ~1400 | 6 | 0% | none | ✅ full | ✅ |
-| 👑 Wise King | ~2000 ELO target | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
+| 👑 Wise King | ~1709 (validated) | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
  
 ---
 
@@ -176,6 +176,29 @@ Three styles, with labels now visible under the slider:
 | # | Severity | Description | Planned fix |
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
+
+## What's new in v2.22.2 — *Anti-Blunder Filter Fix*
+
+### 🛡️ Root Anti-Blunder Filter (Dead Code Bug Fixed)
+
+The engine's post-search safety net — designed to reject quiet moves where SEE < −100 (piece moving to an attacked square) — was computing the correct detection but **never acting on it**. The fix updated `bestOptions` after `finalOptions` was already computed; `postMessage` sends `finalOptions`, so the override was silently discarded.
+
+**Fix:** One line added — `finalOptions = bestOptions` — propagating the filter's decision to the output. The filter was already identifying blunders correctly (e.g., Bc5 to a queen-attacked square: SEE = −335). Now it acts on them.
+
+**Tournament result (20 games, SF depth-7):** 1W 8D 11L — **~1709 ELO**, 0.25 blunders/game.
+First win vs Stockfish since v2.21.0.
+
+---
+
+## What's new in v2.22.1 — *Opening Book Stability*
+
+### 📚 Book-Exit SEE Filter Removed
+
+A SEE-based filter in `askWiseKing` checked opening book moves for piece safety before playing them, incorrectly rejecting standard moves like `Bb5`, `Bc4`, and `Bg5` (bishops that appear temporarily undefended mid-sequence). This caused the engine to deviate from the opening book on nearly every game.
+
+**Fix:** Removed the filter entirely. The opening book is curated and trusted; moves are played as recommended without a post-hoc safety check.
+
+---
 
 ## What's new in v2.22.0 — *Pedagogical Intelligence & Strategic Awareness*
 
@@ -401,7 +424,7 @@ Several bugs in the search engine were identified and corrected post-release. Th
 
 ### Single-file design
 
-~676 KB. One `.html` file. No external dependencies, no CDN calls, no cookies, no network requests after load.
+~860 KB. One `.html` file. No external dependencies, no CDN calls, no cookies, no network requests after load.
 
 ### Search
 
@@ -419,7 +442,7 @@ Piece values: N=325, B=335, R=500, Q=900 (bishop correctly valued above knight b
 
 ### Opening Book
 
-~100 positions, theory-weighted at Hard/Wise King, uniform random at Medium (2 moves), disabled at Easy.
+~826 entries across ~100 positions, theory-weighted at Hard/Wise King, uniform random at Medium (2 moves), disabled at Easy.
 
 ### Audio
 
@@ -466,8 +489,8 @@ The engine's heuristics and positional weights were **trained and tuned by playi
 - Quick commands (from the project root):
 
 ```bash
-# Run a small tournament (writes results to stockfish_tests/tournament_results.json)
-node stockfish_tests/arena_tournament.js
+# Run a 20-game tournament in batch mode (no prompts, saves JSON automatically)
+node stockfish_tests/arena_tournament.js --batch --depth 7 --games 20
 
 # Inspect the last results
 node stockfish_tests/analyze_results.js
@@ -501,4 +524,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.22.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~805 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.22.2 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*

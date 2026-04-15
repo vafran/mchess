@@ -1,7 +1,7 @@
 # mChess (Monolith Chess) — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.22.0** (branch `feat/v2.22.0`) | `main` has v2.24.1 | File: `mChess.html` (~16,496 lines, ~860 KB)  
+> Current version: **v2.22.2** (branch `feat/v2.22.0`) | `main` has v2.24.1 | File: `mChess.html` (~16,496 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---
@@ -594,9 +594,11 @@ Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from H
 | Version | Result vs SF-1900 | Est. ELO | Blunders | Notes |
 |---------|-------------------|----------|----------|-------|
 | v2.21.0 | **2W 15L 3D** | **~1631** | 12 (0.60/g), 5 opening | ✅ **Stable baseline** — only version with wins |
+| v2.22.0 | 0W 24L 16D | ~1659 | 13 (0.33/g, 40 games) | Bigger book; book-exit SEE filter caused deviations every game |
+| v2.22.1 | 0W 10L 7D | ~1665 | 10 (0.59/g) | Book-exit filter removed; anti-blunder filter still dead code |
+| v2.22.2 | **1W 11L 8D** | **~1709** | 5 (0.25/g), 1 opening | ✅ **Best result** — anti-blunder filter dead code fixed; first win since v2.21.0 |
 | v2.24.2 | 0W 14L 6D | ~1609 | 16 (0.80/g), 6 opening | Regression from v2.21 |
 | v2.25.12 | 0W 13L 7D | ~1631 | 14 (0.70/g), 1 opening | Same ELO as v2.21 but no wins; 1 opening blunder due to bigger book |
-| v2.22.0 | TBD (overnight run) | TBD | TBD | v2.21.0 engine + bigger book + UI fixes |
 
 **Primary metric: blunders per game** (especially opening blunders). A clean loss beats a draw with piece giveaways — the game is for a 9-year-old.
 

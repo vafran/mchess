@@ -25,11 +25,11 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 - **Cero fricción.** Sin instalación, sin cuenta, sin internet tras la primera descarga. Funciona en un portátil de diez años igual que en un teléfono moderno.
 - **Ajedrez real, no una versión simplificada.** Reglas FIDE completas: al paso, enroque, triple repetición, regla de los 50 movimientos, todo.
 - **Indulgente abajo, desafiante arriba.** Fácil y Medio existen para que los principiantes sepan lo que es ganar. Difícil y Rey Sabio existen para cuando estén listos.
-- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~816 KB. Cero dependencias.
+- **Maestría monolítica.** Todo — motor, entrenador, libro de aperturas, librería de entrenamiento, animaciones, sonidos — vive en un único archivo `.html` de ~860 KB. Cero dependencias.
 
 ### No-objetivos
 
-- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor apunta a **~1900 ELO** en el nivel Rey Sabio (v2.21.0 real: **1631 ELO** vs Stockfish d:7). La cifra exacta depende del hardware.
+- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza **~1709 ELO** en el nivel Rey Sabio (validado: 1V 8E 11D vs Stockfish profundidad 7, torneo de 20 partidas, v2.22.2). La cifra exacta depende del hardware.
 - **Multijugador en línea.** Solo juego local.
 - **Herramientas avanzadas de preparación.** El libro de aperturas está curado para enseñar, no para preparación profesional.
 - **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad, aunque la v2.1.0 introdujo correcciones críticas en cuellos de botella de bajo nivel.
@@ -68,7 +68,7 @@ Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimien
 
 Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técnicas activas
 
-### 👑 Maestro — *Rey Sabio* (~2000 ELO objetivo)
+### 👑 Maestro — *Rey Sabio* (~1709 ELO validado)
 
 **Para:** Jugadores de club fuertes y amateurs avanzados.
 
@@ -84,7 +84,7 @@ Hasta 30 semijugadas de profundidad (tope de 30s) · 0% de errores · libro comp
 | 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
 | 🔥 Difícil | ~1400 | 6 | 0% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~2000 ELO objetivo | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
+| 👑 Rey Sabio | ~1709 (validado) | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
 
 ---
 
@@ -180,6 +180,29 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | # | Gravedad | Descripción | Fix previsto |
 |---|---|---|---|
 | 1 | Baja | **Ahogado en posiciones ganadas (solo Rey Sabio)** — En finales simplificados muy poco frecuentes (dama + peones vs rey solo), el motor puede hacer un movimiento que ahogue al rey rival en lugar de darle jaque mate, convirtiendo una victoria en tablas. Causa: la búsqueda de quietud evalúa la posición final con `evaluate()` sin comprobar si el rival tiene jugadas legales. Ocurre aproximadamente 1 de cada 50 finales ganados con rey enemigo solo. | v2.14.0 — fix en la quiescence search |
+
+---
+
+## Lo nuevo en v2.22.2 — *Corrección del Filtro Anti-Colgadas*
+
+### 🛡️ Filtro Anti-Colgadas en Raíz (Bug de Código Muerto Corregido)
+
+La red de seguridad post-búsqueda del motor — diseñada para rechazar movimientos silenciosos donde SEE < −100 (pieza que se mueve a una casilla atacada) — calculaba la detección correctamente pero **nunca actuaba en consecuencia**. El código que rechazaba la jugada actualizaba `bestOptions` después de que `finalOptions` ya estaba calculado; `postMessage` envía `finalOptions`, por lo que la corrección se descartaba silenciosamente.
+
+**Corrección:** Una línea añadida — `finalOptions = bestOptions` — propagando la decisión del filtro a la salida. El filtro ya identificaba las colgadas correctamente (por ejemplo, Ac5 a una casilla atacada por la dama: SEE = −335). Ahora actúa en consecuencia.
+
+**Resultado del torneo (20 partidas, SF profundidad-7):** 1V 8E 11D — **~1709 ELO**, 0,25 colgadas/partida.
+Primera victoria vs Stockfish desde v2.21.0.
+
+---
+
+## Lo nuevo en v2.22.1 — *Estabilidad del Libro de Aperturas*
+
+### 📚 Filtro SEE de Salida del Libro Eliminado
+
+Un filtro SEE en `askWiseKing` comprobaba la seguridad de las piezas en los movimientos del libro antes de jugarlos, rechazando incorrectamente jugadas estándar como `Ab5`, `Ac4` y `Ag5` (alfiles que parecen temporalmente sin defensa en la secuencia). Esto provocaba que el motor se desviara del libro en casi todas las partidas.
+
+**Corrección:** Eliminado el filtro por completo. El libro de aperturas está curado y es de confianza; las jugadas se juegan tal como se recomiendan sin una comprobación de seguridad posterior.
 
 ---
 
@@ -405,7 +428,7 @@ Combinado con una implementación corregida de **Zobrist Hashing** que rastrea l
 
 ### Diseño monolítico
 
-~816 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
+~860 KB. Un único archivo `.html`. Sin dependencias externas, sin llamadas a CDN, sin cookies, sin peticiones de red tras la carga.
 
 ### Motor de búsqueda
 
@@ -423,7 +446,7 @@ Valores de piezas: C=325, A=335, T=500, D=900. Interpolación tapered mediojuego
 
 ### Libro de aperturas
 
-~100 posiciones con pesos teóricos en Difícil/Rey Sabio, aleatorio uniforme en Medio (2 movimientos), desactivado en Fácil.
+~826 entradas en ~100 posiciones, con pesos teóricos en Difícil/Rey Sabio, aleatorio uniforme en Medio (2 movimientos), desactivado en Fácil.
 
 ### Audio
 
@@ -472,8 +495,8 @@ Las heurísticas y pesos posicionales del motor han sido **entrenados y ajustado
 - Comandos rápidos (desde la raíz del proyecto):
 
 ```bash
-# Ejecutar un torneo pequeño (genera stockfish_tests/tournament_results.json)
-node stockfish_tests/arena_tournament.js
+# Ejecutar un torneo de 20 partidas en modo batch (sin interrupciones, guarda JSON automáticamente)
+node stockfish_tests/arena_tournament.js --batch --depth 7 --games 20
 
 # Inspeccionar resultados
 node stockfish_tests/analyze_results.js
@@ -502,4 +525,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.22.0 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~805 KB. Sin dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.22.2 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*
