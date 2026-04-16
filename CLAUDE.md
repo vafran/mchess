@@ -1,7 +1,7 @@
 # mChess (Monolith Chess) — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.22.2** (branch `feat/v2.22.0`) | `main` has v2.24.1 | File: `mChess.html` (~16,496 lines, ~860 KB)  
+> Current version: **v2.22.5** (branch `feat/v2.22.0`) | `main` has v2.22.2 | File: `mChess.html` (~16,496 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---

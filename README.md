@@ -177,6 +177,34 @@ Three styles, with labels now visible under the slider:
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
 
+## What's new in v2.22.5 — *Mobile Crash Recovery*
+
+### 📱 bestSoFar: Worker Crash Protection
+
+The worker now sends a `bestSoFar` message to the main thread after each completed depth iteration. If the safety timer fires (worker frozen or crashed — most likely on mobile), the engine plays the best move found at the last completed depth instead of falling back to a depth-2 near-random move.
+
+Desktop behavior is identical to v2.22.2. No tournament run needed — this only activates on worker crash, which doesn't occur in normal desktop play.
+
+**Also:** Removed the automated JS blunder detector from the tournament runner — it produced false positives. Manual PGN analysis with Stockfish is the reliable method.
+
+---
+
+## What's new in v2.22.4 — *SEE Threshold Experiment (Reverted)*
+
+Tightened the root anti-blunder SEE threshold from −100 to −50cp, intending to catch hanging pawns. **Reverted** — the tighter threshold blocked intentional pawn advances (e.g. e4-e5 with SEE = −100) and caused a regression to ~1659 ELO.
+
+---
+
+## What's new in v2.22.3 — *LMR Experiments (Reverted)*
+
+Two LMR changes were tried and reverted:
+- Raised LMR divisor 2.36 → 3.00 (less aggressive): ELO dropped ~1631
+- Changed LMR threshold to moveCount > 4: ELO dropped ~1518
+
+Both looser-LMR directions hurt. v2.22.2's LMR settings appear optimal.
+
+---
+
 ## What's new in v2.22.2 — *Anti-Blunder Filter Fix*
 
 ### 🛡️ Root Anti-Blunder Filter (Dead Code Bug Fixed)
@@ -524,4 +552,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.22.2 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.22.5 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*
