@@ -39,53 +39,6 @@ function sfELO(d) {
     return 2200;
 }
 
-// ── Blunder detection ────────────────────────────────────────
-// A blunder = non-pawn, non-capture mChess move where the piece
-// is captured within 3 half-moves for a net loss of ≥ 2 pts.
-const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
-
-function detectBlunders(pgn, mChessColor) {
-    if (!pgn) return [];
-    const chess = new Chess();
-    try { chess.loadPgn(pgn); } catch (_) { return []; }
-    const moves = chess.history({ verbose: true });
-    const blunders = [];
-    for (let i = 0; i < moves.length; i++) {
-        const mv = moves[i];
-        if (mv.color !== mChessColor) continue;
-        if (mv.piece === 'p') continue;
-        if (mv.captured) continue;
-        if (mv.san.includes('+') || mv.san.includes('#')) continue; // skip checks — opponent can't freely capture
-        const pieceVal = PIECE_VALUES[mv.piece] || 0;
-        if (pieceVal < 2) continue;
-        const destSq = mv.to;
-        let capturedBy = null, capturedAtIdx = -1;
-        for (let j = 1; j <= 3 && i + j < moves.length; j++) {
-            const nx = moves[i + j];
-            if (nx.color !== mChessColor && nx.to === destSq && nx.captured) {
-                capturedBy = nx; capturedAtIdx = i + j; break;
-            }
-        }
-        if (!capturedBy) continue;
-        let recaptureVal = 0;
-        for (let j = capturedAtIdx + 1; j <= capturedAtIdx + 2 && j < moves.length; j++) {
-            const rc = moves[j];
-            if (rc.color === mChessColor && rc.to === destSq && rc.captured) {
-                recaptureVal = PIECE_VALUES[capturedBy.piece] || 0; break;
-            }
-        }
-        const netLoss = pieceVal - recaptureVal;
-        if (netLoss >= 2) {
-            const moveNum = Math.floor(i / 2) + 1;
-            blunders.push({
-                moveNum, san: mv.san, piece: mv.piece, pieceVal, netLoss,
-                phase: moveNum <= 15 ? 'opening' : (moveNum <= 40 ? 'middlegame' : 'endgame'),
-            });
-        }
-    }
-    return blunders;
-}
-
 // ── Opening book for variety ─────────────────────────────────
 // Each entry is a sequence of UCI moves to play before the engines start.
 // Covers the main ECO openings so we get a diverse sample.
@@ -124,10 +77,8 @@ class DepthStats {
         this.dW = 0; this.dB = 0; // draws
     }
     add(result, mChessColor, moves, reason, pgn, phase) {
-        const blunders = detectBlunders(pgn, mChessColor);
         this.games.push({
             result, mChessColor, moves, reason, pgn, phase,
-            blunders,
             ts: new Date().toISOString()
         });
         const w = mChessColor === 'w';
@@ -180,13 +131,6 @@ class DepthStats {
                 ? (avgNps / 1000000).toFixed(2) + 'M n/s'
                 : (avgNps / 1000).toFixed(0) + 'k n/s';
             console.log(`     Avg NPS: ${npsDisp}  (${this.npsLog.length} samples)`);
-        }
-        const allBlunders = this.games.flatMap(g => g.blunders || []);
-        const openingBlunders = allBlunders.filter(b => b.phase === 'opening').length;
-        console.log(`     Blunders: ${allBlunders.length} total (${(allBlunders.length / this.total()).toFixed(2)}/game), ${openingBlunders} opening`);
-        if (allBlunders.length > 0) {
-            const worst = [...allBlunders].sort((a, b) => b.netLoss - a.netLoss).slice(0, 3);
-            worst.forEach(b => console.log(`       ↳ Move ${b.moveNum}: ${b.san} (lost ${b.netLoss}pts, ${b.phase})`));
         }
     }
 }
@@ -459,7 +403,6 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
                 status: done ? 'complete' : `partial_${gameNum}_of_${total}`,
                 config: { numGames: n, depths },
                 byDepth: Object.fromEntries(depths.map(d => {
-                    const dBlunders = statsMap[d].games.flatMap(g => g.blunders || []);
                     return [d, {
                         sfELO: sfELO(d),
                         estimatedELO: statsMap[d].estimateELO(),
@@ -468,13 +411,6 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
                         wins: statsMap[d].wins(),
                         losses: statsMap[d].losses(),
                         draws: statsMap[d].draws(),
-                        blunders: {
-                            total: dBlunders.length,
-                            perGame: statsMap[d].total() > 0 ? +(dBlunders.length / statsMap[d].total()).toFixed(2) : 0,
-                            opening: dBlunders.filter(b => b.phase === 'opening').length,
-                            middlegame: dBlunders.filter(b => b.phase === 'middlegame').length,
-                            endgame: dBlunders.filter(b => b.phase === 'endgame').length,
-                        },
                         games: statsMap[d].games,
                     }];
                 })),
@@ -590,9 +526,7 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
             const gs = statsMap[depth];
             if (gs.total() > 0) {
                 const lastGame = gs.games[gs.games.length - 1];
-                const gameBlunders = (lastGame.blunders || []).length;
-                const totalBlunders = gs.games.flatMap(g => g.blunders || []).length;
-                console.log(`   💾 Saved: W:${gs.wins()} L:${gs.losses()} D:${gs.draws()} | ELO ~${gs.estimateELO()} [${gs.eloCI()[0]}..${gs.eloCI()[1]}] | blunders this game:${gameBlunders} total:${totalBlunders}`);
+                console.log(`   💾 Saved: W:${gs.wins()} L:${gs.losses()} D:${gs.draws()} | ELO ~${gs.estimateELO()} [${gs.eloCI()[0]}..${gs.eloCI()[1]}]`);
             }
             await new Promise(r => setTimeout(r, 1500));
         }

@@ -183,6 +183,34 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
+## Lo nuevo en v2.22.5 — *Recuperación de Caídas en Móvil*
+
+### 📱 bestSoFar: Protección contra Caídas del Worker
+
+El worker ahora envía un mensaje `bestSoFar` al hilo principal tras cada iteración de profundidad completada. Si el temporizador de seguridad se activa (worker congelado o caído — más probable en móvil), el motor juega el mejor movimiento encontrado en la última profundidad completada, en lugar de caer al modo de respaldo con profundidad 2.
+
+El comportamiento en escritorio es idéntico a v2.22.2. No se requiere torneo — este cambio solo se activa si el worker cae, lo que no ocurre en el uso normal de escritorio.
+
+**Además:** Se eliminó el detector automático de colgadas del script de torneos — producía falsos positivos. El análisis manual de PGN con Stockfish es el método fiable.
+
+---
+
+## Lo nuevo en v2.22.4 — *Experimento Umbral SEE (Revertido)*
+
+Se ajustó el umbral SEE del filtro anti-colgadas de −100 a −50cp, con intención de capturar peones colgados. **Revertido** — el umbral más estricto bloqueaba avances de peón intencionales (por ejemplo, e4-e5 con SEE = −100) y causó una regresión a ~1659 ELO.
+
+---
+
+## Lo nuevo en v2.22.3 — *Experimentos LMR (Revertidos)*
+
+Se probaron dos cambios de LMR y se revirtieron:
+- Divisor LMR 2,36 → 3,00 (menos agresivo): ELO bajó a ~1631
+- Umbral LMR cambiado a moveCount > 4: ELO bajó a ~1518
+
+Ambas direcciones de LMR más suave empeoraron el rendimiento. La configuración LMR de v2.22.2 parece óptima.
+
+---
+
 ## Lo nuevo en v2.22.2 — *Corrección del Filtro Anti-Colgadas*
 
 ### 🛡️ Filtro Anti-Colgadas en Raíz (Bug de Código Muerto Corregido)
@@ -525,4 +553,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.22.2 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.22.5 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*

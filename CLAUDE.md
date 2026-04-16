@@ -1,7 +1,7 @@
 # mChess (Monolith Chess) — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.22.2** (branch `feat/v2.22.0`) | `main` has v2.24.1 | File: `mChess.html` (~16,496 lines, ~860 KB)  
+> Current version: **v2.22.5** (branch `feat/v2.22.0`) | `main` has v2.22.2 | File: `mChess.html` (~16,496 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---
@@ -588,6 +588,8 @@ node arena.js --fen "..." --color w --depth 7   # single FEN test
 
 Requires: Node.js, Puppeteer, `stockfish.exe` in `stockfish_tests/`.  
 Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from HTML title tag)
+
+> **Workflow note:** The user runs tournaments manually — do NOT launch `arena_tournament.js` as a background task. After committing a change, just tell the user the version is ready and they will run it themselves.
 
 ### Tournament ELO History (20 games, SF depth-7, JS blunder detector)
 
