@@ -378,6 +378,13 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     const gameCount = fenReplayMode && fenList.length > 0 ? fenList.length : n;
     CONFIG.logFile = path.join(__dirname, `tournament_mChess${mchessVer}_d${depths.join('_')}_${gameCount}g${modeTag}.json`);
 
+    // ── Verbose log — timestamped so each run creates its own file ────────
+    const _vTs = new Date().toISOString().replace('T', '_').replace(/[:.]/g, '').slice(0, 15);
+    const verboseLogFile = CONFIG.logFile.replace('.json', `_verbose_${_vTs}.log`);
+    const verboseStream = fs.createWriteStream(verboseLogFile, { encoding: 'utf8' });
+    verboseStream.write(`# mChess verbose log — ${new Date().toISOString()}\n`);
+    verboseStream.write(`# ${n} games × d${depths.join('/')} | ${selectedLevel}\n\n`);
+
     console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${depths.length} depth(s)`);
     depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
 
@@ -444,9 +451,12 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     const sharedPage = await browser.newPage();
     sharedPage.on('console', msg => {
         const t = msg.text();
+        const ts = new Date().toISOString().slice(11, 23); // "HH:MM:SS.mmm"
+        verboseStream.write(`[${ts}] ${t}\n`); // ALL browser console messages go to verbose log
         if (msg.type() === 'error') console.log('🌐 Error:', t.slice(0, 120));
         else if (t.includes('NPS:')) console.log('   🧠', t.replace(/.*?Real depth:/, 'depth:').trim());
         else if (t.includes('Book exit')) console.log('   ⚠️  ' + t);
+        else if (t.startsWith('📊') && t.includes('FILTER→')) console.log('   🚨', t.trim()); // anti-blunder events only
     });
     console.log('🌐 Loading page...');
     await sharedPage.goto('file://' + CONFIG.htmlFile);
@@ -486,6 +496,8 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
         console.log('═'.repeat(62));
         depths.forEach(d => { if (statsMap[d].total() > 0) statsMap[d].print(); });
         try { await browser.close(); } catch (_) { }
+        try { verboseStream.end(); } catch (_) { }
+        console.log(`📝 Verbose log: ${path.basename(verboseLogFile)}`);
         process.exit(0);
     });
 
@@ -515,6 +527,9 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
         const total = allGames.length;
         for (let i = 0; i < allGames.length; i++) {
             const { depth, mChessColor, opening, startFen } = allGames[i];
+            verboseStream.write(`\n${'='.repeat(60)}\n`);
+            verboseStream.write(`=== Game ${i+1}/${total} | mChess=${mChessColor} | SF d${depth} ===\n`);
+            verboseStream.write(`${'='.repeat(60)}\n`);
             try {
                 await playGame(i + 1, total, mChessColor, opening, depth, statsMap[depth], sharedPage, startFen);
             } catch (err) {
@@ -562,6 +577,8 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
 
     savePartial(totalN, totalN, true); // final complete save
     console.log(`\n💾 Results saved to: ${CONFIG.logFile}`);
+    verboseStream.end();
+    console.log(`📝 Verbose log: ${path.basename(verboseLogFile)}`);
 }
 
 // ── Interactive tournament runner ────────────────────────────────────────

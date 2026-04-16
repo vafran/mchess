@@ -480,7 +480,7 @@ Created by `createEngineWorker()`. The entire worker code is a JS string embedde
 | History | `Int32Array(64*64)`, aged by `>>=1` each search (**v2.25.30**, was zeroed) |
 | Countermove | Per (from,to) pair, reset each search |
 | SEE | Used in quiescence pruning and root anti-blunder filter |
-| Root anti-blunder | Post-search: replace top move if SEE < -50 on quiet move |
+| Root anti-blunder | Post-search: replace top move if SEE < -100 on quiet move |
 | bestSoFar | Sent after each completed depth iteration |
 | Soft deadline | Don't start new depth if >75% budget used |
 | EBF brake | Predict next depth cost via EBF factor (4.5); skip if it won't fit |

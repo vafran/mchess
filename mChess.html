@@ -10976,12 +10976,14 @@ limitations under the License.
             // Cost: one SEE call (O(N) board scan) — negligible.
             {
               let _safeIdx = 0;
+              let _top1See = null; // SEE of top-ranked quiet move (null if top1 is a capture)
               const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
               for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
                 const _m = _sr[_i].move;
                 const _isCapture = state.board[_m.tr*8+_m.tc] !== 0;
                 if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
                 const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
+                if (_i === 0) _top1See = _moveSee; // record top1 SEE for diagnostics
                 if (_moveSee >= -100) { _safeIdx = _i; break; } // move is safe
                 // Move hangs a piece for nothing — skip it and try next
               }
@@ -10995,6 +10997,18 @@ limitations under the License.
                   finalOptions = bestOptions; // propagate override — filter was dead code without this
                 }
               }
+              // ── Diagnostic log (captured by arena_tournament.js verbose logger) ──
+              const _sq = (r, c) => 'abcdefgh'[c] + (8 - r);
+              const _top3 = _sr.slice(0, Math.min(3, _sr.length)).map((x, idx) => {
+                const mv = x.move;
+                const isCapt = state.board[mv.tr*8+mv.tc] !== 0;
+                const seeNote = idx === 0 ? (isCapt ? '/capt' : (_top1See !== null ? '/see:' + _top1See : '')) : '';
+                return `${_sq(mv.fr,mv.fc)}-${_sq(mv.tr,mv.tc)}:${x.score}${seeNote}`;
+              }).join(' ');
+              const _filterNote = _safeIdx > 0
+                ? `FILTER→${_sq(_sr[_safeIdx].move.fr,_sr[_safeIdx].move.fc)}-${_sq(_sr[_safeIdx].move.tr,_sr[_safeIdx].move.tc)}`
+                : 'clean';
+              console.log(`📊 [${state.turn}] top3:[${_top3}] ${_filterNote}`);
             }
             const _totalN = searchNodes + qSearchNodes;
             const _ms = Date.now() - searchStartTime;
