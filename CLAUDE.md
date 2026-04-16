@@ -589,6 +589,8 @@ node arena.js --fen "..." --color w --depth 7   # single FEN test
 Requires: Node.js, Puppeteer, `stockfish.exe` in `stockfish_tests/`.  
 Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from HTML title tag)
 
+> **Workflow note:** The user runs tournaments manually — do NOT launch `arena_tournament.js` as a background task. After committing a change, just tell the user the version is ready and they will run it themselves.
+
 ### Tournament ELO History (20 games, SF depth-7, JS blunder detector)
 
 | Version | Result vs SF-1900 | Est. ELO | Blunders | Notes |
