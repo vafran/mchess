@@ -376,10 +376,10 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     } catch (_) {}
     const modeTag = (fenReplayMode && fenList.length > 0) ? '_fenreplay' : '';
     const gameCount = fenReplayMode && fenList.length > 0 ? fenList.length : n;
-    CONFIG.logFile = path.join(__dirname, `tournament_mChess${mchessVer}_d${depths.join('_')}_${gameCount}g${modeTag}.json`);
-
-    // ── Verbose log — timestamped so each run creates its own file ────────
     const _vTs = new Date().toISOString().replace('T', '_').replace(/[:.]/g, '').slice(0, 15);
+    CONFIG.logFile = path.join(__dirname, `tournament_mChess${mchessVer}_d${depths.join('_')}_${gameCount}g${modeTag}_${_vTs}.json`);
+
+    // ── Verbose log — same timestamp as JSON so both files pair up ────────
     const verboseLogFile = CONFIG.logFile.replace('.json', `_verbose_${_vTs}.log`);
     const verboseStream = fs.createWriteStream(verboseLogFile, { encoding: 'utf8' });
     verboseStream.write(`# mChess verbose log — ${new Date().toISOString()}\n`);
