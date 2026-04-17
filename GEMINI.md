@@ -687,7 +687,15 @@ Update `pr_v2.22.6_patches.md`:
 - Reorder the STATUS table by new priority (based on tournament evidence, not theory)
 - Update version targets
 
-**Step 7 — Decide next patch and repeat**
+**Step 7 — Assess verbose log coverage**
+
+After completing the analysis, ask: *does the current log give us everything we need to diagnose the next patch?*
+
+- If the next patch requires confirming a root cause that isn't visible in the existing log (e.g., a repetition hash mismatch, a specific eval term dominating, a search condition not firing), **add the targeted diagnostic log line now** — before the next tournament. The cost of a wasted tournament run because the log didn't capture what we needed is high.
+- Keep additions targeted and low-noise: one `console.log` per hypothesis, only fires in the rare case (not every move). Never add per-node or per-depth logging.
+- If the existing log already covers the next patch's diagnostic needs, skip this step.
+
+**Step 8 — Decide next patch and repeat**
 
 Choose the highest-priority patch from the backlog that has:
 - Clear evidence from tournament data
@@ -788,7 +796,16 @@ node arena.js --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq 
 
 ## Version Numbering
 
-`v2.MAJOR.MINOR` — updated manually in the `<title>` tag and 3 other occurrences in the HTML.
+`v2.MINOR.PATCH` — updated manually in the `<title>` tag and 3 other occurrences in the HTML.
+
+**Convention (enforced going forward from v2.23.0):**
+- **`v2.X.0`** = production release — the only versions that live on `main`. When a dev cycle is ready to ship, bump the minor version and reset patch to 0 before the PR.
+- **`v2.X.Y` (Y > 0)** = development iterations on the feat branch, and hotfixes applied directly to `main` for critical bugs found in production.
+- At a glance: `.0` = production, anything else = dev/hotfix.
+
+Example cycle: dev iterates `v2.22.1 → v2.22.2 → … → v2.22.7` on the feat branch. When ready to ship, the PR bumps to **`v2.23.0`** and merges to `main`. The next dev cycle starts at `v2.23.1`.
+
+> Note: `main` currently holds `v2.22.2` (pre-convention). The next merge to main will be `v2.23.0`.
 
 **Current branching strategy (strictly enforced):**
 - `main` = last tournament-validated version only (currently v2.22.2)
@@ -796,6 +813,15 @@ node arena.js --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq 
 - Every engine change gets its own version bump + 20-game tournament before merging to main
 - **Never commit engine changes directly to main**
 - Merge to `main` only after a full 20-game tournament shows no ELO regression
+- **Before opening a PR to `main` (production release):**
+  1. Run a 40-game tournament on the candidate version:
+     ```bash
+     node arena_tournament.js --batch --depth 7 --games 40
+     ```
+     The 20-game tournament is for patch validation during development. The 40-game run is required for production sign-off — wider confidence interval, more reliable ELO estimate, catches variance-sensitive regressions that 20 games can miss.
+  2. Update `README.md` and `README_es.md` — add a "What's new in vX.X.X" section and bump the footer version.
+  3. Update `docs/CHANGELOG.md` and `docs/CHANGELOG_es.md` — add a new version entry at the top.
+  All four files must be updated before the PR is opened. Never open a PR to `main` with stale docs.
 
 **v2.21.0** is the stable baseline stored at `stockfish_tests/mChessv2.21.0.html`. It is the only version with confirmed wins vs SF depth-7.
 
