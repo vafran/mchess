@@ -7,6 +7,29 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.22.6 — Bug de Promoción Fantasma Corregido
+**~16.500 líneas · ~860 KB**
+
+### Corrección — Regla del Cuadrado: Duplicado Roto Eliminado (Crítico)
+
+Existía una segunda implementación de la Regla del Cuadrado dentro del bucle de evaluación de peones (`u === 1`, ~línea 9099). A diferencia de la versión correcta en la línea ~9690 (que tiene una comprobación `if (!anyMajorMinor)` y solo se activa en finales puros de rey y peones), esta copia rota:
+
+- **No tenía ninguna comprobación** — se activaba en cualquier final, incluyendo posiciones con torres y piezas menores en el tablero
+- Otorgaba `bonus += Math.round(600 * eg)` — hasta **+942 cp** con `eg=1.57` — para peones pasados que las piezas enemigas podían bloquear o capturar trivialmente
+- Producía **evaluaciones fantasma** de +600–+942 cp en jugadas silenciosas (puntuaciones idénticas en múltiples jugadas diferentes = firma de fantasma)
+
+Resultado: el motor alucinaba promociones imparables, jugaba avances de peón irracionales (por ejemplo, `h4??` con una torre defensora) y perdía confiabilidad evaluativa en cualquier final con piezas presentes.
+
+**Corrección:** Eliminado el bloque roto de 14 líneas. La implementación correcta (con comprobación `!anyMajorMinor` + verificación correcta de peón pasado + bono calibrado de 250cp) se conserva en la línea ~9690.
+
+**Validación en torneo (6/20 partidas, datos preliminares):** Cero activaciones de fantasmas. Resultado 0V 1D 5E, ~1842 ELO frente a ~1732 base (v2.22.5).
+
+### Diagnóstico — Tiempo de Pensamiento en Log Detallado
+
+La línea `📊` de la consola del worker ahora añade `t:${N}ms` — duración de búsqueda por jugada. Permite detectar jugadas forzadas de 0ms (`[dforced/30]`) y tiempos de pensamiento anormalmente largos en los logs del torneo.
+
+---
+
 ## v2.22.0 — Actualización de Inteligencia Pedagógica
 **~15,800 líneas · ~805 KB**
 

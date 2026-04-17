@@ -1,7 +1,7 @@
 # mChess (Monolith Chess) — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.22.5** (branch `feat/v2.22.0`) | `main` has v2.22.2 | File: `mChess.html` (~16,496 lines, ~860 KB)  
+> Current version: **v2.22.6** (branch `feat/v2.22.0`) | `main` has v2.22.2 | File: `mChess.html` (~16,500 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---
@@ -37,8 +37,15 @@ mChess-public/
     ├── fens_antiblunders.json      ← Positions where engine MUST NOT blunder
     ├── fens_endgames.json          ← Endgame test suite
     ├── fens_sacrificios_apertura.json ← Opening sacrifice regression tests
-    ├── tournament_mChess_d7_20g_v.2.25.12.json ← Latest full tournament result
+    ├── tournament_mChess_v*_d7_*g_*.json      ← Tournament results (timestamped)
+    ├── tournament_mChess_v*_d7_*g_*_verbose_*.log ← Full verbose diagnostics log
     └── mChess_v*.html              ← Historical snapshots for A/B comparison
+```
+
+**Analysis / planning files** (gitignored via `pr_*.md`):
+```
+pr_v2.22.6_patches.md        ← Patch backlog with code, risk, status
+pr_tournament_v*.md          ← Per-tournament analysis docs
 ```
 
 ---
@@ -589,7 +596,7 @@ node arena.js --fen "..." --color w --depth 7   # single FEN test
 Requires: Node.js, Puppeteer, `stockfish.exe` in `stockfish_tests/`.  
 Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from HTML title tag)
 
-> **Workflow note:** The user runs tournaments manually — do NOT launch `arena_tournament.js` as a background task. After committing a change, just tell the user the version is ready and they will run it themselves.
+> **Workflow note:** The user runs tournaments manually — do NOT launch `arena_tournament.js` as a background task. After committing a change, tell the user the version is ready and they will run it themselves. Never run or suggest running the tournament without the user explicitly starting it.
 
 ### Tournament ELO History (20 games, SF depth-7, JS blunder detector)
 
@@ -601,8 +608,147 @@ Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from H
 | v2.22.2 | **1W 11L 8D** | **~1709** | 5 (0.25/g), 1 opening | ✅ **Best result** — anti-blunder filter dead code fixed; first win since v2.21.0 |
 | v2.24.2 | 0W 14L 6D | ~1609 | 16 (0.80/g), 6 opening | Regression from v2.21 |
 | v2.25.12 | 0W 13L 7D | ~1631 | 14 (0.70/g), 1 opening | Same ELO as v2.21 but no wins; 1 opening blunder due to bigger book |
+| v2.22.5 | 0W 9L 11D | ~1732 | — | Phantom Rule of Square active; 8/20 games affected |
+| v2.22.6 | — (ongoing) | ~1842* | — | Patch #1 applied (phantom dead); repetition blindness now exposed |
+
+*v2.22.6 ELO estimated from 6/20 games.
 
 **Primary metric: blunders per game** (especially opening blunders). A clean loss beats a draw with piece giveaways — the game is for a 9-year-old.
+
+---
+
+## Engine Patch Development Workflow
+
+**This is the mandatory process for every engine change. No exceptions.**
+
+### The Rule
+> **ONE patch per version. Commit. Tournament. Analyze. Decide. Repeat.**
+> Never combine two engine changes in one version. If the ELO drops, you cannot isolate the cause.
+
+### Full Cycle (step by step)
+
+**Step 1 — Implement the patch**
+- Read the target code section before touching anything
+- Make the smallest possible change that addresses the root cause
+- Bump version in **4 places** in `mChess.html`: `<!--` comment, `<title>`, button text, `console.log`
+- Verify the diff is clean — only the intended change, nothing else
+
+**Step 2 — Commit to feat branch**
+```bash
+git add mChess.html
+git commit -m "feat: vX.X.X — <one-line description of the patch>"
+```
+Branch is always `feat/v2.22.0`. Never commit to `main`.
+
+**Step 3 — User runs the tournament**
+```bash
+cd stockfish_tests
+node arena_tournament.js --batch --depth 7 --games 20
+```
+This produces two files:
+- `tournament_mChess_vX.X.X_d7_20g_<timestamp>.json` — results + PGNs
+- `tournament_mChess_vX.X.X_d7_20g_<timestamp>_verbose_<timestamp>.log` — full diagnostics
+
+Do NOT start the tournament yourself. Tell the user the version is ready.
+
+**Step 4 — Analyze the tournament (thorough)**
+
+When the user says the tournament is done (or shares intermediate data), analyze **both** files:
+
+*From the JSON:*
+- Final score: W/L/D, ELO estimate, CI
+- Per-game: color, result, reason, move count, opening (first 5 moves of PGN)
+- Final moves of each game (last 8 PGN tokens) — to identify mating sequences, repetitions
+
+*From the verbose log:*
+- Phantom detection: grep `top3:` lines where top-1 score is ≥590 or ≤-590 (absolute value)
+- **Phantom signature**: multiple *different* moves with *identical* scores = evaluation dominated by a constant term
+- Filter activations: grep `FILTER→` — note SEE value, original score, substitute score, think time
+- Game boundaries: `=== Game N/20 ===` markers
+- Forced moves: `[dforced/30]` at 0.0s = only one legal move, expected in cornered-king endgames
+
+**Step 5 — Create the analysis document**
+
+Create `pr_tournament_vX.X.X_analysis.md` (gitignored). Structure:
+1. Header with game count, files, patch applied
+2. Scoreboard table: `# | Color | Plies | Moves | Result | Reason | Opening | Phantom? | Filter?`
+3. Patch validation section — did it work? any side effects?
+4. New findings — unexpected patterns discovered in this tournament
+5. Per-game deep dives for: losses, games with phantom activity, unusual draws
+6. Filter analysis table (all activations, verdict: correct / false positive / ambiguous)
+7. Comparison table vs previous version
+8. Implications for patch plan + revised priority order
+
+**Step 6 — Update the patch backlog**
+
+Update `pr_v2.22.6_patches.md`:
+- Mark applied patch as ✅ APPLIED
+- Add any new bugs discovered (new patch entries with code location, fix, risk)
+- Reorder the STATUS table by new priority (based on tournament evidence, not theory)
+- Update version targets
+
+**Step 7 — Assess verbose log coverage**
+
+After completing the analysis, ask: *does the current log give us everything we need to diagnose the next patch?*
+
+- If the next patch requires confirming a root cause that isn't visible in the existing log (e.g., a repetition hash mismatch, a specific eval term dominating, a search condition not firing), **add the targeted diagnostic log line now** — before the next tournament. The cost of a wasted tournament run because the log didn't capture what we needed is high.
+- Keep additions targeted and low-noise: one `console.log` per hypothesis, only fires in the rare case (not every move). Never add per-node or per-depth logging.
+- If the existing log already covers the next patch's diagnostic needs, skip this step.
+
+**Step 8 — Decide next patch and repeat**
+
+Choose the highest-priority patch from the backlog that has:
+- Clear evidence from tournament data
+- A well-understood fix
+- Low risk of regressions
+
+Then go back to Step 1.
+
+---
+
+### Verbose Log Diagnostic Reference
+
+The `📊` line logged after each AI move:
+```
+[HH:MM:SS.mmm] 📊 [w/b] top3:[mv1:score/see:N mv2:score mv3:score] FILTER→mv / clean t:Xms
+```
+
+| Field | Meaning |
+|-------|---------|
+| `[w/b]` | Side to move |
+| `mv:score` | Move in algebraic + eval from current player's perspective |
+| `/see:N` | Static Exchange Evaluation of top move (quiet moves only) |
+| `/capt` | Top move is a capture (no SEE shown) |
+| `FILTER→mv` | Anti-blunder filter fired, substituted this move |
+| `clean` | No filter substitution |
+| `t:Xms` | Total search time for this move |
+
+**Phantom signatures to watch for:**
+- `score ≥ 590` or `score ≤ -590` on a quiet move = phantom evaluation (eval dominated by a constant term, not real material)
+- Multiple different moves with **identical** scores (e.g., `a1-b1:630 c2-d3:630 h7-h5:630`) = definitive phantom — the constant dominates all positional differences
+- Scores escalating in lockstep across consecutive moves = passed pawn phantom building up
+
+**Known phantom sources (as of v2.22.6):**
+- ~~Broken Rule of Square in pawn loop~~ → **FIXED in v2.22.6**
+- `PASS_DANGER` term (~-600cp for opponent's passed pawn) → visible in G4/G5 of v2.22.6 tournament; shows as negative identical scores
+
+**Filter false positive indicators:**
+- SEE = -165 = rook-for-bishop exchange sacrifice (R=500, B=335, 500-335=165) — valid chess
+- SEE = -325 = knight sacrifice — valid in many positions
+- SEE = -335 = bishop sacrifice — valid in many positions
+- A false positive is confirmed when: substitute scores WORSE than original, or game outcome didn't improve
+- Current threshold: SEE < -100 triggers filter; proposed upgrade: SEE < -200 (avoids exchange sac FPs)
+
+---
+
+### What Claude Must Never Do
+
+- **Never implement two patches in one version**, even if both seem trivial
+- **Never start a tournament** — the user runs it manually
+- **Never commit to `main`** — always `feat/v2.22.0`
+- **Never implement a patch while a tournament is running** — wait for all 20 games
+- **Never trust Gemini/external analysis blindly** — verify every code location and proposed change against the actual `mChess.html` source before implementing
+- **Never skip the analysis doc** — every tournament gets a `pr_tournament_v*.md`
 
 ---
 
@@ -650,12 +796,33 @@ node arena.js --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq 
 
 ## Version Numbering
 
-`v2.MAJOR.MINOR` — updated manually in the `<title>` tag and 3 other occurrences in the HTML.
+`v2.MINOR.PATCH` — updated manually in the `<title>` tag and 3 other occurrences in the HTML.
+
+**Convention (enforced going forward from v2.23.0):**
+- **`v2.X.0`** = production release — the only versions that live on `main`. When a dev cycle is ready to ship, bump the minor version and reset patch to 0 before the PR.
+- **`v2.X.Y` (Y > 0)** = development iterations on the feat branch, and hotfixes applied directly to `main` for critical bugs found in production.
+- At a glance: `.0` = production, anything else = dev/hotfix.
+
+Example cycle: dev iterates `v2.22.1 → v2.22.2 → … → v2.22.7` on the feat branch. When ready to ship, the PR bumps to **`v2.23.0`** and merges to `main`. The next dev cycle starts at `v2.23.1`.
+
+> Note: `main` currently holds `v2.22.2` (pre-convention). The next merge to main will be `v2.23.0`.
 
 **Current branching strategy (strictly enforced):**
-- `main` = last tournament-validated version only (currently v2.24.1; v2.22.0 pending overnight test)
-- `feat/v2.22.0` = active development branch (v2.21.0 engine + bigger opening book + UI fixes)
-- Every engine change gets its own branch + 20-game tournament before merging to main
+- `main` = last tournament-validated version only (currently v2.22.2)
+- `feat/v2.22.0` = active development branch (currently at v2.22.6)
+- Every engine change gets its own version bump + 20-game tournament before merging to main
 - **Never commit engine changes directly to main**
+- Merge to `main` only after a full 20-game tournament shows no ELO regression
+- **Before opening a PR to `main` (production release):**
+  1. Run a 40-game tournament on the candidate version:
+     ```bash
+     node arena_tournament.js --batch --depth 7 --games 40
+     ```
+     The 20-game tournament is for patch validation during development. The 40-game run is required for production sign-off — wider confidence interval, more reliable ELO estimate, catches variance-sensitive regressions that 20 games can miss.
+  2. Update `README.md` and `README_es.md` — add a "What's new in vX.X.X" section and bump the footer version.
+  3. Update `docs/CHANGELOG.md` and `docs/CHANGELOG_es.md` — add a new version entry at the top.
+  All four files must be updated before the PR is opened. Never open a PR to `main` with stale docs.
 
-**v2.21.0** is the stable baseline stored at `stockfish_tests/mChessv2.21.0.html`. It is the only version that consistently wins real games vs SF depth-7.
+**v2.21.0** is the stable baseline stored at `stockfish_tests/mChessv2.21.0.html`. It is the only version with confirmed wins vs SF depth-7.
+
+**Active patch backlog:** `pr_v2.22.6_patches.md` (gitignored) — one-line-per-patch status table, full code + rationale for each.

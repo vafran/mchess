@@ -177,6 +177,24 @@ Three styles, with labels now visible under the slider:
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
 
+## What's new in v2.22.6 — *Phantom Promotion Bug Fixed*
+
+### 🔧 Rule of the Square: Broken Duplicate Removed
+
+A second Rule of the Square implementation was silently running inside the pawn evaluation loop. Unlike the correct version (which only activates in pure king-and-pawn endings), this broken copy had no guard — it awarded a promotion bonus of up to **+600 × endgame_factor centipawns** for any passed pawn, even when enemy pieces could easily block or capture it.
+
+Result: the engine hallucinated massive promotion threats in any endgame with pieces on the board, triggering irrational pawn pushes (e.g. `h4??` with a rook on the board) and distorted evaluations of +600–+942 cp on quiet moves.
+
+**Fix:** Removed the 14-line broken block inside the pawn loop. The correct implementation (with `if (!anyMajorMinor)` guard) is preserved and untouched.
+
+**Tournament result (6 games, early data):** 0W 1L 5D — ~1842 ELO (CI 1651–2032). Zero phantom activations detected in all 6 games.
+
+### 📊 Diagnostic: Think Time Added to Verbose Log
+
+The `📊` line in the worker's verbose diagnostic now includes `t:${N}ms` — the time the engine spent searching each move. This makes it easier to spot pathological positions where the engine thinks for 0ms (forced moves) or unexpectedly long.
+
+---
+
 ## What's new in v2.22.5 — *Mobile Crash Recovery*
 
 ### 📱 bestSoFar: Worker Crash Protection
@@ -552,4 +570,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.22.5 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.22.6 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*

@@ -7,6 +7,29 @@ Format: version · size · what changed.
 
 ---
 
+## v2.22.6 — Phantom Promotion Bug Fixed
+**~16,500 lines · ~860 KB**
+
+### Bug Fix — Rule of the Square: Broken Duplicate Removed (Critical)
+
+A second Rule of the Square implementation existed inside the pawn evaluation loop (`u === 1`, ~line 9099). Unlike the correct version at line ~9690 (which has an `if (!anyMajorMinor)` guard and only fires in pure king-and-pawn endings), this broken copy:
+
+- Had **no guard** — fired in any endgame, including positions with rooks and minor pieces on the board
+- Awarded `bonus += Math.round(600 * eg)` — up to **+942 cp** at `eg=1.57` — for passed pawns that enemy pieces could trivially block or capture
+- Produced **phantom evaluation scores** of +600–+942 cp on quiet moves (identical scores across multiple different moves = phantom signature)
+
+Result: the engine hallucinated unstoppable promotions, played irrational pawn pushes (e.g. `h4??` with a rook defending), and lost evaluative trust in any endgame with pieces present.
+
+**Fix:** Removed the 14-line broken block. The correct implementation (with `!anyMajorMinor` guard + proper passedness check + calibrated 250cp bonus) is preserved at line ~9690.
+
+**Tournament validation (6/20 games, early data):** Zero phantom activations. Score 0W 1L 5D, ~1842 ELO vs baseline ~1732 (v2.22.5).
+
+### Diagnostic — Think Time in Verbose Log
+
+The `📊` console line in the worker now appends `t:${N}ms` — search duration per move. Enables detection of 0ms forced moves (`[dforced/30]`) and abnormally long think times in tournament logs.
+
+---
+
 ## v2.22.0 — Pedagogical Intelligence Update
 **~15,800 lines · ~805 KB**
 

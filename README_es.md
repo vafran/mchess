@@ -183,6 +183,24 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
+## Lo nuevo en v2.22.6 — *Bug de Promoción Fantasma Corregido*
+
+### 🔧 Regla del Cuadrado: Duplicado Roto Eliminado
+
+Una segunda implementación de la Regla del Cuadrado se ejecutaba silenciosamente dentro del bucle de evaluación de peones. A diferencia de la versión correcta (que solo se activa en finales de rey y peones puros), esta copia rota no tenía ninguna comprobación — otorgaba un bono de promoción de hasta **+600 × factor_final centipeonadas** por cualquier peón pasado, incluso cuando las piezas enemigas podían bloquearlo o capturarlo fácilmente.
+
+Resultado: el motor alucinaba amenazas de promoción masivas en cualquier final con piezas en el tablero, desencadenando avances de peón irracionales (por ejemplo, `h4??` con una torre en el tablero) y evaluaciones distorsionadas de +600–+942 cp en jugadas silenciosas.
+
+**Corrección:** Eliminado el bloque roto de 14 líneas dentro del bucle de peones. La implementación correcta (con la comprobación `if (!anyMajorMinor)`) se conserva intacta.
+
+**Resultado del torneo (6 partidas, datos preliminares):** 0V 1D 5E — ~1842 ELO (IC 1651–2032). Cero activaciones de fantasmas detectadas en las 6 partidas.
+
+### 📊 Diagnóstico: Tiempo de Pensamiento Añadido al Log Detallado
+
+La línea `📊` en el diagnóstico detallado del worker ahora incluye `t:${N}ms` — el tiempo que tardó el motor en buscar cada jugada. Esto facilita detectar posiciones patológicas donde el motor piensa 0ms (jugadas forzadas) o un tiempo inesperadamente largo.
+
+---
+
 ## Lo nuevo en v2.22.5 — *Recuperación de Caídas en Móvil*
 
 ### 📱 bestSoFar: Protección contra Caídas del Worker
@@ -553,4 +571,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.22.5 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*
+*Monolith Chess v2.22.6 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*
