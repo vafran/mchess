@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.22.5
+Monolith Chess v2.22.6
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.22.5</title>
+  <title>Monolith Chess v2.22.6</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.5 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.6 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3930,7 +3930,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.22.5", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.22.6", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -9096,22 +9096,8 @@ limitations under the License.
                   if (bp !== 0) break; // any other piece blocks the line
                 }
 
-                // ── Rule of the Square (Unstoppable Passer) ──────────────────
-                // If the enemy king cannot geometrically intercept the pawn, it
-                // is worth ~a rook (it WILL promote). Uses Chebyshev distance.
-                if (eg > 0.5) {
-                  const eKing = isW ? state.bKing : state.wKing;
-                  if (eKing) {
-                    const stepsToPromo = isW ? r : (7 - r);
-                    const eKingDist = Math.max(
-                      Math.abs(eKing[0] - (isW ? 0 : 7)),
-                      Math.abs(eKing[1] - c)
-                    );
-                    if (eKingDist > stepsToPromo + 1) {
-                      bonus += Math.round(600 * eg); // Scale with endgame phase
-                    }
-                  }
-                }
+                // Rule of the Square: handled by the correct implementation below
+                // (// ── RULE OF THE SQUARE) which includes the !anyMajorMinor guard.
 
                 // 🛡️ KING ESCORT (Endgame)
                 // Reward the King who walks next to the passed pawn to escort it.
@@ -11008,7 +10994,7 @@ limitations under the License.
               const _filterNote = _safeIdx > 0
                 ? `FILTER→${_sq(_sr[_safeIdx].move.fr,_sr[_safeIdx].move.fc)}-${_sq(_sr[_safeIdx].move.tr,_sr[_safeIdx].move.tc)}`
                 : 'clean';
-              console.log(`📊 [${state.turn}] top3:[${_top3}] ${_filterNote}`);
+              console.log(`📊 [${state.turn}] top3:[${_top3}] ${_filterNote} t:${Date.now() - searchStartTime}ms`);
             }
             const _totalN = searchNodes + qSearchNodes;
             const _ms = Date.now() - searchStartTime;
