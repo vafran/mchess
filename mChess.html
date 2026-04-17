@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.22.6
+Monolith Chess v2.22.7
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.22.6</title>
+  <title>Monolith Chess v2.22.7</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.6 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.7 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3930,7 +3930,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.22.6", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.22.7", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -10955,32 +10955,41 @@ limitations under the License.
 
             // ── ROOT-LEVEL SEE ANTI-BLUNDER FILTER ────────────────────────
             // After all depth iterations, run a fast SEE check on the top move.
-            // If the chosen move immediately hangs a piece (SEE < -100cp on a quiet move),
-            // discard it and use the next-best from scoredRoot.
-            // This is a safety net against TT collisions, cold-start depth-1 stale scores,
-            // and any evaluation anomaly that slips through the main search.
-            // Cost: one SEE call (O(N) board scan) — negligible.
+            // If the chosen move hangs a piece (SEE < -200cp on a quiet move) AND the engine
+            // doesn't deeply value it (score ≤ +200cp), discard it and use the next-best.
+            // Safety: never substitute into a forced-mate line (score < -50000).
+            // Early exit: if top move is already forced mate, filter is meaningless.
             {
               let _safeIdx = 0;
               let _top1See = null; // SEE of top-ranked quiet move (null if top1 is a capture)
+              let _filterBlocked = false; // true when safety gate prevented a substitution
               const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
-              for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
-                const _m = _sr[_i].move;
-                const _isCapture = state.board[_m.tr*8+_m.tc] !== 0;
-                if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
-                const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
-                if (_i === 0) _top1See = _moveSee; // record top1 SEE for diagnostics
-                if (_moveSee >= -100) { _safeIdx = _i; break; } // move is safe
-                // Move hangs a piece for nothing — skip it and try next
-              }
-              if (_safeIdx > 0) {
-                // Best move was a blunder — use the safe alternative
-                const _safeMove = _sr[_safeIdx].move;
-                if (!bestOptions.some(o =>
-                  o.move.fr === _safeMove.fr && o.move.fc === _safeMove.fc &&
-                  o.move.tr === _safeMove.tr && o.move.tc === _safeMove.tc)) {
-                  bestOptions = [_sr[_safeIdx]];
-                  finalOptions = bestOptions; // propagate override — filter was dead code without this
+              // Early exit: position is forced mate — no point running the filter
+              if (_sr[0].score > -50000) {
+                for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
+                  const _m = _sr[_i].move;
+                  const _isCapture = state.board[_m.tr*8+_m.tc] !== 0;
+                  if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
+                  const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
+                  if (_i === 0) _top1See = _moveSee; // record top1 SEE for diagnostics
+                  // Safe if SEE >= -200 OR engine deeply values the move after full search
+                  if (_moveSee >= -200 || _sr[_i].score > 200) { _safeIdx = _i; break; }
+                }
+                if (_safeIdx > 0) {
+                  if (_sr[_safeIdx].score > -50000) {
+                    // Substitute is not a forced-mate line — proceed with substitution
+                    const _safeMove = _sr[_safeIdx].move;
+                    if (!bestOptions.some(o =>
+                      o.move.fr === _safeMove.fr && o.move.fc === _safeMove.fc &&
+                      o.move.tr === _safeMove.tr && o.move.tc === _safeMove.tc)) {
+                      bestOptions = [_sr[_safeIdx]];
+                      finalOptions = bestOptions;
+                    }
+                  } else {
+                    // Substitute IS forced mate — keep original choice, log the block
+                    _filterBlocked = true;
+                    _safeIdx = 0;
+                  }
                 }
               }
               // ── Diagnostic log (captured by arena_tournament.js verbose logger) ──
@@ -10991,9 +11000,11 @@ limitations under the License.
                 const seeNote = idx === 0 ? (isCapt ? '/capt' : (_top1See !== null ? '/see:' + _top1See : '')) : '';
                 return `${_sq(mv.fr,mv.fc)}-${_sq(mv.tr,mv.tc)}:${x.score}${seeNote}`;
               }).join(' ');
-              const _filterNote = _safeIdx > 0
-                ? `FILTER→${_sq(_sr[_safeIdx].move.fr,_sr[_safeIdx].move.fc)}-${_sq(_sr[_safeIdx].move.tr,_sr[_safeIdx].move.tc)}`
-                : 'clean';
+              const _filterNote = _filterBlocked
+                ? `FILTER→BLOCKED(mate:${_sr[1] ? _sr[1].score : '?'})`
+                : (_safeIdx > 0
+                  ? `FILTER→${_sq(_sr[_safeIdx].move.fr,_sr[_safeIdx].move.fc)}-${_sq(_sr[_safeIdx].move.tr,_sr[_safeIdx].move.tc)}`
+                  : 'clean');
               console.log(`📊 [${state.turn}] top3:[${_top3}] ${_filterNote} t:${Date.now() - searchStartTime}ms`);
             }
             const _totalN = searchNodes + qSearchNodes;
