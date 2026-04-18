@@ -1,7 +1,7 @@
 # mChess (Monolith Chess) — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.22.6** (branch `feat/v2.22.0`) | `main` has v2.22.2 | File: `mChess.html` (~16,500 lines, ~860 KB)  
+> Current version: **v2.22.10** (branch `feat/v2.22.0`) | `main` has v2.22.5 | File: `mChess.html` (~16,500 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---
@@ -600,20 +600,33 @@ Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from H
 
 ### Tournament ELO History (20 games, SF depth-7, JS blunder detector)
 
-| Version | Result vs SF-1900 | Est. ELO | Blunders | Notes |
-|---------|-------------------|----------|----------|-------|
-| v2.21.0 | **2W 15L 3D** | **~1631** | 12 (0.60/g), 5 opening | ✅ **Stable baseline** — only version with wins |
-| v2.22.0 | 0W 24L 16D | ~1659 | 13 (0.33/g, 40 games) | Bigger book; book-exit SEE filter caused deviations every game |
-| v2.22.1 | 0W 10L 7D | ~1665 | 10 (0.59/g) | Book-exit filter removed; anti-blunder filter still dead code |
-| v2.22.2 | **1W 11L 8D** | **~1709** | 5 (0.25/g), 1 opening | ✅ **Best result** — anti-blunder filter dead code fixed; first win since v2.21.0 |
-| v2.24.2 | 0W 14L 6D | ~1609 | 16 (0.80/g), 6 opening | Regression from v2.21 |
-| v2.25.12 | 0W 13L 7D | ~1631 | 14 (0.70/g), 1 opening | Same ELO as v2.21 but no wins; 1 opening blunder due to bigger book |
-| v2.22.5 | 0W 9L 11D | ~1732 | — | Phantom Rule of Square active; 8/20 games affected |
-| v2.22.6 | — (ongoing) | ~1842* | — | Patch #1 applied (phantom dead); repetition blindness now exposed |
+| Version | Result vs SF-1900 | Est. ELO | "Winning" evals | Notes |
+|---------|-------------------|----------|-----------------|-------|
+| v2.21.0 | **2W 15L 3D** | **~1631** | — | Only version with 2 wins; filter was dead code |
+| v2.22.0 | 0W 24L 16D | ~1659 | — | Bigger book; book-exit SEE filter caused deviations every game |
+| v2.22.1 | 0W 10L 7D | ~1665 | — | Book-exit filter removed; anti-blunder filter still dead code |
+| v2.22.2 | **1W 11L 8D** | **~1709** | — | Anti-blunder filter dead code fixed; first win since v2.21.0 |
+| v2.24.2 | 0W 14L 6D | ~1609 | — | Regression from v2.21 |
+| v2.25.12 | 0W 13L 7D | ~1631 | — | Same ELO as v2.21 but no wins |
+| v2.22.5 | **0W 9L 11D** | **~1732** | **20%** | ✅ **Production baseline (main)** — Rule of Square phantom active; accidental fighting spirit |
+| v2.22.6 | 0W 12L 8D | ~1659 | 19% | Phantom fixed; ELO drop from removing phantom confidence |
+| v2.22.7 | 0W 12L 8D | ~1659 | 18% | BLOCKED(mate) gate + SEE threshold −200 |
+| v2.22.9 | 0W 13L 7D | ~1631 | 14% | PASS_DANGER base 80→25cp; marathon draws; 2 filter FPs |
+| v2.22.10 | 0W 9L 5D (14g) | ~1635* | 17% | BLOCKED(worse) + 🔁 diagnostic; repetition blindness ×3 confirmed |
 
-*v2.22.6 ELO estimated from 6/20 games.
+*v2.22.10 partial — 14/20 games complete.
+
+**"Winning" evals** = % of moves where engine evaluates its own position as >+50cp. Correlates directly with score — higher % → more active play → more draws. v2.22.5's 20% was phantom-driven. Target for v2.23.0: reach 20%+ legitimately via eval improvements.
 
 **Primary metric: blunders per game** (especially opening blunders). A clean loss beats a draw with piece giveaways — the game is for a 9-year-old.
+
+**Revised patch roadmap (post v2.22.10 analysis):**
+1. **v2.22.11** — Patch #11: extend filter to losing captures (floor fix)
+2. **v2.22.12** — Patch #4: King Centralization Gate (ceiling lift — endgame activity)
+3. **v2.22.13** — Bishop pair bonus (ceiling lift — open position advantage recognition)
+4. **v2.22.14** — Patch #9: Repetition blindness fix (convert blind draws to real results)
+5. **v2.22.15** — Rook on 7th rank (ceiling lift)
+Goal: get "winning eval %" from 17% to 20%+ legitimately before merging to main as **v2.23.0**.
 
 ---
 
@@ -633,6 +646,17 @@ Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from H
 - Bump version in **4 places** in `mChess.html`: `<!--` comment, `<title>`, button text, `console.log`
 - Verify the diff is clean — only the intended change, nothing else
 
+**Step 1.5 — Run FEN regression tests (before committing)**
+
+Check `pr_v2.22.6_patches.md` for the `FEN tests:` line on the current patch. Run each listed position:
+```bash
+node arena.js --fen "<FEN>" --color <w/b> --depth 7
+```
+- The targeted FEN must now pass its `pass_criterion` (patch fixes the known-bad position)
+- Any `fens_antiblunders.json` positions for adjacent patches must still pass (no regressions)
+
+If the targeted FEN still fails after the patch, diagnose before committing — the fix is incomplete.
+
 **Step 2 — Commit to feat branch**
 ```bash
 git add mChess.html
@@ -651,6 +675,27 @@ This produces two files:
 
 Do NOT start the tournament yourself. Tell the user the version is ready.
 
+**Fail-fast: when to abort mid-tournament**
+
+Stop and fix only if you observe a **code-provable correctness failure** in the first 2–5 games. Outcome noise (early losses) is never a reason to abort.
+
+Abort if you see any of these in the verbose log:
+
+| Signal | Example | What it means |
+|--------|---------|----------------|
+| Eval phantom: identical top3 scores with \|score\| > 150cp AND no material justification | `a1-b1:630 c2-d3:630 h7-h5:630` | Eval term producing a constant; position differences invisible |
+| Filter catastrophe: filter fired, then mChess was immediately mated | `FILTER→Ke2` followed by checkmate in 2 | BLOCKED(mate) gate broken or filter injecting a losing move |
+| Illegal or impossible move sent | Move lands on own piece or off-board square | Race condition or move generation regression |
+| A targeted diagnostic log line fires unexpectedly | A `console.warn` added to confirm a fix fires on move 1 | The regression the log was designed to detect is present |
+
+**Do NOT abort for:**
+- First 2–5 games are all losses — normal variance at any ELO
+- Identical top3 scores at magnitudes < 150cp — this is **PVS null-window behavior** (non-PV moves display alpha as their score) and is present in every version; it does not mean the engine is choosing randomly
+- A single blunder of a known unpatched type (e.g., losing capture bypassing the SEE filter) — finish the tournament and measure frequency
+- A game running 300+ moves — the engine may be defending well, not stuck
+
+**The rule:** fail-fast requires a *code-provable* failure you can trace to a specific wrong value in the log. If you cannot do that, finish the tournament.
+
 **Step 4 — Analyze the tournament (thorough)**
 
 When the user says the tournament is done (or shares intermediate data), analyze **both** files:
@@ -661,8 +706,9 @@ When the user says the tournament is done (or shares intermediate data), analyze
 - Final moves of each game (last 8 PGN tokens) — to identify mating sequences, repetitions
 
 *From the verbose log:*
-- Phantom detection: grep `top3:` lines where top-1 score is ≥590 or ≤-590 (absolute value)
-- **Phantom signature**: multiple *different* moves with *identical* scores = evaluation dominated by a constant term
+- Phantom detection: grep `top3:` lines where top-1 score is ≥150 or ≤-150 AND all three moves show identical scores
+- **True phantom signature**: multiple *different* moves with *identical* scores > 150cp absolute = evaluation dominated by a constant term (an eval bug)
+- **Not a phantom**: identical scores < 150cp = normal PVS null-window behavior (non-PV moves display alpha; engine still plays the correct PV move)
 - Filter activations: grep `FILTER→` — note SEE value, original score, substitute score, think time
 - Game boundaries: `=== Game N/20 ===` markers
 - Forced moves: `[dforced/30]` at 0.0s = only one legal move, expected in cornered-king endgames
@@ -694,6 +740,16 @@ After completing the analysis, ask: *does the current log give us everything we 
 - If the next patch requires confirming a root cause that isn't visible in the existing log (e.g., a repetition hash mismatch, a specific eval term dominating, a search condition not firing), **add the targeted diagnostic log line now** — before the next tournament. The cost of a wasted tournament run because the log didn't capture what we needed is high.
 - Keep additions targeted and low-noise: one `console.log` per hypothesis, only fires in the rare case (not every move). Never add per-node or per-depth logging.
 - If the existing log already covers the next patch's diagnostic needs, skip this step.
+
+**Step 7.5 — Add FEN entries for newly discovered bugs**
+
+When the tournament reveals a new reproducible failure (a blunder played, a win converted to draw, a filter misfiring), extract the FEN from the verbose log and add it to the appropriate file:
+- Blunder played → `fens_all_blunders.json`
+- Filter should fire but didn't (or vice versa) → `fens_antiblunders.json`
+- Won/drawn endgame mishandled → `fens_endgames.json`
+
+Each entry needs: `fen`, `side`, `description`, `bug` (patch #), `bad_move`, `pass_criterion`, `source`.
+The FEN must be extractable from the verbose log's `Received FEN request:` line immediately before the bad move's `📊` line.
 
 **Step 8 — Decide next patch and repeat**
 
@@ -787,10 +843,24 @@ The `📊` line logged after each AI move:
 2. Add key to **both** `es:` and `en:` blocks
 3. Reference via `t('yourKey')` (uses `currentLanguage`)
 
-### Run a Regression Test
+### Run a FEN Regression Test
+
+FEN test suites live in `stockfish_tests/fens_*.json`. Each file targets a specific class of bug:
+
+| File | Purpose |
+|------|---------|
+| `fens_all_blunders.json` | Positions where a known blunder was played — engine must NOT repeat it |
+| `fens_antiblunders.json` | Positions where filter must fire correctly (or must NOT fire incorrectly) |
+| `fens_endgames.json` | Endgame positions where engine must win/draw correctly |
+
+Run a single FEN:
 ```bash
-node arena.js --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 3" --color w --depth 7
+node arena.js --fen "<FEN from file>" --color <w/b> --depth 7
 ```
+
+Each entry has a `bad_move` (what the engine incorrectly does now) and a `pass_criterion` (what it must do after the fix). Check the verbose output for the `📊` filter log line to confirm the filter fired or didn't fire as expected.
+
+**When to run:** before committing a patch (quick sanity check, ~1 min per FEN) and after the 20-game tournament (confirm no regressions on the targeted positions).
 
 ---
 
@@ -805,11 +875,11 @@ node arena.js --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq 
 
 Example cycle: dev iterates `v2.22.1 → v2.22.2 → … → v2.22.7` on the feat branch. When ready to ship, the PR bumps to **`v2.23.0`** and merges to `main`. The next dev cycle starts at `v2.23.1`.
 
-> Note: `main` currently holds `v2.22.2` (pre-convention). The next merge to main will be `v2.23.0`.
+> Note: `main` currently holds `v2.22.5` (pre-convention, merged via PR #6). The next merge to main will be `v2.23.0`.
 
 **Current branching strategy (strictly enforced):**
-- `main` = last tournament-validated version only (currently v2.22.2)
-- `feat/v2.22.0` = active development branch (currently at v2.22.6)
+- `main` = last tournament-validated version only (currently v2.22.5)
+- `feat/v2.22.0` = active development branch (currently at v2.22.10)
 - Every engine change gets its own version bump + 20-game tournament before merging to main
 - **Never commit engine changes directly to main**
 - Merge to `main` only after a full 20-game tournament shows no ELO regression
@@ -823,6 +893,8 @@ Example cycle: dev iterates `v2.22.1 → v2.22.2 → … → v2.22.7` on the fea
   3. Update `docs/CHANGELOG.md` and `docs/CHANGELOG_es.md` — add a new version entry at the top.
   All four files must be updated before the PR is opened. Never open a PR to `main` with stale docs.
 
-**v2.21.0** is the stable baseline stored at `stockfish_tests/mChessv2.21.0.html`. It is the only version with confirmed wins vs SF depth-7.
+**v2.22.5** is the current production version on `main` (~1732 ELO, 27.5% vs SF-d7). It is the baseline to beat before merging v2.23.0. Note: its high score is partly driven by a Rule of Square phantom (accidental "fighting spirit"); the dev target is to exceed it with legitimate eval improvements.
+
+**v2.21.0** is stored at `stockfish_tests/mChessv2.21.0.html` for historical reference. It had 2 wins vs SF depth-7 (also with dead-code filter and phantom evals active).
 
 **Active patch backlog:** `pr_v2.22.6_patches.md` (gitignored) — one-line-per-patch status table, full code + rationale for each.

@@ -38,3 +38,6 @@ partidas_guardadas/
 
 # === PR descriptions (local only) ===
 pr_*.md
+
+# === Tournament screenshot analysis folders ===
+stockfish_tests/Tournament_*/

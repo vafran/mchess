@@ -651,6 +651,27 @@ This produces two files:
 
 Do NOT start the tournament yourself. Tell the user the version is ready.
 
+**Fail-fast: when to abort mid-tournament**
+
+Stop and fix only if you observe a **code-provable correctness failure** in the first 2–5 games. Outcome noise (early losses) is never a reason to abort.
+
+Abort if you see any of these in the verbose log:
+
+| Signal | Example | What it means |
+|--------|---------|----------------|
+| Eval phantom: identical top3 scores with \|score\| > 150cp AND no material justification | `a1-b1:630 c2-d3:630 h7-h5:630` | Eval term producing a constant; position differences invisible |
+| Filter catastrophe: filter fired, then mChess was immediately mated | `FILTER→Ke2` followed by checkmate in 2 | BLOCKED(mate) gate broken or filter injecting a losing move |
+| Illegal or impossible move sent | Move lands on own piece or off-board square | Race condition or move generation regression |
+| A targeted diagnostic log line fires unexpectedly | A `console.warn` added to confirm a fix fires on move 1 | The regression the log was designed to detect is present |
+
+**Do NOT abort for:**
+- First 2–5 games are all losses — normal variance at any ELO
+- Identical top3 scores at magnitudes < 150cp — this is **PVS null-window behavior** (non-PV moves display alpha as their score) and is present in every version; it does not mean the engine is choosing randomly
+- A single blunder of a known unpatched type (e.g., losing capture bypassing the SEE filter) — finish the tournament and measure frequency
+- A game running 300+ moves — the engine may be defending well, not stuck
+
+**The rule:** fail-fast requires a *code-provable* failure you can trace to a specific wrong value in the log. If you cannot do that, finish the tournament.
+
 **Step 4 — Analyze the tournament (thorough)**
 
 When the user says the tournament is done (or shares intermediate data), analyze **both** files:
@@ -661,8 +682,9 @@ When the user says the tournament is done (or shares intermediate data), analyze
 - Final moves of each game (last 8 PGN tokens) — to identify mating sequences, repetitions
 
 *From the verbose log:*
-- Phantom detection: grep `top3:` lines where top-1 score is ≥590 or ≤-590 (absolute value)
-- **Phantom signature**: multiple *different* moves with *identical* scores = evaluation dominated by a constant term
+- Phantom detection: grep `top3:` lines where top-1 score is ≥150 or ≤-150 AND all three moves show identical scores
+- **True phantom signature**: multiple *different* moves with *identical* scores > 150cp absolute = evaluation dominated by a constant term (an eval bug)
+- **Not a phantom**: identical scores < 150cp = normal PVS null-window behavior (non-PV moves display alpha; engine still plays the correct PV move)
 - Filter activations: grep `FILTER→` — note SEE value, original score, substitute score, think time
 - Game boundaries: `=== Game N/20 ===` markers
 - Forced moves: `[dforced/30]` at 0.0s = only one legal move, expected in cornered-king endgames
