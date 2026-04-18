@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.22.10
+Monolith Chess v2.22.11
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.22.10</title>
+  <title>Monolith Chess v2.22.11</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.10 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.11 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3930,7 +3930,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.22.10", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.22.11", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -10974,7 +10974,7 @@ limitations under the License.
             // Early exit: if top move is already forced mate, filter is meaningless.
             {
               let _safeIdx = 0;
-              let _top1See = null; // SEE of top-ranked quiet move (null if top1 is a capture)
+              let _top1See = null; // SEE of top-ranked move (captures and quiet moves)
               let _filterBlocked = false; // true when safety gate prevented a substitution
               let _filterBlockMsg = ''; // reason for the block (used in diagnostic log)
               const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
@@ -10982,11 +10982,11 @@ limitations under the License.
               if (_sr[0].score > -50000) {
                 for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
                   const _m = _sr[_i].move;
-                  const _isCapture = state.board[_m.tr*8+_m.tc] !== 0;
-                  if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
                   const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
                   if (_i === 0) _top1See = _moveSee; // record top1 SEE for diagnostics
-                  // Safe if SEE >= -200 OR engine deeply values the move after full search
+                  // Safe if SEE >= -200 OR engine deeply values the move after full search.
+                  // Applies to both quiet moves and captures: a capture with SEE < -200
+                  // (e.g. piece-for-pawn at -225) is treated as a potential blunder.
                   if (_moveSee >= -200 || _sr[_i].score > 200) { _safeIdx = _i; break; }
                 }
                 if (_safeIdx > 0) {
@@ -11019,7 +11019,7 @@ limitations under the License.
               const _top3 = _sr.slice(0, Math.min(3, _sr.length)).map((x, idx) => {
                 const mv = x.move;
                 const isCapt = state.board[mv.tr*8+mv.tc] !== 0;
-                const seeNote = idx === 0 ? (isCapt ? '/capt' : (_top1See !== null ? '/see:' + _top1See : '')) : '';
+                const seeNote = idx === 0 ? (_top1See !== null ? (isCapt ? '/capt:' : '/see:') + _top1See : '') : '';
                 return `${_sq(mv.fr,mv.fc)}-${_sq(mv.tr,mv.tc)}:${x.score}${seeNote}`;
               }).join(' ');
               const _filterNote = _filterBlocked
