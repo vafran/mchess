@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.22.9
+Monolith Chess v2.22.10
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.22.9</title>
+  <title>Monolith Chess v2.22.10</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.9 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.10 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3930,7 +3930,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.22.9", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.22.10", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -10757,6 +10757,9 @@ limitations under the License.
 
                   const child = applyMove(state, m);
                   const reps = gameHashCount.get(stringHash(child)) || 0;
+                  // 🔁 Diagnostic: log when 3rd-occurrence draw is detected at root.
+                  // If this NEVER fires despite repetition draws, gameHashCount is not being populated.
+                  if (reps >= 2) { const _rSq = (r,c) => 'abcdefgh'[c]+(8-r); console.log(`🔁 root-rep[${state.turn}] ${_rSq(m.fr,m.fc)}-${_rSq(m.tr,m.tc)} reps=${reps} prevBest=${Math.round(prevBestScore)}`); }
 
                   // 🔄 Anti-repetition scoring at root:
                   // reps=1 → 2nd visit → score 0 (draw candidate, engine picks if losing)
@@ -10836,6 +10839,7 @@ limitations under the License.
                     if (Date.now() >= deadline) { depthPartial = true; analysisPartial = true; break; }
                     const child = applyMove(state, m);
                     const reps = gameHashCount.get(stringHash(child)) || 0;
+                    if (reps >= 2) { const _rSq = (r,c) => 'abcdefgh'[c]+(8-r); console.log(`🔁 root-rep[${state.turn}] ${_rSq(m.fr,m.fc)}-${_rSq(m.tr,m.tc)} reps=${reps} prevBest=${Math.round(prevBestScore)}`); }
                     // 🔄 Same anti-repetition logic as aspiration loop
                     let scoreForMe;
                     if (reps >= 2) {
@@ -10964,12 +10968,15 @@ limitations under the License.
             // After all depth iterations, run a fast SEE check on the top move.
             // If the chosen move hangs a piece (SEE < -200cp on a quiet move) AND the engine
             // doesn't deeply value it (score ≤ +200cp), discard it and use the next-best.
-            // Safety: never substitute into a forced-mate line (score < -50000).
+            // Safety gates (any one blocks substitution):
+            //   1. Substitute scores < -50000 (forced mate line)
+            //   2. Substitute scores >100cp WORSE than original (filter would make things worse)
             // Early exit: if top move is already forced mate, filter is meaningless.
             {
               let _safeIdx = 0;
               let _top1See = null; // SEE of top-ranked quiet move (null if top1 is a capture)
               let _filterBlocked = false; // true when safety gate prevented a substitution
+              let _filterBlockMsg = ''; // reason for the block (used in diagnostic log)
               const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
               // Early exit: position is forced mate — no point running the filter
               if (_sr[0].score > -50000) {
@@ -10983,8 +10990,20 @@ limitations under the License.
                   if (_moveSee >= -200 || _sr[_i].score > 200) { _safeIdx = _i; break; }
                 }
                 if (_safeIdx > 0) {
-                  if (_sr[_safeIdx].score > -50000) {
-                    // Substitute is not a forced-mate line — proceed with substitution
+                  const _subScore = _sr[_safeIdx].score;
+                  const _topScore = _sr[0].score;
+                  if (_subScore <= -50000) {
+                    // Substitute IS a forced-mate line — keep original choice
+                    _filterBlocked = true;
+                    _filterBlockMsg = `mate:${_subScore}`;
+                    _safeIdx = 0;
+                  } else if (_subScore < _topScore - 100) {
+                    // Substitute is >100cp worse than original — filter would make things worse
+                    _filterBlocked = true;
+                    _filterBlockMsg = `worse:${Math.round(_topScore - _subScore)}`;
+                    _safeIdx = 0;
+                  } else {
+                    // Substitute is safe and not significantly worse — proceed
                     const _safeMove = _sr[_safeIdx].move;
                     if (!bestOptions.some(o =>
                       o.move.fr === _safeMove.fr && o.move.fc === _safeMove.fc &&
@@ -10992,10 +11011,6 @@ limitations under the License.
                       bestOptions = [_sr[_safeIdx]];
                       finalOptions = bestOptions;
                     }
-                  } else {
-                    // Substitute IS forced mate — keep original choice, log the block
-                    _filterBlocked = true;
-                    _safeIdx = 0;
                   }
                 }
               }
@@ -11008,7 +11023,7 @@ limitations under the License.
                 return `${_sq(mv.fr,mv.fc)}-${_sq(mv.tr,mv.tc)}:${x.score}${seeNote}`;
               }).join(' ');
               const _filterNote = _filterBlocked
-                ? `FILTER→BLOCKED(mate:${_sr[1] ? _sr[1].score : '?'})`
+                ? `FILTER→BLOCKED(${_filterBlockMsg})`
                 : (_safeIdx > 0
                   ? `FILTER→${_sq(_sr[_safeIdx].move.fr,_sr[_safeIdx].move.fc)}-${_sq(_sr[_safeIdx].move.tr,_sr[_safeIdx].move.tc)}`
                   : 'clean');
