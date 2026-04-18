@@ -388,7 +388,7 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${depths.length} depth(s)`);
     depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
 
-    const estMinPerGame = 6; // conservative estimate
+    const estMinPerGame = 22; // ~30s/move × ~45 mChess moves per game (headless Puppeteer)
     const estTotal = n * depths.length * estMinPerGame;
     console.log(`\n⏱️  Estimated time: ~${estTotal} min (~${(estTotal / 60).toFixed(1)}h)`);
     console.log(`💾 Results will save to: ${CONFIG.logFile}`);
