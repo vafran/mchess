@@ -432,13 +432,14 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
 
     const browser = await puppeteer.launch({
         headless: false,
+        executablePath: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
         protocolTimeout: 120000,
         args: [
             '--allow-file-access-from-files',
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            // ── Prevent Chrome from throttling background tabs / workers ──
+            // ── Prevent browser from throttling background tabs / workers ──
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
             '--disable-renderer-backgrounding',

@@ -9,10 +9,11 @@ async function runMatch() {
     
     const htmlPath = 'file://' + path.join(__dirname, '../mChess.html');
     
-    const browser = await puppeteer.launch({ 
+    const browser = await puppeteer.launch({
         headless: "new",
+        executablePath: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
         protocolTimeout: 120000,
-        args: ['--allow-file-access-from-files', '--no-sandbox'] 
+        args: ['--allow-file-access-from-files', '--no-sandbox']
     });
     
     const page = await browser.newPage();
