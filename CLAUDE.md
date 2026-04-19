@@ -8,7 +8,7 @@
 
 ## Project Overview
 
-**Monolith Chess** is a browser-based chess game with a pedagogical focus. It teaches chess to beginners through a coach ("Profesor"), a dynamic commentator, and context-aware opening recognition. The strongest AI level ("Wise King / Rey Sabio") is competitive (~1600–1700 ELO vs Stockfish at depth 7).
+**Monolith Chess** is a browser-based chess game with a pedagogical focus. It teaches chess to beginners through a coach ("Profesor"), a dynamic commentator, and context-aware opening recognition. The strongest AI level ("Wise King / Rey Sabio") is competitive (~1600–1700 ELO vs Stockfish at depth 7, where depth 7 is Stockfish's fixed depth — mChess searches freely within its 15s time budget).
 
 - **Language:** Spanish (default) / English, toggled at runtime
 - **Architecture:** Single HTML file — CSS + JS all inline
@@ -592,6 +592,12 @@ node arena_tournament.js --batch --depth 7 --games 30   # longer run for overnig
 node analyze_results.js     # ELO estimate + blunder stats
 node arena.js --fen "..." --color w --depth 7   # single FEN test
 ```
+
+> ⚠️ **`--depth 7` is Stockfish's search depth (the opponent), NOT mChess's depth.**  
+> Stockfish at depth 7 ≈ 1900 ELO. mChess searches as deep as it can within its own time budget  
+> (15 seconds at grandmaster level, set by `DIFF_SETTINGS.grandmaster.timeLimit`). On faster  
+> hardware mChess reaches greater depths; on slower hardware it reaches fewer. The `d7` in  
+> filenames refers to the Stockfish opponent strength, not mChess's search depth.
 
 Requires: Node.js, Puppeteer, `stockfish.exe` in `stockfish_tests/`.  
 Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from HTML title tag)
