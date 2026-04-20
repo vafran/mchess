@@ -184,7 +184,7 @@ function detectPhase(game) {
 // the page whenever a previous page.evaluate timed out (page.goto cancels stale evals).
 let _pageStale = false;
 
-async function evalMove(page, fen, history, timeoutMs) {
+async function evalMove(page, fen, history, timeoutMs, positionFens = []) {
     if (_pageStale) {
         console.log('   ♻️  Reloading page (previous call timed out — clearing stale worker state)...');
         await page.goto('file://' + CONFIG.htmlFile);
@@ -212,9 +212,9 @@ async function evalMove(page, fen, history, timeoutMs) {
         _pageStale = false;
     }
 
-    const evalP = page.evaluate(async (f, h) => {
-        try { return await window.askWiseKing(f, h); } catch (e) { return null; }
-    }, fen, history);
+    const evalP = page.evaluate(async (f, h, p) => {
+        try { return await window.askWiseKing(f, h, p); } catch (e) { return null; }
+    }, fen, history, positionFens);
 
     const result = await Promise.race([
         evalP,
@@ -290,7 +290,8 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
                 // mChess moves — use evalMove() to safely handle timeouts
                 // and prevent concurrent askWiseKing calls (which corrupt its result)
                 const t0 = Date.now();
-                move = await evalMove(page, fen, game.history(), CONFIG.moveTimeoutMs);
+                const _fenHist = game.history({ verbose: true }).map(m => m.after);
+                move = await evalMove(page, fen, game.history(), CONFIG.moveTimeoutMs, _fenHist);
 
                 const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
                 let depth_info = null;

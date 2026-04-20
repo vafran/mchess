@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.22.12
+Monolith Chess v2.22.13
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.22.12</title>
+  <title>Monolith Chess v2.22.13</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2192,7 +2192,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.12 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.13 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2737,7 +2737,7 @@ limitations under the License.
     // 🛸 Variable global para rastrear la última petición y evitar crosstalk en el Coliseo
     window._wkLastRequestId = 0;
 
-    window.askWiseKing = async function (fen, historyArr = []) {
+    window.askWiseKing = async function (fen, historyArr = [], positionFens = []) {
       console.log("🏟️ Received FEN request:", fen);
       try {
         const parts = fen.split(' ');
@@ -2856,6 +2856,30 @@ limitations under the License.
             clearTimeout(t);
             if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
           };
+          let _posHashes;
+          if (positionFens.length > 0) {
+            _posHashes = positionFens.map(fenStr => {
+              const _p = fenStr.split(' ');
+              if (_p.length < 4) return null;
+              const _rows = _p[0].split('/');
+              if (_rows.length !== 8) return null;
+              const _boardRows = _rows.map(row => {
+                let s = '';
+                for (const ch of row) {
+                  if (ch >= '1' && ch <= '8') { for (let i = 0; i < parseInt(ch); i++) s += ' '; }
+                  else s += ch;
+                }
+                return s;
+              });
+              const _col = _p[1], _cr = _p[2], _ep = _p[3];
+              let h = _boardRows.join('|') + '|' + _col;
+              h += '|' + (_cr.includes('K') ? 'K' : '') + (_cr.includes('Q') ? 'Q' : '') + (_cr.includes('k') ? 'k' : '') + (_cr.includes('q') ? 'q' : '');
+              if (_ep !== '-') { const _f = 'abcdefgh'.indexOf(_ep[0]); if (_f >= 0) h += '|ep' + _f; }
+              return h;
+            }).filter(h => h !== null);
+          } else {
+            _posHashes = [...positionHashes];
+          }
           worker.postMessage({
             action: 'search',
             board: tempBoard,
@@ -2864,7 +2888,7 @@ limitations under the License.
             enPassantTarget,
             depth: _depth, multiPV: 1, timeout: timeoutRes,
             requestId: currentId,
-            positionHashes: [...positionHashes],
+            positionHashes: _posHashes,
             halfMoveClock: parts[4] ? (parseInt(parts[4]) || 0) : 0
           });
         });
@@ -3930,7 +3954,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.22.12", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Monolith Chess v2.22.13", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
