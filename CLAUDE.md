@@ -604,6 +604,8 @@ Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from H
 
 > **Workflow note:** The user runs tournaments manually — do NOT launch `arena_tournament.js` as a background task. After committing a change, tell the user the version is ready and they will run it themselves. Never run or suggest running the tournament without the user explicitly starting it.
 
+> **Hardware rule: PC only.** Never run multi-game tournaments on the Surface Pro. Thermal throttling collapses NPS after game 3 (observed: 63k→8k NPS), dropping search depth from d12–d17 to d6–d9 mid-tournament. A mixed-NPS tournament is not comparable game-to-game and produces unreliable ELO estimates. All tournaments from v2.22.14 onwards run on PC.
+
 ### Tournament ELO History (20 games, SF depth-7, JS blunder detector)
 
 | Version | Result vs SF-1900 | Est. ELO | "Winning" evals | Notes |
@@ -619,8 +621,10 @@ Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from H
 | v2.22.7 | 0W 12L 8D | ~1659 | 18% | BLOCKED(mate) gate + SEE threshold −200 |
 | v2.22.9 | 0W 13L 7D | ~1631 | 14% | PASS_DANGER base 80→25cp; marathon draws; 2 filter FPs |
 | v2.22.10 | 0W 9L 5D (14g) | ~1635* | 17% | BLOCKED(worse) + 🔁 diagnostic; repetition blindness ×3 confirmed |
+| v2.22.13 | 0W 16D 16L (32g) | ~1709* | — | Repetition fix live (266 firings); filter FP in G26 cost direct loss |
+| v2.22.14 | pending (PC) | — | — | BLOCKED threshold 100→50cp; tournament pending |
 
-*v2.22.10 partial — 14/20 games complete.
+*Partial runs. v2.22.10: 14/20g Surface. v2.22.13: 32/40g Surface (last Surface tournament — NPS collapsed after game 3).
 
 **"Winning" evals** = % of moves where engine evaluates its own position as >+50cp. Correlates directly with score — higher % → more active play → more draws. v2.22.5's 20% was phantom-driven. Target for v2.23.0: reach 20%+ legitimately via eval improvements.
 
