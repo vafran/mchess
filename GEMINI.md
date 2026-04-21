@@ -587,16 +587,32 @@ Worker SEE is used in:
 
 ```bash
 cd stockfish_tests
-node arena_tournament.js --batch --depth 7 --games 20   # batch mode (no prompts), saves JSON
-node arena_tournament.js --batch --depth 7 --games 30   # longer run for overnight
+# Depth mode (historical — ELO estimated, kept for comparisons)
+node arena_tournament.js --batch --depth 7 --games 20
+node arena_tournament.js --batch --depth 7 --games 30   # longer overnight run
+
+# UCI_Elo mode — official calibrated ELO (recommended from v2.22.15 onwards)
+node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
+node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1700,1900 --games 20  # bracket
+
+# Skill Level mode — 0-20, deliberate errors, official ELO (source: stockfish-wiki FAQ)
+node arena_tournament.js --batch --sf-mode skill_level --sf-value 3 --games 20
+
+# Interactive mode (shows mode-selection menu)
+node arena_tournament.js
+
 node analyze_results.js     # ELO estimate + blunder stats
 node arena.js --fen "..." --color w --depth 7   # single FEN test
 ```
 
+> ⚠️ **ELO methodology:** `--depth 7` uses Stockfish's search depth. Its ELO is *estimated* (~1900) and **not officially calibrated**. `--sf-mode uci_elo --sf-value N` uses Stockfish's `UCI_LimitStrength` / `UCI_Elo` options, which produce officially referenced ELO. **Use `UCI_Elo` for the release tournament.** Skill Level mode (0–20) injects deliberate errors and has ELO values from the official Stockfish wiki graph.
+
+> **Skill Level ELO reference (source: stockfish-wiki FAQ):**  
+> Lv0=1347 | Lv1=1444 | Lv2=1566 | Lv3=1729 | Lv4=1953 | Lv5=2197 | Lv6=2383 | Lv7=2518
+
 > ⚠️ **`--depth 7` is Stockfish's search depth (the opponent), NOT mChess's depth.**  
-> Stockfish at depth 7 ≈ 1900 ELO. mChess searches as deep as it can within its own time budget  
-> (15 seconds at grandmaster level, set by `DIFF_SETTINGS.grandmaster.timeLimit`). On faster  
-> hardware mChess reaches greater depths; on slower hardware it reaches fewer. The `d7` in  
+> Stockfish at depth 7 ≈ ~1900 ELO (estimated). mChess searches as deep as it can within its own time budget  
+> (15 seconds at grandmaster level). On faster hardware mChess reaches greater depths. The `d7` in  
 > filenames refers to the Stockfish opponent strength, not mChess's search depth.
 
 Requires: Node.js, Puppeteer, `stockfish.exe` in `stockfish_tests/`.  
@@ -622,7 +638,7 @@ Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from H
 | v2.22.9 | 0W 13L 7D | ~1631 | 14% | PASS_DANGER base 80→25cp; marathon draws; 2 filter FPs |
 | v2.22.10 | 0W 9L 5D (14g) | ~1635* | 17% | BLOCKED(worse) + 🔁 diagnostic; repetition blindness ×3 confirmed |
 | v2.22.13 | 0W 16D 16L (32g) | ~1709* | — | Repetition fix live (266 firings); filter FP in G26 cost direct loss |
-| v2.22.14 | pending (PC) | — | — | BLOCKED threshold 100→50cp; tournament pending |
+| **v2.22.14** | **2W 14D 14L (30g PC)** | **~1753** | — | **BLOCKED 100→50cp; first PC complete run; first wins in PC tournament** |
 
 *Partial runs. v2.22.10: 14/20g Surface. v2.22.13: 32/40g Surface (last Surface tournament — NPS collapsed after game 3).
 
@@ -889,16 +905,16 @@ Example cycle: dev iterates `v2.22.1 → v2.22.2 → … → v2.22.7` on the fea
 
 **Current branching strategy (strictly enforced):**
 - `main` = last tournament-validated version only (currently v2.22.5)
-- `feat/v2.22.0` = active development branch (currently at v2.22.10)
+- `feat/v2.22.0` = active development branch (currently at **v2.22.14**)
 - Every engine change gets its own version bump + 20-game tournament before merging to main
 - **Never commit engine changes directly to main**
 - Merge to `main` only after a full 20-game tournament shows no ELO regression
 - **Before opening a PR to `main` (production release):**
-  1. Run a 40-game tournament on the candidate version:
+  1. Run a 40-game tournament on the candidate version using **UCI_Elo** (official calibrated ELO):
      ```bash
-     node arena_tournament.js --batch --depth 7 --games 40
+     node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 40
      ```
-     The 20-game tournament is for patch validation during development. The 40-game run is required for production sign-off — wider confidence interval, more reliable ELO estimate, catches variance-sensitive regressions that 20 games can miss.
+     The 20-game tournament is for patch validation during development. The 40-game run with `UCI_Elo` is required for production sign-off — produces an officially referenced ELO, wider confidence interval, more reliable estimate.
   2. Update `README.md` and `README_es.md` — add a "What's new in vX.X.X" section and bump the footer version.
   3. Update `docs/CHANGELOG.md` and `docs/CHANGELOG_es.md` — add a new version entry at the top.
   All four files must be updated before the PR is opened. Never open a PR to `main` with stale docs.
