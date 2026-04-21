@@ -12327,7 +12327,19 @@ limitations under the License.
           B: ["El Alfil domina la diagonal desde {sq}.", "Pieza activa en la diagonal {sq}.", "El alfil barre el tablero desde su nueva posición.", "Desarrollo armónico del alfil a {sq}."],
           R: ["La Torre ocupa la columna en {sq}.", "Torre a {sq}: buscando actividad en la fila.", "La Torre se activa por la vertical {sq}.", "Controlando la columna abierta desde {sq}."],
           Q: ["La Dama se centraliza para aumentar su influencia.", "Máxima presión de la Dama en {sq}.", "Dominio total del tablero con la dama en {sq}.", "La pieza más poderosa busca ángulos de ataque."],
-          K: isEndgame ? ["El Rey se activa: es pieza de ataque en el final.", "El monarca sale al combate, la partida se decide."] : ["Seguridad: el Rey busca refugio en {sq}.", "Maniobra de seguridad real en {sq}."]
+          K: isEndgame
+            ? ["El Rey se activa: es pieza de ataque en el final.",
+               "El monarca sale al combate, la partida se decide.",
+               "El Rey centraliza y toma el control del tablero.",
+               "Maniobra real: el rey empuja hacia el campo contrario.",
+               "El Rey avanza: en el final cada casilla importa.",
+               "El monarca toma las riendas del juego."]
+            : ["Seguridad: el Rey busca refugio en {sq}.",
+               "Maniobra de seguridad real en {sq}.",
+               "El Rey se reubica buscando una casilla m\u00e1s s\u00f3lida.",
+               "El monarca mejora su posici\u00f3n para el combate que se avecina.",
+               "Ajuste real: el Rey busca mayor seguridad en {sq}.",
+               "El Rey se pone a cubierto antes de que la tensi\u00f3n aumente."]
         },
         en: {
           P: ["Strategic advance: Pawn on {sq} strengthens the structure.", "Pawn structure taking shape at {sq}."],
@@ -12335,7 +12347,19 @@ limitations under the License.
           B: ["Bishop dominates the diagonal from {sq}.", "Active piece on the diagonal towards {sq}.", "The bishop sweeps the board from its new post.", "Harmonious bishop development to {sq}."],
           R: ["Rook claims the file on {sq}.", "Rook to {sq}: seeking activity along the rank.", "The Rook activates along the {sq} vertical.", "Controlling the open file from {sq}."],
           Q: ["The Queen centralizes to increase her influence.", "Full board domination with the queen on {sq}.", "The most powerful piece looks for attack angles.", "Strategic centralization of the queen."],
-          K: isEndgame ? ["The King activates: an attacking piece in the endgame.", "The monarch enters the fight — the game is being decided."] : ["Safety first: the King seeks shelter at {sq}.", "Royal safety maneuver at {sq}."]
+          K: isEndgame
+            ? ["The King activates: an attacking piece in the endgame.",
+               "The monarch enters the fight — the game is being decided.",
+               "King centralization: every square counts now.",
+               "Royal march: the king pushes into enemy territory.",
+               "The King takes the reins in the endgame.",
+               "The King steps up — the endgame is all about activity."]
+            : ["Safety first: the King seeks shelter at {sq}.",
+               "Royal safety maneuver at {sq}.",
+               "The King relocates to a more solid square.",
+               "The monarch improves position ahead of the coming battle.",
+               "Royal adjustment: the King seeks greater safety at {sq}.",
+               "The King takes cover before the tension rises."]
         }
       };
 
@@ -12518,6 +12542,38 @@ limitations under the License.
           const backups = lang === 'en' ? ["A solid maneuver.", "The tension continues on the board."] : ["Una maniobra sólida.", "La tensión continúa en el tablero."];
           actionComment = backups[Math.floor(Math.random() * backups.length)];
         }
+      }
+
+      // 🔴 HOPELESS POSITION — fires a dramatic/funny phrase when the human is
+      // completely lost (≥900 cp down). Fires AT MOST ONCE PER GAME: uses the
+      // commentaryStyleMemory['hopeless'] bucket which is cleared on every init().
+      // Once pickFreshPhrase adds an entry to that bucket it stays non-empty for
+      // the rest of the game, so the condition below will be false from then on.
+      const _boardEvalNow = evaluateBoard(board, 'hard');
+      const _humanEvalNow = (typeof playerColor !== 'undefined' && playerColor === 'b') ? _boardEvalNow : -_boardEvalNow;
+      const _alreadyFiredHopeless = (commentaryStyleMemory['hopeless'] || []).length > 0;
+      const _isHopelessPos = _humanEvalNow <= -900 && !_alreadyFiredHopeless && !lastMove.includes('#');
+      if (_isHopelessPos) {
+        toneUsed = 'hopeless';
+        comment = lang === 'en'
+          ? getRnd([
+              "Not even Magnus Carlsen with a magic wand can save this.",
+              "Some positions have no saving grace... and this is one of them.",
+              "The computer has already searched 'how to resign gracefully'.",
+              "Even Kasparov would offer a draw here. And get refused.",
+              "This isn't chess anymore, it's damage control.",
+              "The engine sees no light at the end of this tunnel.",
+              "At this point, the best move is probably a handshake.",
+            ], 'hopeless')
+          : getRnd([
+              "Esto no lo arregla ni Magnus Carlsen con una varita mágica.",
+              "Hay posiciones sin remedio... y esta es una de ellas.",
+              "El ordenador ya busca en Google 'cómo rendirse con dignidad'.",
+              "En esta posición, hasta Kasparov pediría tablas. Y le dirían que no.",
+              "La partida ya no se juega, se sufre.",
+              "El motor no ve luz al final de este túnel.",
+              "A estas alturas, la mejor jugada es probablemente dar la mano.",
+            ], 'hopeless');
       }
 
       // Overrides — order matters: completed mate > promotion > special patterns > isScholarAverted
@@ -13224,12 +13280,15 @@ limitations under the License.
           const severeDrop = reply.delta <= -28 ? Math.abs(reply.delta) : 0;
           let hangingPenalty = (hanging.danger && !isMate && !isProfitableTrade) ? 25 : 0;
 
-          // 🚨 ABANDONED PIECE PENALTY: if this move saves the moving piece but
+          // ABANDONED PIECE PENALTY: if this move saves the moving piece but
           // leaves another friendly piece that was ALREADY hanging still hanging,
           // add a penalty equal to a fraction of its value. This prevents the
           // Professor from recommending "escape moves" that abandon a hanging piece.
+          // FIX: Skip for king moves — the king can't save other pieces anyway;
+          // applying this to king endgame moves inflated the penalty for centralization.
           let abandonedPenalty = 0;
-          if (!isMate) {
+          const isKingMoveAbandoned = (board[move.fr][move.fc] || ' ').toUpperCase() === 'K';
+          if (!isMate && !isKingMoveAbandoned) {
             try {
               const afterMove = simulateMove(board, move);
               for (let r = 0; r < 8; r++) {
@@ -13723,13 +13782,19 @@ limitations under the License.
           if (isBook) {
             strategicIntent = `<strong>${simplifyForKids(opt.name || '')}</strong>: ${simplifyForKids(opt.desc || '')}`;
           } else if (opt.tacticalPenalty > 250) {
-            // CONTROL DE CORDURA: Si la jugada pierde material grave (penalizacion alta),
-            // prohibimos que el generador de texto busque intenciones "brillantes".
-            // Threshold raised 150->250 to avoid false alarms on king centralization
-            // and contested-square moves in the endgame.
-            strategicIntent = en 
-                ? "An emergency move in a very difficult tactical situation." 
-                : "Un movimiento de emergencia en una situacion tactica muy complicada.";
+            // CONTROL DE CORDURA: high tacticalPenalty means the penalty heuristics
+            // flagged this move (hanging piece, abandoned ally, contested square).
+            // If the engine score is positive the position isn't lost — use a neutral
+            // fallback so the player isn't alarmed. Reserve the alarming text for
+            // genuinely losing positions (engine score < 0).
+            const isLosingPosition = (opt.score !== undefined && opt.score < 0);
+            strategicIntent = isLosingPosition
+              ? (en
+                  ? "An emergency move in a very difficult tactical situation."
+                  : "Un movimiento de emergencia en una situacion tactica muy complicada.")
+              : (en
+                  ? "A solid engine choice for this complex position."
+                  : "Una jugada solida del motor para esta posicion compleja.");
           } else {
             strategicIntent = simplifyForKids(getStrategicIntent(m, sideToAnalyze));
           }
@@ -13960,9 +14025,12 @@ limitations under the License.
             const severeDrop = reply.delta <= -28 ? Math.abs(reply.delta) : 0;
             let hangingPenalty = (hanging.danger && !isMate && !isProfitableTrade) ? 25 : 0;
 
-            // 🚨 ABANDONED PIECE PENALTY (sincronizado con renderProfessorOptions)
+            // ABANDONED PIECE PENALTY (book-path, mirrors renderProfessorOptions).
+            // FIX: Skip for king moves — applying this to king endgame centralization
+            // inflated tacticalPenalty and triggered the emergency fallback in won games.
             let abandonedPenalty = 0;
-            if (!isMate) {
+            const isKingMove_ap = (board[mv.fr][mv.fc] || ' ').toUpperCase() === 'K';
+            if (!isMate && !isKingMove_ap) {
               try {
                 const afterMove = simulateMove(board, mv);
                 const emClr = currentTurn === 'w' ? 'b' : 'w';
@@ -13972,7 +14040,7 @@ limitations under the License.
                   const p = board[r][c];
                   if (!p || p === ' ' || colorOf(p) !== currentTurn) continue;
                   const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-                  if (pVal < 300) continue; // centipawn scale
+                  if (pVal < 300) continue;
                   const wasSafe = evaluateSquareSafety(r, c, currentTurn, board, emClr).isSafe;
                   const nowSafe = evaluateSquareSafety(r, c, currentTurn, afterMove, emClr).isSafe;
                   if (!wasSafe && !nowSafe) abandonedPenalty += Math.round(pVal * 0.6);
@@ -13988,21 +14056,20 @@ limitations under the License.
             // even though the bishop is lost. Now: SEE < 0 on ANY capture adds a penalty.
             if (!isMate) {
               const isCapture = board[mv.tr][mv.tc] !== ' ';
-              if (isCapture) {
+              // FIX: King moves are always legal — SEE on the king's destination is
+              // meaningless because the king can't be left on an attacked square.
+              // Applying SEE here inflated tacticalPenalty for king endgame moves.
+              const isKingMove_bv = (board[mv.fr][mv.fc] || ' ').toUpperCase() === 'K';
+              if (isCapture && !isKingMove_bv) {
                 // SEE from the moving piece's perspective on the target square.
                 // see(board, toR, toC, fromR, fromC) returns net centipawn gain.
                 // If negative: the piece is immediately recaptured at a loss.
                 const captureSee = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
                 if (captureSee < 0) {
-                  // Losing capture: piece captures but is immediately recaptured for a loss.
-                  // The loss is the absolute SEE value (e.g. -235cp if bishop takes pawn but knight takes bishop).
                   tacticalPenalty += Math.abs(captureSee);
-                  // Escalate risk: a losing capture is always high risk.
                   riskLevel = 'high';
-                  // Also mark isProfitableTrade as false since SEE proves it isn't.
-                  // (isProfitableTrade was computed purely from piece values, ignoring recaptures)
                 }
-              } else if (opt.isBook) {
+              } else if (!isKingMove_bv && opt.isBook) {
                 // Quiet book move: check if landing square is attacked (original SEE logic)
                 const landingSee = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
                 if (landingSee < -50) {
@@ -14779,8 +14846,42 @@ limitations under the License.
           : "🧱 Ganancia de espacio: el peón avanza y restringe la movilidad de las piezas enemigas.");
       }
 
-      // 15. SOLID GENERIC FALLBACK
-      return withQS(en ? "It improves your coordination and solidifies the position." : "Mejora la armonía de tus piezas y solidifica la posición general.");
+      // 15a. KING MIDDLEGAME — specific label instead of generic fallback
+      if (piece === 'K') {
+        if (isEnd) {
+          return withQS(en
+            ? "The King steps forward — king activity is decisive in the endgame."
+            : "El Rey avanza — la actividad del rey es decisiva en el final.");
+        }
+        // Middlegame king move: safety improvement
+        return withQS(en
+          ? "The King improves its position, seeking a more solid square."
+          : "El Rey mejora su posici\u00f3n buscando una casilla m\u00e1s s\u00f3lida.");
+      }
+
+      // 15b. ROOK / QUEEN — contextual fallback with icon
+      if (piece === 'R') {
+        // Check if it's moving to an open file (no friendly pawns blocking)
+        const myPawnChar = color === 'w' ? 'P' : 'p';
+        let openFile = true;
+        for (let r = 0; r < 8; r++) if (copy[r][m.tc] === myPawnChar) { openFile = false; break; }
+        if (openFile) {
+          return withQS(en
+            ? "🏰 The Rook occupies an open file, maximizing its range."
+            : "🏰 La Torre ocupa una columna abierta, maximizando su alcance.");
+        }
+        return withQS(en
+          ? "🏰 The Rook repositions to increase pressure."
+          : "🏰 La Torre se reposiciona para aumentar la presi\u00f3n.");
+      }
+      if (piece === 'Q') {
+        return withQS(en
+          ? "\uD83D\uDC51 The Queen repositions to a more active square."
+          : "\uD83D\uDC51 La Dama se reposiciona en una casilla de mayor actividad.");
+      }
+
+      // 15c. SOLID GENERIC FALLBACK
+      return withQS(en ? "It improves your coordination and solidifies the position." : "Mejora la armon\u00eda de tus piezas y solidifica la posici\u00f3n general.");
     }
 
     function getEducationalTip() {
