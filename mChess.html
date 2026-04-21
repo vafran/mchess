@@ -8011,7 +8011,13 @@ limitations under the License.
 
     function formatMoveLabel(m) {
       if (!m) return '';
-      const mover = board[m.fr] && board[m.fr][m.fc] ? board[m.fr][m.fc] : ' ';
+      // Read the moving piece from the board. If the source square is empty (stale
+      // move object from a simulated position), fall back to the promotion piece if
+      // present, otherwise use a generic label.
+      let mover = board[m.fr] && board[m.fr][m.fc] ? board[m.fr][m.fc] : ' ';
+      // FIX: Promotion moves — the board at [fr][fc] is ' ' after simulation.
+      // Use m.promo (Queen/Rook/Bishop/Knight char) so we label it properly.
+      if ((mover === ' ' || mover === undefined) && m.promo) mover = m.promo;
       const pieceName = getLocalizedPieceName(mover);
       const sqText = sqName(m.tr, m.tc);
       const up = (mover || ' ').toUpperCase();
@@ -8024,6 +8030,13 @@ limitations under the License.
         if (isEnPassant) return currentLanguage === 'en' ? `${pieceName} x ${sqText} (en passant)` : `${pieceName} x ${sqText} (al paso)`;
         if (isCapture) return `${pieceName} x ${sqText}`;
         return currentLanguage === 'en' ? `${pieceName} to ${sqText}` : `${pieceName} a ${sqText}`;
+      }
+      if (m.promo) {
+        // Promotion: label as the pawn promoting, then note the piece it becomes
+        const promoName = getLocalizedPieceName(m.promo);
+        return currentLanguage === 'en'
+          ? `Pawn to ${sqText}=${promoName}`
+          : `Peon a ${sqText}=${promoName}`;
       }
       return currentLanguage === 'en' ? `${pieceName} to ${sqText}` : `${pieceName} a ${sqText}`;
     }
@@ -13181,10 +13194,15 @@ limitations under the License.
           // 🔍 SEE CHECK: applies to ALL moves (captures AND quiet moves).
           // For captures: if SEE < 0, the piece loses material net even though it captures.
           // For quiet moves: if SEE < -50, the piece lands on a square where it's lost.
+          // FIX: King moves are always legal (the engine already filters illegal ones),
+          // so SEE on the king's destination is meaningless — the king can't be left on
+          // an attacked square. Applying SEE here inflated tacticalPenalty for king
+          // centralization moves, causing the emergency fallback to fire in won positions.
           let seePenalty = 0;
           if (!isMate) {
             const isCapture = board[move.tr][move.tc] !== ' ';
-            const moveSee = see(board, move.tr, move.tc, move.fr, move.fc);
+            const isKingMove = (board[move.fr][move.fc] || ' ').toUpperCase() === 'K';
+            const moveSee = isKingMove ? 0 : see(board, move.tr, move.tc, move.fr, move.fc);
             if (isCapture) {
               if (moveSee < 0) {
                 // Losing capture: e.g. Bxh7 when Nf6 recaptures. SEE < 0 = net material loss.
@@ -13645,6 +13663,17 @@ limitations under the License.
           maxShow = 3; // Middlegame/late game
         }
         let displayList = finalOptions.slice(0, maxShow);
+        // FIX: Remove duplicate labels (same piece + destination from two origins,
+        // e.g. two Rooks that can both reach d1 produce "Torre a d1" twice).
+        {
+          const _seenLabels = new Set();
+          displayList = displayList.filter(opt => {
+            const lbl = formatMoveLabel(opt.move);
+            if (_seenLabels.has(lbl)) return false;
+            _seenLabels.add(lbl);
+            return true;
+          });
+        }
 
         // 🧘 Peace-of-mind message — only when nothing else to say AND no book moves
         const hasBookMoves = displayList.some(o => o.isBook);
@@ -13693,12 +13722,14 @@ limitations under the License.
           let strategicIntent = "";
           if (isBook) {
             strategicIntent = `<strong>${simplifyForKids(opt.name || '')}</strong>: ${simplifyForKids(opt.desc || '')}`;
-          } else if (opt.tacticalPenalty > 150) {
-            // 🛡️ CONTROL DE CORDURA: Si la jugada pierde material grave (penalización alta), 
+          } else if (opt.tacticalPenalty > 250) {
+            // CONTROL DE CORDURA: Si la jugada pierde material grave (penalizacion alta),
             // prohibimos que el generador de texto busque intenciones "brillantes".
+            // Threshold raised 150->250 to avoid false alarms on king centralization
+            // and contested-square moves in the endgame.
             strategicIntent = en 
                 ? "An emergency move in a very difficult tactical situation." 
-                : "Un movimiento de emergencia en una situación táctica muy complicada.";
+                : "Un movimiento de emergencia en una situacion tactica muy complicada.";
           } else {
             strategicIntent = simplifyForKids(getStrategicIntent(m, sideToAnalyze));
           }
