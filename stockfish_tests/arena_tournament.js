@@ -21,7 +21,7 @@ const CONFIG = {
     gameTimeoutMs: 3600000, // 1h per game
 };
 
-// ELO map (Lichess-calibrated approximations)
+// ELO map for depth mode — informal estimates, kept for historical comparisons
 const DEPTH_ELO = {
     1: 900, 2: 1100, 3: 1300, 4: 1450, 5: 1600,
     6: 1750, 7: 1900, 8: 2000, 9: 2100, 10: 2200,
@@ -37,6 +37,31 @@ function sfELO(d) {
         }
     }
     return 2200;
+}
+
+// Official Stockfish Skill Level → ELO (source: stockfish-wiki FAQ / official graph)
+const SKILL_LEVEL_ELO = {
+    0:1347, 1:1444, 2:1566, 3:1729, 4:1953, 5:2197, 6:2383, 7:2518, 8:2624, 9:2711,
+    10:2786, 11:2851, 12:2910, 13:2963, 14:3012, 15:3057, 16:3099, 17:3139, 18:3176, 19:3185, 20:3190
+};
+// sfConfig = { mode: 'depth' | 'uci_elo' | 'skill_level', value: N }
+function getSFElo(sfConfig) {
+    if (!sfConfig || sfConfig.mode === 'depth') return sfELO(sfConfig ? sfConfig.value : 7);
+    if (sfConfig.mode === 'uci_elo')     return sfConfig.value;
+    if (sfConfig.mode === 'skill_level') return SKILL_LEVEL_ELO[sfConfig.value] || 1347;
+    return 1900;
+}
+function sfConfigTag(sfConfig) {
+    if (!sfConfig || sfConfig.mode === 'depth') return `d${sfConfig ? sfConfig.value : 7}`;
+    if (sfConfig.mode === 'uci_elo')     return `ucielo${sfConfig.value}`;
+    if (sfConfig.mode === 'skill_level') return `sl${sfConfig.value}`;
+    return 'sf';
+}
+function sfConfigLabel(sfConfig) {
+    if (!sfConfig || sfConfig.mode === 'depth') return `depth ${sfConfig.value} (~${getSFElo(sfConfig)} ELO estimated)`;
+    if (sfConfig.mode === 'uci_elo')     return `UCI_Elo ${sfConfig.value} (official calibrated)`;
+    if (sfConfig.mode === 'skill_level') return `Skill Level ${sfConfig.value} (~${getSFElo(sfConfig)} ELO official)`;
+    return 'unknown';
 }
 
 // ── Opening book for variety ─────────────────────────────────
@@ -67,9 +92,10 @@ const OPENING_BOOK = [
 
 // ── Stats per depth ──────────────────────────────────────────
 class DepthStats {
-    constructor(depth) {
+    constructor(depth, sfConfig = null) {
         this.depth = depth;
-        this.sfELO = sfELO(depth);
+        this.sfConfig = sfConfig || { mode: 'depth', value: depth };
+        this.sfELO = sfConfig ? getSFElo(sfConfig) : sfELO(depth);
         this.games = [];
         this.npsLog = []; // NPS samples per move, for average
         this.wW = 0; this.wB = 0; // wins as white / black
@@ -118,7 +144,8 @@ class DepthStats {
         const [elo_lo, elo_hi] = this.eloCI();
         const phases = {};
         this.games.forEach(g => { phases[g.phase] = (phases[g.phase] || 0) + 1; });
-        console.log(`\n  📊 Stockfish d${this.depth} (~${this.sfELO} ELO)`);
+        const _eloSrc = (!this.sfConfig || this.sfConfig.mode === 'depth') ? 'estimated' : 'official';
+        console.log(`\n  📊 Stockfish [${sfConfigLabel(this.sfConfig)}] (ELO ${_eloSrc})`);
         console.log(`     Games: ${this.total()} | W:${this.wins()} L:${this.losses()} D:${this.draws()}`);
         console.log(`     As White  → W:${this.wW} L:${this.lW} D:${this.dW}`);
         console.log(`     As Black  → W:${this.wB} L:${this.lB} D:${this.dB}`);
@@ -136,15 +163,23 @@ class DepthStats {
 }
 
 // ── Stockfish wrapper ────────────────────────────────────────
-function spawnSF() {
+function spawnSF(sfConfig) {
     const sf = spawn(CONFIG.stockfishPath, { stdio: ['pipe', 'pipe', 'pipe'] });
     sf.on('error', () => {});
     sf.stdin.on('error', () => {});
     sf.stdout.on('error', () => {});
     sf.stdin.write('uci\n');
+    // Send mode-specific setoptions once at spawn
+    if (sfConfig && sfConfig.mode === 'uci_elo') {
+        sf.stdin.write('setoption name UCI_LimitStrength value true\n');
+        sf.stdin.write(`setoption name UCI_Elo value ${sfConfig.value}\n`);
+    } else if (sfConfig && sfConfig.mode === 'skill_level') {
+        sf.stdin.write(`setoption name Skill Level value ${sfConfig.value}\n`);
+    }
+    sf.stdin.write('isready\n'); // flush setoptions before first move
     return sf;
 }
-function sfBestMove(sf, fen, depth) {
+function sfBestMove(sf, fen, sfConfig) {
     return new Promise((resolve, reject) => {
         let buf = '';
         const timeout = setTimeout(() => {
@@ -163,7 +198,12 @@ function sfBestMove(sf, fen, depth) {
         }
         sf.stdout.on('data', onData);
         sf.stdin.write(`position fen ${fen}\n`);
-        sf.stdin.write(`go depth ${depth}\n`);
+        if (!sfConfig || sfConfig.mode === 'depth') {
+            sf.stdin.write(`go depth ${sfConfig ? sfConfig.value : 7}\n`);
+        } else {
+            // UCI_Elo / Skill Level: strength already set at spawn; use movetime
+            sf.stdin.write(`go movetime ${sfConfig.moveTime || 5000}\n`);
+        }
     });
 }
 
@@ -233,11 +273,11 @@ async function evalMove(page, fen, history, timeoutMs, positionFens = []) {
 // between games so TurboFan keeps JIT-compiled code alive across all games.
 // startFen: optional FEN string to start from a specific position (FEN replay mode).
 //           When set, `opening` is ignored.
-async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, page, startFen = null) {
+async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, stats, page, startFen = null) {
     const colorStr = mChessColor === 'w' ? '⬜White' : '⬛Black';
     const openingStr = startFen ? `FEN: ${startFen.slice(0, 40)}…` : (opening.length ? opening.join(' ') : 'start');
     console.log(`\n${'─'.repeat(62)}`);
-    console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  ${startFen ? '📌 FEN replay' : `Opening:[${openingStr}]`}  SF:d${depth}`);
+    console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  ${startFen ? '📌 FEN replay' : `Opening:[${openingStr}]`}  SF:[${sfConfigTag(sfConfig)}]`);
     if (startFen) console.log(`   FEN: ${startFen}`);
     console.log('─'.repeat(62));
 
@@ -259,7 +299,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
         } catch (e) { }
     }, CONFIG.selectedLevel || 'grandmaster');
 
-    const sf = spawnSF();
+    const sf = spawnSF(sfConfig);
     const game = startFen ? new Chess(startFen) : new Chess();
     let reason = 'unknown';
     let phase = 'opening';
@@ -309,8 +349,8 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
                 if (depth_info && depth_info.nps > 0) stats.npsLog.push(depth_info.nps);
             } else {
                 // Stockfish moves
-                move = await sfBestMove(sf, fen, depth);
-                console.log(`   🐟 SF     ${move}`);
+                move = await sfBestMove(sf, fen, sfConfig);
+                console.log(`   🐟 SF     ${move}  [${sfConfigTag(sfConfig)}]`);
             }
 
             if (!move || move === 'null') {
@@ -363,12 +403,12 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
 }
 
 // ── Core tournament runner (shared by interactive and batch modes) ────────
-async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList = []) {
+async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenList = []) {
     CONFIG.numGames = n;
-    CONFIG.depths = depths;
+    CONFIG.sfConfigs = sfConfigs;
     CONFIG.selectedLevel = selectedLevel;
 
-    // Extract mChess version from HTML title tag (e.g. "Monolith Chess v2.25.32" → "v2.25.32")
+    // Extract mChess version from HTML title tag
     let mchessVer = '';
     try {
         const htmlSrc = fs.readFileSync(CONFIG.htmlFile, 'utf8');
@@ -378,30 +418,31 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     const modeTag = (fenReplayMode && fenList.length > 0) ? '_fenreplay' : '';
     const gameCount = fenReplayMode && fenList.length > 0 ? fenList.length : n;
     const _vTs = new Date().toISOString().replace('T', '_').replace(/[:.]/g, '').slice(0, 15);
-    CONFIG.logFile = path.join(__dirname, `tournament_mChess${mchessVer}_d${depths.join('_')}_${gameCount}g${modeTag}_${_vTs}.json`);
+    const _sfTag = sfConfigs.map(c => sfConfigTag(c)).join('_');
+    CONFIG.logFile = path.join(__dirname, `tournament_mChess${mchessVer}_${_sfTag}_${gameCount}g${modeTag}_${_vTs}.json`);
 
     // ── Verbose log — same timestamp as JSON so both files pair up ────────
     const verboseLogFile = CONFIG.logFile.replace('.json', `_verbose_${_vTs}.log`);
     const verboseStream = fs.createWriteStream(verboseLogFile, { encoding: 'utf8' });
     verboseStream.write(`# mChess verbose log — ${new Date().toISOString()}\n`);
-    verboseStream.write(`# ${n} games × d${depths.join('/')} | ${selectedLevel}\n\n`);
+    verboseStream.write(`# ${n} games × [${sfConfigs.map(c => sfConfigLabel(c)).join(' / ')}] | ${selectedLevel}\n\n`);
 
-    console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${depths.length} depth(s)`);
-    depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
+    console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${sfConfigs.length} opponent(s)`);
+    sfConfigs.forEach(c => console.log(`   [${sfConfigTag(c)}] → ~${getSFElo(c)} ELO  (${sfConfigLabel(c)})`));
 
-    const estMinPerGame = 22; // ~30s/move × ~45 mChess moves per game (headless Puppeteer)
-    const estTotal = n * depths.length * estMinPerGame;
+    const estMinPerGame = 22;
+    const estTotal = n * sfConfigs.length * estMinPerGame;
     console.log(`\n⏱️  Estimated time: ~${estTotal} min (~${(estTotal / 60).toFixed(1)}h)`);
     console.log(`💾 Results will save to: ${CONFIG.logFile}`);
     console.log('✅ Partial save after every game — safe to interrupt anytime (Ctrl+C)\n');
     console.log('🚀 Starting tournament...\n');
     const statsMap = {};
-    depths.forEach(d => { statsMap[d] = new DepthStats(d); });
+    sfConfigs.forEach(c => { statsMap[sfConfigTag(c)] = new DepthStats(c.value, c); });
 
     // ── Partial save helper — called after every game ─────────────────
     const savePartial = (gameNum, total, done = false) => {
         try {
-            const allGamesFlat = depths.flatMap(d => statsMap[d].games);
+            const allGamesFlat = sfConfigs.flatMap(c => statsMap[sfConfigTag(c)].games);
             const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
             const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
             const totalL = allGamesFlat.filter(g => g.result === 'sf_win').length;
@@ -409,17 +450,20 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
             fs.writeFileSync(CONFIG.logFile, JSON.stringify({
                 timestamp: new Date().toISOString(),
                 status: done ? 'complete' : `partial_${gameNum}_of_${total}`,
-                config: { numGames: n, depths },
-                byDepth: Object.fromEntries(depths.map(d => {
-                    return [d, {
-                        sfELO: sfELO(d),
-                        estimatedELO: statsMap[d].estimateELO(),
-                        eloCI: statsMap[d].eloCI(),
-                        score: statsMap[d].score(),
-                        wins: statsMap[d].wins(),
-                        losses: statsMap[d].losses(),
-                        draws: statsMap[d].draws(),
-                        games: statsMap[d].games,
+                config: { numGames: n, sfConfigs },
+                byDepth: Object.fromEntries(sfConfigs.map(c => {
+                    const k = sfConfigTag(c); const st = statsMap[k];
+                    return [k, {
+                        sfConfig: c,
+                        sfELO: getSFElo(c),
+                        sfLabel: sfConfigLabel(c),
+                        estimatedELO: st.estimateELO(),
+                        eloCI: st.eloCI(),
+                        score: st.score(),
+                        wins: st.wins(),
+                        losses: st.losses(),
+                        draws: st.draws(),
+                        games: st.games,
                     }];
                 })),
                 combined: totalN > 0 ? {
@@ -496,7 +540,7 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
         console.log('\n' + '═'.repeat(62));
         console.log('📊 PARTIAL RESULTS AT INTERRUPTION');
         console.log('═'.repeat(62));
-        depths.forEach(d => { if (statsMap[d].total() > 0) statsMap[d].print(); });
+        sfConfigs.forEach(c => { const st = statsMap[sfConfigTag(c)]; if (st.total() > 0) st.print(); });
         try { await browser.close(); } catch (_) { }
         try { verboseStream.end(); } catch (_) { }
         console.log(`📝 Verbose log: ${path.basename(verboseLogFile)}`);
@@ -506,18 +550,19 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     try {
         // Build game list
         const allGames = [];
-        for (const depth of depths) {
+        for (const sfConfig of sfConfigs) {
+            const _key = sfConfigTag(sfConfig);
             if (fenReplayMode && fenList.length > 0) {
                 // FEN replay: one game per FEN entry
                 for (const { fen, mChessColor } of fenList) {
-                    allGames.push({ depth, mChessColor, opening: [], startFen: fen });
+                    allGames.push({ sfConfig, mChessColor, opening: [], startFen: fen });
                 }
             } else {
                 // Normal tournament: alternate colors, rotate openings
-                const gamesPerDepth = Math.floor(n / depths.length);
-                for (let i = 0; i < gamesPerDepth; i++) {
+                const gamesPerConfig = Math.floor(n / sfConfigs.length);
+                for (let i = 0; i < gamesPerConfig; i++) {
                     allGames.push({
-                        depth,
+                        sfConfig,
                         mChessColor: i % 2 === 0 ? 'w' : 'b',
                         opening: OPENING_BOOK[i % OPENING_BOOK.length],
                         startFen: null,
@@ -528,19 +573,19 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
 
         const total = allGames.length;
         for (let i = 0; i < allGames.length; i++) {
-            const { depth, mChessColor, opening, startFen } = allGames[i];
+            const { sfConfig, mChessColor, opening, startFen } = allGames[i];
+            const _key = sfConfigTag(sfConfig);
             verboseStream.write(`\n${'='.repeat(60)}\n`);
-            verboseStream.write(`=== Game ${i+1}/${total} | mChess=${mChessColor} | SF d${depth} ===\n`);
+            verboseStream.write(`=== Game ${i+1}/${total} | mChess=${mChessColor} | SF [${_key}] ===\n`);
             verboseStream.write(`${'='.repeat(60)}\n`);
             try {
-                await playGame(i + 1, total, mChessColor, opening, depth, statsMap[depth], sharedPage, startFen);
+                await playGame(i + 1, total, mChessColor, opening, sfConfig, statsMap[_key], sharedPage, startFen);
             } catch (err) {
                 console.error(`\n💥 Game ${i + 1} crashed:`, err.message);
-                statsMap[depth].add('draw', mChessColor, 0, 'crash', '', 'unknown');
+                statsMap[_key].add('draw', mChessColor, 0, 'crash', '', 'unknown');
             }
-            // 💾 Save partial results after every game
             savePartial(i + 1, total, false);
-            const gs = statsMap[depth];
+            const gs = statsMap[_key];
             if (gs.total() > 0) {
                 const lastGame = gs.games[gs.games.length - 1];
                 console.log(`   💾 Saved: W:${gs.wins()} L:${gs.losses()} D:${gs.draws()} | ELO ~${gs.estimateELO()} [${gs.eloCI()[0]}..${gs.eloCI()[1]}]`);
@@ -555,16 +600,16 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     console.log('\n\n' + '═'.repeat(62));
     console.log('🏆 FINAL TOURNAMENT REPORT');
     console.log('═'.repeat(62));
-    depths.forEach(d => statsMap[d].print());
+    sfConfigs.forEach(c => statsMap[sfConfigTag(c)].print());
 
     // Combined ELO estimate (weighted by game count)
-    const allGamesFlat = depths.flatMap(d => statsMap[d].games);
+    const allGamesFlat = sfConfigs.flatMap(c => statsMap[sfConfigTag(c)].games);
     const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
     const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
     const totalN = allGamesFlat.length;
-    if (totalN > 0 && depths.length > 1) {
+    if (totalN > 0 && sfConfigs.length > 1) {
         const score = (totalW + 0.5 * totalD) / totalN;
-        const avgSfELO = depths.reduce((s, d) => s + sfELO(d) * statsMap[d].total(), 0) / totalN;
+        const avgSfELO = sfConfigs.reduce((s, c) => s + getSFElo(c) * statsMap[sfConfigTag(c)].total(), 0) / totalN;
         const combinedELO = score === 0 ? avgSfELO - 600 : score === 1 ? avgSfELO + 600
             : Math.round(avgSfELO - 400 * Math.log10((1 - score) / score));
         console.log(`\n  🎯 Combined ELO estimate: ~${combinedELO}  (${totalN} games total)`);
@@ -617,20 +662,40 @@ async function runTournament() {
     if (htmlAns) CONFIG.htmlFile = path.resolve(__dirname, htmlAns);
     console.log(`✅ File: ${CONFIG.htmlFile}`);
 
-    // ── Stockfish depths ──────────────────────────────────────
-    console.log('\nSelect Stockfish depth(s) — lower = weaker = more accurate ELO estimate:');
-    console.log('  d5  → ~1600 ELO  (if mChess wins too many at d7)');
-    console.log('  d6  → ~1750 ELO');
-    console.log('  d7  → ~1900 ELO  ← recommended baseline');
-    console.log('  d8  → ~2000 ELO  ← recommended for strong versions');
-    console.log('  d9  → ~2100 ELO');
-    console.log('  d10 → ~2200 ELO  (very strong, mostly losses)');
-    console.log('  You can enter multiple depths: e.g. 7,8');
-    const depthAns = (await ask('Depth(s) 1-15 (enter=7): ')).trim();
-    const depths = depthAns
-        ? depthAns.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20)
-        : [7];
-    depths.forEach(d => console.log(`✅ Stockfish d${d} → ~${sfELO(d)} ELO`));
+    // ── Stockfish opponent mode ────────────────────────────────
+    console.log('\nSelect Stockfish opponent mode:');
+    console.log('  1) Depth limit   — e.g. d7 (historical baseline, ELO estimated, NOT official)');
+    console.log('  2) UCI_Elo       — official calibrated ELO ← recommended');
+    console.log('  3) Skill Level   — 0-20 with deliberate errors (ELO official)');
+    const sfModeAns = (await ask('Choose 1-3 (enter=2): ')).trim();
+    const sfMode = sfModeAns === '1' ? 'depth' : sfModeAns === '3' ? 'skill_level' : 'uci_elo';
+
+    let sfConfigs;
+    if (sfMode === 'depth') {
+        console.log('  d5→~1600  d6→~1750  d7→~1900 (baseline)  d8→~2000  d9→~2100');
+        console.log('  Multiple opponents: e.g. 7,8');
+        const depthAns = (await ask('Depth(s) 1-15 (enter=7): ')).trim();
+        const depths = depthAns ? depthAns.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20) : [7];
+        sfConfigs = depths.map(d => ({ mode: 'depth', value: d }));
+        sfConfigs.forEach(c => console.log(`✅ ${sfConfigLabel(c)}`));
+    } else if (sfMode === 'uci_elo') {
+        console.log('  Valid range: 1320–3190. Level 3 (Skill)=1729 | mChess est.=1750 | Level 4 (Skill)=1953');
+        console.log('  Multiple opponents: e.g. 1700,1900');
+        const eloAns = (await ask('UCI_Elo value(s) (enter=1750): ')).trim();
+        const eloVals = eloAns ? eloAns.split(',').map(x => Math.min(3190, Math.max(1320, parseInt(x.trim())))).filter(v => !isNaN(v)) : [1750];
+        sfConfigs = eloVals.map(v => ({ mode: 'uci_elo', value: v }));
+        sfConfigs.forEach(c => console.log(`✅ ${sfConfigLabel(c)}`));
+    } else {
+        console.log('  Lv 0=1347 | Lv 1=1444 | Lv 2=1566 | Lv 3=1729 | Lv 4=1953 | Lv 5=2197');
+        console.log('  Lv 6=2383 | Lv 7=2518 | Lv 8=2624 | Lv 9=2711 | Lv10=2786 | Lv11=2851');
+        console.log('  Lv12=2910 | Lv13=2963 | Lv14=3012 | Lv15=3057 | Lv16=3099 | Lv17=3139');
+        console.log('  Lv18=3176 | Lv19=3185 | Lv20=3190 (full strength)');
+        console.log('  Multiple opponents: e.g. 3,4');
+        const slAns = (await ask('Skill Level(s) 0-20 (enter=3): ')).trim();
+        const slVals = slAns ? slAns.split(',').map(x => Math.min(20, Math.max(0, parseInt(x.trim())))).filter(v => !isNaN(v)) : [3];
+        sfConfigs = slVals.map(v => ({ mode: 'skill_level', value: v }));
+        sfConfigs.forEach(c => console.log(`✅ ${sfConfigLabel(c)}`));
+    }
 
     // ── FEN replay: load positions ────────────────────────────
     let fenList = []; // { fen, mChessColor }
@@ -676,41 +741,58 @@ async function runTournament() {
     }
 
     // ── Number of games (normal mode only) ───────────────────
-    let n = fenList.length > 0 ? fenList.length * depths.length : 0;
+    let n = fenList.length > 0 ? fenList.length * sfConfigs.length : 0;
     if (!fenReplayMode || fenList.length === 0) {
-        console.log('\nNumber of games per depth:');
+        console.log('\nNumber of games per opponent:');
         console.log('  10 games → ±108 ELO precision  (~50-90 min on average PC)');
         console.log('  20 games → ±76  ELO precision  (~2-3h)   ← recommended');
-        const nAns = (await ask('Games per depth (enter=10): ')).trim();
+        const nAns = (await ask('Games per opponent (enter=10): ')).trim();
         n = Math.max(2, parseInt(nAns) || 10);
-        console.log(`✅ ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
+        console.log(`✅ ${n} games × ${sfConfigs.length} opponent(s) = ${n * sfConfigs.length} total games`);
     } else {
-        console.log(`\n✅ ${fenList.length} position(s) × ${depths.length} depth(s) = ${n} total games`);
+        console.log(`\n✅ ${fenList.length} position(s) × ${sfConfigs.length} opponent(s) = ${n} total games`);
     }
 
     rl.close();
 
-    await runCore(depths, n, selectedLevel, fenReplayMode, fenList);
+    await runCore(sfConfigs, n, selectedLevel, fenReplayMode, fenList);
 }
 
 // ── CLI entry point ──────────────────────────────────────────────────────
 // Interactive: node arena_tournament.js
-// Batch:       node arena_tournament.js --batch --depth 7 --games 30 [--level grandmaster] [--html path]
+// Batch (depth): node arena_tournament.js --batch --depth 7 --games 30
+// Batch (UCI_Elo): node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 30
+// Batch (Skill):   node arena_tournament.js --batch --sf-mode skill_level --sf-value 3 --games 30
 const _args = process.argv.slice(2);
 if (_args.includes('--batch')) {
     const _get = (f, d) => { const i = _args.indexOf(f); return i >= 0 && _args[i + 1] ? _args[i + 1] : d; };
-    const _depths = _get('--depth', '7').split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20);
     const _n      = Math.max(2, parseInt(_get('--games', '20')) || 20);
     const _level  = _get('--level', 'grandmaster');
     const _html   = _get('--html', null);
     if (_html) CONFIG.htmlFile = path.resolve(__dirname, _html);
 
-    console.log('╔' + '═'.repeat(62) + '╗');
-    console.log('║       🏆 TOURNAMENT v2 — mChess vs Stockfish 🏆          ║');
-    console.log('╚' + '═'.repeat(62) + '╝');
-    console.log(`🚀 Batch mode: ${_n} games × d${_depths.join('/')} | level:${_level}`);
+    // Build sfConfigs from CLI args
+    let _sfConfigs;
+    const _sfMode = _get('--sf-mode', 'depth');
+    if (_sfMode === 'uci_elo') {
+        const _vals = _get('--sf-value', '1750').split(',').map(x => Math.min(3190, Math.max(1320, parseInt(x.trim()))));
+        _sfConfigs = _vals.map(v => ({ mode: 'uci_elo', value: v }));
+    } else if (_sfMode === 'skill_level') {
+        const _vals = _get('--sf-value', '3').split(',').map(x => Math.min(20, Math.max(0, parseInt(x.trim()))));
+        _sfConfigs = _vals.map(v => ({ mode: 'skill_level', value: v }));
+    } else {
+        // depth mode (default — also handles legacy --depth flag)
+        const _depths = _get('--depth', _get('--sf-value', '7')).split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20);
+        _sfConfigs = _depths.map(d => ({ mode: 'depth', value: d }));
+    }
 
-    runCore(_depths, _n, _level, false, []).catch(console.error);
+    console.log('\u2554' + '\u2550'.repeat(62) + '\u2557');
+    console.log('\u2551       \ud83c\udfc6 TOURNAMENT v2 \u2014 mChess vs Stockfish \ud83c\udfc6          \u2551');
+    console.log('\u255a' + '\u2550'.repeat(62) + '\u255d');
+    console.log(`\ud83d� Batch mode: ${_n} games \u00d7 [${_sfConfigs.map(c => sfConfigTag(c)).join('/')}] | level:${_level}`);
+    _sfConfigs.forEach(c => console.log(`   ${sfConfigLabel(c)}`));
+
+    runCore(_sfConfigs, _n, _level, false, []).catch(console.error);
 } else {
     runTournament().catch(console.error);
 }
