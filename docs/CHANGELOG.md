@@ -7,7 +7,38 @@ Format: version · size · what changed.
 
 ---
 
+## v2.22.14 — BLOCKED Filter Threshold Fixed
+**~16,500 lines · ~860 KB**
+
+### Bug Fix — Anti-Blunder Filter: False-Positive Gate Tightened (BLOCKED threshold 100→50cp)
+
+The root anti-blunder filter gate (`BLOCKED(worse:N)` at line 11029) fires when the filter's substitute scores more than N cp worse than the original move. At 100cp, the G26 false positives slipped through: the knight capture Nc6xe5 (SEE=−225, clearly correct) was blocked because the substitute scored only 57–63cp worse — below the old gate.
+
+**Fix:** Threshold lowered from 100cp to 50cp.
+
+```javascript
+// BEFORE
+} else if (_subScore < _topScore - 100) {
+// AFTER
+} else if (_subScore < _topScore - 50) {
+```
+
+**Tournament result (30 games, PC, Stockfish depth-7):** W2 D14 L14 — **30.0% — ~1753 ELO [CI: 1620–1885]**.  
+First complete PC tournament run. First wins vs Stockfish d7 in a complete PC run. Beats production baseline (v2.22.5, 27.5%, ~1732 ELO).
+
+### Tournament Script — UCI_Elo and Skill Level Support
+
+`arena_tournament.js` now supports three Stockfish opponent modes:
+- **Depth mode** (`--depth N`) — historical baseline, ELO estimated
+- **UCI_Elo mode** (`--sf-mode uci_elo --sf-value 1750`) — official calibrated ELO (recommended)
+- **Skill Level mode** (`--sf-mode skill_level --sf-value 3`) — 0–20 with deliberate errors, official ELO
+
+Release tournament from v2.22.15 onwards: `--sf-mode uci_elo --sf-value 1750 --games 40`.
+
+---
+
 ## v2.22.6 — Phantom Promotion Bug Fixed
+
 **~16,500 lines · ~860 KB**
 
 ### Bug Fix — Rule of the Square: Broken Duplicate Removed (Critical)

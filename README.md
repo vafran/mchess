@@ -27,7 +27,7 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 
 ### Non-Goals
 
-- **Defeating titled players.** This is not Stockfish. The engine reaches **~1709 ELO** at Wise King level (validated: 1W 8D 11L vs Stockfish depth 7, 20-game tournament, v2.22.2). Actual strength depends on the hardware running it.
+- **Defeating titled players.** This is not Stockfish. The engine reaches **~1753 ELO** at Wise King level (validated: W2 D14 L14 vs Stockfish depth 7, 30-game PC tournament, v2.22.14). Actual strength depends on the hardware running it.
 - **Online multiplayer.** Local play only.
 - **Advanced preparation tools.** The opening book is curated for teaching, not professional preparation.
 - **Benchmark performance.** Clean, readable JavaScript takes priority over micro-optimised techniques, though v2.1.0 introduced critical low-level bottlenecks fixes.
@@ -66,7 +66,7 @@ That is everything. The game handles the rest.
 
 6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Master — *Wise King* (~1709 ELO validated)
+### 👑 Master — *Wise King* (~1753 ELO validated)
 
 **Target:** Strong club players and advanced amateurs.
 
@@ -82,7 +82,7 @@ Up to 30-ply depth (time-capped at 30s) · 0% mistakes · full book · full eval
 | 🐣 Easy | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
 | 📚 Medium | ~1010 | 4 | 20% | ±6 cp | first 2 moves | ✅ |
 | 🔥 Hard | ~1400 | 6 | 0% | none | ✅ full | ✅ |
-| 👑 Wise King | ~1709 (validated) | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
+| 👑 Wise King | ~1753 (validated) | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
  
 ---
 
@@ -176,6 +176,19 @@ Three styles, with labels now visible under the slider:
 | # | Severity | Description | Planned fix |
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
+
+## What's new in v2.22.14 — *BLOCKED Filter Threshold Fixed*
+
+### 🛡️ Anti-Blunder Filter: False-Positive Gate Tightened
+
+The root anti-blunder filter blocked piece captures (e.g. Nc6xe5, SEE=−225) because the substituted move scored only 57–63 cp worse than the original — below the old 100cp gate. The threshold was lowered to 50cp.
+
+**Result:** The engine no longer rejects strong capture moves that score marginally below the gate, eliminating the G26-type false positive confirmed in v2.22.13.
+
+**Tournament result (30 games, PC, Stockfish depth-7):** W2 D14 L14 — **30.0% — ~1753 ELO [CI: 1620–1885]**.  
+First complete PC tournament. First wins vs Stockfish d7 in a PC run. Beats production baseline (v2.22.5, 27.5%).
+
+---
 
 ## What's new in v2.22.6 — *Phantom Promotion Bug Fixed*
 
@@ -535,7 +548,10 @@ The engine's heuristics and positional weights were **trained and tuned by playi
 - Quick commands (from the project root):
 
 ```bash
-# Run a 20-game tournament in batch mode (no prompts, saves JSON automatically)
+# Official calibrated ELO (recommended)
+node stockfish_tests/arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
+
+# Historical depth mode (kept for comparisons)
 node stockfish_tests/arena_tournament.js --batch --depth 7 --games 20
 
 # Inspect the last results
@@ -570,4 +586,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.22.6 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*
+*Monolith Chess v2.22.14 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*
