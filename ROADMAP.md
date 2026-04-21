@@ -35,7 +35,7 @@ Goal: eliminate the structural bugs causing piece giveaways and missed wins. Rea
 | v2.22.12 | #4 — King Centralization Gate | ✅ Done | +132 ELO, marathon draws instead of fast mates |
 | v2.22.13 | #9 — Repetition Blindness fix | ✅ Done | 266 root-rep firings confirmed; 12 rep draws in 32g |
 | v2.22.14 | #14 — BLOCKED threshold 100→50cp | ✅ Done | **W2 D14 L14, 30.0%, ~1753 ELO** — first PC complete run; beats production |
-| **v2.22.15** | **R7 — Rook on 7th rank bonus** | **Next** | Ceiling-lift — code ready in pr_v2.22.6_patches.md |
+| **v2.22.15** | **R7 — Rook on 7th rank bonus** | **✅ Applied** | Tapered +40cp MG / +25cp EG — tournament pending |
 | v2.22.16 | #15 — Rep acceptance threshold -500→-300cp | Optional | Low risk; apply after v2.22.15 if log shows refused draws |
 
 ### v2.22.14 — BLOCKED Threshold (done, 30g PC complete ✅)
