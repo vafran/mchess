@@ -1,4 +1,4 @@
-# ♟️ Monolith Chess
+# ♟️ Airin Chess
 
 > A complete, single-file chess game built for children learning to play.  
 > No installation. No internet. No accounts. Open the `.html` file in any browser.
@@ -9,7 +9,7 @@
 
 ## Why this exists
 
-I built Monolith Chess for my 9-year-old daughter.
+I built Airin Chess for my 9-year-old daughter.
 
 She wanted to learn chess, but every app I found was either too hard (she lost constantly and gave up), too simple (it felt like a toy), or full of ads and distractions. I wanted something that would teach her the real game — FIDE rules, real tactics — but that would also hold her hand when she made a mistake, explain *why* a move was bad, and celebrate her when she did something clever.
 
@@ -576,7 +576,7 @@ Copyright 2026 Aaron Vazquez Fraga
 
 ## How this was built
 
-Monolith Chess was designed and directed by Aaron Vazquez Fraga. The code was written almost entirely by AI assistants.
+Airin Chess was designed and directed by Aaron Vazquez Fraga. The code was written almost entirely by AI assistants.
 
 The bulk of the implementation — engine architecture, search techniques, the Professor system, opening book, training library, and most bug fixes — was written by **Claude Sonnet** (Anthropic). **Gemini Pro** (Google) contributed to earlier structural decisions and alternative approaches. **ChatGPT** (OpenAI) helped with isolated problems in the earlier phases of development.
 
@@ -586,4 +586,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Monolith Chess v2.22.14 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*
+*Airin Chess v2.22.14 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*

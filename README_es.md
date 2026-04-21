@@ -1,4 +1,4 @@
-# ♟️ Monolith Chess
+# ♟️ Airin Chess
 
 > Un juego de ajedrez completo en un solo archivo HTML, construido para niños que aprenden a jugar.  
 > Sin instalación. Sin internet. Sin cuentas. Abre el archivo `.html` en cualquier navegador.
@@ -561,7 +561,7 @@ Copyright 2026 Aaron Vazquez Fraga
 
 ## Cómo se construyó
 
-Monolith Chess fue diseñado y dirigido por Aaron Vazquez Fraga. El código fue escrito casi en su totalidad por asistentes de inteligencia artificial.
+Airin Chess fue diseñado y dirigido por Aaron Vazquez Fraga. El código fue escrito casi en su totalidad por asistentes de inteligencia artificial.
 
 La mayor parte de la implementación — arquitectura del motor, técnicas de búsqueda, el sistema del Profesor, el libro de aperturas, la librería de entrenamiento y la mayoría de las correcciones de bugs — fue escrita por **Claude Sonnet** (Anthropic). **Gemini Pro** (Google) contribuyó a decisiones estructurales tempranas y enfoques alternativos. **ChatGPT** (OpenAI) ayudó con problemas concretos en las fases iniciales del desarrollo.
 
@@ -571,4 +571,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.22.6 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*
+*Airin Chess v2.22.6 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*
