@@ -14,14 +14,20 @@
 | v2.22.11 | 0 | 7 | 13 | 17.5% | ~1631 | Filter extended to captures |
 | v2.22.12 | 0 | 10 | 6 | **31.3%*** | **~1763*** | King Centralization Gate — best score yet |
 | v2.22.13 | 0 | 16 | 16 | 25.0% | ~1709 | Repetition blindness fix — 32/40g SP partial |
-| **v2.22.14** | **2** | **14** | **14** | **30.0%** | **~1753** | **BLOCKED threshold 100→50cp — 30g PC complete ✅** |
+| v2.22.14 | 2 | 14 | 14 | 30.0% | ~1753 | BLOCKED threshold 100→50cp — 30g PC complete ✅ |
+| **v2.22.15** | **—** | **—** | **—** | **pending** | **pending** | **Rook on 7th rank — PC tournament pending** |
 
 *v2.22.12 was 16/20 SP partial. v2.22.13 was 32/40 SP partial (Surface thermal throttled after 12h).*  
 *v2.22.14 is the first complete 30g PC tournament — canonical machine for all future runs.*
 
+**Surface warmup data (v2.22.15, 2026-04-21, informational only):**
+- Depth-7 (6g): W0 D5 L1 = 41.7% — 5 draws, strong defensive play
+- UCI Elo 1900 (5g partial): W2 D0 L3 = 40.0% — 2 clean checkmate wins
+- Combined estimate: ~1830 ELO (wide CI, Surface run, not canonical)
+
 **Known real-world strength:** mChess on mobile already beat Maia 1900 ELO (Chessis app, previous version, 15s/move). v2.22.14 PC tournament confirmed W2 D14 L14 (30%) vs SF-d7, including two checkmate wins — the first wins in a complete PC tournament run.
 
-> **ELO methodology note:** Tournaments run to date used `go depth 7` (depth-limited), whose ELO is *estimated* (~1900), not officially calibrated. Starting with the v2.22.15 tournament, `arena_tournament.js` now supports `UCI_Elo` mode (official calibrated ELO) and `Skill Level` mode (0–20, with deliberate errors). The canonical release tournament will use `UCI_Elo 1750` to produce an officially referenced ELO estimate.
+> **ELO methodology note:** Tournaments run to date used `go depth 7` (depth-limited), whose ELO is *estimated* (~1900), not officially calibrated. Starting with the v2.22.15 tournament, `arena_tournament.js` supports `UCI_Elo` mode (official calibrated ELO) and `Skill Level` mode (0–20, with deliberate errors). The **canonical release tournament uses `UCI_Elo 1800`** — surface warmup data suggests mChess is ~1830, making 1800 the closest to 50% expected score (tightest CI).
 
 ---
 
@@ -84,27 +90,42 @@ Same one-patch-per-version discipline. Start after v2.23.0 is on main.
 
 ---
 
-## Phase 4 — ELO Gauntlet (proper release rating)
+## Phase 4 — Post-Release Week: UI / Coach / Commentator + ELO Gauntlet
 
-**Run on desktop** (no thermal throttle, peak search depth).  
-**Requires tournament script update** — do not block Phase 1–3 on this.
+**Immediately after v2.23.0 merges to main — one week, no engine changes.**
 
-### Planned opponents
+### Track 1: UI / Coach / Commentator improvements
 
-| Opponent | How | Why |
-|----------|-----|-----|
-| Stockfish by Skill Level | UCI `setoption name Skill Level value N` (0–20) | Meaningful ELO brackets vs fixed depth |
-| Maia 1100 / 1300 / 1500 / 1900 | UCI engine (download separately) | Human-like play — most relevant for a beginner-targeted game |
-| One JS engine | Lozza or similar | Same runtime environment as mChess, fairest comparison |
+- Coach brain sync sessions A→D (see gap analysis in conversation — rook files, mobility, passed pawns, endgame)
+  - No version bumps for coach-only changes (Option A agreed)
+  - One final version bump for all coach work combined
+- UI rename: **Monolith Chess → Airin Chess** (Aaron + Irene; AI+RIN)
+- Commentator improvements from easy/medium Surface game data
+- All changes committed to feat branch, no engine change, no tournament needed
 
-**Known floor:** mChess (previous version, mobile, 15s/move) already beat Maia 1900. Gauntlet should extend above 1900 to find the real ceiling.
+### Track 2: ELO Gauntlet (run in parallel during the week)
+
+**Run on desktop** (no thermal throttle, peak search depth). Script already ready.
+
+| Opponent | Command | Why |
+|----------|---------|-----|
+| UCI Elo 1600 | `--sf-mode uci_elo --sf-value 1600` | Lower bound confirmation |
+| UCI Elo 1750 | `--sf-mode uci_elo --sf-value 1750` | Previous canonical target |
+| UCI Elo 1800 | `--sf-mode uci_elo --sf-value 1800` | Release ELO ± 50 |
+| UCI Elo 1900 | `--sf-mode uci_elo --sf-value 1900` | Upper bound |
+| Skill Level 3 | `--sf-mode skill_level --sf-value 3` | Human-error comparison (1729 ELO) |
+| Skill Level 4 | `--sf-mode skill_level --sf-value 4` | Human-error comparison (1953 ELO) |
+
+Run 20g per level → full ELO ladder. Surface warmup already suggests ~1830 so ladder around 1700–1950.
+
+**Known floor:** mChess already beat Maia 1900 (mobile, previous version). Gauntlet should confirm PC ceiling.
 
 ### Tournament script changes — ✅ Done (2026-04-21)
 - ✅ Multi-opponent mode (cycle through UCI_Elo / Skill Level / depth in one run)
 - ✅ Stockfish Skill Level support (0–20 with official ELO table)
 - ✅ Stockfish UCI_Elo support (direct official calibrated ELO, 1320–3190)
 - ✅ Interactive menu updated — 3-option mode selector
-- ✅ Batch CLI updated — `--sf-mode uci_elo --sf-value 1750`
+- ✅ Batch CLI updated — `--sf-mode uci_elo --sf-value 1800`
 - ⏳ Maia engine integration — post-release Phase 4
 - ⏳ Rating ladder summary report — post-release Phase 4
 

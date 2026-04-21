@@ -8165,16 +8165,54 @@ limitations under the License.
             }
           }
 
+          // ── Queen mobility ────────────────────────────────────────────────
+          if (type === 'Q' && eg < 0.8) {
+            let mob = 0;
+            for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) {
+              let nr = r + dr, nc = c + dc;
+              while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const t = brd[nr][nc];
+                if (t === ' ') { mob++; nr += dr; nc += dc; }
+                else { if (isW ? t === t.toLowerCase() : t === t.toUpperCase()) mob++; break; }
+              }
+            }
+            bonus += Math.round((mob - 14) * 5 * (1 - eg * 0.5));
+          }
+
           if (type === 'Q' || type === 'R') {
             if (isSquareAttacked(r, c, isW ? 'b' : 'w', brd)) {
               bonus -= (type === 'Q' ? 400 : 180);
             }
           }
 
-          // ── Rook on 7th rank (mirrors worker eval) ───────────────────────
+          // ── Rook bonuses (mirrors worker eval) ───────────────────────────
           if (type === 'R') {
             const rank7 = isW ? 1 : 6;
             if (r === rank7) { bonus += Math.round(25 + 15 * (1 - eg)); } // +40cp MG / +25cp EG
+
+            // Open / semi-open file
+            const myPawns = isW ? wP : bP, epPawns = isW ? bP : wP;
+            if (myPawns[c] === 0 && epPawns[c] === 0) bonus += 40;
+            else if (myPawns[c] === 0) bonus += 20;
+
+            // Connected rooks: battery on same rank or file, nothing between
+            const myRook = isW ? 'R' : 'r';
+            let connected = false;
+            for (let _c = 0; _c < 8 && !connected; _c++) {
+              if (_c === c || brd[r][_c] !== myRook) continue;
+              let clear = true;
+              const lo = Math.min(c, _c) + 1, hi = Math.max(c, _c);
+              for (let x = lo; x < hi; x++) { if (brd[r][x] !== ' ') { clear = false; break; } }
+              if (clear) connected = true;
+            }
+            for (let _r = 0; _r < 8 && !connected; _r++) {
+              if (_r === r || brd[_r][c] !== myRook) continue;
+              let clear = true;
+              const lo = Math.min(r, _r) + 1, hi = Math.max(r, _r);
+              for (let x = lo; x < hi; x++) { if (brd[x][c] !== ' ') { clear = false; break; } }
+              if (clear) connected = true;
+            }
+            if (connected) bonus += 15;
           }
 
           if (type === 'P') {
@@ -8186,6 +8224,12 @@ limitations under the License.
               const distanceToPromotion = isW ? (7 - r) : r;
               bonus += distanceToPromotion * 20;
               bonus = Math.round(bonus * (1 + eg * 3.5));
+              // Danger: exponential bonus for rank 5+ passers (mirrors worker PASS_DANGER)
+              const isDangerous = isW ? (r <= 3) : (r >= 4);
+              if (isDangerous) {
+                const dRank = isW ? ((7 - r) - 3) : (r - 3);
+                bonus += Math.round(25 * dRank * dRank * (0.4 + 0.6 * eg));
+              }
             }
 
             // 🧱 NEW: Pawn Chains (Solid Structure)
@@ -8202,6 +8246,18 @@ limitations under the License.
           }
 
           if (type === 'N') {
+            // Knight mobility: (reachable squares - 4) × 10
+            const _kd = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+            let mob = 0;
+            for (const [dr, dc] of _kd) {
+              const nr = r + dr, nc = c + dc;
+              if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const t = brd[nr][nc];
+                if (t === ' ' || (isW ? t === t.toLowerCase() : t === t.toUpperCase())) mob++;
+              }
+            }
+            bonus += (mob - 4) * 10;
+
             let isOutpost = false;
             let isAdvanced = (isW && r <= 3) || (!isW && r >= 4);
             if (c >= 2 && c <= 5 && ((isW && r >= 2 && r <= 4) || (!isW && r >= 3 && r <= 5))) {
@@ -8220,6 +8276,29 @@ limitations under the License.
             }
             if (isOutpost) bonus += 140;
             else if (isAdvanced) bonus -= 40;
+          }
+
+          if (type === 'B') {
+            // Bishop mobility: (reachable diagonal squares - 6) × 8
+            let mob = 0;
+            for (const [dr, dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+              let nr = r + dr, nc = c + dc;
+              while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const t = brd[nr][nc];
+                if (t === ' ') { mob++; nr += dr; nc += dc; }
+                else { if (isW ? t === t.toLowerCase() : t === t.toUpperCase()) mob++; break; }
+              }
+            }
+            bonus += (mob - 6) * 8;
+
+            // Bad bishop: penalty when own pawns crowd the bishop's color
+            const bishopColor = (r + c) % 2;
+            const ownPawnCh = isW ? 'P' : 'p';
+            let ownPawnsOnColor = 0;
+            for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+              if (brd[_r][_c] === ownPawnCh && (_r + _c) % 2 === bishopColor) ownPawnsOnColor++;
+            }
+            if (ownPawnsOnColor > 2) bonus -= (ownPawnsOnColor - 2) * Math.round(8 * (0.5 + 0.5 * eg));
           }
 
           if (type === 'K' && eg < 0.5) {
@@ -8279,6 +8358,45 @@ limitations under the License.
           }
           score += sign * (val + pst + bonus);
         }
+      }
+
+      // ── Backward pawns ────────────────────────────────────────────────
+      for (let _r = 1; _r < 7; _r++) {
+        for (let _c = 0; _c < 8; _c++) {
+          const _p = brd[_r][_c];
+          if (_p !== 'P' && _p !== 'p') continue;
+          const isWp = (_p === 'P');
+          const dir = isWp ? -1 : 1;
+          const advR = _r + dir;
+          const ePawn = isWp ? 'p' : 'P';
+          const eAttackRow = advR + dir;
+          if (eAttackRow < 0 || eAttackRow > 7) continue;
+          if (!(_c > 0 && brd[eAttackRow][_c-1] === ePawn) &&
+              !(_c < 7 && brd[eAttackRow][_c+1] === ePawn)) continue;
+          const fPawn = isWp ? 'P' : 'p';
+          let hasSupporter = false;
+          for (const dc of [-1, 1]) {
+            const nc = _c + dc;
+            if (nc < 0 || nc > 7) continue;
+            for (let sr = _r; isWp ? sr < 8 : sr >= 0; isWp ? sr++ : sr--) {
+              if (brd[sr][nc] === fPawn) { hasSupporter = true; break; }
+            }
+            if (hasSupporter) break;
+          }
+          if (hasSupporter) continue;
+          const pen = Math.round(20 + 10 * eg);
+          if (isWp) score -= pen; else score += pen;
+        }
+      }
+
+      // ── Space advantage (pawns in extended center of enemy half) ─────────
+      if (eg < 0.6) {
+        let wSpace = 0, bSpace = 0;
+        for (let _r = 3; _r <= 4; _r++) for (let _c = 2; _c <= 5; _c++) {
+          const _p = brd[_r][_c];
+          if (_p === 'P') wSpace++; else if (_p === 'p') bSpace++;
+        }
+        score += (wSpace - bSpace) * 3;
       }
 
       // ✨ CHECKMATE HEURISTIC
