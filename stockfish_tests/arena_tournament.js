@@ -6,7 +6,7 @@ const fs = require('fs');
 const readline = require('readline');
 
 // ═══════════════════════════════════════════════════════════════
-// 🏆 TOURNAMENT v2 — mChess vs Stockfish
+// 🏆 TOURNAMENT v2 — Airin vs Stockfish
 //    Fixes: color alternation, sample size, opening variety,
 //           multi-depth bracketing, phase tracking, CI output
 // ═══════════════════════════════════════════════════════════════
@@ -17,7 +17,7 @@ const CONFIG = {
     htmlFile: path.join(__dirname, '../mChess.html'),
     stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish'),
     logFile: path.join(__dirname, 'tournament_latest_results.json'),
-    moveTimeoutMs: 90000,   // 45s max per mChess move
+    moveTimeoutMs: 90000,   // 45s max per Airin move
     gameTimeoutMs: 3600000, // 1h per game
 };
 
@@ -102,13 +102,13 @@ class DepthStats {
         this.lW = 0; this.lB = 0; // losses
         this.dW = 0; this.dB = 0; // draws
     }
-    add(result, mChessColor, moves, reason, pgn, phase) {
+    add(result, AirinColor, moves, reason, pgn, phase) {
         this.games.push({
-            result, mChessColor, moves, reason, pgn, phase,
+            result, AirinColor, moves, reason, pgn, phase,
             ts: new Date().toISOString()
         });
-        const w = mChessColor === 'w';
-        if (result === 'mchess_win') { if (w) this.wW++; else this.wB++; }
+        const w = AirinColor === 'w';
+        if (result === 'airin_win') { if (w) this.wW++; else this.wB++; }
         else if (result === 'sf_win') { if (w) this.lW++; else this.lB++; }
         else { if (w) this.dW++; else this.dB++; }
     }
@@ -237,7 +237,7 @@ async function evalMove(page, fen, history, timeoutMs, positionFens = []) {
                     aiDepth = s.depth;
                     aiMistakeChance = s.mistakes;
                     // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
-                    if (lvl === 'grandmaster') s.timeLimit = 30000;
+                    if (lvl === 'grandmaster') s.timeLimit = 15000;
                     aiTimeLimit = s.timeLimit;
                 }
                 if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
@@ -273,11 +273,11 @@ async function evalMove(page, fen, history, timeoutMs, positionFens = []) {
 // between games so TurboFan keeps JIT-compiled code alive across all games.
 // startFen: optional FEN string to start from a specific position (FEN replay mode).
 //           When set, `opening` is ignored.
-async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, stats, page, startFen = null) {
-    const colorStr = mChessColor === 'w' ? '⬜White' : '⬛Black';
+async function playGame(gameNum, totalGames, AirinColor, opening, sfConfig, stats, page, startFen = null) {
+    const colorStr = AirinColor === 'w' ? '⬜White' : '⬛Black';
     const openingStr = startFen ? `FEN: ${startFen.slice(0, 40)}…` : (opening.length ? opening.join(' ') : 'start');
     console.log(`\n${'─'.repeat(62)}`);
-    console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  ${startFen ? '📌 FEN replay' : `Opening:[${openingStr}]`}  SF:[${sfConfigTag(sfConfig)}]`);
+    console.log(`🎮 Game ${gameNum}/${totalGames}  Airin=${colorStr}  ${startFen ? '📌 FEN replay' : `Opening:[${openingStr}]`}  SF:[${sfConfigTag(sfConfig)}]`);
     if (startFen) console.log(`   FEN: ${startFen}`);
     console.log('─'.repeat(62));
 
@@ -293,7 +293,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, sta
                 aiDepth = s.depth;
                 aiMistakeChance = s.mistakes;
                 // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
-                if (lvl === 'grandmaster') s.timeLimit = 30000;
+                if (lvl === 'grandmaster') s.timeLimit = 15000;
                 aiTimeLimit = s.timeLimit;
             }
         } catch (e) { }
@@ -323,11 +323,11 @@ async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, sta
 
             const fen = game.fen();
             const currentColor = game.turn(); // 'w' or 'b'
-            const isMChess = (currentColor === mChessColor);
+            const isAirin = (currentColor === AirinColor);
             let move = null;
 
-            if (isMChess) {
-                // mChess moves — use evalMove() to safely handle timeouts
+            if (isAirin) {
+                // Airin moves — use evalMove() to safely handle timeouts
                 // and prevent concurrent askWiseKing calls (which corrupt its result)
                 const t0 = Date.now();
                 const _fenHist = game.history({ verbose: true }).map(m => m.after);
@@ -345,7 +345,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, sta
                         ? (depth_info.nps / 1000000).toFixed(1) + 'Mn/s'
                         : (depth_info.nps / 1000).toFixed(0) + 'kn/s'}`
                     : '';
-                console.log(`   👑 mChess ${move || 'null'} (${elapsed}s)${dStr}${npsStr}`);
+                console.log(`   👑 Airin ${move || 'null'} (${elapsed}s)${dStr}${npsStr}`);
                 if (depth_info && depth_info.nps > 0) stats.npsLog.push(depth_info.nps);
             } else {
                 // Stockfish moves
@@ -354,7 +354,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, sta
             }
 
             if (!move || move === 'null') {
-                reason = isMChess ? 'mchess_no_move' : 'sf_no_move';
+                reason = isAirin ? 'airin_no_move' : 'sf_no_move';
                 break;
             }
 
@@ -365,8 +365,8 @@ async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, sta
                 });
                 phase = detectPhase(game);
             } catch (e) {
-                console.error(`❌ Illegal: ${move} (${isMChess ? 'mChess' : 'SF'})`);
-                reason = isMChess ? 'mchess_illegal' : 'sf_illegal';
+                console.error(`❌ Illegal: ${move} (${isAirin ? 'Airin' : 'SF'})`);
+                reason = isAirin ? 'airin_illegal' : 'sf_illegal';
                 break;
             }
         }
@@ -378,7 +378,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, sta
     // Determine result
     let result;
     if (game.isCheckmate()) {
-        result = (game.turn() !== mChessColor) ? 'mchess_win' : 'sf_win';
+        result = (game.turn() !== AirinColor) ? 'airin_win' : 'sf_win';
         reason = 'checkmate';
     } else if (game.isDraw()) {
         result = 'draw';
@@ -386,20 +386,20 @@ async function playGame(gameNum, totalGames, mChessColor, opening, sfConfig, sta
         else if (game.isThreefoldRepetition()) reason = 'repetition';
         else if (game.isInsufficientMaterial()) reason = 'insufficient_material';
         else reason = '50_moves';
-    } else if (reason === 'mchess_illegal' || reason === 'mchess_no_move') {
+    } else if (reason === 'airin_illegal' || reason === 'airin_no_move') {
         result = 'sf_win';
     } else if (reason === 'sf_illegal' || reason === 'sf_no_move') {
-        result = 'mchess_win';
+        result = 'airin_win';
     } else {
         result = 'draw';
     }
 
-    const resultStr = result === 'mchess_win' ? '✅ mChess wins'
+    const resultStr = result === 'airin_win' ? '✅ Airin wins'
         : result === 'sf_win' ? '❌ Stockfish wins'
             : '🤝 Draw';
     console.log(`\n${resultStr}  reason:${reason}  moves:${game.history().length}  phase:${phase}`);
 
-    stats.add(result, mChessColor, game.history().length, reason, game.pgn(), phase);
+    stats.add(result, AirinColor, game.history().length, reason, game.pgn(), phase);
 }
 
 // ── Core tournament runner (shared by interactive and batch modes) ────────
@@ -408,23 +408,23 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
     CONFIG.sfConfigs = sfConfigs;
     CONFIG.selectedLevel = selectedLevel;
 
-    // Extract mChess version from HTML title tag
-    let mchessVer = '';
+    // Extract Airin version from HTML title tag
+    let airinVer = '';
     try {
         const htmlSrc = fs.readFileSync(CONFIG.htmlFile, 'utf8');
         const m = htmlSrc.match(/<title>Monolith Chess (v[\d.]+)<\/title>/);
-        if (m) mchessVer = '_' + m[1];
+        if (m) airinVer = '_' + m[1];
     } catch (_) {}
     const modeTag = (fenReplayMode && fenList.length > 0) ? '_fenreplay' : '';
     const gameCount = fenReplayMode && fenList.length > 0 ? fenList.length : n;
     const _vTs = new Date().toISOString().replace('T', '_').replace(/[:.]/g, '').slice(0, 15);
     const _sfTag = sfConfigs.map(c => sfConfigTag(c)).join('_');
-    CONFIG.logFile = path.join(__dirname, `tournament_mChess${mchessVer}_${_sfTag}_${gameCount}g${modeTag}_${_vTs}.json`);
+    CONFIG.logFile = path.join(__dirname, `tournament_Airin${airinVer}_${_sfTag}_${gameCount}g${modeTag}_${_vTs}.json`);
 
     // ── Verbose log — same timestamp as JSON so both files pair up ────────
     const verboseLogFile = CONFIG.logFile.replace('.json', `_verbose_${_vTs}.log`);
     const verboseStream = fs.createWriteStream(verboseLogFile, { encoding: 'utf8' });
-    verboseStream.write(`# mChess verbose log — ${new Date().toISOString()}\n`);
+    verboseStream.write(`# Airin verbose log — ${new Date().toISOString()}\n`);
     verboseStream.write(`# ${n} games × [${sfConfigs.map(c => sfConfigLabel(c)).join(' / ')}] | ${selectedLevel}\n\n`);
 
     console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${sfConfigs.length} opponent(s)`);
@@ -443,7 +443,7 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
     const savePartial = (gameNum, total, done = false) => {
         try {
             const allGamesFlat = sfConfigs.flatMap(c => statsMap[sfConfigTag(c)].games);
-            const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
+            const totalW = allGamesFlat.filter(g => g.result === 'airin_win').length;
             const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
             const totalL = allGamesFlat.filter(g => g.result === 'sf_win').length;
             const totalN = allGamesFlat.length;
@@ -554,8 +554,8 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
             const _key = sfConfigTag(sfConfig);
             if (fenReplayMode && fenList.length > 0) {
                 // FEN replay: one game per FEN entry
-                for (const { fen, mChessColor } of fenList) {
-                    allGames.push({ sfConfig, mChessColor, opening: [], startFen: fen });
+                for (const { fen, AirinColor } of fenList) {
+                    allGames.push({ sfConfig, AirinColor, opening: [], startFen: fen });
                 }
             } else {
                 // Normal tournament: alternate colors, rotate openings
@@ -563,7 +563,7 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
                 for (let i = 0; i < gamesPerConfig; i++) {
                     allGames.push({
                         sfConfig,
-                        mChessColor: i % 2 === 0 ? 'w' : 'b',
+                        AirinColor: i % 2 === 0 ? 'w' : 'b',
                         opening: OPENING_BOOK[i % OPENING_BOOK.length],
                         startFen: null,
                     });
@@ -573,16 +573,16 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
 
         const total = allGames.length;
         for (let i = 0; i < allGames.length; i++) {
-            const { sfConfig, mChessColor, opening, startFen } = allGames[i];
+            const { sfConfig, AirinColor, opening, startFen } = allGames[i];
             const _key = sfConfigTag(sfConfig);
             verboseStream.write(`\n${'='.repeat(60)}\n`);
-            verboseStream.write(`=== Game ${i+1}/${total} | mChess=${mChessColor} | SF [${_key}] ===\n`);
+            verboseStream.write(`=== Game ${i+1}/${total} | Airin=${AirinColor} | SF [${_key}] ===\n`);
             verboseStream.write(`${'='.repeat(60)}\n`);
             try {
-                await playGame(i + 1, total, mChessColor, opening, sfConfig, statsMap[_key], sharedPage, startFen);
+                await playGame(i + 1, total, AirinColor, opening, sfConfig, statsMap[_key], sharedPage, startFen);
             } catch (err) {
                 console.error(`\n💥 Game ${i + 1} crashed:`, err.message);
-                statsMap[_key].add('draw', mChessColor, 0, 'crash', '', 'unknown');
+                statsMap[_key].add('draw', AirinColor, 0, 'crash', '', 'unknown');
             }
             savePartial(i + 1, total, false);
             const gs = statsMap[_key];
@@ -604,7 +604,7 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
 
     // Combined ELO estimate (weighted by game count)
     const allGamesFlat = sfConfigs.flatMap(c => statsMap[sfConfigTag(c)].games);
-    const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
+    const totalW = allGamesFlat.filter(g => g.result === 'airin_win').length;
     const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
     const totalN = allGamesFlat.length;
     if (totalN > 0 && sfConfigs.length > 1) {
@@ -631,7 +631,7 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
 // ── Interactive tournament runner ────────────────────────────────────────
 async function runTournament() {
     console.log('╔' + '═'.repeat(62) + '╗');
-    console.log('║       🏆 TOURNAMENT v2 — mChess vs Stockfish 🏆          ║');
+    console.log('║       🏆 TOURNAMENT v2 — Airin vs Stockfish 🏆          ║');
     console.log('╚' + '═'.repeat(62) + '╝');
 
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -644,8 +644,8 @@ async function runTournament() {
     const modeAns = (await ask('Choose 1-2 (enter=1): ')).trim();
     const fenReplayMode = modeAns === '2';
 
-    // ── mChess level ─────────────────────────────────────────
-    console.log('\nSelect mChess level:');
+    // ── Airin level ─────────────────────────────────────────
+    console.log('\nSelect Airin level:');
     console.log('  1) Chick       (easy)');
     console.log('  2) Student     (medium)');
     console.log('  3) Wizard      (hard)');
@@ -653,10 +653,10 @@ async function runTournament() {
     const levelAns = (await ask('Choose 1-4 (enter=4): ')).trim();
     const LEVEL_MAP = { '1': 'easy', '2': 'medium', '3': 'hard', '4': 'grandmaster' };
     const selectedLevel = LEVEL_MAP[levelAns] || 'grandmaster';
-    console.log(`✅ mChess level: ${selectedLevel}`);
+    console.log(`✅ Airin level: ${selectedLevel}`);
 
     // ── HTML file ─────────────────────────────────────────────
-    console.log('\nPath to mChess HTML file:');
+    console.log('\nPath to Airin HTML file:');
     console.log('  (leave blank to use default: ../mChess.html)');
     const htmlAns = (await ask('HTML path: ')).trim();
     if (htmlAns) CONFIG.htmlFile = path.resolve(__dirname, htmlAns);
@@ -679,7 +679,7 @@ async function runTournament() {
         sfConfigs = depths.map(d => ({ mode: 'depth', value: d }));
         sfConfigs.forEach(c => console.log(`✅ ${sfConfigLabel(c)}`));
     } else if (sfMode === 'uci_elo') {
-        console.log('  Valid range: 1320–3190. Level 3 (Skill)=1729 | mChess est.=1750 | Level 4 (Skill)=1953');
+        console.log('  Valid range: 1320–3190. Level 3 (Skill)=1729 | Airin est.=1750 | Level 4 (Skill)=1953');
         console.log('  Multiple opponents: e.g. 1700,1900');
         const eloAns = (await ask('UCI_Elo value(s) (enter=1750): ')).trim();
         const eloVals = eloAns ? eloAns.split(',').map(x => Math.min(3190, Math.max(1320, parseInt(x.trim())))).filter(v => !isNaN(v)) : [1750];
@@ -698,18 +698,18 @@ async function runTournament() {
     }
 
     // ── FEN replay: load positions ────────────────────────────
-    let fenList = []; // { fen, mChessColor }
+    let fenList = []; // { fen, AirinColor }
     if (fenReplayMode) {
         console.log('\n📌 FEN REPLAY MODE');
         console.log('  Enter one FEN per line. Format: <FEN> [w|b]');
-        console.log('  The color (w/b) is who mChess plays AS in that position.');
-        console.log('  If omitted, mChess plays the side to move in the FEN.');
+        console.log('  The color (w/b) is who Airin plays AS in that position.');
+        console.log('  If omitted, Airin plays the side to move in the FEN.');
         console.log('  Or enter a path to a JSON file: [{ "fen": "...", "color": "w" }, ...]');
         console.log('  Leave blank and press Enter to finish.\n');
         const firstLine = (await ask('FEN / JSON file path: ')).trim();
         if (firstLine.endsWith('.json')) {
             const raw = JSON.parse(fs.readFileSync(path.resolve(__dirname, firstLine), 'utf8'));
-            fenList = raw.map(e => ({ fen: e.fen, mChessColor: e.color || e.fen.split(' ')[1] }));
+            fenList = raw.map(e => ({ fen: e.fen, AirinColor: e.color || e.fen.split(' ')[1] }));
             console.log(`✅ Loaded ${fenList.length} positions from ${firstLine}`);
         } else if (firstLine) {
             const lines = [firstLine];
@@ -731,7 +731,7 @@ async function runTournament() {
                     fen = parts.join(' ');
                     color = fen.split(' ')[1]; // side to move in FEN
                 }
-                return { fen, mChessColor: color };
+                return { fen, AirinColor: color };
             });
             console.log(`✅ ${fenList.length} position(s) loaded`);
         }
@@ -787,7 +787,7 @@ if (_args.includes('--batch')) {
     }
 
     console.log('\u2554' + '\u2550'.repeat(62) + '\u2557');
-    console.log('\u2551       \ud83c\udfc6 TOURNAMENT v2 \u2014 mChess vs Stockfish \ud83c\udfc6          \u2551');
+    console.log('\u2551       \ud83c\udfc6 TOURNAMENT v2 \u2014 Airin vs Stockfish \ud83c\udfc6          \u2551');
     console.log('\u255a' + '\u2550'.repeat(62) + '\u255d');
     console.log(`\ud83d� Batch mode: ${_n} games \u00d7 [${_sfConfigs.map(c => sfConfigTag(c)).join('/')}] | level:${_level}`);
     _sfConfigs.forEach(c => console.log(`   ${sfConfigLabel(c)}`));
