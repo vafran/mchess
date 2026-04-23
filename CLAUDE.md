@@ -1,14 +1,14 @@
-# mChess (Monolith Chess) — Project Reference
+# Airin Chess — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.22.10** (branch `feat/v2.22.0`) | `main` has v2.22.5 | File: `mChess.html` (~16,500 lines, ~860 KB)  
+> Current version: **v2.22.15** (branch `feat/v2.22.0`) | `main` has v2.22.5 | File: `mChess.html` (~16,500 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---
 
 ## Project Overview
 
-**Monolith Chess** is a browser-based chess game with a pedagogical focus. It teaches chess to beginners through a coach ("Profesor"), a dynamic commentator, and context-aware opening recognition. The strongest AI level ("Wise King / Rey Sabio") is competitive (~1600–1700 ELO vs Stockfish at depth 7, where depth 7 is Stockfish's fixed depth — mChess searches freely within its 15s time budget).
+**Airin Chess** is a browser-based chess game with a pedagogical focus. It teaches chess to beginners through a coach ("Profesor"), a dynamic commentator, and context-aware opening recognition. The strongest AI level ("Wise King / Rey Sabio") is competitive (~1600–1700 ELO vs Stockfish at depth 7, where depth 7 is Stockfish's fixed depth — Airin searches freely within its 15s time budget).
 
 - **Language:** Spanish (default) / English, toggled at runtime
 - **Architecture:** Single HTML file — CSS + JS all inline
@@ -610,10 +610,10 @@ node arena.js --fen "..." --color w --depth 7   # single FEN test
 > **Skill Level ELO reference (source: stockfish-wiki FAQ):**  
 > Lv0=1347 | Lv1=1444 | Lv2=1566 | Lv3=1729 | Lv4=1953 | Lv5=2197 | Lv6=2383 | Lv7=2518
 
-> ⚠️ **`--depth 7` is Stockfish's search depth (the opponent), NOT mChess's depth.**  
-> Stockfish at depth 7 ≈ ~1900 ELO (estimated). mChess searches as deep as it can within its own time budget  
-> (15 seconds at grandmaster level). On faster hardware mChess reaches greater depths. The `d7` in  
-> filenames refers to the Stockfish opponent strength, not mChess's search depth.
+> ⚠️ **`--depth 7` is Stockfish's search depth (the opponent), NOT Airin's depth.**  
+> Stockfish at depth 7 ≈ ~1900 ELO (estimated). Airin searches as deep as it can within its own time budget  
+> (15 seconds at grandmaster level). On faster hardware Airin reaches greater depths. The `d7` in  
+> filenames refers to the Stockfish opponent strength, not Airin's search depth.
 
 Requires: Node.js, Puppeteer, `stockfish.exe` in `stockfish_tests/`.  
 Output: `tournament_mChess_<version>_d7_<N>g.json` (version auto-detected from HTML title tag)
@@ -710,7 +710,7 @@ Abort if you see any of these in the verbose log:
 | Signal | Example | What it means |
 |--------|---------|----------------|
 | Eval phantom: identical top3 scores with \|score\| > 150cp AND no material justification | `a1-b1:630 c2-d3:630 h7-h5:630` | Eval term producing a constant; position differences invisible |
-| Filter catastrophe: filter fired, then mChess was immediately mated | `FILTER→Ke2` followed by checkmate in 2 | BLOCKED(mate) gate broken or filter injecting a losing move |
+| Filter catastrophe: filter fired, then Airin was immediately mated | `FILTER→Ke2` followed by checkmate in 2 | BLOCKED(mate) gate broken or filter injecting a losing move |
 | Illegal or impossible move sent | Move lands on own piece or off-board square | Race condition or move generation regression |
 | A targeted diagnostic log line fires unexpectedly | A `console.warn` added to confirm a fix fires on move 1 | The regression the log was designed to detect is present |
 
