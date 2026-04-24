@@ -27,14 +27,16 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 
 ### Non-Goals
 
-- **Defeating titled players.** This is not Stockfish. The engine reaches **~1753 ELO** at Wise King level (validated: W2 D14 L14 vs Stockfish depth 7, 30-game PC tournament, v2.22.14). Actual strength depends on the hardware running it.
+- **Defeating titled players.** This is not Stockfish. The engine reaches **~1652 ELO** at Wizard level and **~1830 ELO** at Wise King level (validated: 40-game PC tournaments vs UCI_Elo 1750, v2.23.0). Actual strength depends on hardware — see calibration note below.
 - **Online multiplayer.** Local play only.
 - **Advanced preparation tools.** The opening book is curated for teaching, not professional preparation.
-- **Benchmark performance.** Clean, readable JavaScript takes priority over micro-optimised techniques, though v2.1.0 introduced critical low-level bottlenecks fixes.
+- **Benchmark performance.** Clean, readable JavaScript takes priority over micro-optimised techniques,18 though v2.1.0 introduced critical low-level bottlenecks fixes.
 
 ---
 
 ## How to Play
+
+**Locally**
 
 1. **Download** the `.html` file.
 2. **Double-click** it. It opens in any modern browser (Chrome, Firefox, Safari, Edge).
@@ -42,7 +44,10 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 4. **Click a piece** to select it. Legal destination squares appear as dots.
 5. **Click a destination** to move.
 
-That is everything. The game handles the rest.
+**Online**
+
+1. **Go to** GitHub Pages site: [https://airinchess.com](https://airinchess.com)  
+2. **Play directly** in the browser. No download needed.
 
 ---
 
@@ -60,13 +65,13 @@ That is everything. The game handles the rest.
 
 4-ply depth · 20% mistake rate · ±6 cp noise · book (first 2 moves) · full quiescence
 
-### 🔥 Hard — *Mage* (~1400 ELO)
+### 🔥 Hard — *Wizard* (~1652 ELO validated)
 
-**Target:** Experienced casual players who want a real test.
+**Target:** Experienced casual players and club players.
 
-6-ply depth · 5% mistake rate · no noise · full book · all search techniques active
+Up to 30-ply depth (time-capped at 15s) · 0% mistake rate · no noise · full book · all search techniques active
 
-### 👑 Master — *Wise King* (~1753 ELO validated)
+### 👑 Master — *Wise King* (~1830 ELO validated)
 
 **Target:** Strong club players and advanced amateurs.
 
@@ -77,13 +82,17 @@ Up to 30-ply depth (time-capped at 30s) · 0% mistakes · full book · full eval
 
 ### Difficulty Summary
 
-| Level | ELO est. | Depth | Mistake rate | Noise | Book | Quiescence |
-|---|---|---|---|---|---|---|
-| 🐣 Easy | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
-| 📚 Medium | ~1010 | 4 | 20% | ±6 cp | first 2 moves | ✅ |
-| 🔥 Hard | ~1400 | 6 | 0% | none | ✅ full | ✅ |
-| 👑 Wise King | ~1753 (validated) | up to 30 (30s cap) | 0% | none | ✅ full | ✅ |
- 
+| Level | ELO est. | Depth | Time cap | Mistake rate | Book |
+|---|---|---|---|---|---|
+| 🐣 Easy | ~630 | 2 | 0.5s | 40% | ❌ |
+| 📚 Medium | ~1010 | 4 | 1.5s | 20% | first 2 moves |
+| 🔥 Wizard | ~1652 (validated) | up to 30 | 15s | 0% | ✅ full |
+| 👑 Wise King | ~1830 (validated) | up to 30 | 30s | 0% | ✅ full |
+
+> **ELO calibration hardware:** CoolPC Black VIII — AMD Ryzen 7 3700X @ 4.4 GHz, 16 GB DDR4 3200 MHz (~95k NPS in tournament conditions).
+>
+> ⚠️ **Hardware note:** Airin is a pure JavaScript engine running in the browser. Its strength scales directly with your device's CPU speed — the time budget (15s / 30s) is fixed, but the search depth reached within that budget is not. On a mid-range gaming PC you can expect the validated ELO figures above. On a typical laptop expect roughly 50–100 ELO less; on a phone or tablet, 150–250 ELO less. Easy and Medium are effectively hardware-independent in practice — their depth caps (2 and 4) are always reached well before the time budget on any modern device. Wizard and Wise King search as deep as time allows, so their strength scales with your hardware.
+
 ---
 
 ## The Coach
@@ -176,6 +185,24 @@ Three styles, with labels now visible under the slider:
 | # | Severity | Description | Planned fix |
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
+
+## What's new in v2.23.0 — *Production Release*
+
+### 🚀 Engine: Five Cumulative Improvements
+
+v2.23.0 is the first production release under the new one-patch-per-version discipline. It bundles five validated engine improvements from the v2.22.x development cycle:
+
+- **v2.22.11** — Anti-blunder filter extended to losing captures (SEE < 0 on captures now triggers filter)
+- **v2.22.12** — King Centralization Gate: endgame king activity bonus now gated to prevent phantom king walk scores in the middlegame
+- **v2.22.13** — Repetition blindness fixed: root moves that repeat the position 2+ times are scored −9000 (avoid) rather than played as normal; confirmed 266 firings across a 32-game tournament
+- **v2.22.14** — Anti-blunder filter BLOCKED gate lowered from 100cp to 50cp, preventing the G26-type false positive where a strong piece capture was incorrectly blocked
+- **v2.22.15** — Rook on 7th rank: +40cp middlegame / +25cp endgame tapered bonus for rooks on the 7th rank
+
+**Tournament results (40 games each, PC, UCI_Elo 1750):**
+- Wizard level (15s/move): W11 D7 L22 — **36.3% — ~1652 ELO [CI: 1542–1762]**
+- Wise King level (30s/move): W21 D7 L12 — **61.3% — ~1830 ELO [CI: 1721–1938]**
+
+---
 
 ## What's new in v2.22.14 — *BLOCKED Filter Threshold Fixed*
 

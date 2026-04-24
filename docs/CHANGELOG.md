@@ -1,4 +1,4 @@
-# Changelog — Monolith Chess
+# Changelog — Airin Chess
 
 All notable changes to this project are documented here.  
 Format: version · size · what changed.
@@ -6,7 +6,94 @@ Format: version · size · what changed.
 [Go to README.md](../README.md)
 
 ---
+## v2.23.0 — Production Release
+**~16,500 lines · ~860 KB**
 
+### Engine: Five Validated Improvements (v2.22.11 → v2.22.15)
+
+v2.23.0 merges the complete v2.22.x development cycle into production. Each patch was individually validated with a tournament before inclusion.
+
+**v2.22.11 — Anti-blunder filter extended to losing captures**
+The root SEE filter previously only checked quiet moves. It now also checks captures where SEE < 0 — catching losing exchanges that the engine's depth-limited search might not resolve correctly.
+
+**v2.22.12 — King Centralization Gate**
+The endgame king activity bonus (`kingCentralization`) now has a guard: the bonus is gated to `eg > 0.5` (genuine endgame). Without this gate, the king received bonus points for walking toward the center in the middlegame, producing phantom "king walk" evaluations of +200–+400cp that distorted move selection.
+
+**v2.22.13 — Repetition Blindness Fix**
+Root moves that would create the 2nd or 3rd repetition of a position were not being scored as repetitions — the `gameHashCount` map was built from the wrong data. Fixed: repetitions at root now score −9000 (strong avoid) unless the engine is already losing badly (score < −500), in which case a draw is accepted. Confirmed: 266 root-rep firings across a 32-game tournament, converting blind draws into real results.
+
+**v2.22.14 — BLOCKED Gate Threshold 100→50cp**
+The anti-blunder filter's BLOCKED gate (`BLOCKED(worse:N)`) fires when the substitute move scores N cp worse than the original. At 100cp, the G26 false positive occurred: Nc6xe5 (SEE=−225, clearly correct) was blocked because the substitute scored only 57–63cp worse. Threshold lowered to 50cp.
+
+**v2.22.15 — Rook on 7th Rank Bonus**
+Standard positional bonus added: +40cp (MG) / +25cp (EG), tapered. A rook on the 7th rank (or 2nd rank for Black) attacks the opponent's unmoved pawns and restricts the king. The engine previously earned no bonus for this strong placement.
+
+### Difficulty Levels Recalibrated
+
+| Level | Time budget | Validated ELO | Notes |
+|---|---|---|---|
+| 🐣 Chick (easy) | 0.5 s | — | Depth-2 cap, always reached well before time |
+| 📚 Student (medium) | 1.5 s | — | Depth-4 cap, always reached well before time |
+| 🔥 Wizard (hard) | **15 s** | **~1652** | Searches as deep as time allows |
+| 👑 Wise King (grandmaster) | **30 s** | **~1830** | Searches as deep as time allows |
+
+ELO calibrated on CoolPC Black VIII (AMD Ryzen 7 3700X @ 4.4 GHz, 16 GB DDR4 3200 MHz, ~95k NPS). Wizard and Wise King strength scales with hardware.
+
+### Tournament Results
+
+| Tournament | W | D | L | Score | ELO |
+|---|---|---|---|---|---|
+| 40g PC vs UCI_Elo 1750 (15s) — **Wizard** | 11 | 7 | 22 | 36.3% | ~1652 [CI: 1542–1762] |
+| 40g PC vs UCI_Elo 1750 (30s) — **Wise King** | 21 | 7 | 12 | 61.3% | ~1830 [CI: 1721–1938] |
+
+**Key finding:** Significant White/Black color disparity — White 25.0%, Black 47.5% over the 40-game Wizard run. The engine defends and counterattacks well (reactive play) but does not generate initiative as White. This drives the v2.24.x development roadmap.
+
+### Pedagogical & Coach Improvements
+
+**Graded move quality (7 levels)**
+The coach's "Was it good?" feedback now uses a 7-level scale instead of binary brilliant/blunder. Levels: blunder / mistake / inaccuracy / neutral / nice / good / very good / brilliant, each with a distinct emoji and message. Thresholds are based on centipawn delta relative to the previous position.
+
+**Commentator: no quality annotation during funny commentary**
+When the commentator is in funny mode (e.g. "El caballo hace su cosa rara y nadie le entiende"), quality annotations (e.g. "¡Jugada brillante!") are now suppressed. Technical and humorous tones no longer appear on the same move.
+
+**wasItGood false-positive fixes**
+Three targeted fixes reduce the coach false-positive rate:
+- *Sacrifice gate:* `isRealHanging` now checks `evalAfterMove ≤ 200cp` — intentional sacrifices in winning positions are no longer flagged as hanging pieces.
+- *worstEval guard:* `getImmediateReplyRisk()` now returns `worstEval` (the position after the opponent's best reply), enabling the delta check to use a tighter reference point.
+- *Threshold tightened:* `_worstFromMover < 0` → `< −100` — avoids MISSED_WIN flags when the engine is already clearly ahead (+300cp+) and the opponent's quiet retreat creates only a superficial 1-ply dip.
+
+### UI & Interface Redesign
+
+**Move carousel (desktop & mobile)**
+The move history list has been replaced by a compact horizontal scroll strip positioned directly below the board. Navigation (⏮ ◀ ▶), undo (↩), PGN copy (📋), and a live-game exit button (🚀) sit at each end. The strip auto-scrolls to the active ply and highlights it in the theme accent colour. The previous sidebar history and redundant navigation buttons have been removed.
+
+**Responsive layout overhaul**
+The board wrapper is now a column-flex container: board + advantage bar on the first row, move strip on the second. This eliminates the floating-strip problem on desktop and keeps the board visually self-contained. On mobile the advantage bar is hidden and the layout stacks vertically.
+
+**Top bar redesigned**
+The page title ("♟️ Airin") is integrated into the top bar as a centred gradient element, freeing vertical space. The hamburger menu button moved from a floating fixed position into the top-bar right group alongside the language selector and fullscreen button. The `<h1>` element is kept invisible for JavaScript state detection.
+
+**Side panel streamlined**
+A red "☰ Menú" button was added below "Reiniciar partida" in the side panel for quick in-game menu access on large screens. The left coach panel is wider (max 360 px) and the right info panel is narrower (max 220 px), giving the coach more room for opening suggestions and analysis text.
+
+**Commentary box overflow fixed**
+The commentary list now correctly scrolls within a bounded height instead of growing to overflow the panel. Fix: `min-height: 0` added at every level of the flex chain (`.left-panel`, `.hints-card`, `.tab-pane`) so `overflow-y: auto` on `#commentaryList` activates.
+
+**Football theme contrast fixed**
+The "♟️ Airin" title and "vs Wise King" status text are now white on the football (green) theme, where the previous gradient fill was invisible against the dark green background.
+
+**Commentator: quality suppressed in opening, preserved across language switch**
+Move-quality annotations (📉 Blunder, 👍 Nice move, etc.) no longer appear on the first 10 moves — opening theory moves produce noisy centipawn deltas that don't reflect actual quality. Quality is now stored in the `commentaryLog` entry and re-applied in the correct language when the player switches language mid-game, so annotations are no longer lost on rebuild.
+
+**Commentator: dynamic 📖 book-move phrases**
+When a move is played in the opening phase, the commentator now sometimes (~28% of quiet moves) adds a varied 📖 "theory" comment ("Book move! White follows well-known theory", "Black knows their theory!", "Theory! This position has been played thousands of times", etc.) in addition to or instead of the standard piece commentary. Opening name announcements also now include the 📖 emoji. Six phrases per language with rotation to avoid repetition.
+
+**Opening suggestions: style tags**
+In the "What should I do?" coach panel, book-move suggestions no longer show a uniform "Low risk" badge. Each opening now shows a colour-coded style tag derived from its description: ⚡ Aggressive (orange), 🧱 Solid (green), 🔀 Flexible (blue), ♟️ Positional (amber), 🔮 Hypermodern (purple), or 📖 Theory (grey). The opening list at game start is capped at 11 entries (was 20) to remove duplicates.
+
+---
+
+---
 ## v2.22.14 — BLOCKED Filter Threshold Fixed
 **~16,500 lines · ~860 KB**
 

@@ -29,7 +29,7 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 
 ### No-objetivos
 
-- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza **~1709 ELO** en el nivel Rey Sabio (validado: 1V 8E 11D vs Stockfish profundidad 7, torneo de 20 partidas, v2.22.2). La cifra exacta depende del hardware.
+- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza **~1652 ELO** en el nivel Mago y **~1830 ELO** en el nivel Rey Sabio (validado: torneos de 40 partidas vs UCI_Elo 1750, v2.23.0). La cifra exacta depende del hardware — ver nota de calibración más adelante.
 - **Multijugador en línea.** Solo juego local.
 - **Herramientas avanzadas de preparación.** El libro de aperturas está curado para enseñar, no para preparación profesional.
 - **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad, aunque la v2.1.0 introdujo correcciones críticas en cuellos de botella de bajo nivel.
@@ -38,13 +38,18 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 
 ## Cómo jugar
 
+**Localmente**
+
 1. **Descarga** el archivo `.html`.
 2. **Haz doble clic** sobre él. Se abre en cualquier navegador moderno (Chrome, Firefox, Safari, Edge).
 3. **Elige** *vs IA* o *2 Jugadores* desde el menú principal.
 4. **Haz clic en una pieza** para seleccionarla. Las casillas legales aparecen como puntos.
 5. **Haz clic en un destino** para mover.
 
-Eso es todo. El juego se encarga del resto.
+**En línea**
+
+1. **Ve a** el sitio de GitHub Pages: [https://airinchess.com](https://airinchess.com)  
+2. **Juega directamente** en el navegador. No se necesita descargar nada.
 
 ---
 
@@ -62,13 +67,13 @@ Profundidad 2 · 40% de errores · ±12 cp de ruido · sin libro · sin quietud
 
 Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimientos) · quietud completa
 
-### 🔥 Difícil — *Mago* (~1400 ELO)
+### 🔥 Difícil — *Mago* (~1652 ELO validado)
 
-**Para:** Jugadores casuales con experiencia que quieren una prueba real.
+**Para:** Jugadores casuales con experiencia y jugadores de club.
 
-Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técnicas activas
+Hasta 30 semijugadas de profundidad (tope de 15s) · 0% de errores · sin ruido · libro completo · todas las técnicas activas
 
-### 👑 Maestro — *Rey Sabio* (~1709 ELO validado)
+### 👑 Maestro — *Rey Sabio* (~1830 ELO validado)
 
 **Para:** Jugadores de club fuertes y amateurs avanzados.
 
@@ -79,12 +84,16 @@ Hasta 30 semijugadas de profundidad (tope de 30s) · 0% de errores · libro comp
 
 ### Tabla resumen
 
-| Nivel | ELO est. | Prof. | Error | Ruido | Libro | Quietud |
-|---|---|---|---|---|---|---|
-| 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
-| 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
-| 🔥 Difícil | ~1400 | 6 | 0% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~1709 (validado) | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
+| Nivel | ELO est. | Prof. | Tope de tiempo | Error | Libro |
+|---|---|---|---|---|---|
+| 🐣 Fácil | ~630 | 2 | 0,5s | 40% | ❌ |
+| 📚 Medio | ~1010 | 4 | 1,5s | 20% | primeros 2 mov. |
+| 🔥 Mago | ~1652 (validado) | hasta 30 | 15s | 0% | ✅ completo |
+| 👑 Rey Sabio | ~1830 (validado) | hasta 30 | 30s | 0% | ✅ completo |
+
+> **Hardware de calibración ELO:** CoolPC Black VIII — AMD Ryzen 7 3700X @ 4.4 GHz, 16 GB DDR4 3200 MHz (~95k NPS en condiciones de torneo).
+>
+> ⚠️ **Nota sobre el hardware:** Airin es un motor JavaScript puro que se ejecuta en el navegador. Su fuerza escala directamente con la velocidad de la CPU del dispositivo — el presupuesto de tiempo (15s / 30s) es fijo, pero la profundidad de búsqueda alcanzada dentro de ese presupuesto no lo es. En un PC de juego de gama media puedes esperar los valores ELO validados anteriores. En un portátil típico, aproximadamente 50–100 ELO menos; en un teléfono o tableta, 150–250 ELO menos. Fácil y Medio son en la práctica independientes del hardware — sus límites de profundidad (2 y 4) siempre se alcanzan mucho antes de agotar el tiempo en cualquier dispositivo moderno. El Mago y el Rey Sabio buscan tan profundo como el tiempo lo permite, por lo que su fuerza escala con el hardware del usuario.
 
 ---
 
@@ -180,6 +189,24 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | # | Gravedad | Descripción | Fix previsto |
 |---|---|---|---|
 | 1 | Baja | **Ahogado en posiciones ganadas (solo Rey Sabio)** — En finales simplificados muy poco frecuentes (dama + peones vs rey solo), el motor puede hacer un movimiento que ahogue al rey rival en lugar de darle jaque mate, convirtiendo una victoria en tablas. Causa: la búsqueda de quietud evalúa la posición final con `evaluate()` sin comprobar si el rival tiene jugadas legales. Ocurre aproximadamente 1 de cada 50 finales ganados con rey enemigo solo. | v2.14.0 — fix en la quiescence search |
+
+---
+
+## Lo nuevo en v2.23.0 — *Publicación de Producción*
+
+### 🚀 Motor: Cinco Mejoras Acumuladas
+
+v2.23.0 es la primera publicación de producción bajo la nueva disciplina de un parche por versión. Incluye cinco mejoras validadas del ciclo de desarrollo v2.22.x:
+
+- **v2.22.11** — Filtro anti-colgadas extendido a capturas perdedoras (SEE < 0 en capturas ahora activa el filtro)
+- **v2.22.12** — Puerta de Centralización del Rey: el bono de actividad del rey en el final ahora tiene una comprobación para evitar puntuaciones fantasma de caminata del rey en el mediojuego
+- **v2.22.13** — Ceguera de repetición corregida: las jugadas raíz que repiten la posición 2+ veces reciben −9000 (evitar) en lugar de jugarse normalmente; confirmadas 266 activaciones en un torneo de 32 partidas
+- **v2.22.14** — Puerta BLOCKED del filtro anti-colgadas reducida de 100cp a 50cp, evitando el falso positivo tipo G26 donde una captura de pieza fuerte era incorrectamente bloqueada
+- **v2.22.15** — Torre en 7.ª fila: bono tapered de +40cp en mediojuego / +25cp en final para torres en la 7.ª fila
+
+**Resultados del torneo (40 partidas cada uno, PC, UCI_Elo 1750):**
+- Nivel Mago (15s/jugada): 11V 7E 22D — **36,3% — ~1652 ELO [IC: 1542–1762]**
+- Nivel Rey Sabio (30s/jugada): 21V 7E 12D — **61,3% — ~1830 ELO [IC: 1721–1938]**
 
 ---
 

@@ -1,9 +1,98 @@
-# Historial de cambios — Monolith Chess
+# Historial de cambios — Airin Chess
 
 Todos los cambios relevantes del proyecto están documentados aquí.  
 Formato: versión · tamaño · qué cambió.
 
 [Ir a README_es.md](../README_es.md)
+
+---
+
+## v2.23.0 — Publicación de Producción
+**~16.500 líneas · ~860 KB**
+
+### Motor: Cinco Mejoras Validadas (v2.22.11 → v2.22.15)
+
+v2.23.0 fusiona el ciclo de desarrollo v2.22.x completo en producción. Cada parche fue validado individualmente con un torneo antes de su inclusión.
+
+**v2.22.11 — Filtro anti-colgadas extendido a capturas perdedoras**
+El filtro SEE raíz anteriormente solo comprobaba jugadas silenciosas. Ahora también comprueba capturas con SEE < 0, detectando intercambios perdedores que la búsqueda de profundidad limitada del motor podría no resolver correctamente.
+
+**v2.22.12 — Puerta de Centralización del Rey**
+El bono de actividad del rey en finales (`kingCentralization`) ahora tiene una comprobación: el bono se activa solo cuando `eg > 0.5` (final genuino). Sin esta puerta, el rey recibía puntos adicionales por caminar hacia el centro en el mediojuego, produciendo evaluaciones fantasma de "caminata del rey" de +200–+400cp que distorsionaban la selección de jugadas.
+
+**v2.22.13 — Corrección de Ceguera de Repetición**
+Las jugadas raíz que crearían la 2.ª o 3.ª repetición de una posición no se puntuaban como repeticiones — el mapa `gameHashCount` se construía con datos incorrectos. Corregido: las repeticiones en raíz ahora reciben −9000 (evitar fuertemente) a menos que el motor ya esté perdiendo claramente (puntuación < −500), en cuyo caso se acepta las tablas. Confirmado: 266 activaciones de repetición-raíz en un torneo de 32 partidas.
+
+**v2.22.14 — Umbral de Puerta BLOCKED 100→50cp**
+La puerta BLOCKED del filtro anti-colgadas se activa cuando la jugada sustituta puntúa N cp peor que la original. Con 100cp, ocurrió el falso positivo G26: Cc6xe5 (SEE=−225, claramente correcto) fue bloqueado porque la sustituta solo puntuaba 57–63cp peor. Umbral reducido a 50cp.
+
+**v2.22.15 — Bono de Torre en 7.ª Fila**
+Bono posicional estándar añadido: +40cp (MG) / +25cp (EG), tapered. Una torre en la 7.ª fila (o 2.ª fila para las Negras) ataca los peones sin mover del rival y restringe al rey. El motor anteriormente no recibía ningún bono por esta colocación fuerte.
+
+### Niveles de Dificultad Recalibrados
+
+| Nivel | Presupuesto de tiempo | ELO validado | Notas |
+|---|---|---|---|
+| 🐣 Pollito (fácil) | 0,5 s | — | Techo profundidad 2, siempre alcanzado antes del tiempo |
+| 📚 Estudiante (medio) | 1,5 s | — | Techo profundidad 4, siempre alcanzado antes del tiempo |
+| 🔥 Mago (difícil) | **15 s** | **~1652** | Busca lo más profundo que el tiempo permite |
+| 👑 Rey Sabio (gran maestro) | **30 s** | **~1830** | Busca lo más profundo que el tiempo permite |
+
+ELO calibrado en CoolPC Black VIII (AMD Ryzen 7 3700X @ 4,4 GHz, 16 GB DDR4 3200 MHz, ~95k NPS). La fuerza del Mago y el Rey Sabio escala con el hardware del usuario.
+
+### Resultados de Torneos
+
+| Torneo | V | E | D | Puntuación | ELO |
+|---|---|---|---|---|---|
+| 40p PC vs UCI_Elo 1750 (15s) — **Mago** | 11 | 7 | 22 | 36,3% | ~1652 [IC: 1542–1762] |
+| 40p PC vs UCI_Elo 1750 (30s) — **Rey Sabio** | 21 | 7 | 12 | 61,3% | ~1830 [IC: 1721–1938] |
+
+**Hallazgo clave:** Disparidad significativa de color Blancas/Negras — Blancas 25,0%, Negras 47,5% en la ejecución de 40 partidas del Mago. El motor defiende y contraataca bien (juego reactivo) pero no genera iniciativa como Blancas. Esto impulsa la hoja de ruta v2.24.x.
+
+### Mejoras Pedagógicas y del Entrenador
+
+**Calidad de jugada con 7 niveles**
+El botón "¿Fue buena?" del Profesor ahora usa una escala de 7 niveles en lugar de brillante/colgada binario. Niveles: colgada / error / imprecisión / neutral / bien / buena / muy buena / brillante, cada uno con un emoji y mensaje distintos. Los umbrales se basan en el delta de centipawns respecto a la posición anterior.
+
+**Comentarista: sin anotación técnica cuando el tono es gracioso**
+Cuando el comentarista está en modo gracioso (ej. "El caballo hace su cosa rara y nadie le entiende"), las anotaciones de calidad (ej. "¡Jugada brillante!") ya no aparecen. Los tonos técnico y humorístico no vuelven a mezclarse en la misma jugada.
+
+**Correcciones de falsos positivos en "¿Fue buena?"**
+Tres correcciones específicas reducen la tasa de falsos positivos del entrenador:
+- *Puerta de sacrificio:* `isRealHanging` ahora comprueba `evalDespuésJugada ≤ 200cp` — los sacrificios intencionales en posiciones ganadoras ya no se marcan como piezas colgadas.
+- *Guardia worstEval:* `getImmediateReplyRisk()` ahora devuelve `worstEval` (la posición tras la mejor respuesta del rival), permitiendo al delta usar un punto de referencia más preciso.
+- *Umbral ajustado:* `_worstFromMover < 0` → `< −100` — evita avisos de JUGADA_PERDIDA cuando el motor ya va claramente ganando (+300cp+) y la retirada silenciosa del rival crea solo una caída superficial de 1 jugada.
+
+### Rediseño de Interfaz y UI
+
+**Carrusel de jugadas (escritorio y móvil)**
+El historial de jugadas en barra lateral ha sido reemplazado por una tira de desplazamiento horizontal compacta situada directamente debajo del tablero. La navegación (⏮ ◀ ▶), deshacer (↩), copiar PGN (📋) y botón de salida de partida en vivo (🚀) están a cada extremo. La tira se desplaza automáticamente hasta la jugada activa y la resalta con el color de acento del tema. Los botones de historial y navegación laterales redundantes han sido eliminados.
+
+**Rediseño de disposición responsiva**
+El contenedor del tablero es ahora un flex-columna: tablero + barra de ventaja en la primera fila, tira de jugadas en la segunda. Esto elimina el problema de la tira flotante en escritorio y mantiene el tablero visualmente autónomo. En móvil la barra de ventaja está oculta y la disposición se apila verticalmente.
+
+**Barra superior rediseñada**
+El título de la página ("♟️ Airin") se integra en la barra superior como elemento central con degradado, liberando espacio vertical. El botón de menú hamburguesa se movió de una posición fija flotante al grupo derecho de la barra superior junto al selector de idioma y el botón de pantalla completa. El elemento `<h1>` se mantiene invisible para la detección de estado en JavaScript.
+
+**Panel lateral simplificado**
+Se añadió un botón rojo "☰ Menú" bajo "Reiniciar partida" en el panel lateral para acceso rápido al menú durante la partida en pantallas grandes. El panel izquierdo del entrenador es más ancho (máx. 360 px) y el panel derecho de información es más estrecho (máx. 220 px), dando al entrenador más espacio para sugerencias de apertura y texto de análisis.
+
+**Corrección del desbordamiento del cuadro de comentarios**
+La lista de comentarios ahora se desplaza correctamente dentro de una altura acotada en lugar de crecer desbordando el panel. Corrección: `min-height: 0` añadido en cada nivel de la cadena flex (`.left-panel`, `.hints-card`, `.tab-pane`) para que `overflow-y: auto` en `#commentaryList` se active.
+
+**Corrección de contraste en el tema fútbol**
+El título "♟️ Airin" y el texto de estado "vs Rey Sabio" ahora son blancos en el tema fútbol (verde), donde el relleno con degradado anterior era invisible sobre el fondo verde oscuro.
+
+**Comentarista: calidad suprimida en apertura, conservada al cambiar idioma**
+Las anotaciones de calidad de jugada (📉 Error grave, 👍 ¡Buen movimiento!, etc.) ya no aparecen en las primeras 10 jugadas — las jugadas de teoría de apertura producen deltas en centipawns con ruido que no reflejan la calidad real. La calidad ahora se almacena en la entrada `commentaryLog` y se vuelve a aplicar en el idioma correcto cuando el jugador cambia de idioma a mitad de partida, de modo que las anotaciones ya no se pierden al reconstruir.
+
+**Comentarista: frases dinámicas de 📖 jugadas de libro**
+Cuando se juega una jugada en la fase de apertura, el comentarista ahora a veces (~28% de jugadas silenciosas) añade un comentario variado de 📖 "teoría" ("¡Jugada de libro! Las blancas siguen la teoría", "¡Las negras conocen su teoría!", "¡Teoría pura! Esta posición se ha jugado miles de veces", etc.). Los anuncios de nombre de apertura también incluyen ahora el emoji 📖. Seis frases por idioma con rotación para evitar repetición.
+
+**Sugerencias de apertura: etiquetas de estilo**
+En el panel del entrenador "¿Qué hago?", las sugerencias de jugadas de libro ya no muestran una insignia uniforme de "Riesgo bajo". Cada apertura muestra ahora una etiqueta de estilo con código de color derivada de su descripción: ⚡ Agresiva (naranja), 🧱 Sólida (verde), 🔀 Flexible (azul), ♟️ Posicional (ámbar), 🔮 Hipermoder. (morado), o 📖 Teórica (gris). La lista de aperturas al inicio de partida está limitada a 11 entradas (era 20) para eliminar duplicados.
+
+---
 
 ---
 

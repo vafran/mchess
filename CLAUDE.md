@@ -1,7 +1,7 @@
 # Airin Chess — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.22.15** (branch `feat/v2.22.0`) | `main` has v2.22.5 | File: `mChess.html` (~16,500 lines, ~860 KB)  
+> Current version: **v2.23.0** (branch `feat/v2.22.0`) | `main` has v2.22.5 | File: `mChess.html` (~16,500 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---
@@ -137,12 +137,13 @@ All three are cleared on `init()`, `undoMove()`, and FEN load.
 const DIFF_SETTINGS = {
   easy:        { depth: 2,  mistakes: 0.50, timeLimit: 500   },
   medium:      { depth: 4,  mistakes: 0.20, timeLimit: 1500  },
-  hard:        { depth: 7,  mistakes: 0,    timeLimit: 6000  },
-  grandmaster: { depth: 30, mistakes: 0,    timeLimit: 15000 },
+  hard:        { depth: 30, mistakes: 0,    timeLimit: 15000 }, // Wizard: ~1652 ELO on calibration PC
+  grandmaster: { depth: 30, mistakes: 0,    timeLimit: 30000 }, // Wise King: ~1830 ELO on calibration PC
 };
 ```
 
-- `depth:30` for grandmaster is a ceiling — the real cap is the time budget (15 s)
+- `depth:30` is a ceiling for both hard and grandmaster — the real cap is the time budget (15s / 30s)
+- **Calibration hardware:** AMD Ryzen 7 3700X @ 4.4 GHz, 16 GB DDR4 3200 MHz, ~95k NPS in tournament
 - `mistakes`: probability of playing a random legal move instead of the best one
 - Undo is **disabled on Hard** level (see `undoMove()` at line 5315)
 - The Professor/Coach is **disabled on Grandmaster** level

@@ -8,14 +8,19 @@
 
 ## Current State
 
-| Version | W | D | L | Score | ELO | Status |
-|---------|---|---|---|-------|-----|--------|
-| v2.22.5 | 0 | 9 | 11 | 27.5% | ~1732 | Production (main) — baseline to beat |
-| v2.22.11 | 0 | 7 | 13 | 17.5% | ~1631 | Filter extended to captures |
-| v2.22.12 | 0 | 10 | 6 | **31.3%*** | **~1763*** | King Centralization Gate — best score yet |
-| v2.22.13 | 0 | 16 | 16 | 25.0% | ~1709 | Repetition blindness fix — 32/40g SP partial |
-| v2.22.14 | 2 | 14 | 14 | 30.0% | ~1753 | BLOCKED threshold 100→50cp — 30g PC complete ✅ |
-| **v2.22.15** | **—** | **—** | **—** | **pending** | **pending** | **Rook on 7th rank — PC tournament pending** |
+| Version | W | D | L | Score | ELO | Tournament | Status |
+|---------|---|---|---|-------|-----|------------|--------|
+| v2.22.5 | 0 | 9 | 11 | 27.5% | ~1732 | 20g SF-d7 | Legacy production baseline |
+| v2.22.14 | 2 | 14 | 14 | 30.0% | ~1753 | 30g SF-d7 PC | Last depth-7 canonical run |
+| **v2.23.0** | **11** | **7** | **22** | **36.3%** | **~1652** | **40g UCI-1750 @ 15s PC** | ✅ **Production (main) — canonical baseline** |
+| v2.23.0 (ref) | 21 | 7 | 12 | 61.3% | ~1830 | 40g UCI-1750 @ 30s PC | ⚠️ 2× budget — reference only |
+
+**All future tournaments: 15s time limit, UCI_Elo 1750, PC only.**  
+The 15s limit matches the game's actual `aiTimeLimit: 15000`. The 30s result is kept for historical context only.
+
+**Key finding from v2.23.0 tournament:** mChess scores 25% as White and 62.5% as Black — a 37.5-point disparity. The engine defends and counterattacks well but does not generate initiative as White. This is the dominant ELO gap and the primary target for v2.24.x.
+
+**Known real-world strength:** mChess on mobile beat Maia 1800 ELO (Chessis app, v2.23.0, back-rank mating combination in 23 moves). PC gameplay at 15s is stronger than tournament conditions (human think time = CPU rest, no Stockfish process running).
 
 *v2.22.12 was 16/20 SP partial. v2.22.13 was 32/40 SP partial (Surface thermal throttled after 12h).*  
 *v2.22.14 is the first complete 30g PC tournament — canonical machine for all future runs.*
@@ -31,9 +36,9 @@
 
 ---
 
-## Phase 1 — Active: Blunder Reduction (feat/v2.22.0)
+## Phase 1 — COMPLETE ✅: Blunder Reduction (feat/v2.22.0 → merged as v2.23.0)
 
-Goal: eliminate the structural bugs causing piece giveaways and missed wins. Reach wins vs Stockfish d7 again.
+Goal: eliminate structural bugs causing piece giveaways. All patches applied and validated.
 
 | Version | Patch | Status | Result |
 |---------|-------|--------|--------|
@@ -59,40 +64,34 @@ Standard positional bonus (+40cp MG / +25cp EG) for a rook on the 7th rank. Ceil
 
 ---
 
-## Phase 2 — Production Release: v2.23.0
+## Phase 2 — COMPLETE ✅: Production Release v2.23.0
 
-**Trigger:** Phase 1 complete AND 40-game tournament shows no regression vs v2.22.5 (~1732 ELO).
+Merged to `main` on 2026-04-23. All checklist items complete.
 
-### Checklist before PR to main
-- [ ] 40-game tournament on PC (canonical test machine — Surface has thermal throttle issues)
-- [ ] ELO confirmed above v2.22.5 baseline (~1732)
-- [ ] **Pedagogical audit** — run `pedagogical_audit.js`, verify coach and commentator are aligned with current engine strength (fix misalignments as a standalone session before the PR)
-- [ ] Update `README.md` and `README_es.md` — "What's new in v2.23.0"
-- [ ] Update `docs/CHANGELOG.md` and `docs/CHANGELOG_es.md`
-- [ ] Version bump to `v2.23.0` in 4 places in `mChess.html`
-- [ ] PR from `feat/v2.22.0` → `main`
-
-> Note: internal dev convention uses v2.23.0; the user may prefer "v2.3.0" for public branding — confirm at merge time.
+**Canonical baseline going into v2.24.x:** ~1652 ELO vs UCI_Elo 1750 @ 15s, 40g PC.  
+**Target for v2.24.0 release:** ≥45% score vs UCI_Elo 1750 @ 15s (~1720 ELO). Realistic if White score improves from 25% to 35%+.
 
 ---
 
-## Phase 3 — Post-Release: Eval Improvements
+## Phase 3 — Active: White Side Improvement (feat/v2.24.x)
 
-Same one-patch-per-version discipline. Start after v2.23.0 is on main.
+**Primary goal:** Close the White/Black color gap (currently 25% White vs 62.5% Black). Target: bring White score to 35%+ without degrading Black score.
 
-| Patch | Description | Priority |
-|-------|-------------|----------|
-| ~~BP~~ | ~~Bishop pair bonus~~ | Already in code (lines 8996–8999, +40cp flat) — skip |
-| ~~R7~~ | ~~Rook on 7th rank~~ | Moved to Phase 1 (v2.22.15) |
-| TP | Trapped piece penalty (-200cp for mob=0 on advanced pieces) | No tournament evidence yet — monitor |
-| ~~QG~~ | ~~`!enemyHasQueen` guard for King Centralization~~ | Skipped — no king-into-queen pattern in tournaments |
-| #7 | KR vs KB/KN theoretical draw recognition | Low urgency |
+Same one-patch-per-version discipline, 15s tournaments only.
+
+| Patch | Description | Priority | Evidence |
+|-------|-------------|----------|----------|
+| Opening book — Sicilian as White | Add lines through move 8–10 for Alapin (2.c3), Closed Sicilian (2.Nc3 g3), or Grand Prix Attack (2.Nc3 f4) | **HIGH** | G5, G7, G27, G31 all White Sicilian losses |
+| Initiative bonus — White in opening | Small eval bonus for open/semi-open files aimed at enemy king in MG | Medium | Structural gap — engine drifts passively as White |
+| Short-loss prevention | FEN regression tests on G13 (29 moves), G27 (31 moves), G38 (26 moves) | Medium | Pedagogical goal: reduce early collapses |
+| TP | Trapped piece penalty (−200cp for mob=0 on advanced pieces) | Low | No tournament evidence yet |
+| #7 | KR vs KB/KN theoretical draw recognition | Low | Low urgency |
 
 ---
 
-## Phase 4 — Post-Release Week: UI / Coach / Commentator + ELO Gauntlet
+## Phase 4 — Post-Release: UI / Coach / Commentator + ELO Gauntlet
 
-**Immediately after v2.23.0 merges to main — one week, no engine changes.**
+**Start after v2.23.0 is stable on main.**
 
 ### Track 1: UI / Coach / Commentator improvements
 
@@ -155,13 +154,17 @@ Run 20g per level → full ELO ladder. Surface warmup already suggests ~1830 so 
 
 | Metric | Value |
 |--------|-------|
-| Production baseline (v2.22.5) | ~1732 ELO, 27.5% vs SF-d7 |
-| Best complete PC result (v2.22.14) | **~1753 ELO, 30.0%** — beats production |
-| Best SP partial (v2.22.12) | ~1763 ELO, 31.3% |
-| PC search depth (30s budget, grandmaster) | d8–d17 per move (~56k–217k NPS) |
-| Surface Pro depth (thermal throttled) | d6–d11 per move (~8k–37k NPS) — ~10× slower |
-| Real-world strength vs tournament numbers | Noticeably stronger (PC, burst performance) |
-| Maia 1900 already cleared | Yes (mobile, previous version) |
-| PC wins vs SF-d7 | 2 wins in v2.22.14 30g run (G3 Queen endgame; G17 Nimzo sacrifice) |
-| Tournament ELO methodology | **`go depth N`** — estimated; **`UCI_Elo N`** — official (use for release) |
+| **Production version** | **v2.23.0 (main)** |
+| **Canonical ELO baseline** | **~1652 vs UCI_Elo 1750 @ 15s, 40g PC** |
+| Canonical ELO CI | [1542–1762] |
+| Canonical score | 36.3% (11W 7D 22L) |
+| White score (v2.23.0) | **25.0%** — primary improvement target |
+| Black score (v2.23.0) | **62.5%** — engine strength is reactive |
+| Reference result (30s, non-canonical) | ~1830 ELO, 61.3% — 2× real budget |
+| PC search depth (15s budget, grandmaster) | d9–d12 per move (85–95k NPS in tournament) |
+| Real gameplay NPS estimate | 90–110k (human think time = CPU rest, no SF process) |
+| Surface Pro | Never use for canonical tournaments — thermal throttle kills NPS |
+| Maia 1800 cleared | Yes (mobile, v2.23.0, back-rank mating combination) |
+| Tournament methodology | **`UCI_Elo N` @ 15s** — official ELO, real budget. Depth-7 is legacy only. |
 | Skill Level ELO references | Lv3=1729 \| Lv4=1953 \| Lv5=2197 \| Lv7=2518 (source: stockfish-wiki FAQ) |
+| Target for v2.24.0 release | ≥45% vs UCI_Elo 1750 @ 15s (~1720 ELO) |

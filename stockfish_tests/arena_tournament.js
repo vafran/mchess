@@ -410,10 +410,11 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
 
     // Extract Airin version from HTML title tag
     let airinVer = '';
+    let airinVerStr = 'unknown';
     try {
         const htmlSrc = fs.readFileSync(CONFIG.htmlFile, 'utf8');
-        const m = htmlSrc.match(/<title>Monolith Chess (v[\d.]+)<\/title>/);
-        if (m) airinVer = '_' + m[1];
+        const m = htmlSrc.match(/<title>(?:Airin|Monolith Chess) (v[\d.]+)<\/title>/);
+        if (m) { airinVer = '_' + m[1]; airinVerStr = m[1]; }
     } catch (_) {}
     const modeTag = (fenReplayMode && fenList.length > 0) ? '_fenreplay' : '';
     const gameCount = fenReplayMode && fenList.length > 0 ? fenList.length : n;
@@ -450,7 +451,7 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
             fs.writeFileSync(CONFIG.logFile, JSON.stringify({
                 timestamp: new Date().toISOString(),
                 status: done ? 'complete' : `partial_${gameNum}_of_${total}`,
-                config: { numGames: n, sfConfigs },
+                config: { numGames: n, sfConfigs, airinVersion: airinVerStr, difficultyLevel: CONFIG.selectedLevel || 'grandmaster' },
                 byDepth: Object.fromEntries(sfConfigs.map(c => {
                     const k = sfConfigTag(c); const st = statsMap[k];
                     return [k, {
@@ -515,8 +516,6 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
             if (s) {
                 aiDepth = s.depth;
                 aiMistakeChance = s.mistakes;
-                // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
-                if (level === 'grandmaster') s.timeLimit = 30000;
                 aiTimeLimit = s.timeLimit;
             }
             if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
