@@ -13110,6 +13110,13 @@ limitations under the License.
       else if (historicalMotif) {
         comment = lang === 'en' ? getRnd([`Historical echo: **${lastMove}** recalls **${historicalMotif.nameEn}**.`], 'historical_note') : getRnd([`Eco histórico: **${lastMove}** recuerda a **${historicalMotif.nameEs}**.`], 'historical_note');
       }
+      else if (isCheck && moveQuality === -3) {
+        // Check given but a piece is left hanging — don't combine contradictory messages
+        comment = lang === 'en'
+          ? getRnd(["⚠️ Check! But careful — a piece is left unprotected after this move.", "🔔 Check given, but watch out: you have a piece in danger.", "⚡ Check! The king must respond, but so must you — a piece is hanging."], 'check_blunder')
+          : getRnd(["⚠️ ¡Jaque! Pero cuidado — una pieza queda desprotegida tras esta jugada.", "🔔 Das jaque, pero atento: tienes una pieza en peligro.", "⚡ ¡Jaque! El rey debe responder, pero tú también — una pieza está colgada."], 'check_blunder');
+        moveQuality = 0; // message already covers the warning; suppress duplicate annotation
+      }
       else if (isCheck && isEndgame) {
         comment = lang === 'en' ? getRnd(["Check! Precision is absolutely required now."], 'end_check') : getRnd(["¡Jaque! Ahora la precisión es absolutamente vital."], 'end_check');
       }
