@@ -4902,9 +4902,9 @@ limitations under the License.
                       if (!sAfter.isSafe && capturedVal < (pVal - 10)) {
                         // 🔥 CRITICAL FIX: Was the piece already in danger before moving?
                         const sBefore = evaluateSquareSafety(rr, cc, turn, board, enemy);
-                        // Only flag as blunder if the piece WAS safe and this move put it in danger.
-                        // If it was already attacked (e.g. royal fork), don't block the player.
-                        if (sBefore.isSafe) {
+                        // Flag as blunder if: (a) piece newly endangered, OR (b) rook/queen was
+                        // already hanging and player played an unrelated move (not in check).
+                        if (sBefore.isSafe || (pVal >= 500 && !inCheck(turn, board))) {
                           endangeredSquare = [rr, cc];
                           endangeredPieceChar = p;
                           isBlunder = true;
@@ -12781,8 +12781,11 @@ limitations under the License.
         }
       }
 
+      // Only evaluate move quality for human moves (snapshot is stale during AI moves)
+      const _isHumanMove = gameMode === 'pvp' || colorWhoMoved === playerColor;
+
       // 2. Evaluate Move Quality against the Engine (only in middlegame/endgame — opening moves are theory)
-      if (window.snapshotBeforeHumanMove && !isOpening) {
+      if (_isHumanMove && window.snapshotBeforeHumanMove && !isOpening) {
         const evBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
         const evAfter = evaluateBoard(board, 'hard');
         // Delta from the perspective of the player who just moved
@@ -12794,6 +12797,24 @@ limitations under the License.
         else if (delta >=  250) moveQuality =  3; // very good
         else if (delta >=  150) moveQuality =  2; // good move
         else if (delta >=   80) moveQuality =  1; // nice touch
+      }
+
+      // 2b. Hanging-piece check (fires even in the opening — catches "left queen hanging" blunders
+      //     that the eval-delta misses because the penalty fires in both before/after snapshots)
+      if (moveQuality > -3 && _isHumanMove && window.snapshotBeforeHumanMove) {
+        const _opp = colorWhoMoved === 'w' ? 'b' : 'w';
+        let _foundHanging = false;
+        for (let _hr = 0; _hr < 8 && !_foundHanging; _hr++) {
+          for (let _hc = 0; _hc < 8 && !_foundHanging; _hc++) {
+            const _hp = board[_hr][_hc];
+            if (!_hp || _hp === ' ' || colorOf(_hp) !== colorWhoMoved) continue;
+            if ((PIECE_VALUES[_hp.toUpperCase()] || 0) < 300) continue;
+            if (!evaluateSquareSafety(_hr, _hc, colorWhoMoved, board, _opp).isSafe) {
+              _foundHanging = true;
+            }
+          }
+        }
+        if (_foundHanging) moveQuality = -3;
       }
 
 
