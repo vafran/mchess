@@ -5088,6 +5088,26 @@ limitations under the License.
         }
       }
 
+      // Compute SAN disambiguation before the board is mutated
+      let disambig = '';
+      if (!isCastle && type !== 'P' && type !== 'K') {
+        const ambig = [];
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (r === sr && c === sc) continue;
+            if (board[r][c].toUpperCase() === type && colorOf(board[r][c]) === color &&
+                legalMovesFor(r, c).some(([mr, mc]) => mr === tr && mc === tc)) {
+              ambig.push([r, c]);
+            }
+          }
+        }
+        if (ambig.length > 0) {
+          const fileConflict = ambig.some(([, c]) => c === sc);
+          const rankConflict = ambig.some(([r]) => r === sr);
+          disambig = !fileConflict ? colName(sc) : !rankConflict ? rowName(sr) : colName(sc) + rowName(sr);
+        }
+      }
+
       // 3. 💎 ATOMIC UPDATE (Prevents piece disappearing)
       const pieceChar = PIECES[piece];
       const animList = [{ sr, sc, tr, tc, pieceChar }];
@@ -5148,7 +5168,7 @@ limitations under the License.
       // 7. GENERATE NOTATION
       if (!isCastle) {
         if (type === 'P') notation = isCapture ? colName(sc) + 'x' + sqName(tr, tc) : sqName(tr, tc);
-        else notation = type + (isCapture ? 'x' : '') + sqName(tr, tc);
+        else notation = type + disambig + (isCapture ? 'x' : '') + sqName(tr, tc);
         if (board[tr][tc].toUpperCase() !== type) notation += '=' + board[tr][tc].toUpperCase();
         if (epCapture) notation += ' e.p.';
       }
@@ -8133,8 +8153,31 @@ limitations under the License.
         if (move.tc > move.fc) not = 'O-O';
         else not = 'O-O-O';
       } else {
+        let disambig = '';
+        if (type !== 'P' && type !== 'K') {
+          const ambig = [];
+          for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+              if (r === move.fr && c === move.fc) continue;
+              if (brd[r][c].toUpperCase() === type && colorOf(brd[r][c]) === color) {
+                const raw = rawMoves(r, c, brd);
+                const legal = raw.filter(([tr2, tc2]) => {
+                  const copy = deepCopy(brd);
+                  copy[tr2][tc2] = copy[r][c]; copy[r][c] = ' ';
+                  return !inCheck(color, copy);
+                });
+                if (legal.some(([mr, mc]) => mr === move.tr && mc === move.tc)) ambig.push([r, c]);
+              }
+            }
+          }
+          if (ambig.length > 0) {
+            const fileConflict = ambig.some(([, c]) => c === move.fc);
+            const rankConflict = ambig.some(([r]) => r === move.fr);
+            disambig = !fileConflict ? colName(move.fc) : !rankConflict ? rowName(move.fr) : colName(move.fc) + rowName(move.fr);
+          }
+        }
         if (type === 'P') not = isCap ? colName(move.fc) + 'x' + sqName(move.tr, move.tc) : sqName(move.tr, move.tc);
-        else not = type + (isCap ? 'x' : '') + sqName(move.tr, move.tc);
+        else not = type + disambig + (isCap ? 'x' : '') + sqName(move.tr, move.tc);
       }
       return not;
     }
