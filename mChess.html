@@ -4256,12 +4256,10 @@ limitations under the License.
       // evaluateBoard devuelve + para blancas y - para negras
       const score = evaluateBoard(board, 'hard');
 
-      // Score to percentage mapping:
-      // 50% is equality. Each 100 points (one pawn) shifts ~8%
-      let percent = 50 + (score / 15);
-
-      // Limitamos entre 5% y 95% para que la barra nunca desaparezca del todo
-      percent = Math.max(5, Math.min(95, percent));
+      // Sigmoid mapping (tanh): same approach used by Lichess/Chess.com.
+      // tanh(score/600): +100cp≈58%, +300cp≈73%, +600cp≈88%, never hard-clips.
+      let percent = 50 + 50 * Math.tanh(score / 600);
+      percent = Math.max(3, Math.min(97, percent));
 
       const barWhite = document.getElementById('advBarWhite');
       if (barWhite) {
@@ -8351,9 +8349,9 @@ limitations under the License.
             const homeR = isW ? 7 : 0;
             if (r !== homeR || c !== 3) {
               const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
-              bonus -= undeveloped * 70;
+              bonus -= undeveloped * 20;
               if ((isW && r <= 4) || (!isW && r >= 3)) {
-                bonus -= 150;
+                bonus -= 80;
               }
             }
           }
