@@ -12833,8 +12833,73 @@ limitations under the License.
           comment = getRnd(phrases, 'opening_note');
         }
       }
-      else if (isOpening && !isCapture && !isCheck && Math.random() < 0.28) {
-        // 📖 Book theory comment for opening moves (not every move, ~28% chance)
+      else if (isOpening && (() => {
+        const cm = lastMove ? lastMove.replace(/[+#?!]/g, '').trim() : '';
+        const moveNum = currentHistory.length;
+        return /^N[ah][36]$/.test(cm)                                          // knight to rim (Nh3/Na3/Nh6/Na6)
+          || (moveNum <= 4 && /^Q[ah][2-7]$/.test(cm) && !cm.includes('x'))   // queen lunges to edge early
+          || (moveNum === 1 && /^[ah][34]$/.test(cm));                         // a3/h3/a4/h4 as first move
+      })()) {
+        toneUsed = 'funny';
+        const cm = lastMove ? lastMove.replace(/[+#?!]/g, '').trim() : '';
+        const isKnightRim = /^N[ah][36]$/.test(cm);
+        const isQueenLunge = /^Q[ah][2-7]$/.test(cm);
+        if (lang === 'en') {
+          const phrases = isKnightRim
+            ? [
+                "😬 Knight to the rim! As masters say: **a knight on the rim is dim**.",
+                "🤦 That knight just moved to the worst square on the board.",
+                "😂 The knight has decided to retire from active chess.",
+                "🫣 Knights on the rim cry at night. Set it free!",
+                "🤭 Magnus Carlsen has left the chat.",
+                "😬 Bold strategy — parking the knight where it controls almost nothing.",
+              ]
+            : isQueenLunge
+            ? [
+                "👸 Queen out this early? The opponent is already planning to chase her.",
+                "😅 An early queen adventure... hope she knows the way back.",
+                "🎯 Bringing the queen out so soon is risky — she might spend the whole game running.",
+                "🤔 The queen wants to party early. This rarely ends well.",
+              ]
+            : [
+                "😐 That pawn doesn't do much for the center... interesting opener.",
+                "🤔 A flank move to start. Unusual, but hey — it's your call!",
+                "😅 An unconventional first move. Points for originality.",
+                "🫤 The center is wide open and we're moving a wing pawn. Classic.",
+              ];
+          comment = getRnd(phrases, 'bad_opening');
+        } else {
+          const phrases = isKnightRim
+            ? [
+                "😬 ¡Caballo al rincón! Como dicen los maestros: **caballo en el borde, caballo que pierde**.",
+                "🤦 Ese caballo acaba de irse a vivir al peor sitio del tablero.",
+                "😂 El caballo decide jubilarse antes de empezar.",
+                "🫣 Los caballos en el borde lloran de noche. ¡Libéralo!",
+                "🤭 Magnus Carlsen ha abandonado el chat.",
+                "😬 Estrategia valiente: aparcar el caballo donde no controla nada.",
+              ]
+            : isQueenLunge
+            ? [
+                "👸 ¡La dama sale a pasear! El rival ya está frotándose las manos para perseguirla.",
+                "😅 Aventura temprana de la dama... esperemos que sepa volver.",
+                "🎯 Sacar la dama tan pronto es arriesgado. Puede pasarse la partida huyendo.",
+                "🤔 La dama quiere salir de fiesta. Esto raramente acaba bien.",
+              ]
+            : [
+                "😐 Ese peón no controla el centro ni un poquito... jugada curiosa.",
+                "🤔 Primer movimiento al flanco. Inusual, ¡pero allá tú!",
+                "😅 Apertura poco convencional. Puntos por originalidad.",
+                "🫤 El centro libre y empezamos con el peón del flanco. Un clásico.",
+              ];
+          comment = getRnd(phrases, 'bad_opening');
+        }
+      }
+      else if (isOpening && !isCapture && !isCheck && (() => {
+        const prevKey = currentHistory.slice(0, -1).map(m => m.replace(/[+#?!]/g, '').trim()).join(',');
+        const cleanMove = lastMove ? lastMove.replace(/[+#?!]/g, '').trim() : '';
+        return OPENING_BOOK[prevKey] && OPENING_BOOK[prevKey].some(opt => opt.m === cleanMove);
+      })() && Math.random() < 0.40) {
+        // 📖 Book theory comment — only fires when the move is actually in OPENING_BOOK (~40% chance)
         toneUsed = 'serious';
         const isWhiteMove = colorWhoMoved === 'w';
         const bookPhrases = lang === 'en'
