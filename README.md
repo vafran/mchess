@@ -63,7 +63,7 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 
 **Target:** Players who know the rules and want their first real game.
 
-4-ply depth · 20% mistake rate · ±6 cp noise · book (first 2 moves) · full quiescence
+5-ply depth · 15% mistake rate · ±6 cp noise · book (first 2 moves) · full quiescence
 
 ### 🔥 Hard — *Wizard* (~1652 ELO validated)
 
@@ -85,7 +85,7 @@ Up to 30-ply depth (time-capped at 30s) · 0% mistakes · full book · full eval
 | Level | ELO est. | Depth | Time cap | Mistake rate | Book |
 |---|---|---|---|---|---|
 | 🐣 Easy | ~630 | 2 | 0.5s | 40% | ❌ |
-| 📚 Medium | ~1010 | 4 | 1.5s | 20% | first 2 moves |
+| 📚 Medium | ~1010 | 5 | 5s | 15% | first 2 moves |
 | 🔥 Wizard | ~1652 (validated) | up to 30 | 15s | 0% | ✅ full |
 | 👑 Wise King | ~1830 (validated) | up to 30 | 30s | 0% | ✅ full |
 

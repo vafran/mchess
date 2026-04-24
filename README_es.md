@@ -65,7 +65,7 @@ Profundidad 2 · 40% de errores · ±12 cp de ruido · sin libro · sin quietud
 
 **Para:** Jugadores que conocen las reglas y quieren su primera partida real.
 
-Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimientos) · quietud completa
+Profundidad 5 · 15% de errores · ±6 cp de ruido · libro (primeros 2 movimientos) · quietud completa
 
 ### 🔥 Difícil — *Mago* (~1652 ELO validado)
 
@@ -87,7 +87,7 @@ Hasta 30 semijugadas de profundidad (tope de 30s) · 0% de errores · libro comp
 | Nivel | ELO est. | Prof. | Tope de tiempo | Error | Libro |
 |---|---|---|---|---|---|
 | 🐣 Fácil | ~630 | 2 | 0,5s | 40% | ❌ |
-| 📚 Medio | ~1010 | 4 | 1,5s | 20% | primeros 2 mov. |
+| 📚 Medio | ~1010 | 5 | 5s | 15% | primeros 2 mov. |
 | 🔥 Mago | ~1652 (validado) | hasta 30 | 15s | 0% | ✅ completo |
 | 👑 Rey Sabio | ~1830 (validado) | hasta 30 | 30s | 0% | ✅ completo |
 

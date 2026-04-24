@@ -3397,8 +3397,8 @@ limitations under the License.
 
     // THE NEW DIFFICULTY SCALE
     const DIFF_SETTINGS = {
-      easy: { depth: 2, mistakes: 0.50, timeLimit: 500 },
-      medium: { depth: 4, mistakes: 0.20, timeLimit: 1500 },
+      easy: { depth: 2, mistakes: 0.40, timeLimit: 500 },
+      medium: { depth: 5, mistakes: 0.15, timeLimit: 5000 },
       hard: { depth: 30, mistakes: 0, timeLimit: 15000 }, // Wizard: time-capped; ~1652 ELO on calibration PC (Ryzen 7 3700X)
       grandmaster: { depth: 30, mistakes: 0, timeLimit: 30000 }, // Wise King: 30s cap; ~1830 ELO on calibration PC
     };
@@ -11557,13 +11557,26 @@ limitations under the License.
       if (mistakeChance > 0 && Math.random() < mistakeChance) {
         const legal = getLegalMovesForColorInPlace(color);
         if (legal.length > 1) {
+          // Filter suicidal moves from the mistake pool so Easy/Medium don't randomly hang
+          // their queen or rook. Easy blocks queen hangs only; Medium blocks all absurd moves.
+          const isSafeEnough = (mv) => {
+            if (currentDifficulty !== 'easy' && currentDifficulty !== 'medium') return true;
+            const profile = getMoveSafetyProfile(mv, color);
+            if (currentDifficulty === 'medium') return !profile.absurd;
+            const pc = board[mv.fr] && board[mv.fr][mv.fc];
+            return !(profile.absurd && (PIECE_VALUES[(pc || '').toUpperCase()] || 0) >= 885);
+          };
+          const tryFilter = (arr) => { const ok = arr.filter(isSafeEnough); return ok.length > 0 ? ok : arr; };
+
           const cutoff = Math.max(1, Math.floor(results.length * 0.7));
-          const weakPool = results.slice(cutoff);
-          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)].move;
+          const weakPool = tryFilter(results.slice(cutoff).map(r => r.move));
+          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)];
           const nonBest = legal.filter(m => {
             const b = results[0] && results[0].move;
             return !(b && m.fr === b.fr && m.fc === b.fc && m.tr === b.tr && m.tc === b.tc);
           });
+          const filteredNonBest = tryFilter(nonBest.slice(0, 4));
+          if (filteredNonBest.length > 0) return filteredNonBest[Math.floor(Math.random() * filteredNonBest.length)];
           if (nonBest.length > 0) return nonBest[Math.floor(Math.random() * Math.min(4, nonBest.length))];
         }
       }

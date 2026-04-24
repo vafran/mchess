@@ -135,8 +135,8 @@ All three are cleared on `init()`, `undoMove()`, and FEN load.
 
 ```javascript
 const DIFF_SETTINGS = {
-  easy:        { depth: 2,  mistakes: 0.50, timeLimit: 500   },
-  medium:      { depth: 4,  mistakes: 0.20, timeLimit: 1500  },
+  easy:        { depth: 2,  mistakes: 0.40, timeLimit: 500   },
+  medium:      { depth: 5,  mistakes: 0.15, timeLimit: 1500  },
   hard:        { depth: 30, mistakes: 0,    timeLimit: 15000 }, // Wizard: ~1652 ELO on calibration PC
   grandmaster: { depth: 30, mistakes: 0,    timeLimit: 30000 }, // Wise King: ~1830 ELO on calibration PC
 };
@@ -144,7 +144,7 @@ const DIFF_SETTINGS = {
 
 - `depth:30` is a ceiling for both hard and grandmaster — the real cap is the time budget (15s / 30s)
 - **Calibration hardware:** AMD Ryzen 7 3700X @ 4.4 GHz, 16 GB DDR4 3200 MHz, ~95k NPS in tournament
-- `mistakes`: probability of playing a random legal move instead of the best one
+- `mistakes`: probability of playing a suboptimal move instead of the best one. Easy/Medium filter out suicidal moves from the random pool (medium blocks all absurd hangs; easy blocks only queen hangs ≥885cp)
 - Undo is **disabled on Hard** level (see `undoMove()` at line 5315)
 - The Professor/Coach is **disabled on Grandmaster** level
 
