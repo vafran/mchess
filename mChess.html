@@ -428,6 +428,14 @@ limitations under the License.
     .cell.in-check {
       animation: checkFlash 0.8s ease-in-out infinite;
     }
+    .cell.puzzle-wrong {
+      animation: puzzleWrongFlash 0.7s ease-out forwards;
+    }
+    @keyframes puzzleWrongFlash {
+      0%   { background: rgba(239,68,68,0.6); }
+      60%  { background: rgba(239,68,68,0.3); }
+      100% { background: transparent; }
+    }
 
     .coord {
       position: absolute;
@@ -3079,6 +3087,8 @@ limitations under the License.
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
     let makeMoveGeneration = 0; // 🔴 RACE FIX: incremented on reset to abort stale async makeMove (promo modal race)
     let _currentEngineDone = null; // 🔴 RACE FIX: reference to active engineSearch resolve(), called by init() to unblock instantly
+    let _pendingChallengeItem = null; // full PUZZLES_DB object (carries .solution)
+    let puzzleMode = null;           // { solution: string[], step: number } when active
     // Character dialogs for intro and reactions (multilingual + emoji)
     const characterDialogs = {
       easy: {
@@ -4095,6 +4105,7 @@ limitations under the License.
       window.snapshotBeforeHumanMove = null;
       window.snapshotAfterHumanMove = null;
       window.snapshotBeforeRules = null;
+      puzzleMode = null;
 
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
@@ -4969,7 +4980,52 @@ limitations under the License.
               window.pendingBlunder = null;
             }
           }
-          await makeMove(sr, sc, r, c);
+
+          // ── Puzzle mode: validate move against expected solution step ──
+          let puzzlePromo = null;
+          if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+            const expectedUci = puzzleMode.solution[puzzleMode.step];
+            const isPawn = board[sr] && board[sr][sc].toUpperCase() === 'P';
+            const isPromoRank = (r === 0 || r === 7);
+            // For UCI comparison use the expected promo piece (or Q default) to avoid modal mismatch
+            const guessPromo = isPawn && isPromoRank ? (expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q') : null;
+            const playedUci = moveToUci(sr, sc, r, c, guessPromo);
+            if (playedUci !== expectedUci) {
+              // Wrong move: flash the destination cell and show professor hint
+              const en = currentLanguage === 'en';
+              playErrorSound();
+              const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`) ||
+                             document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+              if (cellEl) { cellEl.classList.add('puzzle-wrong'); setTimeout(() => cellEl.classList.remove('puzzle-wrong'), 700); }
+              switchTab('professor');
+              const pList = document.getElementById('professorList');
+              pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--danger); background:rgba(239,68,68,0.05); padding:12px; margin-bottom:10px;">
+                <span class="hint-icon">❌</span>
+                <span class="hint-text">${en ? '⚠️ <strong>Not the right move.</strong> Think again — there is a better continuation.' : '⚠️ <strong>Esa no es la jugada.</strong> Piensa de nuevo — hay una continuación mejor.'}</span>
+              </div>`;
+              selected = null; legalMoves = []; render();
+              return;
+            }
+            // Correct move — capture promo piece so makeMove auto-promotes without modal
+            puzzlePromo = guessPromo;
+            puzzleMode.step++;
+          }
+
+          await makeMove(sr, sc, r, c, puzzlePromo);
+
+          // Puzzle complete check (after last human move)
+          if (puzzleMode && puzzleMode.step >= puzzleMode.solution.length) {
+            const en = currentLanguage === 'en';
+            puzzleMode = null;
+            setTimeout(() => {
+              switchTab('professor');
+              const pList = document.getElementById('professorList');
+              pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--success); background:rgba(34,197,94,0.05); padding:12px; margin-bottom:10px;">
+                <span class="hint-icon">🏆</span>
+                <span class="hint-text">${en ? '🎉 <strong>Puzzle solved!</strong> Perfect — you found the winning line.' : '🎉 <strong>¡Puzzle resuelto!</strong> Perfecto — encontraste la línea ganadora.'}</span>
+              </div>`;
+            }, 600);
+          }
           return;
         }
         if (piece !== ' ' && colorOf(piece) === turn) { selected = [r, c]; legalMoves = legalMovesFor(r, c); render(); return; }
@@ -5069,8 +5125,8 @@ limitations under the License.
 
       // 6. PAWN PROMOTION - ✨ Ahora con selección de pieza Y protección anti-race-condition
       if (type === 'P' && (tr === 0 || tr === 7)) {
-        if (gameMode === 'ai' && color !== playerColor) {
-          // ✨ FIX: IA promociona a lo que diga el motor (Dama por defecto)
+        if (promo || (gameMode === 'ai' && color !== playerColor)) {
+          // AI move or puzzle-mode forced piece — use provided promo (default Queen)
           let p = promo ? promo.toUpperCase() : 'Q';
           board[tr][tc] = color === 'w' ? p : p.toLowerCase();
           animating = false; // Liberar después de promoción IA
@@ -8115,6 +8171,13 @@ limitations under the License.
       return currentLanguage === 'en' ? `${pieceName} to ${sqText}` : `${pieceName} a ${sqText}`;
     }
 
+    function moveToUci(fr, fc, tr, tc, promo) {
+      return 'abcdefgh'[fc] + (8 - fr) + 'abcdefgh'[tc] + (8 - tr) + (promo ? promo.toLowerCase() : '');
+    }
+    function uciToMoveObj(uci) {
+      const f = 'abcdefgh';
+      return { fr: 8 - parseInt(uci[1]), fc: f.indexOf(uci[0]), tr: 8 - parseInt(uci[3]), tc: f.indexOf(uci[2]), promo: uci.length === 5 ? uci[4].toUpperCase() : null };
+    }
 
     // ── Transposition Table (TT) ─────────
     let tt = new Map();
@@ -11417,10 +11480,18 @@ limitations under the License.
       try {
         let move = null;
 
-        // 1. Opening book
+        // 0. Puzzle mode: play the scripted AI response without searching
+        if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+          move = uciToMoveObj(puzzleMode.solution[puzzleMode.step]);
+          puzzleMode.step++;
+          await new Promise(r => setTimeout(r, 600 + (Math.random() * 400 | 0)));
+          if (aiSearchGeneration !== searchGen) { clearInterval(countdownInterval); aiThinking = false; return; }
+        }
+
+        // 1. Opening book (skipped when puzzle move is already set)
         let forcedBookMove = null;
-        if (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
-          (currentDifficulty === 'medium' && history.length <= 4)) {
+        if (!move && (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
+          (currentDifficulty === 'medium' && history.length <= 4))) {
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
           const bookEntries = OPENING_BOOK[historyKey];
           if (bookEntries && bookEntries.length > 0) {
@@ -14172,6 +14243,21 @@ limitations under the License.
     function requestBestMove() {
       lastProfessorAction = 'best';
 
+      // Puzzle mode: reveal the expected next move as a hint
+      if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+        const hintMove = uciToMoveObj(puzzleMode.solution[puzzleMode.step]);
+        const en = currentLanguage === 'en';
+        switchTab('professor');
+        const pList = document.getElementById('professorList');
+        const label = formatMoveLabel(hintMove);
+        pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--accent); padding:12px; margin-bottom:10px;">
+          <span class="hint-icon">💡</span>
+          <span class="hint-text">${en ? '💡 <strong>Hint:</strong> Try moving <strong>' + label + '</strong>.' : '💡 <strong>Pista:</strong> Prueba jugando <strong>' + label + '</strong>.'}</span>
+        </div>`;
+        highlightBookMove(hintMove.fr, hintMove.fc, hintMove.tr, hintMove.tc);
+        return;
+      }
+
       // 1. DETERMINAR TURNO Y PERMISOS (Soporte PvP)
       const currentTurn = turn;
       const enemyColor = (currentTurn === 'w' ? 'b' : 'w');
@@ -16521,7 +16607,8 @@ limitations under the License.
         fen: "8/8/8/8/8/2k5/2p5/2K5 b - - 0 1",
         themes: ["pawnEndgame", "promotion", "zugzwang"], rating: 1100,
         descEn: "Black to play. The pawn on c2 is about to promote, but White defends with the king. Find the right move order to queen the pawn!",
-        descEs: "Negras juegan. El peón en c2 está a punto de coronar, pero las blancas defienden con el rey. ¡Encuentra el orden de moves correcto para coronar el peón!"
+        descEs: "Negras juegan. El peón en c2 está a punto de coronar, pero las blancas defienden con el rey. ¡Encuentra el orden de moves correcto para coronar el peón!",
+        solution: ["c3b3", "c1b1", "c2c1q", "b1a1", "c1b2"]
       },
       {
         fen: "8/4k3/4P3/8/8/4K3/8/8 w - - 0 1",
@@ -16703,7 +16790,6 @@ limitations under the License.
     // Track whether the pending challenge is a random puzzle (for reroll)
     let _pendingChallengeFen = null;
     let _pendingChallengeIsRandom = false;
-
     // puzzleItem can be a string (FEN) or a PUZZLES_DB object {fen,themes,rating,descEn,descEs}
     function showFenChallengeModal(puzzleItem, nameOverride, descOverride, isRandom) {
       const en = currentLanguage === 'en';
@@ -16711,6 +16797,7 @@ limitations under the License.
       const fen = isPuzzleObj ? puzzleItem.fen : puzzleItem;
       _pendingChallengeFen = fen;
       _pendingChallengeIsRandom = !!isRandom;
+      _pendingChallengeItem = (isPuzzleObj && puzzleItem.solution) ? puzzleItem : null;
 
       // Use puzzle object's own description if available
       if (isPuzzleObj && !nameOverride && !descOverride) {
@@ -16803,6 +16890,7 @@ limitations under the License.
     function cancelFenChallenge() {
       document.getElementById('fenChallengeModal').classList.remove('show');
       _pendingChallengeFen = null;
+      _pendingChallengeItem = null;
       // Return to the training library modal
       openFenLibrary();
     }
@@ -16818,8 +16906,13 @@ limitations under the License.
       document.getElementById('fenChallengeModal').classList.remove('show');
       if (!_pendingChallengeFen) return;
       document.getElementById('fenInput').value = _pendingChallengeFen;
+      const item = _pendingChallengeItem;
       _pendingChallengeFen = null;
+      _pendingChallengeItem = null;
       loadPositionFromFEN();
+      if (item && item.solution && item.solution.length > 0) {
+        puzzleMode = { solution: item.solution, step: 0 };
+      }
     }
 
     function renderFenList(category) {
@@ -16851,6 +16944,35 @@ limitations under the License.
           );
         };
         const name = en ? item.nameEn : item.nameEs;
+        const desc = en ? item.descEn : item.descEs;
+        btn.innerHTML = `<strong>${name}</strong><span>${desc}</span>`;
+        list.appendChild(btn);
+      });
+
+      // Show PUZZLES_DB entries that have scripted solutions (puzzle mode)
+      const themeToCategory = { mateIn1:'tactic', mateIn2:'tactic', mateIn3:'tactic', mateIn4:'tactic',
+        fork:'tactic', pin:'tactic', skewer:'tactic', discoveredAttack:'tactic', discoveredCheck:'tactic',
+        sacrifice:'tactic', queenSacrifice:'tactic', knightSacrifice:'tactic', greekGift:'tactic',
+        backRankMate:'tactic', smotheredMate:'tactic', trappedPiece:'tactic', doubleAttack:'tactic',
+        pawnEndgame:'endgame', rookEndgame:'endgame', knightEndgame:'endgame', queenEndgame:'endgame',
+        endgame:'endgame', lucena:'endgame', philidor:'endgame', technique:'endgame',
+        breakthrough:'endgame', opposition:'endgame', zugzwang:'endgame',
+        opening:'opening', middlegame:'tactic' };
+      PUZZLES_DB.filter(p => p.solution && p.solution.length > 0).forEach(item => {
+        const firstTheme = (item.themes || [])[0] || '';
+        const itemCat = themeToCategory[firstTheme] || 'tactic';
+        if (category !== 'all' && itemCat !== category) return;
+        const btn = document.createElement('div');
+        btn.className = 'fen-item';
+        btn.style.borderLeft = '3px solid var(--accent)';
+        btn.onclick = () => { closeFenLibrary(); showFenChallengeModal(item, null, null, false); };
+        const themeLabels = { mateIn1:'Mate in 1', mateIn2:'Mate in 2', mateIn3:'Mate in 3', mateIn4:'Mate in 4',
+          pawnEndgame:'Pawn Endgame', rookEndgame:'Rook Endgame', zugzwang:'Zugzwang',
+          promotion:'Promotion', breakthrough:'Breakthrough', opposition:'Opposition' };
+        const themeLabelsEs = { mateIn1:'Mate en 1', mateIn2:'Mate en 2', mateIn3:'Mate en 3', mateIn4:'Mate en 4',
+          pawnEndgame:'Final de Peones', rookEndgame:'Final de Torre', zugzwang:'Zugzwang',
+          promotion:'Coronación', breakthrough:'Irrupción', opposition:'Oposición' };
+        const name = '🧩 ' + (en ? (themeLabels[firstTheme] || firstTheme) : (themeLabelsEs[firstTheme] || firstTheme));
         const desc = en ? item.descEn : item.descEs;
         btn.innerHTML = `<strong>${name}</strong><span>${desc}</span>`;
         list.appendChild(btn);
@@ -17065,6 +17187,7 @@ limitations under the License.
         window.snapshotBeforeHumanMove = null;
         window.snapshotAfterHumanMove = null;
         window.snapshotBeforeRules = null;
+        puzzleMode = null;
         fenPositionLoaded = true; // tell the Professor this isn't move-0 of a normal game
 
         // ✨ FIX: Limpiar al Profesor al cargar nuevo FEN
