@@ -12637,16 +12637,27 @@ limitations under the License.
 
       const frasesBromas = {
         es: {
-          P: ["¡Ese peón va con más prisa que un niño el último día de cole!", "Peón a {sq}, ¡soñando con ser Dama algún día!"],
-          N: ["¡Vaya salto! ¡Ni Michael Jordan en un castillo hinchable!", "El caballo hace su cosa rara en L y nadie le entiende."],
-          B: ["¡Toma ya! El Alfil barre la diagonal como quien pasa la mopa.", "¡Ojo al láser! El alfil no perdona desde esa diagonal."],
-          R: ["¡Torre de hierro! Por aquí no pasa ni el aire.", "¡Rook & Roll! La torre se activa con ritmo."],
+          P: ["¡Ese peón va con más prisa que un niño el último día de cole!", "Peón a {sq}, ¡soñando con ser Dama algún día!",
+              "¡Ese peón en {sq} tiene complejo de bulldozer!", "Infantería tomando posiciones en {sq}. ¡Ni un paso atrás!",
+              "Peón a {sq}. Lento, seguro y con la mirada puesta en la última fila."],
+          N: ["¡Vaya salto! ¡Ni Michael Jordan en un castillo hinchable!", "El caballo hace su cosa rara en L y nadie le entiende.",
+              "¡Parkour! El caballo sortea las piezas y aterriza en {sq}.", "¿Alguien pidió un taxi saltarín? Caballo en {sq}.",
+              "¡Boing, boing! El caballo rebota hasta {sq}."],
+          B: ["¡Toma ya! El Alfil barre la diagonal como quien pasa la mopa.", "¡Ojo al láser! El alfil no perdona desde esa diagonal.",
+              "El alfil se desliza a {sq} con la elegancia de un patinador sobre hielo.",
+              "¡Corte de espada ninja en diagonal hasta {sq}!", "El alfil va a {sq} por la sombra, para que no le vean."],
+          R: ["¡Torre de hierro! Por aquí no pasa ni el aire.", "¡Rook & Roll! La torre se activa con ritmo.",
+              "¡Abran paso! Vehículo pesado circulando hacia {sq}.",
+              "La torre se planta en {sq} y dice: '¡De aquí no me mueve nadie!'",
+              "¡Esa torre en {sq} tiene más presencia que un portero de discoteca!"],
           Q: ["¡Atención, ha llegado la Jefa! Actuad con naturalidad.",
             "La dama en {sq} dice: '¡Aquí mando yo!'.",
             "¡La Dama cambia de posición! Ahora manda desde {sq}.",
             "¡La Reina marca su territorio en {sq}! Que tiemble el rival.",
             "La Jefa ha hablado: la Dama se planta en {sq}.",
-            "¡Ojo al dato! La Dama en {sq} no hace prisioneros."],
+            "¡Ojo al dato! La Dama en {sq} no hace prisioneros.",
+            "La Dama llega a {sq}... ¡Acaba de subir el precio del alquiler en esa zona!",
+            "La Dama en {sq}. Despejen la zona si aprecian su vida."],
           K: isKingEscaping
             ? ["¡El Rey sale corriendo a {sq}! ¡Corre, Majestad, corre!",
                "¡Zas! El Rey escapa a {sq} y se salva del jaque.",
@@ -12659,19 +12670,35 @@ limitations under the License.
             : ["El Rey se esconde bajo los palos en {sq}. ¡Un portero de los de antes!",
                "El Rey busca su sitio seguro en {sq}. ¡Muy listo él!",
                "¡A cubierto, Majestad! El Rey se pone a buen recaudo en {sq}.",
-               "El Rey se va a su cabaña en {sq}. Que estén tranquilas las piezas."]
+               "El Rey se va a su cabaña en {sq}. Que estén tranquilas las piezas.",
+               "El Rey dice que en {sq} hace menos corriente. Muy prudente.",
+               "¡Paseíto real hasta {sq}! ¡Que le pongan la alfombra roja!",
+               "El Rey se muda a {sq}. ¡Esperemos que haya traído el escudo!"]
         },
         en: {
-          P: ["Walking like he's lost his bus pass.", "Just a pawn doing pawn things."],
-          N: ["Jumping around like a guy at a wedding.", "Knight's on a mission to find the only open shop at 2 AM."],
-          B: ["Bishop's clearing the way like he's looking for a cinema seat.", "Sniper! Watching the board like a teacher during a math test."],
-          R: ["The Rook is a wall. Nothing's getting through that.", "Control tower! Watching the board like a bouncer."],
+          P: ["Walking like he's lost his bus pass.", "Just a pawn doing pawn things.",
+              "That pawn on {sq} thinks it's a tank — unstoppable!", "Infantry advancing to {sq}. Not one step back!",
+              "Steady march to {sq} — that pawn's got its eye on the back rank."],
+          N: ["Jumping around like a guy at a wedding.", "Knight's on a mission to find the only open shop at 2 AM.",
+              "Parkour! The knight weaves through traffic and sticks the landing on {sq}.",
+              "Did someone order a bouncy taxi? Knight arriving at {sq}.",
+              "Boing, boing! The knight bounces all the way to {sq}."],
+          B: ["Bishop's clearing the way like he's looking for a cinema seat.", "Sniper! Watching the board like a teacher during a math test.",
+              "The bishop glides to {sq} with the grace of a figure skater.",
+              "Ninja sword slash straight down the diagonal to {sq}!",
+              "The bishop sneaks to {sq} through the shadows. Smooth."],
+          R: ["The Rook is a wall. Nothing's getting through that.", "Control tower! Watching the board like a bouncer.",
+              "Make way! Heavy vehicle incoming — heading to {sq}.",
+              "The rook parks at {sq}: 'Nobody's moving me from here.'",
+              "That rook on {sq} has more authority than a bouncer at a nightclub!"],
           Q: ["Right, here's the Boss. Act natural.",
             "The queen on {sq} says: 'I run this board now'.",
             "The Boss relocates to {sq}. Maximum chaos incoming.",
             "Queen to {sq} — the most dangerous piece just got busier.",
             "The Queen rolls into {sq} like she owns the place. Which she does.",
-            "Eyes on {sq}! The Boss has moved."],
+            "Eyes on {sq}! The Boss has moved.",
+            "The Queen arrives at {sq}... property values just went up in the neighbourhood.",
+            "The Queen on {sq}. Clear the area if you value your pieces."],
           K: isKingEscaping
             ? ["The King legs it to {sq}! Run, Your Majesty, run!",
                "Quick! The King dodges the check and hides at {sq}.",
@@ -12684,7 +12711,10 @@ limitations under the License.
             : ["Safety first — the Monarch tucks away at {sq}.",
                "The King found his favourite hiding spot at {sq}.",
                "The King retreats to {sq}. Very sensible, Your Majesty!",
-               "Hiding at {sq}! The King knows when to stay safe."]
+               "Hiding at {sq}! The King knows when to stay safe.",
+               "The King says {sq} has better draught protection. Very sensible.",
+               "A royal stroll to {sq}! Someone roll out the red carpet!",
+               "The King moves to {sq}. Let's hope he packed his shield."]
         }
       };
 
@@ -12710,19 +12740,29 @@ limitations under the License.
 
       const frasesCapturaBromas = {
         es: {
-          P: ["¡Ñam ñam! Ese peón tenía hambre y se comió {cap} en {sq}.", "Peón abusón quitando a {cap} del medio en {sq}."],
-          N: ["¡Zasca! El caballo aterriza encima de {cap} en {sq}.", "Caballo ninja: aparece de la nada y se lleva {cap}."],
-          B: ["¡Francotirador! El alfil se cobra a {cap} en {sq}.", "¡Cazado en la diagonal! Adiós a {cap}."],
-          R: ["¡La torre pasa como una apisonadora por encima de {cap}!", "¡Boom! La torre derriba a {cap} y se lleva el botín."],
-          Q: ["¡La Jefa no hace prisioneros! Adiós a {cap} en {sq}.", "¡A la saca! La dama hace limpieza y se lleva {cap} en {sq}."],
+          P: ["¡Ñam ñam! Ese peón tenía hambre y se comió {cap} en {sq}.", "Peón abusón quitando a {cap} del medio en {sq}.",
+              "¡A la calle! {cap} es amablemente invitado a salir del tablero en {sq}."],
+          N: ["¡Zasca! El caballo aterriza encima de {cap} en {sq}.", "Caballo ninja: aparece de la nada y se lleva {cap}.",
+              "¡Pisotón ecuestre! El caballo aplasta a {cap} en {sq}."],
+          B: ["¡Francotirador! El alfil se cobra a {cap} en {sq}.", "¡Cazado en la diagonal! Adiós a {cap}.",
+              "¡Zas, en toda la boca! El alfil limpia a {cap} en {sq}."],
+          R: ["¡La torre pasa como una apisonadora por encima de {cap}!", "¡Boom! La torre derriba a {cap} y se lleva el botín.",
+              "¡Aspiradora activada en {sq}! La torre se ha tragado a {cap}."],
+          Q: ["¡La Jefa no hace prisioneros! Adiós a {cap} en {sq}.", "¡A la saca! La dama hace limpieza y se lleva {cap} en {sq}.",
+              "¡Menudo atraco a mano armada! La Dama hace desaparecer a {cap} en {sq}."],
           K: ["¡El Rey también reparte leña y se carga a {cap} en {sq}!", "Con sus propias manos: el Rey echa a {cap}."]
         },
         en: {
-          P: ["Yum yum! That pawn was hungry for {cap} on {sq}.", "Out of my way! The pawn pushes {cap} aside."],
-          N: ["Bam! The knight lands right on {cap} at {sq}.", "Ninja knight: appears from nowhere and takes {cap}."],
-          B: ["Sniper! The bishop claims {cap} on {sq}.", "Caught on the diagonal! Goodbye {cap}."],
-          R: ["The rook rolls over {cap} like a bulldozer on {sq}!", "Boom! The rook knocks down {cap}."],
-          Q: ["The Boss takes no prisoners! {cap} is gone on {sq}.", "In the bag! The queen cleans up {cap} on {sq}."],
+          P: ["Yum yum! That pawn was hungry for {cap} on {sq}.", "Out of my way! The pawn pushes {cap} aside.",
+              "Out you go! {cap} is politely shown the exit at {sq}."],
+          N: ["Bam! The knight lands right on {cap} at {sq}.", "Ninja knight: appears from nowhere and takes {cap}.",
+              "Horsey stomp! The knight flattens {cap} on {sq}."],
+          B: ["Sniper! The bishop claims {cap} on {sq}.", "Caught on the diagonal! Goodbye {cap}.",
+              "Smack! The bishop wipes {cap} clean off {sq}."],
+          R: ["The rook rolls over {cap} like a bulldozer on {sq}!", "Boom! The rook knocks down {cap}.",
+              "Hoover on! The rook sucks up {cap} at {sq}."],
+          Q: ["The Boss takes no prisoners! {cap} is gone on {sq}.", "In the bag! The queen cleans up {cap} on {sq}.",
+              "Armed robbery! The Queen makes {cap} disappear on {sq}."],
           K: ["The King gets his hands dirty taking {cap} on {sq}!", "Doing it himself: the King captures {cap}."]
         }
       };
@@ -13053,11 +13093,22 @@ limitations under the License.
         comment = lang === 'en' ? getRnd(["Check! Precision is absolutely required now."], 'end_check') : getRnd(["¡Jaque! Ahora la precisión es absolutamente vital."], 'end_check');
       }
       else if (isCheck) {
-        // Check in middlegame — detect if it also creates a pin or discovered attack
+        const isFunnyCheck = commentaryStyleLevel === 2;
+        toneUsed = isFunnyCheck ? 'funny' : toneUsed;
         const checkPhrases = lang === 'en'
-          ? ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately.", "🎯 A direct check forces the opponent's hand — use the tempo!", "🔥 Check! Good forcing move — keep the pressure on.", "⚡ Check! The king is under fire — watch for tactical follow-ups."]
-          : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato.", "🎯 ¡Jaque directo! Forzamos al rival — ¡aprovecha el tempo!", "🔥 ¡Jaque! Buena jugada forzante — mantén la presión.", "⚡ ¡Jaque! El rey está bajo fuego — atento a los seguimientos tácticos."];
-        comment = getRnd(checkPhrases, 'mid_check');
+          ? isFunnyCheck
+            ? ["🔔 Ding dong! Check! Someone's knocking on the king's door.", "🚨 Eviction notice! That king needs to move — now.", "🔥 Fire alarm! The king is absolutely sweating right now.", "😅 Uh oh! Check. Someone just tripped the alarm wire.", "📣 Check called! The king didn't see that coming."]
+            : ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately.", "🎯 A direct check forces the opponent's hand — use the tempo!", "🔥 Check! Good forcing move — keep the pressure on.", "⚡ Check! The king is under fire — watch for tactical follow-ups."]
+          : isFunnyCheck
+            ? ["🔔 ¡Ding dong! ¡Jaque al canto! Alguien llama a la puerta del rey.", "🚨 ¡Aviso de desahucio! Ese rey tiene que moverse ya.", "🔥 ¡Fuego en la pista! El rey está sudando la gota gorda.", "😅 ¡Uy, uy, uy! Jaque. Alguien pisó el cable de la alarma.", "📣 ¡Jaque! El rey no se lo esperaba para nada."]
+            : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato.", "🎯 ¡Jaque directo! Forzamos al rival — ¡aprovecha el tempo!", "🔥 ¡Jaque! Buena jugada forzante — mantén la presión.", "⚡ ¡Jaque! El rey está bajo fuego — atento a los seguimientos tácticos."];
+        comment = getRnd(checkPhrases, isFunnyCheck ? 'mid_check_funny' : 'mid_check');
+      }
+      else if (commentaryStyleLevel === 2 && moveQuality === -3) {
+        toneUsed = 'funny';
+        comment = lang === 'en'
+          ? getRnd(["😬 Oops... someone hit the wrong button there.", "🎁 This move is proudly sponsored by the Free Gifts Association.", "🤔 Was that a tactic or did your finger slip?", "😅 The opponent's Christmas just came early."], 'blunder_funny')
+          : getRnd(["😬 Uy... creo que alguien le dio al botón equivocado.", "🎁 Esa jugada ha sido patrocinada por la 'Asociación de Regalos Gratuitos'.", "🤔 ¿Eso era una táctica de despiste o se te ha escurrido el dedo?", "😅 La Navidad del rival llegó antes de tiempo."], 'blunder_funny');
       }
       else {
         comment = actionComment;
