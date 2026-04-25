@@ -3357,6 +3357,8 @@ limitations under the License.
     let sessionQueenBlundered = false;    // true if opponent captured player's queen uncontested
     let sessionCastled        = false;    // true once the player castles
     let sessionKingMoved      = false;    // true if king moves again after castling
+    let sessionGameRecorded   = false;    // true once updateMatchStats has fired for this game
+    let sessionPendingResult  = null;     // {result, difficulty, movesCount} — held for reviewGame path
 
     function loadProfile() {
       try {
@@ -3396,6 +3398,9 @@ limitations under the License.
 
     function updateMatchStats(result, difficulty, movesCount) {
       if (!currentProfile || gameMode !== 'ai') return;
+      sessionPendingResult = { result, difficulty, movesCount }; // store for reviewGame path
+      if (sessionGameRecorded) return;
+      sessionGameRecorded = true;
       const p = currentProfile;
 
       p.stats.totalGames++;
@@ -3414,10 +3419,12 @@ limitations under the License.
       if (result === 'win') {
         if (p.records.fastestWin === null || movesCount < p.records.fastestWin)
           p.records.fastestWin = movesCount;
-        const finalEval = evaluateBoard(board, 'hard');
-        const playerEval = playerColor === 'w' ? finalEval : -finalEval;
-        if (p.records.highestEvalWin === null || playerEval > p.records.highestEvalWin)
-          p.records.highestEvalWin = playerEval;
+        try {
+          const finalEval = evaluateBoard(board, 'hard');
+          const playerEval = playerColor === 'w' ? finalEval : -finalEval;
+          if (p.records.highestEvalWin === null || playerEval > p.records.highestEvalWin)
+            p.records.highestEvalWin = playerEval;
+        } catch (_) { /* eval may fail in checkmate positions; record still saves */ }
       }
 
       saveProfile();
@@ -4237,6 +4244,8 @@ limitations under the License.
       sessionQueenBlundered = false;
       sessionCastled        = false;
       sessionKingMoved      = false;
+      sessionGameRecorded   = false;
+      sessionPendingResult  = null;
 
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
@@ -5571,6 +5580,10 @@ limitations under the License.
     }
 
     function reviewGame() {
+      // Defensive flush: if makeMove()'s async tail was skipped for any reason, record now
+      if (!sessionGameRecorded && sessionPendingResult) {
+        updateMatchStats(sessionPendingResult.result, sessionPendingResult.difficulty, sessionPendingResult.movesCount);
+      }
       // Hide the end-game banner so the player can analyse the final position
       document.getElementById('statusBanner').classList.remove('show');
     }
