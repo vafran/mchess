@@ -2687,13 +2687,11 @@ limitations under the License.
   <!-- Settings Change Confirmation Modal -->
   <div class="confirm-modal" id="confirmSettingsModal" style="z-index: 300;">
     <div class="confirm-box">
-      <h3>⚠️ ¿Cambiar opciones?</h3>
-      <p>Cambiar esto en medio de una partida hará que el tablero se reinicie. ¿Estás seguro de que quieres continuar?
-      </p>
+      <h3 id="confirmSettingsModalTitle">⚠️ ¿Cambiar opciones?</h3>
+      <p id="confirmSettingsModalDesc">Cambiar esto en medio de una partida hará que el tablero se reinicie. ¿Estás seguro de que quieres continuar?</p>
       <div class="confirm-buttons">
-        <button class="btn btn-secondary" onclick="cancelPendingSetting()">Cancelar</button>
-        <button class="btn btn-primary" style="background: var(--danger);" onclick="applyPendingSetting()">Sí, cambiar y
-          reiniciar</button>
+        <button class="btn btn-secondary" id="confirmSettingsModalCancel" onclick="cancelPendingSetting()">Cancelar</button>
+        <button class="btn btn-primary" id="confirmSettingsModalOk" style="background: var(--danger);" onclick="applyPendingSetting()">Sí, cambiar y reiniciar</button>
       </div>
     </div>
   </div>
@@ -3502,7 +3500,11 @@ limitations under the License.
         confirmRestartTitle: '⚠️ ¿Reiniciar partida?',
         confirmRestartDesc: '¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.',
         confirmRestartCancel: 'Oops, cancelar',
-        confirmRestartOk: 'Sí, reiniciar'
+        confirmRestartOk: 'Sí, reiniciar',
+        confirmSettingsTitle: '⚠️ ¿Cambiar opciones?',
+        confirmSettingsDesc: 'Cambiar esto en medio de una partida hará que el tablero se reinicie. ¿Estás seguro de que quieres continuar?',
+        confirmSettingsCancel: 'Cancelar',
+        confirmSettingsOk: 'Sí, cambiar y reiniciar'
 
       },
       en: {
@@ -3550,7 +3552,11 @@ limitations under the License.
         confirmRestartTitle: '⚠️ Restart game?',
         confirmRestartDesc: 'Are you sure you want to start over? You will lose all your current progress on this board.',
         confirmRestartCancel: 'Oops, cancel',
-        confirmRestartOk: 'Yes, restart'
+        confirmRestartOk: 'Yes, restart',
+        confirmSettingsTitle: '⚠️ Change settings?',
+        confirmSettingsDesc: 'Changing this mid-game will reset the board. Are you sure you want to continue?',
+        confirmSettingsCancel: 'Cancel',
+        confirmSettingsOk: 'Yes, change and restart'
       }
     };
 
@@ -16025,6 +16031,14 @@ limitations under the License.
       pendingSettingChange = null;
     }
 
+    function showConfirmSettingsModal() {
+      document.getElementById('confirmSettingsModalTitle').textContent  = t('confirmSettingsTitle');
+      document.getElementById('confirmSettingsModalDesc').textContent   = t('confirmSettingsDesc');
+      document.getElementById('confirmSettingsModalCancel').textContent = t('confirmSettingsCancel');
+      document.getElementById('confirmSettingsModalOk').textContent     = t('confirmSettingsOk');
+      document.getElementById('confirmSettingsModal').classList.add('show');
+    }
+
     function cancelPendingSetting() {
       document.getElementById('confirmSettingsModal').classList.remove('show');
       pendingSettingChange = null;
@@ -16034,7 +16048,7 @@ limitations under the License.
       if (gameMode === mode) return;
       if (isGameActive()) {
         pendingSettingChange = { type: 'mode', val: mode };
-        document.getElementById('confirmSettingsModal').classList.add('show');
+        showConfirmSettingsModal();
         return;
       }
       setMode(mode);
@@ -16047,7 +16061,7 @@ limitations under the License.
       if (currentDifficulty === level) return;
       if (isGameActive()) {
         pendingSettingChange = { type: 'difficulty', val: level };
-        document.getElementById('confirmSettingsModal').classList.add('show');
+        showConfirmSettingsModal();
         return;
       }
       setDifficulty(level);
