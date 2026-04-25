@@ -10,24 +10,33 @@ Formato: versión · tamaño · qué cambió.
 ## v2.23.0 — Publicación de Producción
 **~16.500 líneas · ~860 KB**
 
-### Motor: Cinco Mejoras Validadas (v2.22.11 → v2.22.15)
+### Motor: Diez Mejoras Validadas (v2.22.6 → v2.22.15)
 
-v2.23.0 fusiona el ciclo de desarrollo v2.22.x completo en producción. Cada parche fue validado individualmente con un torneo antes de su inclusión.
+v2.23.0 fusiona el ciclo de desarrollo v2.22.x completo en producción. Cada parche fue validado individualmente con un torneo antes de su inclusión. La línea de producción sustituida es v2.22.5 (~1732 ELO, 27,5% vs Stockfish profundidad 7).
 
-**v2.22.11 — Filtro anti-colgadas extendido a capturas perdedoras**
-El filtro SEE raíz anteriormente solo comprobaba jugadas silenciosas. Ahora también comprueba capturas con SEE < 0, detectando intercambios perdedores que la búsqueda de profundidad limitada del motor podría no resolver correctamente.
+**v2.22.6 — Regla del Cuadrado: Duplicado Roto Eliminado**
+Una segunda implementación de la Regla del Cuadrado se ejecutaba silenciosamente dentro del bucle de evaluación de peones. A diferencia de la versión correcta (limitada a finales puros de rey y peones), esta copia rota se activaba en cualquier final y otorgaba hasta +942cp por peones pasados fácilmente bloqueables. Producía evaluaciones fantasma de +600–+942cp en jugadas silenciosas.
+
+**v2.22.7 / v2.22.10 — Comprobación de Seguridad del Filtro + Puerta BLOCKED**
+El filtro SEE raíz ahora tiene una puerta de dos etapas: (1) una puerta BLOCKED(mate) evita que el filtro sustituya cuando la sustituta es una línea de mate conocida (puntuación ≤ −100.000), y (2) una puerta BLOCKED(worse:N) evita la sustitución cuando la sustituta puntúa más de N cp peor. En v2.22.7 N=200, refinado a N=100 en v2.22.10.
+
+**v2.22.8 / v2.22.9 — Fantasma PASS_DANGER Corregido**
+El término de evaluación `PASS_DANGER` tenía un error de asimetría: solo penalizaba a las Blancas por los peones pasados de las Negras, sin bono espejo para los propios peones pasados de las Blancas. Corregido con puntuación simétrica. El valor base también se redujo de 80cp a 25cp (v2.22.9) para evitar tablas maratonianas en finales con posiciones iguales.
+
+**v2.22.11 — Filtro Anti-colgadas Extendido a Capturas Perdedoras**
+El filtro SEE raíz anteriormente solo comprobaba jugadas silenciosas. Ahora también comprueba capturas con SEE < 0, detectando intercambios perdedores que la búsqueda de profundidad limitada podría no resolver correctamente.
 
 **v2.22.12 — Puerta de Centralización del Rey**
-El bono de actividad del rey en finales (`kingCentralization`) ahora tiene una comprobación: el bono se activa solo cuando `eg > 0.5` (final genuino). Sin esta puerta, el rey recibía puntos adicionales por caminar hacia el centro en el mediojuego, produciendo evaluaciones fantasma de "caminata del rey" de +200–+400cp que distorsionaban la selección de jugadas.
+El bono de actividad del rey en finales (`kingCentralization`) ahora tiene una comprobación: el bono se activa solo cuando `eg > 0.5` (final genuino). Sin esta puerta, el rey recibía puntos adicionales por caminar hacia el centro en el mediojuego, produciendo evaluaciones fantasma de +200–+400cp.
 
 **v2.22.13 — Corrección de Ceguera de Repetición**
-Las jugadas raíz que crearían la 2.ª o 3.ª repetición de una posición no se puntuaban como repeticiones — el mapa `gameHashCount` se construía con datos incorrectos. Corregido: las repeticiones en raíz ahora reciben −9000 (evitar fuertemente) a menos que el motor ya esté perdiendo claramente (puntuación < −500), en cuyo caso se acepta las tablas. Confirmado: 266 activaciones de repetición-raíz en un torneo de 32 partidas.
+Las jugadas raíz que crearían la 2.ª o 3.ª repetición de una posición no se puntuaban como repeticiones — el mapa `gameHashCount` se construía con datos incorrectos. Corregido: las repeticiones en raíz ahora reciben −9000 (evitar fuertemente) a menos que el motor ya esté perdiendo claramente (puntuación < −500). Confirmado: 266 activaciones en un torneo de 32 partidas.
 
 **v2.22.14 — Umbral de Puerta BLOCKED 100→50cp**
-La puerta BLOCKED del filtro anti-colgadas se activa cuando la jugada sustituta puntúa N cp peor que la original. Con 100cp, ocurrió el falso positivo G26: Cc6xe5 (SEE=−225, claramente correcto) fue bloqueado porque la sustituta solo puntuaba 57–63cp peor. Umbral reducido a 50cp.
+Con 100cp, ocurrió el falso positivo G26: Cc6xe5 (SEE=−225, claramente correcto) fue bloqueado porque la sustituta solo puntuaba 57–63cp peor. Umbral reducido a 50cp.
 
 **v2.22.15 — Bono de Torre en 7.ª Fila**
-Bono posicional estándar añadido: +40cp (MG) / +25cp (EG), tapered. Una torre en la 7.ª fila (o 2.ª fila para las Negras) ataca los peones sin mover del rival y restringe al rey. El motor anteriormente no recibía ningún bono por esta colocación fuerte.
+Bono posicional estándar añadido: +40cp (MG) / +25cp (EG), tapered. Una torre en la 7.ª fila ataca los peones sin mover del rival y restringe al rey. El motor anteriormente no recibía ningún bono por esta colocación fuerte.
 
 ### Niveles de Dificultad Recalibrados
 
@@ -91,6 +100,22 @@ Cuando se juega una jugada en la fase de apertura, el comentarista ahora a veces
 
 **Sugerencias de apertura: etiquetas de estilo**
 En el panel del entrenador "¿Qué hago?", las sugerencias de jugadas de libro ya no muestran una insignia uniforme de "Riesgo bajo". Cada apertura muestra ahora una etiqueta de estilo con código de color derivada de su descripción: ⚡ Agresiva (naranja), 🧱 Sólida (verde), 🔀 Flexible (azul), ♟️ Posicional (ámbar), 🔮 Hipermoder. (morado), o 📖 Teórica (gris). La lista de aperturas al inicio de partida está limitada a 11 entradas (era 20) para eliminar duplicados.
+
+**Detección de colgadas: fase de apertura y amenazas ignoradas**
+Dos clases de colgadas que antes no se informaban ahora activan comentarios y avisos del Modo Entrenamiento:
+- *Piezas colgadas en la apertura:* El escaneo de calidad del comentarista ahora se ejecuta independientemente de `isOpening`. Una torre o dama colgada en cualquier jugada — incluso la jugada 3 — se marca como error grave. Antes el escaneo estaba restringido a las jugadas 11 en adelante.
+- *Amenaza ignorada:* El Modo Entrenamiento ahora avisa cuando el jugador hace una jugada no relacionada mientras su torre o dama ya está bajo ataque. Antes la comprobación solo se activaba para amenazas *nuevas*; una dama ya colgada se ignoraba silenciosamente.
+- *Corrección de instantánea obsoleta:* La evaluación de calidad de jugada ahora se aplica correctamente solo a jugadas humanas. Una instantánea obsoleta causaba anotaciones de error intermitentes en las jugadas de la IA.
+- *Jaque + colgada:* Una nueva rama de comentario combinada resuelve la contradicción donde "¡Jaque! Buena jugada" y "📉 ¡Error grave!" aparecían en la misma jugada. Si una jugada de jaque también deja una pieza colgada, se muestra un aviso único y unificado.
+
+**Barra de ventaja: mapeo sigmoidal**
+La barra de ventaja ahora usa un mapeo sigmoidal `tanh(score/600)` en lugar de una escala lineal. La escala lineal saturaba (fijada al 95%) con ±700cp, haciendo que la mayoría de posiciones no triviales parecieran muy desequilibradas. El sigmoide coincide con el comportamiento de Lichess/Chess.com: ±100cp ≈ 58%, ±300cp ≈ 73%, ±600cp ≈ 88%, sin saturación. La penalización por desarrollo prematuro de la dama también se reduce de 280cp máx. a 80cp máx. para evitar que la barra cambie de lado en posiciones normales de apertura.
+
+**Exportación PGN: desambiguación SAN**
+El generador de notación de jugadas ahora desambigua correctamente cuando dos piezas del mismo tipo pueden alcanzar la misma casilla (ej. `Cbd2` vs `Cfd2`, `Tfe1` vs `Tae1`). Antes el motor emitía `Cd2` sin prefijo, que Lichess y otras herramientas rechazaban por ambiguo. La corrección abarca caballos, alfiles, torres y damas. Tanto el generador SAN de partida como el asistente de notación para libros y análisis están actualizados.
+
+**Comentarista: frases graciosas ampliadas**
+El estilo 🎉 Divertido ahora tiene más variedad. Se añaden nuevas frases para todos los tipos de pieza (peones, caballos, alfiles, torres, damas, rey) en español e inglés — para movimientos, capturas, jaques y errores graves. Cada categoría ahora tiene 3–5 opciones con rotación para evitar repetición.
 
 ---
 

@@ -9,11 +9,20 @@ Format: version · size · what changed.
 ## v2.23.0 — Production Release
 **~16,500 lines · ~860 KB**
 
-### Engine: Five Validated Improvements (v2.22.11 → v2.22.15)
+### Engine: Ten Validated Improvements (v2.22.6 → v2.22.15)
 
-v2.23.0 merges the complete v2.22.x development cycle into production. Each patch was individually validated with a tournament before inclusion.
+v2.23.0 merges the complete v2.22.x development cycle into production. Each patch was individually validated with a tournament before inclusion. The production baseline being replaced is v2.22.5 (~1732 ELO, 27.5% vs Stockfish depth-7).
 
-**v2.22.11 — Anti-blunder filter extended to losing captures**
+**v2.22.6 — Rule of the Square: Broken Duplicate Removed**
+A second Rule of the Square implementation was silently running inside the pawn evaluation loop. Unlike the correct version (gated to pure king-and-pawn endings), this broken copy fired in any endgame and awarded up to +942cp for easily-blockable passed pawns. Produced phantom evaluations of +600–+942cp on quiet moves (identical scores across multiple different moves = definitive phantom signature).
+
+**v2.22.7 / v2.22.10 — Anti-blunder Filter Safety Check + BLOCKED Gate**
+The root SEE filter now has a two-stage gate: (1) a BLOCKED(mate) gate prevents the filter from substituting when the substitute is a known-mate line (score ≤ −100,000), and (2) a BLOCKED(worse:N) gate prevents substitution when the substitute scores more than N cp worse than the original. At v2.22.7 N=200, refined to N=100 in v2.22.10 after tournament analysis.
+
+**v2.22.8 / v2.22.9 — PASS_DANGER Phantom Fixed**
+The `PASS_DANGER` evaluation term had an asymmetry bug: it only penalised White for Black's passed pawns, with no mirror bonus for White's own passed pawns. Fixed with symmetric scoring. The base value was also reduced from 80cp to 25cp (v2.22.9) to prevent marathon endgame draws caused by the engine over-weighting passed pawn danger at equal positions.
+
+**v2.22.11 — Anti-blunder Filter Extended to Losing Captures**
 The root SEE filter previously only checked quiet moves. It now also checks captures where SEE < 0 — catching losing exchanges that the engine's depth-limited search might not resolve correctly.
 
 **v2.22.12 — King Centralization Gate**
@@ -23,7 +32,7 @@ The endgame king activity bonus (`kingCentralization`) now has a guard: the bonu
 Root moves that would create the 2nd or 3rd repetition of a position were not being scored as repetitions — the `gameHashCount` map was built from the wrong data. Fixed: repetitions at root now score −9000 (strong avoid) unless the engine is already losing badly (score < −500), in which case a draw is accepted. Confirmed: 266 root-rep firings across a 32-game tournament, converting blind draws into real results.
 
 **v2.22.14 — BLOCKED Gate Threshold 100→50cp**
-The anti-blunder filter's BLOCKED gate (`BLOCKED(worse:N)`) fires when the substitute move scores N cp worse than the original. At 100cp, the G26 false positive occurred: Nc6xe5 (SEE=−225, clearly correct) was blocked because the substitute scored only 57–63cp worse. Threshold lowered to 50cp.
+The anti-blunder filter's BLOCKED gate fires when the substitute move scores N cp worse than the original. At 100cp, the G26 false positive occurred: Nc6xe5 (SEE=−225, clearly correct) was blocked because the substitute scored only 57–63cp worse. Threshold lowered to 50cp.
 
 **v2.22.15 — Rook on 7th Rank Bonus**
 Standard positional bonus added: +40cp (MG) / +25cp (EG), tapered. A rook on the 7th rank (or 2nd rank for Black) attacks the opponent's unmoved pawns and restricts the king. The engine previously earned no bonus for this strong placement.
@@ -90,6 +99,22 @@ When a move is played in the opening phase, the commentator now sometimes (~28% 
 
 **Opening suggestions: style tags**
 In the "What should I do?" coach panel, book-move suggestions no longer show a uniform "Low risk" badge. Each opening now shows a colour-coded style tag derived from its description: ⚡ Aggressive (orange), 🧱 Solid (green), 🔀 Flexible (blue), ♟️ Positional (amber), 🔮 Hypermodern (purple), or 📖 Theory (grey). The opening list at game start is capped at 11 entries (was 20) to remove duplicates.
+
+**Blunder detection: opening phase and ignored threats**
+Two classes of blunders that previously went unreported now trigger commentary and Training Mode warnings:
+- *Opening-phase hanging pieces:* The commentator's quality scan now runs regardless of `isOpening`. A hanging rook or queen on any move — even move 3 — is flagged as a blunder. Previously the scan was gated to moves 11+.
+- *Ignored threat:* Training Mode now warns when the player plays an unrelated move while their rook or queen is already under attack. Previously the guard only fired for *newly* created threats; an existing hanging queen was silently ignored.
+- *Stale-snapshot fix:* Move quality evaluation is now correctly scoped to human moves only. A stale snapshot was causing intermittent false blunder annotations on AI moves.
+- *Check + blunder:* A new combined comment branch resolves the contradiction where "¡Jaque! Buena jugada" and "📉 ¡Error grave!" appeared on the same move. If a check move also leaves a piece hanging, a single unified warning is shown instead.
+
+**Advantage bar: sigmoid mapping**
+The advantage bar now uses a `tanh(score/600)` sigmoid mapping instead of a linear scale. The linear mapping saturated (pinned to 95%) at ±700cp, making most non-trivial positions look one-sided. The sigmoid matches Lichess/Chess.com behavior: ±100cp ≈ 58%, ±300cp ≈ 73%, ±600cp ≈ 88%, never hard-clips. The queen's early-development penalty is also reduced from 280cp max to 80cp max to prevent the bar from flipping to the wrong side in normal opening positions.
+
+**PGN export: SAN disambiguation**
+The move notation generator now correctly disambiguates when two pieces of the same type can both reach the same square (e.g. `Nbd2` vs `Nfd2`, `Rfe1` vs `Rae1`). Previously the engine emitted bare `Nd2` which Lichess and other tools rejected as ambiguous. Fix covers knights, bishops, rooks, and queens. Both the in-game SAN generator and the book/analysis notation helper are updated.
+
+**Commentator: expanded funny commentary**
+The 🎉 Playful style now has richer variety. New phrases added for all piece types (pawns, knights, bishops, rooks, queens, king) in both Spanish and English — covering piece moves, captures, checks, and blunders. Each category now has 3–5 options with rotation to avoid repetition.
 
 ---
 

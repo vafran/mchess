@@ -194,19 +194,41 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ## Lo nuevo en v2.23.0 — *Publicación de Producción*
 
-### 🚀 Motor: Cinco Mejoras Acumuladas
+Sustituye a v2.22.5 (~1732 ELO, 27,5%) como versión de producción. Incluye diez parches de motor, un rediseño completo de la interfaz y mejoras pedagógicas significativas.
 
-v2.23.0 es la primera publicación de producción bajo la nueva disciplina de un parche por versión. Incluye cinco mejoras validadas del ciclo de desarrollo v2.22.x:
+### 🚀 Motor: Diez Mejoras Acumuladas (v2.22.6 → v2.22.15)
 
-- **v2.22.11** — Filtro anti-colgadas extendido a capturas perdedoras (SEE < 0 en capturas ahora activa el filtro)
-- **v2.22.12** — Puerta de Centralización del Rey: el bono de actividad del rey en el final ahora tiene una comprobación para evitar puntuaciones fantasma de caminata del rey en el mediojuego
-- **v2.22.13** — Ceguera de repetición corregida: las jugadas raíz que repiten la posición 2+ veces reciben −9000 (evitar) en lugar de jugarse normalmente; confirmadas 266 activaciones en un torneo de 32 partidas
-- **v2.22.14** — Puerta BLOCKED del filtro anti-colgadas reducida de 100cp a 50cp, evitando el falso positivo tipo G26 donde una captura de pieza fuerte era incorrectamente bloqueada
-- **v2.22.15** — Torre en 7.ª fila: bono tapered de +40cp en mediojuego / +25cp en final para torres en la 7.ª fila
+Cada parche fue validado con un torneo dedicado antes de su inclusión.
+
+- **v2.22.6** — Regla del Cuadrado: bug de evaluación fantasma eliminado (otorgaba hasta +942cp por peones pasados en cualquier final)
+- **v2.22.7/10** — Filtro anti-colgadas: puerta BLOCKED(mate) añadida; puerta BLOCKED(worse) refinada
+- **v2.22.8/9** — PASS_DANGER: bug de asimetría corregido; valor base reducido para evitar tablas maratonianas
+- **v2.22.11** — Filtro anti-colgadas extendido a capturas perdedoras (SEE < 0 en capturas)
+- **v2.22.12** — Puerta de Centralización del Rey: bono de actividad limitado a finales genuinos
+- **v2.22.13** — Ceguera de repetición corregida: jugadas repetidas reciben −9000; confirmadas 266 activaciones en 32 partidas
+- **v2.22.14** — Puerta BLOCKED reducida de 100cp a 50cp
+- **v2.22.15** — Torre en 7.ª fila: bono tapered +40cp MG / +25cp EG
 
 **Resultados del torneo (40 partidas cada uno, PC, UCI_Elo 1750):**
 - Nivel Mago (15s/jugada): 11V 7E 22D — **36,3% — ~1652 ELO [IC: 1542–1762]**
 - Nivel Rey Sabio (30s/jugada): 21V 7E 12D — **61,3% — ~1830 ELO [IC: 1721–1938]**
+
+### 🎓 Mejoras Pedagógicas y del Comentarista
+
+- **Detección de colgadas en la apertura** — el comentarista marca piezas colgadas desde la jugada 1; el Modo Entrenamiento también avisa cuando el jugador ignora una dama o torre ya bajo ataque
+- **Desambiguación PGN** — la notación SAN emite correctamente `Cbd2`/`Tfe1` cuando dos piezas del mismo tipo pueden alcanzar la misma casilla; la importación en Lichess/Chess.com ya no rechaza las exportaciones
+- **Precisión de la barra de ventaja** — mapeo sigmoidal (tanh) sustituye la escala lineal; coincide con el comportamiento de Lichess y no satura en ±700cp
+- **Calidad de jugada con 7 niveles** — colgada / error / imprecisión / neutral / bien / buena / muy buena / brillante, cada uno con emoji y mensaje distintos
+- **Comentarista modo divertido ampliado** — frases más variadas para todos los tipos de pieza en español e inglés
+- **Correcciones de falsos positivos del Profesor** — puerta de sacrificio, guardia worstEval, umbral ajustado
+
+### 🖥️ Rediseño de Interfaz
+
+- **Carrusel de jugadas** — tira horizontal compacta bajo el tablero; sustituye el listado lateral
+- **Disposición responsiva renovada** — tablero + barra de ventaja en fila 1, tira de jugadas en fila 2
+- **Barra superior rediseñada** — título integrado, menú hamburguesa en línea
+- **Etiquetas de estilo en aperturas** — cada sugerencia muestra una insignia de color (⚡ Agresiva, 🧱 Sólida, 🔀 Flexible…)
+- **Frases dinámicas de jugadas de libro** — comentarios variados cuando se juega una jugada teórica
 
 ---
 
