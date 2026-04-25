@@ -117,6 +117,12 @@ El generador de notación de jugadas ahora desambigua correctamente cuando dos p
 **Comentarista: frases graciosas ampliadas**
 El estilo 🎉 Divertido ahora tiene más variedad. Se añaden nuevas frases para todos los tipos de pieza (peones, caballos, alfiles, torres, damas, rey) en español e inglés — para movimientos, capturas, jaques y errores graves. Cada categoría ahora tiene 3–5 opciones con rotación para evitar repetición.
 
+**Panel "¿Qué hago?" — reducción de ruido**
+El panel "¿Qué hago?" ya no muestra el aviso de piezas colgadas ni las notas de amenaza por rayo X. Esos avisos pertenecen al Ojo Halcón (que dibuja flechas directamente en el tablero), no como preámbulo antes de las sugerencias de jugada. El panel se centra ahora en jugadas accionables, manteniendo los dos botones claramente separados.
+
+**Notas de rescate defensivo — estilo de urgencia**
+Cuando una jugada sugerida rescata una pieza que ya está bajo ataque, la nota en línea ahora usa un estilo de aviso ámbar (⚠️ con borde izquierdo naranja) en lugar de un tilde verde. El verde se leía como "bonificación extra"; el ámbar transmite correctamente "esta pieza está en peligro — esta jugada la salva".
+
 ---
 
 ---

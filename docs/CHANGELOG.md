@@ -116,6 +116,12 @@ The move notation generator now correctly disambiguates when two pieces of the s
 **Commentator: expanded funny commentary**
 The 🎉 Playful style now has richer variety. New phrases added for all piece types (pawns, knights, bishops, rooks, queens, king) in both Spanish and English — covering piece moves, captures, checks, and blunders. Each category now has 3–5 options with rotation to avoid repetition.
 
+**Coach "What should I do?" — noise reduction**
+The "What should I do?" panel no longer shows a hanging-piece warning banner or X-ray threat notes. Those warnings belong in Hawk Eye (which draws arrows directly on the board) — not as a preamble before the move suggestions. The panel now focuses purely on actionable moves, keeping the two tools clearly separated.
+
+**Defensive rescue notes — urgency styling**
+When a suggested move rescues a piece that is already under attack, the inline note now uses amber warning styling (⚠️ with an orange left border) instead of a green checkmark. Green read as "nice bonus"; amber correctly conveys "this piece is in danger — this move saves it."
+
 ---
 
 ---
