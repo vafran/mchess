@@ -1532,6 +1532,137 @@ limitations under the License.
       font-size: 1.1rem;
     }
 
+    /* ── Profile Modal ─────────────────────── */
+    .profile-box {
+      background: var(--card, rgba(255,255,255,0.96));
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 2px solid rgba(168,85,247,0.18);
+      box-shadow: var(--shadow);
+      padding: 28px 28px 24px;
+      width: min(560px, 94vw);
+      max-height: 88vh;
+      overflow-y: auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .profile-close {
+      position: absolute;
+      top: 14px; right: 16px;
+      background: rgba(168,85,247,0.10);
+      border: none; border-radius: 50%;
+      width: 32px; height: 32px;
+      font-size: 1rem; cursor: pointer;
+      color: var(--text); line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .profile-close:hover { background: rgba(168,85,247,0.22); }
+    .profile-hero {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .profile-avatar-wrap {
+      font-size: 3.4rem; line-height: 1;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 50%; width: 72px; height: 72px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(168,85,247,0.25);
+    }
+    .profile-player-name {
+      font-size: 1.35rem; font-weight: 800;
+      color: var(--text);
+    }
+    .profile-headline {
+      font-size: 0.9rem; color: var(--text-light);
+      margin-top: 2px;
+    }
+    .profile-section-title {
+      font-size: 1rem; font-weight: 700;
+      color: var(--text-light);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding-bottom: 4px; margin-bottom: 8px;
+    }
+    .profile-stat-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .profile-stat-chip {
+      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168,85,247,0.15);
+      border-radius: 12px; padding: 8px 14px;
+      font-size: 0.9rem; color: var(--text);
+      flex: 1; min-width: 80px; text-align: center;
+    }
+    .profile-stat-chip strong { display: block; font-size: 1.3rem; color: var(--primary); }
+    .profile-bot-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 7px; font-size: 0.88rem;
+    }
+    .profile-bot-label {
+      min-width: 120px; color: var(--text); font-weight: 600;
+    }
+    .profile-bot-bar-wrap {
+      flex: 1; display: flex; height: 14px; border-radius: 8px; overflow: hidden;
+      background: rgba(168,85,247,0.08);
+    }
+    .profile-bot-bar-w { background: #22c55e; }
+    .profile-bot-bar-d { background: #f59e0b; }
+    .profile-bot-bar-l { background: #ef4444; }
+    .profile-bot-tally {
+      min-width: 72px; text-align: right; color: var(--text-light); font-size: 0.8rem;
+    }
+    .profile-records-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .profile-record-chip {
+      background: rgba(168,85,247,0.06);
+      border: 1px solid rgba(168,85,247,0.12);
+      border-radius: 10px; padding: 6px 12px;
+      font-size: 0.85rem; color: var(--text); flex: 1; min-width: 100px;
+    }
+    .profile-record-chip span { display: block; font-size: 0.75rem; color: var(--text-light); }
+    .profile-cat-header {
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--text-light);
+      margin: 10px 0 6px;
+    }
+    .trophy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+      gap: 8px;
+    }
+    .trophy-card {
+      border-radius: 14px; padding: 10px 10px 8px;
+      text-align: center; font-size: 0.78rem;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      border: 1px solid rgba(168,85,247,0.12);
+      background: rgba(168,85,247,0.04);
+      transition: transform 0.12s;
+    }
+    .trophy-card:hover { transform: translateY(-2px); }
+    .trophy-card.unlocked {
+      background: linear-gradient(135deg, rgba(168,85,247,0.10), rgba(244,114,182,0.08));
+      border-color: rgba(168,85,247,0.3);
+    }
+    .trophy-card.locked { filter: grayscale(0.7); opacity: 0.6; }
+    .trophy-card.mystery { opacity: 0.5; }
+    .trophy-icon { font-size: 1.9rem; line-height: 1.1; }
+    .trophy-name { font-weight: 700; color: var(--text); font-size: 0.8rem; }
+    .trophy-desc { color: var(--text-light); font-size: 0.72rem; line-height: 1.3; }
+    .trophy-date { color: var(--primary); font-size: 0.70rem; margin-top: 2px; }
+    .profile-close-btn {
+      width: 100%; padding: 12px;
+      background: rgba(168,85,247,0.10);
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 14px; font-size: 1rem;
+      font-family: inherit; font-weight: 700;
+      color: var(--text); cursor: pointer;
+      transition: background 0.15s;
+    }
+    .profile-close-btn:hover { background: rgba(168,85,247,0.20); }
+
     /* ── Screen system ─────────────────────── */
     .screen-overlay {
       position: fixed;
@@ -2438,6 +2569,7 @@ limitations under the License.
         <button class="menu-btn secondary" id="btnQuickAi" onclick="quickNewGame('ai')"
           style="flex:1; font-size:0.85rem; padding:10px 6px;">🤖 vs IA</button>
       </div>
+      <button class="menu-btn secondary" id="btnOpenProfile" onclick="openProfileModal(); closeIngameMenu();">🏆 Mi Perfil</button>
       <button class="menu-btn secondary" id="btnIngameOptions" onclick="showIngameOptions()">&#9881;&#65039;
         Opciones</button>
       <button class="menu-btn secondary" id="btnRestartGameMenu" onclick="newGameFromMenu()">&#128260; Reiniciar
@@ -2634,6 +2766,13 @@ limitations under the License.
         <button class="btn btn-danger" id="btnSideMenu" onclick="openIngameMenu()" style="width:100%; margin-top:4px;">☰ Menú</button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="confirm-modal" id="profileModal" style="z-index:400;" onclick="if(event.target===this)closeProfileModal()">
+    <div class="profile-box" id="profileBoxContent">
+      <!-- populated dynamically by openProfileModal() -->
     </div>
   </div>
 
@@ -3708,7 +3847,26 @@ limitations under the License.
         diffLabel: '💪 Dificultad',
         sliderSerious: '🧐 Serio',
         sliderMixed: '⚖️ Mixto',
-        sliderFunny: '🎉 Divertido'
+        sliderFunny: '🎉 Divertido',
+        btnOpenProfile: '🏆 Mi Perfil',
+        profileTitle: 'Tu Perfil',
+        profileStatsTitle: '📊 Estadísticas',
+        profileGames: 'Partidas',
+        profileWinRate: 'Victorias',
+        profileWins: 'V', profileDraws: 'E', profileLosses: 'D',
+        profileRecords: '🏅 Récords',
+        profileFastestWin: 'Victoria más rápida',
+        profileHighestEval: 'Mayor ventaja en victoria',
+        profileMoves: 'movs.',
+        profileTrophiesTitle: '🏆 Vitrina de Trofeos',
+        profileCat1: '🏅 Progresión',
+        profileCat2: '🧠 Técnico',
+        profileCat3: '🥚 Easter Eggs',
+        profileCat4: '📜 Los Historiadores',
+        profileLocked: 'Bloqueado',
+        profileUnlockedOn: 'Desbloqueado:',
+        profileClose: 'Cerrar',
+        profileNone: '—'
 
       },
       en: {
@@ -3765,7 +3923,26 @@ limitations under the License.
         diffLabel: '💪 Difficulty',
         sliderSerious: '🧐 Serious',
         sliderMixed: '⚖️ Mixed',
-        sliderFunny: '🎉 Playful'
+        sliderFunny: '🎉 Playful',
+        btnOpenProfile: '🏆 My Profile',
+        profileTitle: 'Your Profile',
+        profileStatsTitle: '📊 Statistics',
+        profileGames: 'Games',
+        profileWinRate: 'Win Rate',
+        profileWins: 'W', profileDraws: 'D', profileLosses: 'L',
+        profileRecords: '🏅 Records',
+        profileFastestWin: 'Fastest win',
+        profileHighestEval: 'Best eval on win',
+        profileMoves: 'moves',
+        profileTrophiesTitle: '🏆 Trophy Cabinet',
+        profileCat1: '🏅 Progression',
+        profileCat2: '🧠 Technical',
+        profileCat3: '🥚 Easter Eggs',
+        profileCat4: '📜 The Historians',
+        profileLocked: 'Locked',
+        profileUnlockedOn: 'Unlocked:',
+        profileClose: 'Close',
+        profileNone: '—'
       }
     };
 
@@ -3883,7 +4060,7 @@ limitations under the License.
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
         colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
         optionsTitle: 'optionsTitle', optionsLanguageLabel: 'languageLabel', optionsThemeLabel: 'themeLabel', commentaryStyleLabel: 'commentaryStyle', btnOptionsBack: 'backMenu', optionsLoadFenLabel: 'loadFen',
-        ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
+        ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnOpenProfile: 'btnOpenProfile', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
         btnQuickPvp: 'quickPvp', btnQuickAi: 'quickAi',
         ingameOptionsTitle: 'optionsTitle', igCommentaryStyleLabel: 'commentaryStyle',
         igLanguageLabel: 'languageLabel', igModeLabel: 'modeLabel', igDiffLabel: 'diffLabel', igThemeLabel: 'themeLabel', igOptionsBack: 'backMenu',
@@ -5678,6 +5855,132 @@ limitations under the License.
       }
       // Hide the end-game banner so the player can analyse the final position
       document.getElementById('statusBanner').classList.remove('show');
+    }
+
+    // ── Profile Modal ────────────────────────────────────────────────────────
+
+    function openProfileModal() {
+      const p = currentProfile;
+      const box = document.getElementById('profileBoxContent');
+      const L = currentLanguage;
+      const _ = (k) => t(k);
+
+      // Determine avatar: highest bot level with at least 1 win
+      const levels = ['grandmaster','hard','medium','easy'];
+      const avatarLevel = levels.find(lv => p && p.bots[lv] && p.bots[lv].w > 0);
+      const avatarEmoji = avatarLevel ? (characterDialogs[avatarLevel]?.emoji || '♟️') : '♟️';
+      const avatarTitle = avatarLevel ? (characterDialogs[avatarLevel]?.name[L] || '') : '';
+
+      const totalGames = p ? p.stats.totalGames : 0;
+      const winRate = totalGames > 0 ? Math.round((p.stats.totalWins / totalGames) * 100) : 0;
+      const fastestWin = p?.records?.fastestWin;
+      const highestEval = p?.records?.highestEvalWin;
+
+      // Bot bar helper
+      function botBar(lv) {
+        const b = p?.bots[lv] || {w:0,d:0,l:0};
+        const total = b.w + b.d + b.l || 1;
+        const wPct = (b.w/total*100).toFixed(1);
+        const dPct = (b.d/total*100).toFixed(1);
+        const lPct = (b.l/total*100).toFixed(1);
+        const ch = characterDialogs[lv];
+        const emoji = ch?.emoji || '♟️';
+        const name  = ch?.name[L] || lv;
+        return `<div class="profile-bot-row">
+          <span class="profile-bot-label">${emoji} ${name}</span>
+          <div class="profile-bot-bar-wrap">
+            <div class="profile-bot-bar-w" style="width:${wPct}%"></div>
+            <div class="profile-bot-bar-d" style="width:${dPct}%"></div>
+            <div class="profile-bot-bar-l" style="width:${lPct}%"></div>
+          </div>
+          <span class="profile-bot-tally">${b.w}${_('profileWins')} ${b.d}${_('profileDraws')} ${b.l}${_('profileLosses')}</span>
+        </div>`;
+      }
+
+      // Trophy cabinet helper
+      function trophySection(catNum, catKey) {
+        const ids = Object.entries(TROPHY_DEFS).filter(([,d]) => d.cat === catNum).map(([id]) => id);
+        const unlockedSet = new Set((p?.unlockedTrophies || []).map(t => t.id));
+        const cards = ids.map(id => {
+          const def = TROPHY_DEFS[id];
+          const unlocked = unlockedSet.has(id);
+          const isHidden = def.hidden && !unlocked;
+          if (isHidden) {
+            return `<div class="trophy-card mystery">
+              <div class="trophy-icon">❓</div>
+              <div class="trophy-name">???</div>
+              <div class="trophy-desc">???</div>
+            </div>`;
+          }
+          const name = def.name[L] || def.name.es;
+          const desc = def.desc[L] || def.desc.es;
+          const dateStr = unlocked
+            ? `${_('profileUnlockedOn')} ${new Date((p.unlockedTrophies.find(t=>t.id===id)||{}).unlockedAt||'').toLocaleDateString()}`
+            : `🔒 ${_('profileLocked')}`;
+          return `<div class="trophy-card ${unlocked?'unlocked':'locked'}">
+            <div class="trophy-icon">${def.icon}</div>
+            <div class="trophy-name">${name}</div>
+            <div class="trophy-desc">${desc}</div>
+            <div class="trophy-date">${dateStr}</div>
+          </div>`;
+        }).join('');
+        return `<div class="profile-cat-header">${_('profileCat'+catNum)}</div>
+                <div class="trophy-grid">${cards}</div>`;
+      }
+
+      const fastestWinText = fastestWin !== null && fastestWin !== undefined
+        ? `${fastestWin} ${_('profileMoves')}`
+        : _('profileNone');
+      const highestEvalText = highestEval !== null && highestEval !== undefined
+        ? `+${highestEval}cp`
+        : _('profileNone');
+
+      box.innerHTML = `
+        <button class="profile-close" onclick="closeProfileModal()" title="${_('profileClose')}">✕</button>
+        <div class="profile-hero">
+          <div class="profile-avatar-wrap">${avatarEmoji}</div>
+          <div>
+            <div class="profile-player-name">${p?.playerName || 'Player 1'}</div>
+            <div class="profile-headline">${avatarTitle ? avatarTitle : '—'}</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="profile-section-title">${_('profileStatsTitle')}</div>
+          <div class="profile-stat-row">
+            <div class="profile-stat-chip"><strong>${totalGames}</strong>${_('profileGames')}</div>
+            <div class="profile-stat-chip"><strong>${winRate}%</strong>${_('profileWinRate')}</div>
+            <div class="profile-stat-chip"><strong>${p?.stats?.totalWins||0}</strong>🏆</div>
+          </div>
+          <div style="margin-top:10px;">
+            ${botBar('easy')}${botBar('medium')}${botBar('hard')}${botBar('grandmaster')}
+          </div>
+        </div>
+
+        <div>
+          <div class="profile-section-title">${_('profileRecords')}</div>
+          <div class="profile-records-row">
+            <div class="profile-record-chip"><span>${_('profileFastestWin')}</span>${fastestWinText}</div>
+            <div class="profile-record-chip"><span>${_('profileHighestEval')}</span>${highestEvalText}</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="profile-section-title">${_('profileTrophiesTitle')}</div>
+          ${trophySection(1,'profileCat1')}
+          ${trophySection(2,'profileCat2')}
+          ${trophySection(3,'profileCat3')}
+          ${trophySection(4,'profileCat4')}
+        </div>
+
+        <button class="profile-close-btn" onclick="closeProfileModal()">${_('profileClose')}</button>
+      `;
+
+      document.getElementById('profileModal').classList.add('show');
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profileModal').classList.remove('show');
     }
 
     // Show a character reaction bubble after the game ends
