@@ -14066,29 +14066,6 @@ limitations under the License.
             }
           }
 
-          // 🔭 X-Ray: latent threats through a blocker
-          // Only relevant after pieces have moved — starting position generates false positives
-          // because pieces are still on their home squares aligned along ranks/files.
-          if (history.length >= 4) {
-            for (let r = 0; r < 8; r++) {
-              for (let c = 0; c < 8; c++) {
-                const p = board[r][c];
-                if (!p || p === ' ' || colorOf(p) !== sideToAnalyze) continue;
-                if ((PIECE_VALUES[p.toUpperCase()] || 0) <= 10) continue;
-                const safety = evaluateSquareSafety(r, c, sideToAnalyze, board, enemyColor);
-                if (safety.hasXRayThreat && safety.isSafe) {
-                  const pName = getLocalizedPieceName(p);
-                  const sq = sqName(r, c);
-                  const xName = safety.xrayThreats[0] ? getLocalizedPieceName(safety.xrayThreats[0].piece) : (en ? 'a piece' : 'una pieza');
-                  contextNotes.push(en
-                    ? `🔭 Your ${pName} on ${sq} looks safe but an enemy ${xName} targets it through a blocker — watch out if that piece moves.`
-                    : `🔭 Tu ${pName} en ${sq} parece segura pero ${getPieceArticle(safety.xrayThreats[0] ? safety.xrayThreats[0].piece : ' ', 'indef')} ${xName} enemigo la apunta a través de un bloqueador — ojo si esa pieza se mueve.`);
-                  break; // one X-Ray warning is enough
-                }
-              }
-            }
-          }
-
           // ♟️ Passed pawn close to promotion
           const myPawnCh = sideToAnalyze === 'w' ? 'P' : 'p';
           const enPawnCh = sideToAnalyze === 'w' ? 'p' : 'P';
@@ -14366,7 +14343,7 @@ limitations under the License.
           ? `<div style="margin-bottom:10px; padding:8px 10px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); font-size:0.82rem;">${t('emergencyCoachLine')}</div>`
           : '';
 
-        pList.innerHTML = `${panicMsg}${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
+        pList.innerHTML = `${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
 
       } catch (err) {
         pList.innerHTML = `<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`;
