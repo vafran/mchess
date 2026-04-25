@@ -2401,7 +2401,7 @@ limitations under the License.
             oninput="setCommentaryStyleByLevel(this.value)" style="width: 100%; height: 32px; cursor: pointer;">
           <div
             style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-light); margin-top:-2px; padding:0 2px;">
-            <span>🧐 Serio</span><span>⚖️ Mixto</span><span>🎉 Divertido</span>
+            <span id="optSliderSerious">🧐 Serio</span><span id="optSliderMixed">⚖️ Mixto</span><span id="optSliderFunny">🎉 Divertido</span>
           </div>
         </div>
         <div id="optCommentaryStyleValue"
@@ -2454,7 +2454,7 @@ limitations under the License.
       <div style="font-size:2rem;">&#9881;&#65039;</div>
       <div class="menu-title" id="ingameOptionsTitle" style="font-size:1.2rem;">Opciones</div>
 
-      <span class="options-label">🌐 Idioma</span>
+      <span class="options-label" id="igLanguageLabel">🌐 Idioma</span>
       <div style="margin-top:6px; margin-bottom:8px;">
         <select id="igLangSelect" class="lang-select" onchange="setLanguage(this.value)"
           style="width:100%; padding:8px; border:1px solid rgba(168,85,247,0.25); border-radius:10px; background:rgba(255,255,255,0.75);">
@@ -2463,13 +2463,13 @@ limitations under the License.
         </select>
       </div>
 
-      <span class="options-label">&#128106; Modo de Juego</span>
+      <span class="options-label" id="igModeLabel">&#128106; Modo de Juego</span>
       <div class="options-diff-row" style="margin-bottom: 8px;">
         <button class="options-diff-btn active" id="igModePvP" onclick="setOptionMode('pvp')">Amigo</button>
         <button class="options-diff-btn" id="igModeAI" onclick="setOptionMode('ai')">vs IA</button>
       </div>
 
-      <span class="options-label">&#128170; Dificultad</span>
+      <span class="options-label" id="igDiffLabel">&#128170; Dificultad</span>
       <div class="options-diff-row">
         <button class="options-diff-btn active" id="igDiffEasy" onclick="setOptionDifficulty('easy')">&#128522;
           Fácil</button>
@@ -2480,7 +2480,7 @@ limitations under the License.
         <button class="options-diff-btn" id="igDiffGrandmaster" onclick="setOptionDifficulty('grandmaster')">&#128081;
           Maestro</button>
       </div>
-      <span class="options-label" style="margin-top:8px;">&#127912; Tema</span>
+      <span class="options-label" id="igThemeLabel" style="margin-top:8px;">&#127912; Tema</span>
       <div class="options-theme-row">
         <button class="theme-btn active" id="igThemeMagic" onclick="setTheme('magic'); highlightOptionTheme('magic')"
           title="Mágico">🦄</button>
@@ -2501,13 +2501,13 @@ limitations under the License.
           oninput="setCommentaryStyleByLevel(this.value)" style="width: 100%; height: 32px; cursor: pointer;">
         <div
           style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-light); margin-top:-2px; padding:0 2px;">
-          <span>🧐 Serio</span><span>⚖️ Mixto</span><span>🎉 Divertido</span>
+          <span id="igSliderSerious">🧐 Serio</span><span id="igSliderMixed">⚖️ Mixto</span><span id="igSliderFunny">🎉 Divertido</span>
         </div>
         <div id="igCommentaryStyleValue"
           style="margin-top:6px; font-size:0.82rem; color:var(--text-light); font-weight:700; text-align:center;">🎚️
           Mixto</div>
       </div>
-      <button class="menu-btn secondary" style="margin-top:8px;" onclick="closeIngameOptions()">&#8592; Volver</button>
+      <button class="menu-btn secondary" id="igOptionsBack" style="margin-top:8px;" onclick="closeIngameOptions()">&#8592; Volver</button>
     </div>
   </div>
 
@@ -3504,7 +3504,12 @@ limitations under the License.
         confirmSettingsTitle: '⚠️ ¿Cambiar opciones?',
         confirmSettingsDesc: 'Cambiar esto en medio de una partida hará que el tablero se reinicie. ¿Estás seguro de que quieres continuar?',
         confirmSettingsCancel: 'Cancelar',
-        confirmSettingsOk: 'Sí, cambiar y reiniciar'
+        confirmSettingsOk: 'Sí, cambiar y reiniciar',
+        modeLabel: '👥 Modo de Juego',
+        diffLabel: '💪 Dificultad',
+        sliderSerious: '🧐 Serio',
+        sliderMixed: '⚖️ Mixto',
+        sliderFunny: '🎉 Divertido'
 
       },
       en: {
@@ -3556,7 +3561,12 @@ limitations under the License.
         confirmSettingsTitle: '⚠️ Change settings?',
         confirmSettingsDesc: 'Changing this mid-game will reset the board. Are you sure you want to continue?',
         confirmSettingsCancel: 'Cancel',
-        confirmSettingsOk: 'Yes, change and restart'
+        confirmSettingsOk: 'Yes, change and restart',
+        modeLabel: '👥 Game Mode',
+        diffLabel: '💪 Difficulty',
+        sliderSerious: '🧐 Serious',
+        sliderMixed: '⚖️ Mixed',
+        sliderFunny: '🎉 Playful'
       }
     };
 
@@ -3677,6 +3687,9 @@ limitations under the License.
         ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
         btnQuickPvp: 'quickPvp', btnQuickAi: 'quickAi',
         ingameOptionsTitle: 'optionsTitle', igCommentaryStyleLabel: 'commentaryStyle',
+        igLanguageLabel: 'languageLabel', igModeLabel: 'modeLabel', igDiffLabel: 'diffLabel', igThemeLabel: 'themeLabel', igOptionsBack: 'backMenu',
+        optSliderSerious: 'sliderSerious', optSliderMixed: 'sliderMixed', optSliderFunny: 'sliderFunny',
+        igSliderSerious: 'sliderSerious', igSliderMixed: 'sliderMixed', igSliderFunny: 'sliderFunny',
         tabCommentary: 'tabCommentary', tabProfessor: 'tabProfessor',
         btnCommentaryUp: 'scrollUp', btnCommentaryDown: 'scrollDown', btnProfessorUp: 'scrollUp', btnProfessorDown: 'scrollDown',
         btnProfessorAnalysis: 'btnAnalysis', btnProfessorBest: 'btnWhatDo', btnProfessorWasGood: 'btnWasGood',
