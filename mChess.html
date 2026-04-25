@@ -1575,6 +1575,15 @@ limitations under the License.
       font-size: 1.35rem; font-weight: 800;
       color: var(--text);
     }
+    .profile-name-input {
+      font-size: 1.35rem; font-weight: 800;
+      color: var(--text); font-family: inherit;
+      background: none; border: none;
+      border-bottom: 2px dashed rgba(168,85,247,0.35);
+      padding: 0 2px 1px; width: 180px; max-width: 100%;
+      outline: none; transition: border-color 0.15s;
+    }
+    .profile-name-input:focus { border-bottom-color: var(--primary); }
     .profile-headline {
       font-size: 0.9rem; color: var(--text-light);
       margin-top: 2px;
@@ -5963,7 +5972,11 @@ limitations under the License.
         <div class="profile-hero">
           <div class="profile-avatar-wrap">${avatarEmoji}</div>
           <div>
-            <div class="profile-player-name">${p?.playerName || 'Player 1'}</div>
+            <input class="profile-name-input" id="profileNameInput"
+              value="${(p?.playerName || 'Player 1').replace(/"/g,'&quot;')}"
+              maxlength="24" spellcheck="false"
+              onblur="saveProfileName(this.value)"
+              onkeydown="if(event.key==='Enter'){this.blur();}">
             <div class="profile-headline">${avatarTitle ? avatarTitle : '—'}</div>
           </div>
         </div>
@@ -6004,6 +6017,15 @@ limitations under the License.
 
     function closeProfileModal() {
       document.getElementById('profileModal').classList.remove('show');
+    }
+
+    function saveProfileName(value) {
+      if (!currentProfile) return;
+      const name = value.trim() || 'Player 1';
+      currentProfile.playerName = name;
+      saveProfile();
+      const input = document.getElementById('profileNameInput');
+      if (input) input.value = name;
     }
 
     // Show a character reaction bubble after the game ends
