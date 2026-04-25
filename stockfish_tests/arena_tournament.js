@@ -431,7 +431,8 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
     console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${sfConfigs.length} opponent(s)`);
     sfConfigs.forEach(c => console.log(`   [${sfConfigTag(c)}] → ~${getSFElo(c)} ELO  (${sfConfigLabel(c)})`));
 
-    const estMinPerGame = 22;
+    // ~11 min/game at Wizard (15s budget), ~22 min/game at Wise King (30s budget)
+    const estMinPerGame = (selectedLevel === 'grandmaster') ? 22 : 11;
     const estTotal = n * sfConfigs.length * estMinPerGame;
     console.log(`\n⏱️  Estimated time: ~${estTotal} min (~${(estTotal / 60).toFixed(1)}h)`);
     console.log(`💾 Results will save to: ${CONFIG.logFile}`);
@@ -743,8 +744,9 @@ async function runTournament() {
     let n = fenList.length > 0 ? fenList.length * sfConfigs.length : 0;
     if (!fenReplayMode || fenList.length === 0) {
         console.log('\nNumber of games per opponent:');
-        console.log('  10 games → ±108 ELO precision  (~50-90 min on average PC)');
-        console.log('  20 games → ±76  ELO precision  (~2-3h)   ← recommended');
+        console.log('  10 games → ±108 ELO precision  (~2h Wizard / ~4h Wise King)');
+        console.log('  20 games → ±76  ELO precision  (~4h Wizard / ~7-8h Wise King)   ← recommended');
+        console.log('  40 games → ±54  ELO precision  (~7.5h Wizard / ~14-16h Wise King) ← required for main PR');
         const nAns = (await ask('Games per opponent (enter=10): ')).trim();
         n = Math.max(2, parseInt(nAns) || 10);
         console.log(`✅ ${n} games × ${sfConfigs.length} opponent(s) = ${n * sfConfigs.length} total games`);
@@ -759,9 +761,10 @@ async function runTournament() {
 
 // ── CLI entry point ──────────────────────────────────────────────────────
 // Interactive: node arena_tournament.js
-// Batch (depth): node arena_tournament.js --batch --depth 7 --games 30
-// Batch (UCI_Elo): node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 30
-// Batch (Skill):   node arena_tournament.js --batch --sf-mode skill_level --sf-value 3 --games 30
+// Batch (depth): node arena_tournament.js --batch --depth 7 --games 20
+// Batch (UCI_Elo 20g dev, ~4h at Wizard): node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
+// Batch (UCI_Elo 40g release, ~7.5h at Wizard): node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 40
+// Batch (Skill):   node arena_tournament.js --batch --sf-mode skill_level --sf-value 3 --games 20
 const _args = process.argv.slice(2);
 if (_args.includes('--batch')) {
     const _get = (f, d) => { const i = _args.indexOf(f); return i >= 0 && _args[i + 1] ? _args[i + 1] : d; };
