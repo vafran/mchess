@@ -9,11 +9,11 @@ const fs         = require('fs');
 //
 //  Dos modos mutuamente excluyentes (no se mezclan por turno):
 //
-//  'whatToDo'  → pregunta "¿Qué hago ahora?" ANTES de que mChess mueva.
-//                Registra qué sugirió el profesor y qué jugó mChess realmente.
+//  'whatToDo'  → pregunta "¿Qué hago ahora?" ANTES de que Airin mueva.
+//                Registra qué sugirió el profesor y qué jugó Airin realmente.
 //                Útil para medir calidad de las sugerencias.
 //
-//  'wasItGood' → deja jugar a mChess primero, luego inyecta los snapshots
+//  'wasItGood' → deja jugar a Airin primero, luego inyecta los snapshots
 //                correctos y llama a analyzeLastMove().
 //                SIN memoria de sugerencias previas (lastProfessorSuggestions=null)
 //                para que el análisis sea honesto, no "¡seguiste mi consejo!".
@@ -28,7 +28,7 @@ const CONFIG = {
     htmlFile:      path.join(__dirname, '../mChess.html'),
     stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish.exe'),
     outputFile:    path.join(__dirname, 'pedagogical_audit_log.json'),
-    mChessLevel:   'medium',
+    AirinLevel:   'medium',
     sfDepth:       7,
     numGames:      2,
     moveTimeoutMs: 60000,
@@ -38,7 +38,7 @@ const CONFIG = {
 
 // ── Inyectar FEN en los globales del motor sin efectos secundarios ──────────
 // Esto es lo que faltaba en v3.x: syncBoard usaba game.reset() (chess.js API)
-// que no existe en mChess. Esta función setea directamente board, castleRights,
+// que no existe en Airin. Esta función setea directamente board, castleRights,
 // enPassantTarget, turn, history, etc. tal y como lo hace loadPositionFromFEN.
 async function setPageFEN(page, fen, historyArr = []) {
     await page.evaluate((f, h) => {
@@ -98,8 +98,8 @@ async function getWhatToDoHints(page) {
 }
 
 // ── Preguntar "¿Fue buena mi jugada?" con snapshots correctos ────────────────
-// prevFen  = posición ANTES de la jugada de mChess
-// currFen  = posición DESPUÉS de la jugada de mChess
+// prevFen  = posición ANTES de la jugada de Airin
+// currFen  = posición DESPUÉS de la jugada de Airin
 // historyArr = historial de movimientos EN notación algebraica (chess.js history())
 async function getWasItGoodHints(page, prevFen, currFen, historyArr) {
     // 1. Inyectar snapshots + estado actual del tablero
@@ -261,11 +261,11 @@ async function promptConfig() {
     console.log('\n🎓 Pedagogical Audit v4.0');
     console.log('─────────────────────────────────────────');
     console.log('  1 → ¿Qué hago ahora?  (whatToDo)');
-    console.log('      El profesor sugiere ANTES de que mChess mueva.');
+    console.log('      El profesor sugiere ANTES de que Airin mueva.');
     console.log('      Mide la calidad de las sugerencias vs la jugada real.');
     console.log('');
     console.log('  2 → ¿Fue buena?        (wasItGood)');
-    console.log('      mChess mueve primero, luego el profesor analiza honestamente.');
+    console.log('      Airin mueve primero, luego el profesor analiza honestamente.');
     console.log('      Sin memoria de sugerencias previas — análisis real.');
     console.log('─────────────────────────────────────────');
 
@@ -278,7 +278,7 @@ async function promptConfig() {
     }
 
     console.log('');
-    console.log('  Nivel de mChess:');
+    console.log('  Nivel de Airin:');
     console.log('    1 → easy        (aleatorio, sin motor)');
     console.log('    2 → medium      (depth 4, recomendado para auditoría)');
     console.log('    3 → hard        (depth 6)');
@@ -286,7 +286,7 @@ async function promptConfig() {
     console.log('                     tarda mucho y la auditoría mide al Profesor, no al motor)');
     let level;
     while (true) {
-        const ans = await askQuestion('  Nivel mChess [1-4, defecto 2]: ');
+        const ans = await askQuestion('  Nivel Airin [1-4, defecto 2]: ');
         const map = { '1':'easy', '2':'medium', '3':'hard', '4':'grandmaster' };
         level = map[ans] || (ans === '' ? 'medium' : null);
         if (level) break;
@@ -307,7 +307,7 @@ async function runAudit() {
     const { mode, numGames, level } = await promptConfig();
     CONFIG.auditMode  = mode;
     CONFIG.numGames   = numGames;
-    CONFIG.mChessLevel = level;
+    CONFIG.AirinLevel = level;
     CONFIG.outputFile = path.join(__dirname, `pedagogical_audit_log_${mode}.json`);
 
     const browser = await puppeteer.launch({
@@ -328,7 +328,7 @@ async function runAudit() {
             aiDepth = DIFF_SETTINGS[level].depth;
             aiTimeLimit = DIFF_SETTINGS[level].timeLimit;
         }
-    }, CONFIG.mChessLevel);
+    }, CONFIG.AirinLevel);
 
     const auditLogs = [];
 
@@ -336,16 +336,16 @@ async function runAudit() {
         // Respawnear SF por partida — evita usar proceso muerto si timeout en partida anterior
         const sf = spawnSF();
         const game     = new Chess();
-        const mChessColor = (g % 2 === 0) ? 'w' : 'b';
-        console.log(`\n🎮 Game ${g+1}: mChess=${mChessColor === 'w' ? 'White' : 'Black'}`);
+        const AirinColor = (g % 2 === 0) ? 'w' : 'b';
+        console.log(`\n🎮 Game ${g+1}: Airin=${AirinColor === 'w' ? 'White' : 'Black'}`);
 
         while (!game.isGameOver()) {
             const fen  = game.fen();
             const turn = game.turn();
             let uciMove;
 
-            if (turn === mChessColor) {
-                // ── Turno de mChess ───────────────────────────────────────────
+            if (turn === AirinColor) {
+                // ── Turno de Airin ───────────────────────────────────────────
                 let professorHints = [];
 
                 if (CONFIG.auditMode === 'whatToDo') {
@@ -379,7 +379,7 @@ async function runAudit() {
                     }
                 }
 
-                if (!uciMove) { console.log('❌ mChess no devolvió jugada. Fin de partida.'); break; }
+                if (!uciMove) { console.log('❌ Airin no devolvió jugada. Fin de partida.'); break; }
 
                 // Ojo Halcón (sobre el FEN antes de la jugada)
                 await setPageFEN(page, fen, game.history());
@@ -409,7 +409,7 @@ async function runAudit() {
                 const entry = {
                     game:           g + 1,
                     ply:            game.history().length,
-                    color:          mChessColor,
+                    color:          AirinColor,
                     fen,
                     movePlayed:     uciMove,
                     depth,
@@ -424,7 +424,7 @@ async function runAudit() {
 
                 // Log en consola
                 const tipCount = professorHints.length;
-                console.log(`  👑 mChess: ${uciMove} [d${depth ?? '?'}] | Tips: ${tipCount} | Eval: ${evalScore != null ? evalScore.toFixed(1) : '?'}`);
+                console.log(`  👑 Airin: ${uciMove} [d${depth ?? '?'}] | Tips: ${tipCount} | Eval: ${evalScore != null ? evalScore.toFixed(1) : '?'}`);
                 if (tipCount > 0) console.log(`     💡 ${professorHints[0].slice(0, 140)}`);
                 if (lastCommentary) console.log(`     🎙️  ${lastCommentary.slice(0, 100)}`);
 
@@ -442,7 +442,7 @@ async function runAudit() {
         }
 
         const result = game.isCheckmate()
-            ? (game.turn() === mChessColor ? 'DERROTA' : 'VICTORIA')
+            ? (game.turn() === AirinColor ? 'DERROTA' : 'VICTORIA')
             : game.isDraw() ? 'TABLAS' : 'INTERRUMPIDA';
         console.log(`🏁 Partida ${g+1}: ${result} en ${game.history().length} jugadas`);
 

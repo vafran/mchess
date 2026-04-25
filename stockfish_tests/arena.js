@@ -9,10 +9,11 @@ async function runMatch() {
     
     const htmlPath = 'file://' + path.join(__dirname, '../mChess.html');
     
-    const browser = await puppeteer.launch({ 
+    const browser = await puppeteer.launch({
         headless: "new",
+        executablePath: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
         protocolTimeout: 120000,
-        args: ['--allow-file-access-from-files', '--no-sandbox'] 
+        args: ['--allow-file-access-from-files', '--no-sandbox']
     });
     
     const page = await browser.newPage();
@@ -79,11 +80,12 @@ async function runMatch() {
         let timeTaken = 0, depthInfo = null;
         if (turn === 'w') {
             process.stdout.write("🧠 mChess thinking...\n");
-            const positionHistory = game.history({ verbose: true }).map(m => m.after);
+            const sanHistory = game.history();
+            const fenHistory = game.history({ verbose: true }).map(m => m.after);
             const t0 = Date.now();
-            const result = await page.evaluate(async (f, h) => {
-                return await window.askWiseKing(f, h);
-            }, fen, positionHistory);
+            const result = await page.evaluate(async (f, h, p) => {
+                return await window.askWiseKing(f, h, p);
+            }, fen, sanHistory, fenHistory);
             timeTaken = (Date.now() - t0) / 1000;
             depthInfo = await page.evaluate(() => window._lastSearchDepth);
             move = typeof result === 'object' ? result.move || result : result;

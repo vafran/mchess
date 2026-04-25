@@ -6,7 +6,7 @@ const fs = require('fs');
 const readline = require('readline');
 
 // ═══════════════════════════════════════════════════════════════
-// 🏆 TOURNAMENT v2 — mChess vs Stockfish
+// 🏆 TOURNAMENT v2 — Airin vs Stockfish
 //    Fixes: color alternation, sample size, opening variety,
 //           multi-depth bracketing, phase tracking, CI output
 // ═══════════════════════════════════════════════════════════════
@@ -17,11 +17,11 @@ const CONFIG = {
     htmlFile: path.join(__dirname, '../mChess.html'),
     stockfishPath: process.env.STOCKFISH_PATH || path.join(__dirname, '..', 'stockfish'),
     logFile: path.join(__dirname, 'tournament_latest_results.json'),
-    moveTimeoutMs: 90000,   // 45s max per mChess move
+    moveTimeoutMs: 90000,   // 45s max per Airin move
     gameTimeoutMs: 3600000, // 1h per game
 };
 
-// ELO map (Lichess-calibrated approximations)
+// ELO map for depth mode — informal estimates, kept for historical comparisons
 const DEPTH_ELO = {
     1: 900, 2: 1100, 3: 1300, 4: 1450, 5: 1600,
     6: 1750, 7: 1900, 8: 2000, 9: 2100, 10: 2200,
@@ -37,6 +37,31 @@ function sfELO(d) {
         }
     }
     return 2200;
+}
+
+// Official Stockfish Skill Level → ELO (source: stockfish-wiki FAQ / official graph)
+const SKILL_LEVEL_ELO = {
+    0:1347, 1:1444, 2:1566, 3:1729, 4:1953, 5:2197, 6:2383, 7:2518, 8:2624, 9:2711,
+    10:2786, 11:2851, 12:2910, 13:2963, 14:3012, 15:3057, 16:3099, 17:3139, 18:3176, 19:3185, 20:3190
+};
+// sfConfig = { mode: 'depth' | 'uci_elo' | 'skill_level', value: N }
+function getSFElo(sfConfig) {
+    if (!sfConfig || sfConfig.mode === 'depth') return sfELO(sfConfig ? sfConfig.value : 7);
+    if (sfConfig.mode === 'uci_elo')     return sfConfig.value;
+    if (sfConfig.mode === 'skill_level') return SKILL_LEVEL_ELO[sfConfig.value] || 1347;
+    return 1900;
+}
+function sfConfigTag(sfConfig) {
+    if (!sfConfig || sfConfig.mode === 'depth') return `d${sfConfig ? sfConfig.value : 7}`;
+    if (sfConfig.mode === 'uci_elo')     return `ucielo${sfConfig.value}`;
+    if (sfConfig.mode === 'skill_level') return `sl${sfConfig.value}`;
+    return 'sf';
+}
+function sfConfigLabel(sfConfig) {
+    if (!sfConfig || sfConfig.mode === 'depth') return `depth ${sfConfig.value} (~${getSFElo(sfConfig)} ELO estimated)`;
+    if (sfConfig.mode === 'uci_elo')     return `UCI_Elo ${sfConfig.value} (official calibrated)`;
+    if (sfConfig.mode === 'skill_level') return `Skill Level ${sfConfig.value} (~${getSFElo(sfConfig)} ELO official)`;
+    return 'unknown';
 }
 
 // ── Opening book for variety ─────────────────────────────────
@@ -67,22 +92,23 @@ const OPENING_BOOK = [
 
 // ── Stats per depth ──────────────────────────────────────────
 class DepthStats {
-    constructor(depth) {
+    constructor(depth, sfConfig = null) {
         this.depth = depth;
-        this.sfELO = sfELO(depth);
+        this.sfConfig = sfConfig || { mode: 'depth', value: depth };
+        this.sfELO = sfConfig ? getSFElo(sfConfig) : sfELO(depth);
         this.games = [];
         this.npsLog = []; // NPS samples per move, for average
         this.wW = 0; this.wB = 0; // wins as white / black
         this.lW = 0; this.lB = 0; // losses
         this.dW = 0; this.dB = 0; // draws
     }
-    add(result, mChessColor, moves, reason, pgn, phase) {
+    add(result, AirinColor, moves, reason, pgn, phase) {
         this.games.push({
-            result, mChessColor, moves, reason, pgn, phase,
+            result, AirinColor, moves, reason, pgn, phase,
             ts: new Date().toISOString()
         });
-        const w = mChessColor === 'w';
-        if (result === 'mchess_win') { if (w) this.wW++; else this.wB++; }
+        const w = AirinColor === 'w';
+        if (result === 'airin_win') { if (w) this.wW++; else this.wB++; }
         else if (result === 'sf_win') { if (w) this.lW++; else this.lB++; }
         else { if (w) this.dW++; else this.dB++; }
     }
@@ -118,7 +144,8 @@ class DepthStats {
         const [elo_lo, elo_hi] = this.eloCI();
         const phases = {};
         this.games.forEach(g => { phases[g.phase] = (phases[g.phase] || 0) + 1; });
-        console.log(`\n  📊 Stockfish d${this.depth} (~${this.sfELO} ELO)`);
+        const _eloSrc = (!this.sfConfig || this.sfConfig.mode === 'depth') ? 'estimated' : 'official';
+        console.log(`\n  📊 Stockfish [${sfConfigLabel(this.sfConfig)}] (ELO ${_eloSrc})`);
         console.log(`     Games: ${this.total()} | W:${this.wins()} L:${this.losses()} D:${this.draws()}`);
         console.log(`     As White  → W:${this.wW} L:${this.lW} D:${this.dW}`);
         console.log(`     As Black  → W:${this.wB} L:${this.lB} D:${this.dB}`);
@@ -136,15 +163,23 @@ class DepthStats {
 }
 
 // ── Stockfish wrapper ────────────────────────────────────────
-function spawnSF() {
+function spawnSF(sfConfig) {
     const sf = spawn(CONFIG.stockfishPath, { stdio: ['pipe', 'pipe', 'pipe'] });
     sf.on('error', () => {});
     sf.stdin.on('error', () => {});
     sf.stdout.on('error', () => {});
     sf.stdin.write('uci\n');
+    // Send mode-specific setoptions once at spawn
+    if (sfConfig && sfConfig.mode === 'uci_elo') {
+        sf.stdin.write('setoption name UCI_LimitStrength value true\n');
+        sf.stdin.write(`setoption name UCI_Elo value ${sfConfig.value}\n`);
+    } else if (sfConfig && sfConfig.mode === 'skill_level') {
+        sf.stdin.write(`setoption name Skill Level value ${sfConfig.value}\n`);
+    }
+    sf.stdin.write('isready\n'); // flush setoptions before first move
     return sf;
 }
-function sfBestMove(sf, fen, depth) {
+function sfBestMove(sf, fen, sfConfig) {
     return new Promise((resolve, reject) => {
         let buf = '';
         const timeout = setTimeout(() => {
@@ -163,7 +198,12 @@ function sfBestMove(sf, fen, depth) {
         }
         sf.stdout.on('data', onData);
         sf.stdin.write(`position fen ${fen}\n`);
-        sf.stdin.write(`go depth ${depth}\n`);
+        if (!sfConfig || sfConfig.mode === 'depth') {
+            sf.stdin.write(`go depth ${sfConfig ? sfConfig.value : 7}\n`);
+        } else {
+            // UCI_Elo / Skill Level: strength already set at spawn; use movetime
+            sf.stdin.write(`go movetime ${sfConfig.moveTime || 5000}\n`);
+        }
     });
 }
 
@@ -184,7 +224,7 @@ function detectPhase(game) {
 // the page whenever a previous page.evaluate timed out (page.goto cancels stale evals).
 let _pageStale = false;
 
-async function evalMove(page, fen, history, timeoutMs) {
+async function evalMove(page, fen, history, timeoutMs, positionFens = []) {
     if (_pageStale) {
         console.log('   ♻️  Reloading page (previous call timed out — clearing stale worker state)...');
         await page.goto('file://' + CONFIG.htmlFile);
@@ -197,7 +237,7 @@ async function evalMove(page, fen, history, timeoutMs) {
                     aiDepth = s.depth;
                     aiMistakeChance = s.mistakes;
                     // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
-                    if (lvl === 'grandmaster') s.timeLimit = 30000;
+                    if (lvl === 'grandmaster') s.timeLimit = 15000;
                     aiTimeLimit = s.timeLimit;
                 }
                 if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
@@ -212,9 +252,9 @@ async function evalMove(page, fen, history, timeoutMs) {
         _pageStale = false;
     }
 
-    const evalP = page.evaluate(async (f, h) => {
-        try { return await window.askWiseKing(f, h); } catch (e) { return null; }
-    }, fen, history);
+    const evalP = page.evaluate(async (f, h, p) => {
+        try { return await window.askWiseKing(f, h, p); } catch (e) { return null; }
+    }, fen, history, positionFens);
 
     const result = await Promise.race([
         evalP,
@@ -233,11 +273,11 @@ async function evalMove(page, fen, history, timeoutMs) {
 // between games so TurboFan keeps JIT-compiled code alive across all games.
 // startFen: optional FEN string to start from a specific position (FEN replay mode).
 //           When set, `opening` is ignored.
-async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats, page, startFen = null) {
-    const colorStr = mChessColor === 'w' ? '⬜White' : '⬛Black';
+async function playGame(gameNum, totalGames, AirinColor, opening, sfConfig, stats, page, startFen = null) {
+    const colorStr = AirinColor === 'w' ? '⬜White' : '⬛Black';
     const openingStr = startFen ? `FEN: ${startFen.slice(0, 40)}…` : (opening.length ? opening.join(' ') : 'start');
     console.log(`\n${'─'.repeat(62)}`);
-    console.log(`🎮 Game ${gameNum}/${totalGames}  mChess=${colorStr}  ${startFen ? '📌 FEN replay' : `Opening:[${openingStr}]`}  SF:d${depth}`);
+    console.log(`🎮 Game ${gameNum}/${totalGames}  Airin=${colorStr}  ${startFen ? '📌 FEN replay' : `Opening:[${openingStr}]`}  SF:[${sfConfigTag(sfConfig)}]`);
     if (startFen) console.log(`   FEN: ${startFen}`);
     console.log('─'.repeat(62));
 
@@ -253,13 +293,13 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
                 aiDepth = s.depth;
                 aiMistakeChance = s.mistakes;
                 // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
-                if (lvl === 'grandmaster') s.timeLimit = 30000;
+                if (lvl === 'grandmaster') s.timeLimit = 15000;
                 aiTimeLimit = s.timeLimit;
             }
         } catch (e) { }
     }, CONFIG.selectedLevel || 'grandmaster');
 
-    const sf = spawnSF();
+    const sf = spawnSF(sfConfig);
     const game = startFen ? new Chess(startFen) : new Chess();
     let reason = 'unknown';
     let phase = 'opening';
@@ -283,14 +323,15 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
 
             const fen = game.fen();
             const currentColor = game.turn(); // 'w' or 'b'
-            const isMChess = (currentColor === mChessColor);
+            const isAirin = (currentColor === AirinColor);
             let move = null;
 
-            if (isMChess) {
-                // mChess moves — use evalMove() to safely handle timeouts
+            if (isAirin) {
+                // Airin moves — use evalMove() to safely handle timeouts
                 // and prevent concurrent askWiseKing calls (which corrupt its result)
                 const t0 = Date.now();
-                move = await evalMove(page, fen, game.history(), CONFIG.moveTimeoutMs);
+                const _fenHist = game.history({ verbose: true }).map(m => m.after);
+                move = await evalMove(page, fen, game.history(), CONFIG.moveTimeoutMs, _fenHist);
 
                 const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
                 let depth_info = null;
@@ -304,16 +345,16 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
                         ? (depth_info.nps / 1000000).toFixed(1) + 'Mn/s'
                         : (depth_info.nps / 1000).toFixed(0) + 'kn/s'}`
                     : '';
-                console.log(`   👑 mChess ${move || 'null'} (${elapsed}s)${dStr}${npsStr}`);
+                console.log(`   👑 Airin ${move || 'null'} (${elapsed}s)${dStr}${npsStr}`);
                 if (depth_info && depth_info.nps > 0) stats.npsLog.push(depth_info.nps);
             } else {
                 // Stockfish moves
-                move = await sfBestMove(sf, fen, depth);
-                console.log(`   🐟 SF     ${move}`);
+                move = await sfBestMove(sf, fen, sfConfig);
+                console.log(`   🐟 SF     ${move}  [${sfConfigTag(sfConfig)}]`);
             }
 
             if (!move || move === 'null') {
-                reason = isMChess ? 'mchess_no_move' : 'sf_no_move';
+                reason = isAirin ? 'airin_no_move' : 'sf_no_move';
                 break;
             }
 
@@ -324,8 +365,8 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
                 });
                 phase = detectPhase(game);
             } catch (e) {
-                console.error(`❌ Illegal: ${move} (${isMChess ? 'mChess' : 'SF'})`);
-                reason = isMChess ? 'mchess_illegal' : 'sf_illegal';
+                console.error(`❌ Illegal: ${move} (${isAirin ? 'Airin' : 'SF'})`);
+                reason = isAirin ? 'airin_illegal' : 'sf_illegal';
                 break;
             }
         }
@@ -337,7 +378,7 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
     // Determine result
     let result;
     if (game.isCheckmate()) {
-        result = (game.turn() !== mChessColor) ? 'mchess_win' : 'sf_win';
+        result = (game.turn() !== AirinColor) ? 'airin_win' : 'sf_win';
         reason = 'checkmate';
     } else if (game.isDraw()) {
         result = 'draw';
@@ -345,73 +386,86 @@ async function playGame(gameNum, totalGames, mChessColor, opening, depth, stats,
         else if (game.isThreefoldRepetition()) reason = 'repetition';
         else if (game.isInsufficientMaterial()) reason = 'insufficient_material';
         else reason = '50_moves';
-    } else if (reason === 'mchess_illegal' || reason === 'mchess_no_move') {
+    } else if (reason === 'airin_illegal' || reason === 'airin_no_move') {
         result = 'sf_win';
     } else if (reason === 'sf_illegal' || reason === 'sf_no_move') {
-        result = 'mchess_win';
+        result = 'airin_win';
     } else {
         result = 'draw';
     }
 
-    const resultStr = result === 'mchess_win' ? '✅ mChess wins'
+    const resultStr = result === 'airin_win' ? '✅ Airin wins'
         : result === 'sf_win' ? '❌ Stockfish wins'
             : '🤝 Draw';
     console.log(`\n${resultStr}  reason:${reason}  moves:${game.history().length}  phase:${phase}`);
 
-    stats.add(result, mChessColor, game.history().length, reason, game.pgn(), phase);
+    stats.add(result, AirinColor, game.history().length, reason, game.pgn(), phase);
 }
 
 // ── Core tournament runner (shared by interactive and batch modes) ────────
-async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList = []) {
+async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenList = []) {
     CONFIG.numGames = n;
-    CONFIG.depths = depths;
+    CONFIG.sfConfigs = sfConfigs;
     CONFIG.selectedLevel = selectedLevel;
 
-    // Extract mChess version from HTML title tag (e.g. "Monolith Chess v2.25.32" → "v2.25.32")
-    let mchessVer = '';
+    // Extract Airin version from HTML title tag
+    let airinVer = '';
+    let airinVerStr = 'unknown';
     try {
         const htmlSrc = fs.readFileSync(CONFIG.htmlFile, 'utf8');
-        const m = htmlSrc.match(/<title>Monolith Chess (v[\d.]+)<\/title>/);
-        if (m) mchessVer = '_' + m[1];
+        const m = htmlSrc.match(/<title>(?:Airin|Monolith Chess) (v[\d.]+)<\/title>/);
+        if (m) { airinVer = '_' + m[1]; airinVerStr = m[1]; }
     } catch (_) {}
     const modeTag = (fenReplayMode && fenList.length > 0) ? '_fenreplay' : '';
     const gameCount = fenReplayMode && fenList.length > 0 ? fenList.length : n;
-    CONFIG.logFile = path.join(__dirname, `tournament_mChess${mchessVer}_d${depths.join('_')}_${gameCount}g${modeTag}.json`);
+    const _vTs = new Date().toISOString().replace('T', '_').replace(/[:.]/g, '').slice(0, 15);
+    const _sfTag = sfConfigs.map(c => sfConfigTag(c)).join('_');
+    CONFIG.logFile = path.join(__dirname, `tournament_Airin${airinVer}_${_sfTag}_${gameCount}g${modeTag}_${_vTs}.json`);
 
-    console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${depths.length} depth(s)`);
-    depths.forEach(d => console.log(`   d${d} → ~${sfELO(d)} ELO`));
+    // ── Verbose log — same timestamp as JSON so both files pair up ────────
+    const verboseLogFile = CONFIG.logFile.replace('.json', `_verbose_${_vTs}.log`);
+    const verboseStream = fs.createWriteStream(verboseLogFile, { encoding: 'utf8' });
+    verboseStream.write(`# Airin verbose log — ${new Date().toISOString()}\n`);
+    verboseStream.write(`# ${n} games × [${sfConfigs.map(c => sfConfigLabel(c)).join(' / ')}] | ${selectedLevel}\n\n`);
 
-    const estMinPerGame = 6; // conservative estimate
-    const estTotal = n * depths.length * estMinPerGame;
+    console.log(`\n🔧 Config: ${fenReplayMode && fenList.length > 0 ? fenList.length + ' FENs' : n + ' games'} × ${sfConfigs.length} opponent(s)`);
+    sfConfigs.forEach(c => console.log(`   [${sfConfigTag(c)}] → ~${getSFElo(c)} ELO  (${sfConfigLabel(c)})`));
+
+    // ~11 min/game at Wizard (15s budget), ~22 min/game at Wise King (30s budget)
+    const estMinPerGame = (selectedLevel === 'grandmaster') ? 22 : 11;
+    const estTotal = n * sfConfigs.length * estMinPerGame;
     console.log(`\n⏱️  Estimated time: ~${estTotal} min (~${(estTotal / 60).toFixed(1)}h)`);
     console.log(`💾 Results will save to: ${CONFIG.logFile}`);
     console.log('✅ Partial save after every game — safe to interrupt anytime (Ctrl+C)\n');
     console.log('🚀 Starting tournament...\n');
     const statsMap = {};
-    depths.forEach(d => { statsMap[d] = new DepthStats(d); });
+    sfConfigs.forEach(c => { statsMap[sfConfigTag(c)] = new DepthStats(c.value, c); });
 
     // ── Partial save helper — called after every game ─────────────────
     const savePartial = (gameNum, total, done = false) => {
         try {
-            const allGamesFlat = depths.flatMap(d => statsMap[d].games);
-            const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
+            const allGamesFlat = sfConfigs.flatMap(c => statsMap[sfConfigTag(c)].games);
+            const totalW = allGamesFlat.filter(g => g.result === 'airin_win').length;
             const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
             const totalL = allGamesFlat.filter(g => g.result === 'sf_win').length;
             const totalN = allGamesFlat.length;
             fs.writeFileSync(CONFIG.logFile, JSON.stringify({
                 timestamp: new Date().toISOString(),
                 status: done ? 'complete' : `partial_${gameNum}_of_${total}`,
-                config: { numGames: n, depths },
-                byDepth: Object.fromEntries(depths.map(d => {
-                    return [d, {
-                        sfELO: sfELO(d),
-                        estimatedELO: statsMap[d].estimateELO(),
-                        eloCI: statsMap[d].eloCI(),
-                        score: statsMap[d].score(),
-                        wins: statsMap[d].wins(),
-                        losses: statsMap[d].losses(),
-                        draws: statsMap[d].draws(),
-                        games: statsMap[d].games,
+                config: { numGames: n, sfConfigs, airinVersion: airinVerStr, difficultyLevel: CONFIG.selectedLevel || 'grandmaster' },
+                byDepth: Object.fromEntries(sfConfigs.map(c => {
+                    const k = sfConfigTag(c); const st = statsMap[k];
+                    return [k, {
+                        sfConfig: c,
+                        sfELO: getSFElo(c),
+                        sfLabel: sfConfigLabel(c),
+                        estimatedELO: st.estimateELO(),
+                        eloCI: st.eloCI(),
+                        score: st.score(),
+                        wins: st.wins(),
+                        losses: st.losses(),
+                        draws: st.draws(),
+                        games: st.games,
                     }];
                 })),
                 combined: totalN > 0 ? {
@@ -425,13 +479,14 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
 
     const browser = await puppeteer.launch({
         headless: false,
+        executablePath: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
         protocolTimeout: 120000,
         args: [
             '--allow-file-access-from-files',
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            // ── Prevent Chrome from throttling background tabs / workers ──
+            // ── Prevent browser from throttling background tabs / workers ──
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
             '--disable-renderer-backgrounding',
@@ -444,9 +499,12 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     const sharedPage = await browser.newPage();
     sharedPage.on('console', msg => {
         const t = msg.text();
+        const ts = new Date().toISOString().slice(11, 23); // "HH:MM:SS.mmm"
+        verboseStream.write(`[${ts}] ${t}\n`); // ALL browser console messages go to verbose log
         if (msg.type() === 'error') console.log('🌐 Error:', t.slice(0, 120));
         else if (t.includes('NPS:')) console.log('   🧠', t.replace(/.*?Real depth:/, 'depth:').trim());
         else if (t.includes('Book exit')) console.log('   ⚠️  ' + t);
+        else if (t.startsWith('📊') && t.includes('FILTER→')) console.log('   🚨', t.trim()); // anti-blunder events only
     });
     console.log('🌐 Loading page...');
     await sharedPage.goto('file://' + CONFIG.htmlFile);
@@ -459,8 +517,6 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
             if (s) {
                 aiDepth = s.depth;
                 aiMistakeChance = s.mistakes;
-                // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
-                if (level === 'grandmaster') s.timeLimit = 30000;
                 aiTimeLimit = s.timeLimit;
             }
             if (typeof chessEngineWorker !== 'undefined' && chessEngineWorker) {
@@ -484,27 +540,30 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
         console.log('\n' + '═'.repeat(62));
         console.log('📊 PARTIAL RESULTS AT INTERRUPTION');
         console.log('═'.repeat(62));
-        depths.forEach(d => { if (statsMap[d].total() > 0) statsMap[d].print(); });
+        sfConfigs.forEach(c => { const st = statsMap[sfConfigTag(c)]; if (st.total() > 0) st.print(); });
         try { await browser.close(); } catch (_) { }
+        try { verboseStream.end(); } catch (_) { }
+        console.log(`📝 Verbose log: ${path.basename(verboseLogFile)}`);
         process.exit(0);
     });
 
     try {
         // Build game list
         const allGames = [];
-        for (const depth of depths) {
+        for (const sfConfig of sfConfigs) {
+            const _key = sfConfigTag(sfConfig);
             if (fenReplayMode && fenList.length > 0) {
                 // FEN replay: one game per FEN entry
-                for (const { fen, mChessColor } of fenList) {
-                    allGames.push({ depth, mChessColor, opening: [], startFen: fen });
+                for (const { fen, AirinColor } of fenList) {
+                    allGames.push({ sfConfig, AirinColor, opening: [], startFen: fen });
                 }
             } else {
                 // Normal tournament: alternate colors, rotate openings
-                const gamesPerDepth = Math.floor(n / depths.length);
-                for (let i = 0; i < gamesPerDepth; i++) {
+                const gamesPerConfig = Math.floor(n / sfConfigs.length);
+                for (let i = 0; i < gamesPerConfig; i++) {
                     allGames.push({
-                        depth,
-                        mChessColor: i % 2 === 0 ? 'w' : 'b',
+                        sfConfig,
+                        AirinColor: i % 2 === 0 ? 'w' : 'b',
                         opening: OPENING_BOOK[i % OPENING_BOOK.length],
                         startFen: null,
                     });
@@ -514,16 +573,19 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
 
         const total = allGames.length;
         for (let i = 0; i < allGames.length; i++) {
-            const { depth, mChessColor, opening, startFen } = allGames[i];
+            const { sfConfig, AirinColor, opening, startFen } = allGames[i];
+            const _key = sfConfigTag(sfConfig);
+            verboseStream.write(`\n${'='.repeat(60)}\n`);
+            verboseStream.write(`=== Game ${i+1}/${total} | Airin=${AirinColor} | SF [${_key}] ===\n`);
+            verboseStream.write(`${'='.repeat(60)}\n`);
             try {
-                await playGame(i + 1, total, mChessColor, opening, depth, statsMap[depth], sharedPage, startFen);
+                await playGame(i + 1, total, AirinColor, opening, sfConfig, statsMap[_key], sharedPage, startFen);
             } catch (err) {
                 console.error(`\n💥 Game ${i + 1} crashed:`, err.message);
-                statsMap[depth].add('draw', mChessColor, 0, 'crash', '', 'unknown');
+                statsMap[_key].add('draw', AirinColor, 0, 'crash', '', 'unknown');
             }
-            // 💾 Save partial results after every game
             savePartial(i + 1, total, false);
-            const gs = statsMap[depth];
+            const gs = statsMap[_key];
             if (gs.total() > 0) {
                 const lastGame = gs.games[gs.games.length - 1];
                 console.log(`   💾 Saved: W:${gs.wins()} L:${gs.losses()} D:${gs.draws()} | ELO ~${gs.estimateELO()} [${gs.eloCI()[0]}..${gs.eloCI()[1]}]`);
@@ -538,16 +600,16 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
     console.log('\n\n' + '═'.repeat(62));
     console.log('🏆 FINAL TOURNAMENT REPORT');
     console.log('═'.repeat(62));
-    depths.forEach(d => statsMap[d].print());
+    sfConfigs.forEach(c => statsMap[sfConfigTag(c)].print());
 
     // Combined ELO estimate (weighted by game count)
-    const allGamesFlat = depths.flatMap(d => statsMap[d].games);
-    const totalW = allGamesFlat.filter(g => g.result === 'mchess_win').length;
+    const allGamesFlat = sfConfigs.flatMap(c => statsMap[sfConfigTag(c)].games);
+    const totalW = allGamesFlat.filter(g => g.result === 'airin_win').length;
     const totalD = allGamesFlat.filter(g => g.result === 'draw').length;
     const totalN = allGamesFlat.length;
-    if (totalN > 0 && depths.length > 1) {
+    if (totalN > 0 && sfConfigs.length > 1) {
         const score = (totalW + 0.5 * totalD) / totalN;
-        const avgSfELO = depths.reduce((s, d) => s + sfELO(d) * statsMap[d].total(), 0) / totalN;
+        const avgSfELO = sfConfigs.reduce((s, c) => s + getSFElo(c) * statsMap[sfConfigTag(c)].total(), 0) / totalN;
         const combinedELO = score === 0 ? avgSfELO - 600 : score === 1 ? avgSfELO + 600
             : Math.round(avgSfELO - 400 * Math.log10((1 - score) / score));
         console.log(`\n  🎯 Combined ELO estimate: ~${combinedELO}  (${totalN} games total)`);
@@ -562,12 +624,14 @@ async function runCore(depths, n, selectedLevel, fenReplayMode = false, fenList 
 
     savePartial(totalN, totalN, true); // final complete save
     console.log(`\n💾 Results saved to: ${CONFIG.logFile}`);
+    verboseStream.end();
+    console.log(`📝 Verbose log: ${path.basename(verboseLogFile)}`);
 }
 
 // ── Interactive tournament runner ────────────────────────────────────────
 async function runTournament() {
     console.log('╔' + '═'.repeat(62) + '╗');
-    console.log('║       🏆 TOURNAMENT v2 — mChess vs Stockfish 🏆          ║');
+    console.log('║       🏆 TOURNAMENT v2 — Airin vs Stockfish 🏆          ║');
     console.log('╚' + '═'.repeat(62) + '╝');
 
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -580,8 +644,8 @@ async function runTournament() {
     const modeAns = (await ask('Choose 1-2 (enter=1): ')).trim();
     const fenReplayMode = modeAns === '2';
 
-    // ── mChess level ─────────────────────────────────────────
-    console.log('\nSelect mChess level:');
+    // ── Airin level ─────────────────────────────────────────
+    console.log('\nSelect Airin level:');
     console.log('  1) Chick       (easy)');
     console.log('  2) Student     (medium)');
     console.log('  3) Wizard      (hard)');
@@ -589,43 +653,63 @@ async function runTournament() {
     const levelAns = (await ask('Choose 1-4 (enter=4): ')).trim();
     const LEVEL_MAP = { '1': 'easy', '2': 'medium', '3': 'hard', '4': 'grandmaster' };
     const selectedLevel = LEVEL_MAP[levelAns] || 'grandmaster';
-    console.log(`✅ mChess level: ${selectedLevel}`);
+    console.log(`✅ Airin level: ${selectedLevel}`);
 
     // ── HTML file ─────────────────────────────────────────────
-    console.log('\nPath to mChess HTML file:');
+    console.log('\nPath to Airin HTML file:');
     console.log('  (leave blank to use default: ../mChess.html)');
     const htmlAns = (await ask('HTML path: ')).trim();
     if (htmlAns) CONFIG.htmlFile = path.resolve(__dirname, htmlAns);
     console.log(`✅ File: ${CONFIG.htmlFile}`);
 
-    // ── Stockfish depths ──────────────────────────────────────
-    console.log('\nSelect Stockfish depth(s) — lower = weaker = more accurate ELO estimate:');
-    console.log('  d5  → ~1600 ELO  (if mChess wins too many at d7)');
-    console.log('  d6  → ~1750 ELO');
-    console.log('  d7  → ~1900 ELO  ← recommended baseline');
-    console.log('  d8  → ~2000 ELO  ← recommended for strong versions');
-    console.log('  d9  → ~2100 ELO');
-    console.log('  d10 → ~2200 ELO  (very strong, mostly losses)');
-    console.log('  You can enter multiple depths: e.g. 7,8');
-    const depthAns = (await ask('Depth(s) 1-15 (enter=7): ')).trim();
-    const depths = depthAns
-        ? depthAns.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20)
-        : [7];
-    depths.forEach(d => console.log(`✅ Stockfish d${d} → ~${sfELO(d)} ELO`));
+    // ── Stockfish opponent mode ────────────────────────────────
+    console.log('\nSelect Stockfish opponent mode:');
+    console.log('  1) Depth limit   — e.g. d7 (historical baseline, ELO estimated, NOT official)');
+    console.log('  2) UCI_Elo       — official calibrated ELO ← recommended');
+    console.log('  3) Skill Level   — 0-20 with deliberate errors (ELO official)');
+    const sfModeAns = (await ask('Choose 1-3 (enter=2): ')).trim();
+    const sfMode = sfModeAns === '1' ? 'depth' : sfModeAns === '3' ? 'skill_level' : 'uci_elo';
+
+    let sfConfigs;
+    if (sfMode === 'depth') {
+        console.log('  d5→~1600  d6→~1750  d7→~1900 (baseline)  d8→~2000  d9→~2100');
+        console.log('  Multiple opponents: e.g. 7,8');
+        const depthAns = (await ask('Depth(s) 1-15 (enter=7): ')).trim();
+        const depths = depthAns ? depthAns.split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20) : [7];
+        sfConfigs = depths.map(d => ({ mode: 'depth', value: d }));
+        sfConfigs.forEach(c => console.log(`✅ ${sfConfigLabel(c)}`));
+    } else if (sfMode === 'uci_elo') {
+        console.log('  Valid range: 1320–3190. Level 3 (Skill)=1729 | Airin est.=1750 | Level 4 (Skill)=1953');
+        console.log('  Multiple opponents: e.g. 1700,1900');
+        const eloAns = (await ask('UCI_Elo value(s) (enter=1750): ')).trim();
+        const eloVals = eloAns ? eloAns.split(',').map(x => Math.min(3190, Math.max(1320, parseInt(x.trim())))).filter(v => !isNaN(v)) : [1750];
+        sfConfigs = eloVals.map(v => ({ mode: 'uci_elo', value: v }));
+        sfConfigs.forEach(c => console.log(`✅ ${sfConfigLabel(c)}`));
+    } else {
+        console.log('  Lv 0=1347 | Lv 1=1444 | Lv 2=1566 | Lv 3=1729 | Lv 4=1953 | Lv 5=2197');
+        console.log('  Lv 6=2383 | Lv 7=2518 | Lv 8=2624 | Lv 9=2711 | Lv10=2786 | Lv11=2851');
+        console.log('  Lv12=2910 | Lv13=2963 | Lv14=3012 | Lv15=3057 | Lv16=3099 | Lv17=3139');
+        console.log('  Lv18=3176 | Lv19=3185 | Lv20=3190 (full strength)');
+        console.log('  Multiple opponents: e.g. 3,4');
+        const slAns = (await ask('Skill Level(s) 0-20 (enter=3): ')).trim();
+        const slVals = slAns ? slAns.split(',').map(x => Math.min(20, Math.max(0, parseInt(x.trim())))).filter(v => !isNaN(v)) : [3];
+        sfConfigs = slVals.map(v => ({ mode: 'skill_level', value: v }));
+        sfConfigs.forEach(c => console.log(`✅ ${sfConfigLabel(c)}`));
+    }
 
     // ── FEN replay: load positions ────────────────────────────
-    let fenList = []; // { fen, mChessColor }
+    let fenList = []; // { fen, AirinColor }
     if (fenReplayMode) {
         console.log('\n📌 FEN REPLAY MODE');
         console.log('  Enter one FEN per line. Format: <FEN> [w|b]');
-        console.log('  The color (w/b) is who mChess plays AS in that position.');
-        console.log('  If omitted, mChess plays the side to move in the FEN.');
+        console.log('  The color (w/b) is who Airin plays AS in that position.');
+        console.log('  If omitted, Airin plays the side to move in the FEN.');
         console.log('  Or enter a path to a JSON file: [{ "fen": "...", "color": "w" }, ...]');
         console.log('  Leave blank and press Enter to finish.\n');
         const firstLine = (await ask('FEN / JSON file path: ')).trim();
         if (firstLine.endsWith('.json')) {
             const raw = JSON.parse(fs.readFileSync(path.resolve(__dirname, firstLine), 'utf8'));
-            fenList = raw.map(e => ({ fen: e.fen, mChessColor: e.color || e.fen.split(' ')[1] }));
+            fenList = raw.map(e => ({ fen: e.fen, AirinColor: e.color || e.fen.split(' ')[1] }));
             console.log(`✅ Loaded ${fenList.length} positions from ${firstLine}`);
         } else if (firstLine) {
             const lines = [firstLine];
@@ -647,7 +731,7 @@ async function runTournament() {
                     fen = parts.join(' ');
                     color = fen.split(' ')[1]; // side to move in FEN
                 }
-                return { fen, mChessColor: color };
+                return { fen, AirinColor: color };
             });
             console.log(`✅ ${fenList.length} position(s) loaded`);
         }
@@ -657,41 +741,60 @@ async function runTournament() {
     }
 
     // ── Number of games (normal mode only) ───────────────────
-    let n = fenList.length > 0 ? fenList.length * depths.length : 0;
+    let n = fenList.length > 0 ? fenList.length * sfConfigs.length : 0;
     if (!fenReplayMode || fenList.length === 0) {
-        console.log('\nNumber of games per depth:');
-        console.log('  10 games → ±108 ELO precision  (~50-90 min on average PC)');
-        console.log('  20 games → ±76  ELO precision  (~2-3h)   ← recommended');
-        const nAns = (await ask('Games per depth (enter=10): ')).trim();
+        console.log('\nNumber of games per opponent:');
+        console.log('  10 games → ±108 ELO precision  (~2h Wizard / ~4h Wise King)');
+        console.log('  20 games → ±76  ELO precision  (~4h Wizard / ~7-8h Wise King)   ← recommended');
+        console.log('  40 games → ±54  ELO precision  (~7.5h Wizard / ~14-16h Wise King) ← required for main PR');
+        const nAns = (await ask('Games per opponent (enter=10): ')).trim();
         n = Math.max(2, parseInt(nAns) || 10);
-        console.log(`✅ ${n} games × ${depths.length} depth(s) = ${n * depths.length} total games`);
+        console.log(`✅ ${n} games × ${sfConfigs.length} opponent(s) = ${n * sfConfigs.length} total games`);
     } else {
-        console.log(`\n✅ ${fenList.length} position(s) × ${depths.length} depth(s) = ${n} total games`);
+        console.log(`\n✅ ${fenList.length} position(s) × ${sfConfigs.length} opponent(s) = ${n} total games`);
     }
 
     rl.close();
 
-    await runCore(depths, n, selectedLevel, fenReplayMode, fenList);
+    await runCore(sfConfigs, n, selectedLevel, fenReplayMode, fenList);
 }
 
 // ── CLI entry point ──────────────────────────────────────────────────────
 // Interactive: node arena_tournament.js
-// Batch:       node arena_tournament.js --batch --depth 7 --games 30 [--level grandmaster] [--html path]
+// Batch (depth): node arena_tournament.js --batch --depth 7 --games 20
+// Batch (UCI_Elo 20g dev, ~4h at Wizard): node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
+// Batch (UCI_Elo 40g release, ~7.5h at Wizard): node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 40
+// Batch (Skill):   node arena_tournament.js --batch --sf-mode skill_level --sf-value 3 --games 20
 const _args = process.argv.slice(2);
 if (_args.includes('--batch')) {
     const _get = (f, d) => { const i = _args.indexOf(f); return i >= 0 && _args[i + 1] ? _args[i + 1] : d; };
-    const _depths = _get('--depth', '7').split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20);
     const _n      = Math.max(2, parseInt(_get('--games', '20')) || 20);
     const _level  = _get('--level', 'grandmaster');
     const _html   = _get('--html', null);
     if (_html) CONFIG.htmlFile = path.resolve(__dirname, _html);
 
-    console.log('╔' + '═'.repeat(62) + '╗');
-    console.log('║       🏆 TOURNAMENT v2 — mChess vs Stockfish 🏆          ║');
-    console.log('╚' + '═'.repeat(62) + '╝');
-    console.log(`🚀 Batch mode: ${_n} games × d${_depths.join('/')} | level:${_level}`);
+    // Build sfConfigs from CLI args
+    let _sfConfigs;
+    const _sfMode = _get('--sf-mode', 'depth');
+    if (_sfMode === 'uci_elo') {
+        const _vals = _get('--sf-value', '1750').split(',').map(x => Math.min(3190, Math.max(1320, parseInt(x.trim()))));
+        _sfConfigs = _vals.map(v => ({ mode: 'uci_elo', value: v }));
+    } else if (_sfMode === 'skill_level') {
+        const _vals = _get('--sf-value', '3').split(',').map(x => Math.min(20, Math.max(0, parseInt(x.trim()))));
+        _sfConfigs = _vals.map(v => ({ mode: 'skill_level', value: v }));
+    } else {
+        // depth mode (default — also handles legacy --depth flag)
+        const _depths = _get('--depth', _get('--sf-value', '7')).split(',').map(x => parseInt(x.trim())).filter(d => d >= 1 && d <= 20);
+        _sfConfigs = _depths.map(d => ({ mode: 'depth', value: d }));
+    }
 
-    runCore(_depths, _n, _level, false, []).catch(console.error);
+    console.log('\u2554' + '\u2550'.repeat(62) + '\u2557');
+    console.log('\u2551       \ud83c\udfc6 TOURNAMENT v2 \u2014 Airin vs Stockfish \ud83c\udfc6          \u2551');
+    console.log('\u255a' + '\u2550'.repeat(62) + '\u255d');
+    console.log(`\ud83d� Batch mode: ${_n} games \u00d7 [${_sfConfigs.map(c => sfConfigTag(c)).join('/')}] | level:${_level}`);
+    _sfConfigs.forEach(c => console.log(`   ${sfConfigLabel(c)}`));
+
+    runCore(_sfConfigs, _n, _level, false, []).catch(console.error);
 } else {
     runTournament().catch(console.error);
 }

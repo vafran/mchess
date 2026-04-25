@@ -1,5 +1,5 @@
 <!--
-Monolith Chess v2.22.5
+Airin v2.23.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Monolith Chess v2.22.5</title>
+  <title>Airin v2.23.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -169,6 +169,15 @@ limitations under the License.
       color: #fff !important;
     }
 
+    body.theme-futbol .topbar-center {
+      -webkit-text-fill-color: #fff;
+      background: none;
+    }
+
+    body.theme-futbol #gameStatusHUD {
+      color: #fff !important;
+    }
+
     body {
       font-family: 'Outfit', 'Nunito', 'Varela Round', 'Poppins', system-ui, -apple-system, sans-serif;
       background: var(--bg-gradient);
@@ -245,6 +254,8 @@ limitations under the License.
       text-align: center;
       animation: pop 0.6s ease;
       letter-spacing: -0.5px;
+      /* always hidden during game — title lives in .topbar-center */
+      display: none !important;
     }
 
     @keyframes pop {
@@ -267,17 +278,10 @@ limitations under the License.
     .top-bar {
       position: relative;
       z-index: 1;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: nowrap;
-      justify-content: flex-start;
       margin-bottom: 8px;
-      padding: 0 10px;
-      max-width: 1280px;
+      padding: 0 16px;
       width: 100%;
       box-sizing: border-box;
-      overflow: hidden;
     }
 
     .turn-bar {
@@ -324,11 +328,11 @@ limitations under the License.
       z-index: 1;
       display: flex;
       gap: 20px;
-      align-items: flex-start;
+      align-items: stretch;
       justify-content: center;
       flex-wrap: wrap;
       padding: 0 16px 40px;
-      max-width: 1280px;
+      max-width: 1400px;
       width: 100%;
     }
 
@@ -336,9 +340,11 @@ limitations under the License.
       display: flex;
       flex-direction: column;
       gap: 12px;
-      min-width: 220px;
-      max-width: 280px;
-      flex: 1;
+      min-width: 260px;
+      max-width: 360px;
+      flex: 2;
+      min-height: 0;
+      max-height: calc(min(56vw, 640px) + 70px);
     }
 
     /* ── Board ─────────────────────────── */
@@ -350,20 +356,31 @@ limitations under the License.
       background: var(--card);
       backdrop-filter: blur(14px);
       padding: 6px;
+      max-width: min(56vw, 640px);
     }
 
-    /* Game board wrapper — flex on desktop to show advantage bar, block on mobile */
+    /* Game board wrapper — column flex: board-row on top, move strip below */
     .board-wrap--game {
       display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+      min-width: 0;
+    }
+
+    /* Inner row: board + advantage bar side by side */
+    .board-row {
+      display: flex;
       gap: 10px;
+      align-items: stretch;
     }
 
     .board {
       display: grid;
       grid-template-columns: repeat(8, 1fr);
       grid-template-rows: repeat(8, 1fr);
-      width: min(80vw, 520px);
-      height: min(80vw, 520px);
+      width: min(56vw, 640px);
+      height: min(56vw, 640px);
       border-radius: 14px;
       overflow: hidden;
       position: relative;
@@ -410,6 +427,14 @@ limitations under the License.
 
     .cell.in-check {
       animation: checkFlash 0.8s ease-in-out infinite;
+    }
+    .cell.puzzle-wrong {
+      animation: puzzleWrongFlash 0.7s ease-out forwards;
+    }
+    @keyframes puzzleWrongFlash {
+      0%   { background: rgba(239,68,68,0.6); }
+      60%  { background: rgba(239,68,68,0.3); }
+      100% { background: transparent; }
     }
 
     .coord {
@@ -579,8 +604,8 @@ limitations under the License.
       display: flex;
       flex-direction: column;
       gap: 12px;
-      min-width: 230px;
-      max-width: 300px;
+      min-width: 160px;
+      max-width: 220px;
       flex: 1;
     }
 
@@ -730,6 +755,15 @@ limitations under the License.
       background: linear-gradient(145deg, #dbeafe, #c7d2fe);
       color: var(--text);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-danger {
+      background: linear-gradient(145deg, #ef4444, #dc2626);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+    }
+    .btn-danger:hover {
+      background: linear-gradient(145deg, #dc2626, #b91c1c);
     }
 
     /* ── Status overlay ─────────────────── */
@@ -1099,7 +1133,8 @@ limitations under the License.
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: min(80vw, 540px);
+      flex: 1;
+      min-height: 0;
     }
 
     .panel-tabs {
@@ -1166,6 +1201,7 @@ limitations under the License.
       flex: 1;
       flex-direction: column;
       overflow: hidden;
+      min-height: 0;
       padding: 10px 14px 12px;
     }
 
@@ -1274,6 +1310,74 @@ limitations under the License.
       border-color: var(--primary);
     }
 
+    /* ── Move Strip (carousel below board) ── */
+    #moveStrip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--card);
+      backdrop-filter: blur(14px);
+      border-radius: 10px;
+      padding: 5px 6px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .ms-scroll {
+      flex: 1;
+      overflow-x: auto;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px 0;
+      scrollbar-width: none;
+    }
+    .ms-scroll::-webkit-scrollbar { display: none; }
+
+    .ms-num {
+      color: var(--text-light);
+      font-size: 0.70rem;
+      padding: 0 2px 0 5px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .ms-move {
+      white-space: nowrap;
+      padding: 5px 8px;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    .ms-move:hover { background: var(--primary-light); }
+    .ms-move.ms-active {
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+    }
+
+    .ms-nav {
+      display: flex;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .ms-nav button {
+      background: none;
+      border: none;
+      font-size: 1.15rem;
+      padding: 5px 4px;
+      cursor: pointer;
+      border-radius: 7px;
+      line-height: 1;
+      color: var(--text);
+      transition: background 0.15s;
+    }
+    .ms-nav button:hover { background: var(--primary-light); }
+    .ms-nav button:disabled { opacity: 0.3; cursor: default; }
+
     @media (max-width: 900px) {
       h1 {
         font-size: 1.5rem;
@@ -1293,12 +1397,17 @@ limitations under the License.
         order: 2;
       }
 
-      .board-wrap {
-        order: 1;
+      .left-panel {
+        max-height: none;
       }
 
-      /* On mobile: collapse the flex wrapper so adv-bar doesn't push board off-screen */
-      .board-wrap--game {
+      .board-wrap {
+        order: 1;
+        max-width: min(96vw, 520px);
+      }
+
+      /* On mobile: board-row stacks vertically, adv-bar hidden */
+      .board-row {
         display: block;
       }
 
@@ -1570,25 +1679,17 @@ limitations under the License.
 
     /* in-game tiny menu btn */
     .game-menu-btn {
-      position: fixed;
-      top: 12px;
-      right: 16px;
-      z-index: 50;
-      background: var(--card);
-      border: 1px solid rgba(168, 85, 247, 0.15);
-      border-radius: 12px;
-      padding: 8px 12px;
-      font-family: inherit;
-      font-weight: 700;
-      font-size: 1.2rem;
-      color: var(--text-light);
+      background: none;
+      border: none;
       cursor: pointer;
-      box-shadow: var(--shadow);
-      transition: all 0.2s;
+      font-size: 1.2rem;
+      padding: 2px 6px;
+      color: var(--text-light);
+      transition: color 0.2s;
     }
 
     .game-menu-btn:hover {
-      background: rgba(168, 85, 247, 0.08);
+      color: var(--primary);
     }
 
     .lang-corner {
@@ -1642,6 +1743,14 @@ limitations under the License.
       background: #fee2e2;
       border-color: #fca5a5;
     }
+
+    /* Opening style tags — replace risk badge for book moves */
+    .risk-badge.style-aggressive  { color: #9a3412; background: #ffedd5; border-color: #fdba74; }
+    .risk-badge.style-solid       { color: #065f46; background: #d1fae5; border-color: #6ee7b7; }
+    .risk-badge.style-flexible    { color: #1e40af; background: #dbeafe; border-color: #93c5fd; }
+    .risk-badge.style-hypermodern { color: #5b21b6; background: #ede9fe; border-color: #c4b5fd; }
+    .risk-badge.style-positional  { color: #92400e; background: #fef3c7; border-color: #fcd34d; }
+    .risk-badge.style-theory      { color: #374151; background: #f3f4f6; border-color: #d1d5db; }
 
     .ingame-menu-overlay {
       position: fixed;
@@ -1834,11 +1943,40 @@ limitations under the License.
     /* ===== Top bar / thinking stabilizer ===== */
     #topBar {
       min-height: 44px;
-      /* reserve a consistent area so board doesn't shift */
       display: flex;
-      /* keep original layout behavior */
       align-items: center;
+      justify-content: space-between;
+      max-width: 1400px;
       transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .topbar-left {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .topbar-center {
+      flex-shrink: 0;
+      font-size: 1.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+      padding: 0 20px;
+    }
+
+    .topbar-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: flex-end;
     }
 
     /* Use this class to hide visually while keeping layout space */
@@ -1948,25 +2086,6 @@ limitations under the License.
     }
 
     /* Rojo: Suicidio */
-    /* ── Estilos Máquina del Tiempo 2.0 ── */
-    .history-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      margin: 20px auto 10px;
-      /* Un poco más de aire arriba */
-      padding: 6px 12px;
-      /* Un poco más de ancho */
-      background: rgba(255, 255, 255, 0.5);
-      backdrop-filter: blur(10px);
-      border-radius: 50px;
-      border: 1px solid rgba(168, 85, 247, 0.2);
-      width: fit-content;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
     /* ⏱️ Animaciones de Salto Temporal */
     @keyframes timePulse {
       0% {
@@ -2003,41 +2122,6 @@ limitations under the License.
 
     .board.returning-present {
       animation: presentPulse 0.5s ease-out;
-    }
-
-    .btn-history {
-      flex: none !important;
-      /* Evita que se estiren */
-      width: 44px;
-      height: 44px;
-      padding: 0 !important;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1rem;
-      border-radius: 50% !important;
-      /* Botones redondos */
-    }
-
-    /* El botón del cohete (volver al presente) resalta más */
-    .btn-present {
-      background: linear-gradient(145deg, var(--primary), var(--accent)) !important;
-      color: white !important;
-      width: 50px;
-      /* Un pelín más grande */
-      height: 50px;
-      display: none;
-      /* Se activa por JS */
-      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4) !important;
-    }
-
-    @media (max-width: 600px) {
-      .btn-history {
-        width: 50px;
-        /* Más fáciles de tocar en móvil */
-        height: 50px;
-        font-size: 1.3rem;
-      }
     }
 
     /* ✨ Efecto Terremoto al capturar piezas clave */
@@ -2147,32 +2231,38 @@ limitations under the License.
     </select>
   </div>
 
-  <h1 style="display:none;" id="titleMain">♟️ Monolith Chess</h1>
+  <h1 style="display:none;" id="titleMain">♟️ Airin</h1>
 
   <div class="top-bar hidden" id="topBar">
-    <div id="gameStatusHUD"
-      style="color: var(--text-light); font-weight: 700; font-size: 0.85rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">
+    <div class="topbar-left">
+      <div id="gameStatusHUD"
+        style="color: var(--text-light); font-weight: 700; font-size: 0.85rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px;">
+      </div>
+      <div class="thinking-bar" id="thinkingBar">
+        <div class="thinking-spinner"></div>
+        <span id="thinkingText">🤖 Pensando<span class="thinking-dots"></span></span>
+        <span id="thinkingCountdown"
+          style="margin-left:8px; font-weight:700; color:var(--primary); font-family:monospace; font-size:1rem; min-width:30px; display:inline-block; text-align:right;"></span>
+      </div>
     </div>
-    <div class="thinking-bar" id="thinkingBar">
-      <div class="thinking-spinner"></div>
-      <span id="thinkingText">🤖 Pensando<span class="thinking-dots"></span></span>
-      <span id="thinkingCountdown"
-        style="margin-left:8px; font-weight:700; color:var(--primary); font-family:monospace; font-size:1rem; min-width:30px; display:inline-block; text-align:right;"></span>
+    <div class="topbar-center">♟️ Airin</div>
+    <div class="topbar-right">
+      <select id="topBarLangSelect" class="lang-select" onchange="setLanguage(this.value)"
+        style="padding:3px 4px; font-size:0.8rem;">
+        <option value="es">ES</option>
+        <option value="en">EN</option>
+      </select>
+      <button onclick="toggleFullscreen()" id="fullscreenBtn" title="Pantalla completa"
+        style="background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 6px; color:var(--text-light);">🔲</button>
+      <button class="game-menu-btn hidden" id="gameMenuBtn" onclick="openIngameMenu()" title="Menú">&#9776;</button>
     </div>
-    <select id="topBarLangSelect" class="lang-select" onchange="setLanguage(this.value)"
-      style="flex-shrink:0; padding:3px 4px; font-size:0.8rem;">
-      <option value="es">ES</option>
-      <option value="en">EN</option>
-    </select>
-    <button onclick="toggleFullscreen()" id="fullscreenBtn" title="Pantalla completa"
-      style="background:none; border:none; cursor:pointer; font-size:1.1rem; padding:2px 6px; color:var(--text-light); flex-shrink:0;">🔲</button>
   </div>
 
   <!-- ── Main Menu Screen ─────────────────────── -->
   <div class="screen-overlay" id="screenMenu">
     <div class="menu-card">
       <div class="menu-logo">♟️</div>
-      <div class="menu-title" id="menuTitleMain">Monolith Chess</div>
+      <div class="menu-title" id="menuTitleMain">Airin</div>
       <p id="menuSubtitleMain"
         style="font-size:0.88rem; color:var(--text-light); text-align:center; margin-bottom:4px;">¿Con quién juegas
         hoy?</p>
@@ -2192,7 +2282,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Monolith Chess v2.22.5 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Airin v2.23.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2421,9 +2511,6 @@ limitations under the License.
     </div>
   </div>
 
-  <!-- ── Fixed in-game Menu button ────────────── -->
-  <button class="game-menu-btn hidden" id="gameMenuBtn" onclick="openIngameMenu()" title="Menú">&#9776;</button>
-
   <div class="toast-container" id="toastContainer"></div>
 
 
@@ -2490,19 +2577,36 @@ limitations under the License.
     </div>
 
     <div class="board-wrap board-wrap--game">
-      <div class="board" id="board"></div>
+      <div class="board-row">
+        <div class="board" id="board"></div>
 
-      <div class="adv-container" id="advContainer">
-        <div class="adv-icon top">👑</div>
-        <div id="advantageBar" class="adv-track">
-          <div id="advBarWhite" class="adv-progress">
-            <div class="adv-slider-orb"></div>
+        <div class="adv-container" id="advContainer">
+          <div class="adv-icon top">👑</div>
+          <div id="advantageBar" class="adv-track">
+            <div id="advBarWhite" class="adv-progress">
+              <div class="adv-slider-orb"></div>
+            </div>
           </div>
+          <div class="adv-icon bottom">😈</div>
         </div>
-        <div class="adv-icon bottom">😈</div>
       </div>
 
       <div class="particle-container" id="particles"></div>
+
+      <!-- ── Move carousel strip ── -->
+      <div id="moveStrip">
+        <div class="ms-nav">
+          <button onclick="viewMove(0)" title="Inicio">⏮</button>
+          <button onclick="viewPrev()" title="Anterior">◀</button>
+        </div>
+        <div id="msScroll" class="ms-scroll"></div>
+        <div class="ms-nav">
+          <button onclick="viewNext()" title="Siguiente">▶</button>
+          <button onclick="exitHistoryView()" id="msExit" title="Presente" style="display:none">🚀</button>
+          <button onclick="undoMove()" id="msUndo" title="Deshacer">↩</button>
+          <button onclick="copyMoveHistory()" id="msCopy" title="Copiar PGN">📋</button>
+        </div>
+      </div>
     </div>
 
     <div class="side-panel">
@@ -2510,15 +2614,6 @@ limitations under the License.
       <div class="turn-bar" id="turnBar">
         <div class="turn-dot white" id="turnDot"></div>
         <span id="turnLabel">Turno: ⬜ Blancas</span>
-      </div>
-
-      <div class="panel-card">
-        <h3 id="historyTitle">
-          <span>📜 Movimientos</span>
-          <button onclick="copyMoveHistory()" id="copyMovesBtn" class="copy-moves-btn"
-            title="Copiar movimientos">📋</button>
-        </h3>
-        <div class="history-list" id="historyList"></div>
       </div>
 
       <div class="panel-card">
@@ -2531,21 +2626,12 @@ limitations under the License.
           <h4 id="capturedBlackTitle">⬛ Ganadas por Negras:</h4>
           <div class="captured-pieces" id="capturedByBlack"></div>
         </div>
-
       </div>
 
       <div class="btn-group">
         <button class="btn btn-sound" id="soundToggle" onclick="toggleSound()" title="Sonido">🔊</button>
-        <button class="btn btn-secondary" id="btnUndo" onclick="undoMove()">↩️ Deshacer</button>
         <button class="btn btn-primary" id="btnRestart" onclick="showConfirmDialog()">🔄 Reiniciar partida</button>
-      </div>
-
-      <div class="history-controls">
-        <button class="btn btn-history" onclick="viewMove(0)" title="Inicio">⏮️</button>
-        <button class="btn btn-history" onclick="viewPrev()" title="Anterior">◀️</button>
-        <button class="btn btn-history" onclick="viewNext()" title="Siguiente">▶️</button>
-        <button class="btn btn-history btn-present" onclick="exitHistoryView()" title="Presente"
-          id="btnExitHistory">🚀</button>
+        <button class="btn btn-danger" id="btnSideMenu" onclick="openIngameMenu()" style="width:100%; margin-top:4px;">☰ Menú</button>
       </div>
 
     </div>
@@ -2690,10 +2776,10 @@ limitations under the License.
   <div class="confirm-modal" id="aboutModal" style="z-index: 300;">
     <div class="confirm-box" style="max-width: 360px; padding: 32px 24px 24px; text-align: center;">
       <div style="font-size: 3rem; margin-bottom: 8px; line-height:1;">♟️</div>
-      <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Monolith Chess</div>
+      <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Airin</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.21.0</div>
+        v2.23.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -2737,7 +2823,7 @@ limitations under the License.
     // 🛸 Variable global para rastrear la última petición y evitar crosstalk en el Coliseo
     window._wkLastRequestId = 0;
 
-    window.askWiseKing = async function (fen, historyArr = []) {
+    window.askWiseKing = async function (fen, historyArr = [], positionFens = []) {
       console.log("🏟️ Received FEN request:", fen);
       try {
         const parts = fen.split(' ');
@@ -2856,6 +2942,30 @@ limitations under the License.
             clearTimeout(t);
             if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
           };
+          let _posHashes;
+          if (positionFens.length > 0) {
+            _posHashes = positionFens.map(fenStr => {
+              const _p = fenStr.split(' ');
+              if (_p.length < 4) return null;
+              const _rows = _p[0].split('/');
+              if (_rows.length !== 8) return null;
+              const _boardRows = _rows.map(row => {
+                let s = '';
+                for (const ch of row) {
+                  if (ch >= '1' && ch <= '8') { for (let i = 0; i < parseInt(ch); i++) s += ' '; }
+                  else s += ch;
+                }
+                return s;
+              });
+              const _col = _p[1], _cr = _p[2], _ep = _p[3];
+              let h = _boardRows.join('|') + '|' + _col;
+              h += '|' + (_cr.includes('K') ? 'K' : '') + (_cr.includes('Q') ? 'Q' : '') + (_cr.includes('k') ? 'k' : '') + (_cr.includes('q') ? 'q' : '');
+              if (_ep !== '-') { const _f = 'abcdefgh'.indexOf(_ep[0]); if (_f >= 0) h += '|ep' + _f; }
+              return h;
+            }).filter(h => h !== null);
+          } else {
+            _posHashes = [...positionHashes];
+          }
           worker.postMessage({
             action: 'search',
             board: tempBoard,
@@ -2864,7 +2974,7 @@ limitations under the License.
             enPassantTarget,
             depth: _depth, multiPV: 1, timeout: timeoutRes,
             requestId: currentId,
-            positionHashes: [...positionHashes],
+            positionHashes: _posHashes,
             halfMoveClock: parts[4] ? (parseInt(parts[4]) || 0) : 0
           });
         });
@@ -2977,6 +3087,8 @@ limitations under the License.
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
     let makeMoveGeneration = 0; // 🔴 RACE FIX: incremented on reset to abort stale async makeMove (promo modal race)
     let _currentEngineDone = null; // 🔴 RACE FIX: reference to active engineSearch resolve(), called by init() to unblock instantly
+    let _pendingChallengeItem = null; // full PUZZLES_DB object (carries .solution)
+    let puzzleMode = null;           // { solution: string[], step: number } when active
     // Character dialogs for intro and reactions (multilingual + emoji)
     const characterDialogs = {
       easy: {
@@ -3295,10 +3407,10 @@ limitations under the License.
 
     // THE NEW DIFFICULTY SCALE
     const DIFF_SETTINGS = {
-      easy: { depth: 2, mistakes: 0.50, timeLimit: 500 },
-      medium: { depth: 4, mistakes: 0.20, timeLimit: 1500 },
-      hard: { depth: 7, mistakes: 0, timeLimit: 6000 },
-      grandmaster: { depth: 30, mistakes: 0, timeLimit: 15000 }, // Time is the real cap; 30 allows deep endgame mates (killers array is Array(64) → safe)
+      easy: { depth: 2, mistakes: 0.40, timeLimit: 500 },
+      medium: { depth: 5, mistakes: 0.15, timeLimit: 5000 },
+      hard: { depth: 30, mistakes: 0, timeLimit: 15000 }, // Wizard: time-capped; ~1652 ELO on calibration PC (Ryzen 7 3700X)
+      grandmaster: { depth: 30, mistakes: 0, timeLimit: 30000 }, // Wise King: 30s cap; ~1830 ELO on calibration PC
     };
 
     // Piece values used by the Profesor for trade evaluation and hanging-piece detection.
@@ -3350,7 +3462,7 @@ limitations under the License.
         hudPvp: '👫 2 Jugadores', hudVsAi: '🤖 vs IA',
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
-        mainTitle: '♟️ Monolith Chess', mainSubtitle: '¿Con quién juegas hoy?',
+        mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?',
         btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
@@ -3364,7 +3476,7 @@ limitations under the License.
         trainingOn: '🎓 Modo Entrenamiento: ON', trainingOff: '🎓 Modo Entrenamiento: OFF',
         historyTitle: '📜 Movimientos', capturedTitle: '⚔️ Piezas Capturadas',
         capturedWhite: '⬜ Ganadas por Blancas:', capturedBlack: '⬛ Ganadas por Negras:',
-        undo: '↩️ Deshacer', restartBtn: '🔄 Reiniciar partida', reviewGame: '🔍 Repasar partida',
+        undo: '↩️ Deshacer', restartBtn: '🔄 Reiniciar partida', reviewGame: '🔍 Repasar partida', sideMenuBtn: '☰ Menú',
         noProfessorGrand: 'El Profesor no te puede ayudar en nivel Maestro 🤫',
         profAnalyzing: 'El Profesor está analizando la mejor estrategia para ti...',
         noClearMove: 'No encontré una jugada clara en este momento.',
@@ -3398,7 +3510,7 @@ limitations under the License.
         hudPvp: '👫 2 Players', hudVsAi: '🤖 vs AI',
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
-        mainTitle: '♟️ Monolith Chess', mainSubtitle: 'Who are you playing with today?',
+        mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?',
         btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
@@ -3412,7 +3524,7 @@ limitations under the License.
         trainingOn: '🎓 Training Mode: ON', trainingOff: '🎓 Training Mode: OFF',
         historyTitle: '📜 Moves', capturedTitle: '⚔️ Captured Pieces',
         capturedWhite: '⬜ Captured by White:', capturedBlack: '⬛ Captured by Black:',
-        undo: '↩️ Undo', restartBtn: '🔄 Restart game', reviewGame: '🔍 Review game',
+        undo: '↩️ Undo', restartBtn: '🔄 Restart game', reviewGame: '🔍 Review game', sideMenuBtn: '☰ Menu',
         noProfessorGrand: 'Coach is not available at Master level 🤫',
         profAnalyzing: 'Coach is analyzing the best strategy for you...',
         noClearMove: 'I could not find a clear move right now.',
@@ -3563,17 +3675,13 @@ limitations under the License.
         btnCommentaryUp: 'scrollUp', btnCommentaryDown: 'scrollDown', btnProfessorUp: 'scrollUp', btnProfessorDown: 'scrollDown',
         btnProfessorAnalysis: 'btnAnalysis', btnProfessorBest: 'btnWhatDo', btnProfessorWasGood: 'btnWasGood',
         capturedTitle: 'capturedTitle', capturedWhiteTitle: 'capturedWhite', capturedBlackTitle: 'capturedBlack',
-        btnUndo: 'undo', btnRestart: 'restartBtn', btnReviewGame: 'reviewGame', thinkingText: 'thinking', hawksEyeLabel: 'hawksEye'
+        btnRestart: 'restartBtn', btnSideMenu: 'sideMenuBtn', btnReviewGame: 'reviewGame', thinkingText: 'thinking', hawksEyeLabel: 'hawksEye'
       };
 
       Object.entries(map).forEach(([id, key]) => {
         const el = document.getElementById(id);
         if (el) el.textContent = t(key);
       });
-
-      // Update history title text without wiping the copy button
-      const histSpan = document.querySelector('#historyTitle span');
-      if (histSpan) histSpan.textContent = t('historyTitle');
 
       const trainingBtn = document.getElementById('trainingToggleBtn');
       if (trainingBtn) trainingBtn.textContent = trainingModeEnabled ? t('trainingOn') : t('trainingOff');
@@ -3930,7 +4038,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Monolith Chess v2.22.5", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Airin v2.23.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -3997,6 +4105,7 @@ limitations under the License.
       window.snapshotBeforeHumanMove = null;
       window.snapshotAfterHumanMove = null;
       window.snapshotBeforeRules = null;
+      puzzleMode = null;
 
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
@@ -4147,12 +4256,10 @@ limitations under the License.
       // evaluateBoard devuelve + para blancas y - para negras
       const score = evaluateBoard(board, 'hard');
 
-      // Score to percentage mapping:
-      // 50% is equality. Each 100 points (one pawn) shifts ~8%
-      let percent = 50 + (score / 15);
-
-      // Limitamos entre 5% y 95% para que la barra nunca desaparezca del todo
-      percent = Math.max(5, Math.min(95, percent));
+      // Sigmoid mapping (tanh): same approach used by Lichess/Chess.com.
+      // tanh(score/600): +100cp≈58%, +300cp≈73%, +600cp≈88%, never hard-clips.
+      let percent = 50 + 50 * Math.tanh(score / 600);
+      percent = Math.max(3, Math.min(97, percent));
 
       const barWhite = document.getElementById('advBarWhite');
       if (barWhite) {
@@ -4795,9 +4902,9 @@ limitations under the License.
                       if (!sAfter.isSafe && capturedVal < (pVal - 10)) {
                         // 🔥 CRITICAL FIX: Was the piece already in danger before moving?
                         const sBefore = evaluateSquareSafety(rr, cc, turn, board, enemy);
-                        // Only flag as blunder if the piece WAS safe and this move put it in danger.
-                        // If it was already attacked (e.g. royal fork), don't block the player.
-                        if (sBefore.isSafe) {
+                        // Flag as blunder if: (a) piece newly endangered, OR (b) rook/queen was
+                        // already hanging and player played an unrelated move (not in check).
+                        if (sBefore.isSafe || (pVal >= 500 && !inCheck(turn, board))) {
                           endangeredSquare = [rr, cc];
                           endangeredPieceChar = p;
                           isBlunder = true;
@@ -4871,7 +4978,52 @@ limitations under the License.
               window.pendingBlunder = null;
             }
           }
-          await makeMove(sr, sc, r, c);
+
+          // ── Puzzle mode: validate move against expected solution step ──
+          let puzzlePromo = null;
+          if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+            const expectedUci = puzzleMode.solution[puzzleMode.step];
+            const isPawn = board[sr] && board[sr][sc].toUpperCase() === 'P';
+            const isPromoRank = (r === 0 || r === 7);
+            // For UCI comparison use the expected promo piece (or Q default) to avoid modal mismatch
+            const guessPromo = isPawn && isPromoRank ? (expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q') : null;
+            const playedUci = moveToUci(sr, sc, r, c, guessPromo);
+            if (playedUci !== expectedUci) {
+              // Wrong move: flash the destination cell and show professor hint
+              const en = currentLanguage === 'en';
+              playErrorSound();
+              const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`) ||
+                             document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+              if (cellEl) { cellEl.classList.add('puzzle-wrong'); setTimeout(() => cellEl.classList.remove('puzzle-wrong'), 700); }
+              switchTab('professor');
+              const pList = document.getElementById('professorList');
+              pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--danger); background:rgba(239,68,68,0.05); padding:12px; margin-bottom:10px;">
+                <span class="hint-icon">❌</span>
+                <span class="hint-text">${en ? '⚠️ <strong>Not the right move.</strong> Think again — there is a better continuation.' : '⚠️ <strong>Esa no es la jugada.</strong> Piensa de nuevo — hay una continuación mejor.'}</span>
+              </div>`;
+              selected = null; legalMoves = []; render();
+              return;
+            }
+            // Correct move — capture promo piece so makeMove auto-promotes without modal
+            puzzlePromo = guessPromo;
+            puzzleMode.step++;
+          }
+
+          await makeMove(sr, sc, r, c, puzzlePromo);
+
+          // Puzzle complete check (after last human move)
+          if (puzzleMode && puzzleMode.step >= puzzleMode.solution.length) {
+            const en = currentLanguage === 'en';
+            puzzleMode = null;
+            setTimeout(() => {
+              switchTab('professor');
+              const pList = document.getElementById('professorList');
+              pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--success); background:rgba(34,197,94,0.05); padding:12px; margin-bottom:10px;">
+                <span class="hint-icon">🏆</span>
+                <span class="hint-text">${en ? '🎉 <strong>Puzzle solved!</strong> Perfect — you found the winning line.' : '🎉 <strong>¡Puzzle resuelto!</strong> Perfecto — encontraste la línea ganadora.'}</span>
+              </div>`;
+            }, 600);
+          }
           return;
         }
         if (piece !== ' ' && colorOf(piece) === turn) { selected = [r, c]; legalMoves = legalMovesFor(r, c); render(); return; }
@@ -4934,6 +5086,26 @@ limitations under the License.
         }
       }
 
+      // Compute SAN disambiguation before the board is mutated
+      let disambig = '';
+      if (!isCastle && type !== 'P' && type !== 'K') {
+        const ambig = [];
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (r === sr && c === sc) continue;
+            if (board[r][c].toUpperCase() === type && colorOf(board[r][c]) === color &&
+                legalMovesFor(r, c).some(([mr, mc]) => mr === tr && mc === tc)) {
+              ambig.push([r, c]);
+            }
+          }
+        }
+        if (ambig.length > 0) {
+          const fileConflict = ambig.some(([, c]) => c === sc);
+          const rankConflict = ambig.some(([r]) => r === sr);
+          disambig = !fileConflict ? colName(sc) : !rankConflict ? rowName(sr) : colName(sc) + rowName(sr);
+        }
+      }
+
       // 3. 💎 ATOMIC UPDATE (Prevents piece disappearing)
       const pieceChar = PIECES[piece];
       const animList = [{ sr, sc, tr, tc, pieceChar }];
@@ -4971,8 +5143,8 @@ limitations under the License.
 
       // 6. PAWN PROMOTION - ✨ Ahora con selección de pieza Y protección anti-race-condition
       if (type === 'P' && (tr === 0 || tr === 7)) {
-        if (gameMode === 'ai' && color !== playerColor) {
-          // ✨ FIX: IA promociona a lo que diga el motor (Dama por defecto)
+        if (promo || (gameMode === 'ai' && color !== playerColor)) {
+          // AI move or puzzle-mode forced piece — use provided promo (default Queen)
           let p = promo ? promo.toUpperCase() : 'Q';
           board[tr][tc] = color === 'w' ? p : p.toLowerCase();
           animating = false; // Liberar después de promoción IA
@@ -4994,7 +5166,7 @@ limitations under the License.
       // 7. GENERATE NOTATION
       if (!isCastle) {
         if (type === 'P') notation = isCapture ? colName(sc) + 'x' + sqName(tr, tc) : sqName(tr, tc);
-        else notation = type + (isCapture ? 'x' : '') + sqName(tr, tc);
+        else notation = type + disambig + (isCapture ? 'x' : '') + sqName(tr, tc);
         if (board[tr][tc].toUpperCase() !== type) notation += '=' + board[tr][tc].toUpperCase();
         if (epCapture) notation += ' e.p.';
       }
@@ -7979,15 +8151,44 @@ limitations under the License.
         if (move.tc > move.fc) not = 'O-O';
         else not = 'O-O-O';
       } else {
+        let disambig = '';
+        if (type !== 'P' && type !== 'K') {
+          const ambig = [];
+          for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+              if (r === move.fr && c === move.fc) continue;
+              if (brd[r][c].toUpperCase() === type && colorOf(brd[r][c]) === color) {
+                const raw = rawMoves(r, c, brd);
+                const legal = raw.filter(([tr2, tc2]) => {
+                  const copy = deepCopy(brd);
+                  copy[tr2][tc2] = copy[r][c]; copy[r][c] = ' ';
+                  return !inCheck(color, copy);
+                });
+                if (legal.some(([mr, mc]) => mr === move.tr && mc === move.tc)) ambig.push([r, c]);
+              }
+            }
+          }
+          if (ambig.length > 0) {
+            const fileConflict = ambig.some(([, c]) => c === move.fc);
+            const rankConflict = ambig.some(([r]) => r === move.fr);
+            disambig = !fileConflict ? colName(move.fc) : !rankConflict ? rowName(move.fr) : colName(move.fc) + rowName(move.fr);
+          }
+        }
         if (type === 'P') not = isCap ? colName(move.fc) + 'x' + sqName(move.tr, move.tc) : sqName(move.tr, move.tc);
-        else not = type + (isCap ? 'x' : '') + sqName(move.tr, move.tc);
+        else not = type + disambig + (isCap ? 'x' : '') + sqName(move.tr, move.tc);
       }
       return not;
     }
 
     function formatMoveLabel(m) {
       if (!m) return '';
-      const mover = board[m.fr] && board[m.fr][m.fc] ? board[m.fr][m.fc] : ' ';
+      // Read the moving piece from the board. If the source square is empty (stale
+      // move object from a simulated position), fall back to the promotion piece if
+      // present, otherwise use a generic label.
+      let mover = board[m.fr] && board[m.fr][m.fc] ? board[m.fr][m.fc] : ' ';
+      // FIX: Promotion moves — the board at [fr][fc] is ' ' after simulation.
+      // Use m.promo (Queen/Rook/Bishop/Knight char) so we label it properly.
+      if ((mover === ' ' || mover === undefined) && m.promo) mover = m.promo;
       const pieceName = getLocalizedPieceName(mover);
       const sqText = sqName(m.tr, m.tc);
       const up = (mover || ' ').toUpperCase();
@@ -8001,9 +8202,23 @@ limitations under the License.
         if (isCapture) return `${pieceName} x ${sqText}`;
         return currentLanguage === 'en' ? `${pieceName} to ${sqText}` : `${pieceName} a ${sqText}`;
       }
+      if (m.promo) {
+        // Promotion: label as the pawn promoting, then note the piece it becomes
+        const promoName = getLocalizedPieceName(m.promo);
+        return currentLanguage === 'en'
+          ? `Pawn to ${sqText}=${promoName}`
+          : `Peon a ${sqText}=${promoName}`;
+      }
       return currentLanguage === 'en' ? `${pieceName} to ${sqText}` : `${pieceName} a ${sqText}`;
     }
 
+    function moveToUci(fr, fc, tr, tc, promo) {
+      return 'abcdefgh'[fc] + (8 - fr) + 'abcdefgh'[tc] + (8 - tr) + (promo ? promo.toLowerCase() : '');
+    }
+    function uciToMoveObj(uci) {
+      const f = 'abcdefgh';
+      return { fr: 8 - parseInt(uci[1]), fc: f.indexOf(uci[0]), tr: 8 - parseInt(uci[3]), tc: f.indexOf(uci[2]), promo: uci.length === 5 ? uci[4].toUpperCase() : null };
+    }
 
     // ── Transposition Table (TT) ─────────
     let tt = new Map();
@@ -8134,17 +8349,61 @@ limitations under the License.
             const homeR = isW ? 7 : 0;
             if (r !== homeR || c !== 3) {
               const undeveloped = isW ? wUndevelopedMinors : bUndevelopedMinors;
-              bonus -= undeveloped * 70;
+              bonus -= undeveloped * 20;
               if ((isW && r <= 4) || (!isW && r >= 3)) {
-                bonus -= 150;
+                bonus -= 80;
               }
             }
+          }
+
+          // ── Queen mobility ────────────────────────────────────────────────
+          if (type === 'Q' && eg < 0.8) {
+            let mob = 0;
+            for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) {
+              let nr = r + dr, nc = c + dc;
+              while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const t = brd[nr][nc];
+                if (t === ' ') { mob++; nr += dr; nc += dc; }
+                else { if (isW ? t === t.toLowerCase() : t === t.toUpperCase()) mob++; break; }
+              }
+            }
+            bonus += Math.round((mob - 14) * 5 * (1 - eg * 0.5));
           }
 
           if (type === 'Q' || type === 'R') {
             if (isSquareAttacked(r, c, isW ? 'b' : 'w', brd)) {
               bonus -= (type === 'Q' ? 400 : 180);
             }
+          }
+
+          // ── Rook bonuses (mirrors worker eval) ───────────────────────────
+          if (type === 'R') {
+            const rank7 = isW ? 1 : 6;
+            if (r === rank7) { bonus += Math.round(25 + 15 * (1 - eg)); } // +40cp MG / +25cp EG
+
+            // Open / semi-open file
+            const myPawns = isW ? wP : bP, epPawns = isW ? bP : wP;
+            if (myPawns[c] === 0 && epPawns[c] === 0) bonus += 40;
+            else if (myPawns[c] === 0) bonus += 20;
+
+            // Connected rooks: battery on same rank or file, nothing between
+            const myRook = isW ? 'R' : 'r';
+            let connected = false;
+            for (let _c = 0; _c < 8 && !connected; _c++) {
+              if (_c === c || brd[r][_c] !== myRook) continue;
+              let clear = true;
+              const lo = Math.min(c, _c) + 1, hi = Math.max(c, _c);
+              for (let x = lo; x < hi; x++) { if (brd[r][x] !== ' ') { clear = false; break; } }
+              if (clear) connected = true;
+            }
+            for (let _r = 0; _r < 8 && !connected; _r++) {
+              if (_r === r || brd[_r][c] !== myRook) continue;
+              let clear = true;
+              const lo = Math.min(r, _r) + 1, hi = Math.max(r, _r);
+              for (let x = lo; x < hi; x++) { if (brd[x][c] !== ' ') { clear = false; break; } }
+              if (clear) connected = true;
+            }
+            if (connected) bonus += 15;
           }
 
           if (type === 'P') {
@@ -8156,6 +8415,12 @@ limitations under the License.
               const distanceToPromotion = isW ? (7 - r) : r;
               bonus += distanceToPromotion * 20;
               bonus = Math.round(bonus * (1 + eg * 3.5));
+              // Danger: exponential bonus for rank 5+ passers (mirrors worker PASS_DANGER)
+              const isDangerous = isW ? (r <= 3) : (r >= 4);
+              if (isDangerous) {
+                const dRank = isW ? ((7 - r) - 3) : (r - 3);
+                bonus += Math.round(25 * dRank * dRank * (0.4 + 0.6 * eg));
+              }
             }
 
             // 🧱 NEW: Pawn Chains (Solid Structure)
@@ -8172,6 +8437,18 @@ limitations under the License.
           }
 
           if (type === 'N') {
+            // Knight mobility: (reachable squares - 4) × 10
+            const _kd = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+            let mob = 0;
+            for (const [dr, dc] of _kd) {
+              const nr = r + dr, nc = c + dc;
+              if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const t = brd[nr][nc];
+                if (t === ' ' || (isW ? t === t.toLowerCase() : t === t.toUpperCase())) mob++;
+              }
+            }
+            bonus += (mob - 4) * 10;
+
             let isOutpost = false;
             let isAdvanced = (isW && r <= 3) || (!isW && r >= 4);
             if (c >= 2 && c <= 5 && ((isW && r >= 2 && r <= 4) || (!isW && r >= 3 && r <= 5))) {
@@ -8190,6 +8467,29 @@ limitations under the License.
             }
             if (isOutpost) bonus += 140;
             else if (isAdvanced) bonus -= 40;
+          }
+
+          if (type === 'B') {
+            // Bishop mobility: (reachable diagonal squares - 6) × 8
+            let mob = 0;
+            for (const [dr, dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+              let nr = r + dr, nc = c + dc;
+              while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const t = brd[nr][nc];
+                if (t === ' ') { mob++; nr += dr; nc += dc; }
+                else { if (isW ? t === t.toLowerCase() : t === t.toUpperCase()) mob++; break; }
+              }
+            }
+            bonus += (mob - 6) * 8;
+
+            // Bad bishop: penalty when own pawns crowd the bishop's color
+            const bishopColor = (r + c) % 2;
+            const ownPawnCh = isW ? 'P' : 'p';
+            let ownPawnsOnColor = 0;
+            for (let _r = 0; _r < 8; _r++) for (let _c = 0; _c < 8; _c++) {
+              if (brd[_r][_c] === ownPawnCh && (_r + _c) % 2 === bishopColor) ownPawnsOnColor++;
+            }
+            if (ownPawnsOnColor > 2) bonus -= (ownPawnsOnColor - 2) * Math.round(8 * (0.5 + 0.5 * eg));
           }
 
           if (type === 'K' && eg < 0.5) {
@@ -8249,6 +8549,45 @@ limitations under the License.
           }
           score += sign * (val + pst + bonus);
         }
+      }
+
+      // ── Backward pawns ────────────────────────────────────────────────
+      for (let _r = 1; _r < 7; _r++) {
+        for (let _c = 0; _c < 8; _c++) {
+          const _p = brd[_r][_c];
+          if (_p !== 'P' && _p !== 'p') continue;
+          const isWp = (_p === 'P');
+          const dir = isWp ? -1 : 1;
+          const advR = _r + dir;
+          const ePawn = isWp ? 'p' : 'P';
+          const eAttackRow = advR + dir;
+          if (eAttackRow < 0 || eAttackRow > 7) continue;
+          if (!(_c > 0 && brd[eAttackRow][_c-1] === ePawn) &&
+              !(_c < 7 && brd[eAttackRow][_c+1] === ePawn)) continue;
+          const fPawn = isWp ? 'P' : 'p';
+          let hasSupporter = false;
+          for (const dc of [-1, 1]) {
+            const nc = _c + dc;
+            if (nc < 0 || nc > 7) continue;
+            for (let sr = _r; isWp ? sr < 8 : sr >= 0; isWp ? sr++ : sr--) {
+              if (brd[sr][nc] === fPawn) { hasSupporter = true; break; }
+            }
+            if (hasSupporter) break;
+          }
+          if (hasSupporter) continue;
+          const pen = Math.round(20 + 10 * eg);
+          if (isWp) score -= pen; else score += pen;
+        }
+      }
+
+      // ── Space advantage (pawns in extended center of enemy half) ─────────
+      if (eg < 0.6) {
+        let wSpace = 0, bSpace = 0;
+        for (let _r = 3; _r <= 4; _r++) for (let _c = 2; _c <= 5; _c++) {
+          const _p = brd[_r][_c];
+          if (_p === 'P') wSpace++; else if (_p === 'p') bSpace++;
+        }
+        score += (wSpace - bSpace) * 3;
       }
 
       // ✨ CHECKMATE HEURISTIC
@@ -9096,22 +9435,8 @@ limitations under the License.
                   if (bp !== 0) break; // any other piece blocks the line
                 }
 
-                // ── Rule of the Square (Unstoppable Passer) ──────────────────
-                // If the enemy king cannot geometrically intercept the pawn, it
-                // is worth ~a rook (it WILL promote). Uses Chebyshev distance.
-                if (eg > 0.5) {
-                  const eKing = isW ? state.bKing : state.wKing;
-                  if (eKing) {
-                    const stepsToPromo = isW ? r : (7 - r);
-                    const eKingDist = Math.max(
-                      Math.abs(eKing[0] - (isW ? 0 : 7)),
-                      Math.abs(eKing[1] - c)
-                    );
-                    if (eKingDist > stepsToPromo + 1) {
-                      bonus += Math.round(600 * eg); // Scale with endgame phase
-                    }
-                  }
-                }
+                // Rule of the Square: handled by the correct implementation below
+                // (// ── RULE OF THE SQUARE) which includes the !anyMajorMinor guard.
 
                 // 🛡️ KING ESCORT (Endgame)
                 // Reward the King who walks next to the passed pawn to escort it.
@@ -9177,7 +9502,7 @@ limitations under the License.
             // ── Rook on 7th rank (or 2nd for black) ──────────────────────
             if (u === 4) {
               const rank7 = isW ? 1 : 6;
-              if (r === rank7) bonus += 35; // was 20
+              if (r === rank7) { const _r7 = Math.round(25 + 15 * (1 - eg)); bonus += _r7; } // +40cp MG / +25cp EG (tapered)
 
               // 🛡️ CONNECTED ROOKS: bonus when two own rooks form a battery (same rank/file, nothing between)
               const myRook = isW ? WR : BR;
@@ -9279,25 +9604,30 @@ limitations under the License.
 
             // ── King activity in endgame ──────────────────────────────────
             if (u === 6 && eg > 0.4) { // 🎯 TOURNAMENT IMPROVEMENT: activate earlier (was: 0.5)
-              // 👑 CRITICAL IMPROVEMENT: King must activate in endgames
-              // Bonus for centralization (squares d4, d5, e4, e5)
-              const centerDist = Math.abs(3.5 - r) + Math.abs(3.5 - c);
-              bonus += Math.round((7 - centerDist) * 15 * eg); // Up to +105 in center in pure endgame
+              // Gate: only activate king when not badly losing (>= -200cp material)
+              // Prevents king marching toward the attacker when down a piece or more
+              const ownMatAdv = isW ? matDiff : -matDiff;
+              if (ownMatAdv >= -200) {
+                // 👑 CRITICAL IMPROVEMENT: King must activate in endgames
+                // Bonus for centralization (squares d4, d5, e4, e5)
+                const centerDist = Math.abs(3.5 - r) + Math.abs(3.5 - c);
+                bonus += Math.round((7 - centerDist) * 15 * eg); // Up to +105 in center in pure endgame
 
-              // Bonus adicional por avanzar hacia peones enemigos
-              const enemyPawns = isW ? bP : wP;
-              let closestEnemyPawn = 999;
-              for (let er = 0; er < 8; er++) {
-                for (let ec = 0; ec < 8; ec++) {
-                  if (b[er*8+ec] === (isW ? BP : WP)) {
-                    const dist = Math.abs(r - er) + Math.abs(c - ec);
-                    closestEnemyPawn = Math.min(closestEnemyPawn, dist);
+                // Bonus adicional por avanzar hacia peones enemigos
+                const enemyPawns = isW ? bP : wP;
+                let closestEnemyPawn = 999;
+                for (let er = 0; er < 8; er++) {
+                  for (let ec = 0; ec < 8; ec++) {
+                    if (b[er*8+ec] === (isW ? BP : WP)) {
+                      const dist = Math.abs(r - er) + Math.abs(c - ec);
+                      closestEnemyPawn = Math.min(closestEnemyPawn, dist);
+                    }
                   }
                 }
-              }
-              if (closestEnemyPawn < 999) {
-                // King near enemy pawns in endgame = good for attacking them
-                bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
+                if (closestEnemyPawn < 999) {
+                  // King near enemy pawns in endgame = good for attacking them
+                  bonus += Math.round((7 - closestEnemyPawn) * 8 * eg);
+                }
               }
             }
 
@@ -9518,7 +9848,7 @@ limitations under the License.
           // Enemy passers: DANGER penalty — scaled exponentially at rank 5+ to force blocking.
           //   rank 5 (3 from promo) → high danger; rank 6 → very high; rank 7 → critical.
           const PASS_OWN = 60;  // cp bonus base (boosted for stronger endgame passer play)
-          const PASS_DANGER = 80; // cp base danger for enemy passer (exponential at rank 5+)
+          const PASS_DANGER = 25; // cp base danger for enemy passer (exponential at rank 5+); max rank-7 at eg=1: 225cp
           for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
               const p = b[r*8+c];
@@ -9534,6 +9864,13 @@ limitations under the License.
                 if (passed) {
                   const ownFactor = Math.max(0.5, (7 - r) * 0.55);
                   s += Math.round(PASS_OWN * ownFactor * (0.25 + 0.75 * eg));
+                  // DANGER bonus: mirror of Black's penalty — advanced White passers threaten Black
+                  // r=3 (rank 5): dangerFactor=1; r=2 (rank 6): 4; r=1 (rank 7): 9 — max 225cp at eg=1
+                  if (r <= 3) {
+                    const dangerRank = (7 - r) - 3;
+                    const dangerFactor = dangerRank * dangerRank;
+                    s += Math.round(PASS_DANGER * dangerFactor * (0.4 + 0.6 * eg));
+                  }
                 }
               } else if (p === BP) {
                 // Black pawn — check rows r+1..7 for white sentinels
@@ -9547,11 +9884,11 @@ limitations under the License.
                   // r=6 (rank 2 for black → one step from promo), r=5 (rank 3), r=4 (rank 4)
                   const ownFactor = Math.max(0.5, r * 0.55);
                   s -= Math.round(PASS_OWN * ownFactor * (0.25 + 0.75 * eg));
-                  // 🚨 DANGER: exponential penalty for advanced enemy passers (rank 4 and beyond)
-                  // r=4 (rank 4 promo distance 3): moderate; r=5: high; r=6: critical
+                  // DANGER: exponential penalty for advanced enemy passers — max 225cp at eg=1
+                  // r=4 (rank 5): dangerFactor=1; r=5 (rank 6): 4; r=6 (rank 7): 9
                   if (r >= 4) {
-                    const dangerRank = r - 3; 
-                    const dangerFactor = dangerRank * dangerRank; 
+                    const dangerRank = r - 3;
+                    const dangerFactor = dangerRank * dangerRank;
                     s -= Math.round(PASS_DANGER * dangerFactor * (0.4 + 0.6 * eg));
                   }
                 }
@@ -10764,6 +11101,9 @@ limitations under the License.
 
                   const child = applyMove(state, m);
                   const reps = gameHashCount.get(stringHash(child)) || 0;
+                  // 🔁 Diagnostic: log when 3rd-occurrence draw is detected at root.
+                  // If this NEVER fires despite repetition draws, gameHashCount is not being populated.
+                  if (reps >= 2) { const _rSq = (r,c) => 'abcdefgh'[c]+(8-r); console.log(`🔁 root-rep[${state.turn}] ${_rSq(m.fr,m.fc)}-${_rSq(m.tr,m.tc)} reps=${reps} prevBest=${Math.round(prevBestScore)}`); }
 
                   // 🔄 Anti-repetition scoring at root:
                   // reps=1 → 2nd visit → score 0 (draw candidate, engine picks if losing)
@@ -10843,6 +11183,7 @@ limitations under the License.
                     if (Date.now() >= deadline) { depthPartial = true; analysisPartial = true; break; }
                     const child = applyMove(state, m);
                     const reps = gameHashCount.get(stringHash(child)) || 0;
+                    if (reps >= 2) { const _rSq = (r,c) => 'abcdefgh'[c]+(8-r); console.log(`🔁 root-rep[${state.turn}] ${_rSq(m.fr,m.fc)}-${_rSq(m.tr,m.tc)} reps=${reps} prevBest=${Math.round(prevBestScore)}`); }
                     // 🔄 Same anti-repetition logic as aspiration loop
                     let scoreForMe;
                     if (reps >= 2) {
@@ -10969,32 +11310,68 @@ limitations under the License.
 
             // ── ROOT-LEVEL SEE ANTI-BLUNDER FILTER ────────────────────────
             // After all depth iterations, run a fast SEE check on the top move.
-            // If the chosen move immediately hangs a piece (SEE < -100cp on a quiet move),
-            // discard it and use the next-best from scoredRoot.
-            // This is a safety net against TT collisions, cold-start depth-1 stale scores,
-            // and any evaluation anomaly that slips through the main search.
-            // Cost: one SEE call (O(N) board scan) — negligible.
+            // If the chosen move hangs a piece (SEE < -200cp on a quiet move) AND the engine
+            // doesn't deeply value it (score ≤ +200cp), discard it and use the next-best.
+            // Safety gates (any one blocks substitution):
+            //   1. Substitute scores < -50000 (forced mate line)
+            //   2. Substitute scores >100cp WORSE than original (filter would make things worse)
+            // Early exit: if top move is already forced mate, filter is meaningless.
             {
               let _safeIdx = 0;
+              let _top1See = null; // SEE of top-ranked move (captures and quiet moves)
+              let _filterBlocked = false; // true when safety gate prevented a substitution
+              let _filterBlockMsg = ''; // reason for the block (used in diagnostic log)
               const _sr = scoredRoot.slice().sort((a, b) => b.score - a.score);
-              for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
-                const _m = _sr[_i].move;
-                const _isCapture = state.board[_m.tr*8+_m.tc] !== 0;
-                if (_isCapture) { _safeIdx = _i; break; } // captures always OK to try
-                const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
-                if (_moveSee >= -100) { _safeIdx = _i; break; } // move is safe
-                // Move hangs a piece for nothing — skip it and try next
-              }
-              if (_safeIdx > 0) {
-                // Best move was a blunder — use the safe alternative
-                const _safeMove = _sr[_safeIdx].move;
-                if (!bestOptions.some(o =>
-                  o.move.fr === _safeMove.fr && o.move.fc === _safeMove.fc &&
-                  o.move.tr === _safeMove.tr && o.move.tc === _safeMove.tc)) {
-                  bestOptions = [_sr[_safeIdx]];
-                  finalOptions = bestOptions; // propagate override — filter was dead code without this
+              // Early exit: position is forced mate — no point running the filter
+              if (_sr[0].score > -50000) {
+                for (let _i = 0; _i < Math.min(_sr.length, 5); _i++) {
+                  const _m = _sr[_i].move;
+                  const _moveSee = see(state.board, _m.tr, _m.tc, _m.fr, _m.fc);
+                  if (_i === 0) _top1See = _moveSee; // record top1 SEE for diagnostics
+                  // Safe if SEE >= -200 OR engine deeply values the move after full search.
+                  // Applies to both quiet moves and captures: a capture with SEE < -200
+                  // (e.g. piece-for-pawn at -225) is treated as a potential blunder.
+                  if (_moveSee >= -200 || _sr[_i].score > 200) { _safeIdx = _i; break; }
+                }
+                if (_safeIdx > 0) {
+                  const _subScore = _sr[_safeIdx].score;
+                  const _topScore = _sr[0].score;
+                  if (_subScore <= -50000) {
+                    // Substitute IS a forced-mate line — keep original choice
+                    _filterBlocked = true;
+                    _filterBlockMsg = `mate:${_subScore}`;
+                    _safeIdx = 0;
+                  } else if (_subScore < _topScore - 50) {
+                    // Substitute is >50cp worse than original — filter would make things worse
+                    _filterBlocked = true;
+                    _filterBlockMsg = `worse:${Math.round(_topScore - _subScore)}`;
+                    _safeIdx = 0;
+                  } else {
+                    // Substitute is safe and not significantly worse — proceed
+                    const _safeMove = _sr[_safeIdx].move;
+                    if (!bestOptions.some(o =>
+                      o.move.fr === _safeMove.fr && o.move.fc === _safeMove.fc &&
+                      o.move.tr === _safeMove.tr && o.move.tc === _safeMove.tc)) {
+                      bestOptions = [_sr[_safeIdx]];
+                      finalOptions = bestOptions;
+                    }
+                  }
                 }
               }
+              // ── Diagnostic log (captured by arena_tournament.js verbose logger) ──
+              const _sq = (r, c) => 'abcdefgh'[c] + (8 - r);
+              const _top3 = _sr.slice(0, Math.min(3, _sr.length)).map((x, idx) => {
+                const mv = x.move;
+                const isCapt = state.board[mv.tr*8+mv.tc] !== 0;
+                const seeNote = idx === 0 ? (_top1See !== null ? (isCapt ? '/capt:' : '/see:') + _top1See : '') : '';
+                return `${_sq(mv.fr,mv.fc)}-${_sq(mv.tr,mv.tc)}:${x.score}${seeNote}`;
+              }).join(' ');
+              const _filterNote = _filterBlocked
+                ? `FILTER→BLOCKED(${_filterBlockMsg})`
+                : (_safeIdx > 0
+                  ? `FILTER→${_sq(_sr[_safeIdx].move.fr,_sr[_safeIdx].move.fc)}-${_sq(_sr[_safeIdx].move.tr,_sr[_safeIdx].move.tc)}`
+                  : 'clean');
+              console.log(`📊 [${state.turn}] top3:[${_top3}] ${_filterNote} t:${Date.now() - searchStartTime}ms`);
             }
             const _totalN = searchNodes + qSearchNodes;
             const _ms = Date.now() - searchStartTime;
@@ -11144,10 +11521,18 @@ limitations under the License.
       try {
         let move = null;
 
-        // 1. Opening book
+        // 0. Puzzle mode: play the scripted AI response without searching
+        if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+          move = uciToMoveObj(puzzleMode.solution[puzzleMode.step]);
+          puzzleMode.step++;
+          await new Promise(r => setTimeout(r, 600 + (Math.random() * 400 | 0)));
+          if (aiSearchGeneration !== searchGen) { clearInterval(countdownInterval); aiThinking = false; return; }
+        }
+
+        // 1. Opening book (skipped when puzzle move is already set)
         let forcedBookMove = null;
-        if (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
-          (currentDifficulty === 'medium' && history.length <= 4)) {
+        if (!move && (currentDifficulty === 'hard' || currentDifficulty === 'grandmaster' ||
+          (currentDifficulty === 'medium' && history.length <= 4))) {
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
           const bookEntries = OPENING_BOOK[historyKey];
           if (bookEntries && bookEntries.length > 0) {
@@ -11284,13 +11669,26 @@ limitations under the License.
       if (mistakeChance > 0 && Math.random() < mistakeChance) {
         const legal = getLegalMovesForColorInPlace(color);
         if (legal.length > 1) {
+          // Filter suicidal moves from the mistake pool so Easy/Medium don't randomly hang
+          // their queen or rook. Easy blocks queen hangs only; Medium blocks all absurd moves.
+          const isSafeEnough = (mv) => {
+            if (currentDifficulty !== 'easy' && currentDifficulty !== 'medium') return true;
+            const profile = getMoveSafetyProfile(mv, color);
+            if (currentDifficulty === 'medium') return !profile.absurd;
+            const pc = board[mv.fr] && board[mv.fr][mv.fc];
+            return !(profile.absurd && (PIECE_VALUES[(pc || '').toUpperCase()] || 0) >= 885);
+          };
+          const tryFilter = (arr) => { const ok = arr.filter(isSafeEnough); return ok.length > 0 ? ok : arr; };
+
           const cutoff = Math.max(1, Math.floor(results.length * 0.7));
-          const weakPool = results.slice(cutoff);
-          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)].move;
+          const weakPool = tryFilter(results.slice(cutoff).map(r => r.move));
+          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)];
           const nonBest = legal.filter(m => {
             const b = results[0] && results[0].move;
             return !(b && m.fr === b.fr && m.fc === b.fc && m.tr === b.tr && m.tc === b.tc);
           });
+          const filteredNonBest = tryFilter(nonBest.slice(0, 4));
+          if (filteredNonBest.length > 0) return filteredNonBest[Math.floor(Math.random() * filteredNonBest.length)];
           if (nonBest.length > 0) return nonBest[Math.floor(Math.random() * Math.min(4, nonBest.length))];
         }
       }
@@ -11733,7 +12131,7 @@ limitations under the License.
       }
 
       let level = delta <= -200 ? 'high' : (delta <= -120 ? 'medium' : 'low');
-      return { delta, level, capturedVal, replyMove: worstMove };
+      return { delta, level, capturedVal, replyMove: worstMove, worstEval };
     }
 
     // Shared helper — computes all risk factors for a move. Used by both
@@ -11927,6 +12325,23 @@ limitations under the License.
       return `<span class="risk-badge ${level}">${label}</span>`;
     }
 
+    function getOpeningStyleTag(name, desc, lang) {
+      const en = lang === 'en';
+      const txt = ((name || '') + ' ' + (desc || '')).toLowerCase();
+      // Order matters: most specific patterns first to avoid false matches
+      if (/lateral|flank control/.test(txt))
+        return `<span class="risk-badge style-positional">♟️ ${en ? 'Positional' : 'Posicional'}</span>`;
+      if (/agresiv|aggressive|sharp|afilad/.test(txt))
+        return `<span class="risk-badge style-aggressive">⚡ ${en ? 'Aggressive' : 'Agresiva'}</span>`;
+      if (/flexible|transpos/.test(txt))
+        return `<span class="risk-badge style-flexible">🔀 ${en ? 'Flexible' : 'Flexible'}</span>`;
+      if (/flanchett|fianchett|hipermo|hypermod|gran diagonal/.test(txt))
+        return `<span class="risk-badge style-hypermodern">🔮 ${en ? 'Hypermodern' : 'Hipermoder.'}</span>`;
+      if (/sólid|solid|cerrad|closed|estratégic|strategic|construi|build/.test(txt))
+        return `<span class="risk-badge style-solid">🧱 ${en ? 'Solid' : 'Sólida'}</span>`;
+      return `<span class="risk-badge style-theory">📖 ${en ? 'Theory' : 'Teórica'}</span>`;
+    }
+
     function getImmediateHangingAfterMove(move, color = 'w') {
       const after = simulateMove(board, move);
       const enemyColor = color === 'w' ? 'b' : 'w';
@@ -11959,7 +12374,28 @@ limitations under the License.
       };
     }
 
-    // ✨ Restored function to avoid console error
+    function buildQualityHtml(q, lang) {
+      if (!q) return '';
+      const bad  = "color:var(--danger); font-size:0.85em;";
+      const good = "color:var(--success); font-size:0.85em;";
+      const info = "color:var(--text-light); font-size:0.85em;";
+      return lang === 'en'
+        ? q === -3 ? `<br><span style='${bad}'>📉 <strong>Blunder!</strong> A piece is left unprotected or major advantage is lost.</span>`
+        : q === -2 ? `<br><span style='${bad}'>⚠️ <strong>Mistake.</strong> This move gives your opponent a clear advantage.</span>`
+        : q === -1 ? `<br><span style='${info}'>💡 <strong>Small inaccuracy.</strong> There was a slightly better option.</span>`
+        : q ===  1 ? `<br><span style='${good}'>👍 <strong>Nice move!</strong> A solid improvement.</span>`
+        : q ===  2 ? `<br><span style='${good}'>🎯 <strong>Good move!</strong> You gained a clear advantage.</span>`
+        : q ===  3 ? `<br><span style='${good}'>💪 <strong>Very good move!</strong> An excellent tactical decision.</span>`
+        :             `<br><span style='${good}'>🌟 <strong>Brilliant move!</strong> A spectacular tactical vision.</span>`
+        : q === -3 ? `<br><span style='${bad}'>📉 <strong>¡Error grave!</strong> Una pieza queda sin defensa o se pierde la ventaja.</span>`
+        : q === -2 ? `<br><span style='${bad}'>⚠️ <strong>¡Error!</strong> Esta jugada cede ventaja clara al rival.</span>`
+        : q === -1 ? `<br><span style='${info}'>💡 <strong>Pequeña imprecisión.</strong> Había una opción ligeramente mejor.</span>`
+        : q ===  1 ? `<br><span style='${good}'>👍 <strong>¡Buen movimiento!</strong> Una mejora sólida.</span>`
+        : q ===  2 ? `<br><span style='${good}'>🎯 <strong>¡Buena jugada!</strong> Ganaste ventaja de forma clara.</span>`
+        : q ===  3 ? `<br><span style='${good}'>💪 <strong>¡Muy buena jugada!</strong> Una decisión táctica excelente.</span>`
+        :             `<br><span style='${good}'>🌟 <strong>¡Jugada brillante!</strong> Una visión táctica espectacular.</span>`;
+    }
+
     function rebuildCommentaryForLanguage() {
       const list = document.getElementById('commentaryList');
       if (!list) return;
@@ -11968,8 +12404,9 @@ limitations under the License.
         return;
       }
 
-      // 🔒 Save original timestamps before wiping the log
+      // 🔒 Save original timestamps and quality annotations before wiping the log
       const savedTimes = commentaryLog.map(e => e.time);
+      const savedQualities = commentaryLog.map(e => e.quality ?? 0);
 
       // Clear memory and style
       commentaryLog = [];
@@ -11992,9 +12429,15 @@ limitations under the License.
       // Restore snapshot for future use
       window.snapshotBeforeHumanMove = savedSnapshot;
 
-      // 🔒 Restore original timestamps (commentaryLog is newest-first via unshift)
+      // 🔒 Restore original timestamps and re-apply quality annotations in new language
+      const _rebuildLang = currentLanguage === 'en' ? 'en' : 'es';
       for (let i = 0; i < Math.min(commentaryLog.length, savedTimes.length); i++) {
         commentaryLog[i].time = savedTimes[i];
+        const q = savedQualities[i];
+        if (q !== 0) {
+          commentaryLog[i].quality = q;
+          commentaryLog[i].html += buildQualityHtml(q, _rebuildLang);
+        }
       }
 
       // Final single render with corrected timestamps
@@ -12079,7 +12522,7 @@ limitations under the License.
             : getRnd(["🏰 ¡Enroque largo! Pueden venir ataques a bandos opuestos.", "🛡️ El enroque largo cambia los planes de combate.", "⚔️ Enroque largo en el tablero: se viene ajedrez afilado."], 'special_castle_long')));
         const now2 = new Date();
         const timeStr2 = now2.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
-        commentaryLog.unshift({ html: castleComment, time: timeStr2, tone: 'serious' });
+        commentaryLog.unshift({ html: castleComment, time: timeStr2, tone: 'serious', quality: 0 });
         if (commentaryLog.length > 15) commentaryLog.pop();
         list.innerHTML = commentaryLog.map((entry, i) => `
           <div class="commentary-entry" style="border-left: 4px solid ${i === 0 ? 'var(--accent)' : 'rgba(168,85,247,0.25)'}; padding: 6px 10px; background: rgba(168,85,247,${i === 0 ? '0.06' : '0.02'}); margin-bottom: 5px; opacity: ${i === 0 ? '1' : '0.6'};">
@@ -12111,6 +12554,24 @@ limitations under the License.
       const isPromotion = lastMove.includes('=');
       const pieceChar = lastMove.length > 2 && /[KQRBN]/.test(lastMove[0]) ? lastMove[0] : 'P';
 
+      // King escaping from check: the move before this one gave check (+)
+      const isKingEscaping = pieceChar === 'K' && !isCapture &&
+        currentHistory.length >= 2 &&
+        currentHistory[currentHistory.length - 2].includes('+');
+
+      // Non-king piece escaping from an attacker (quiet moves only)
+      let isEscapingAttacker = false;
+      let escapingFromPiece = null;
+      if (!isCapture && pieceChar !== 'K' && lastFrom && lastFrom[0] !== undefined) {
+        const [_efr, _efc] = lastFrom;
+        const _enemyClr = colorWhoMoved === 'w' ? 'b' : 'w';
+        const _tmpBrd = board.map(r => [...r]);
+        _tmpBrd[_efr][_efc] = lastPieceMoved;
+        _tmpBrd[targetRc[0]][targetRc[1]] = ' ';
+        escapingFromPiece = getLowestValueAttacker(_efr, _efc, _enemyClr, _tmpBrd);
+        isEscapingAttacker = escapingFromPiece !== null;
+      }
+
       // Opening and History
       let openingName = null, openingTechNote = '';
       const openingMatch = detectOpeningFromHistory(currentHistory, lastMove, board);
@@ -12128,7 +12589,24 @@ limitations under the License.
           B: ["El Alfil domina la diagonal desde {sq}.", "Pieza activa en la diagonal {sq}.", "El alfil barre el tablero desde su nueva posición.", "Desarrollo armónico del alfil a {sq}."],
           R: ["La Torre ocupa la columna en {sq}.", "Torre a {sq}: buscando actividad en la fila.", "La Torre se activa por la vertical {sq}.", "Controlando la columna abierta desde {sq}."],
           Q: ["La Dama se centraliza para aumentar su influencia.", "Máxima presión de la Dama en {sq}.", "Dominio total del tablero con la dama en {sq}.", "La pieza más poderosa busca ángulos de ataque."],
-          K: isEndgame ? ["El Rey se activa: es pieza de ataque en el final.", "El monarca sale al combate, la partida se decide."] : ["Seguridad: el Rey busca refugio en {sq}.", "Maniobra de seguridad real en {sq}."]
+          K: isKingEscaping
+            ? ["El Rey escapa del jaque y se reagrupa en {sq}.",
+               "El monarca huye a {sq} — la presión no cesa.",
+               "El Rey se libra del jaque y se refugia en {sq}.",
+               "Obligado a moverse: el Rey busca seguridad en {sq}."]
+            : isEndgame
+            ? ["El Rey se activa: es pieza de ataque en el final.",
+               "El monarca sale al combate, la partida se decide.",
+               "El Rey centraliza y toma el control del tablero.",
+               "Maniobra real: el rey empuja hacia el campo contrario.",
+               "El Rey avanza: en el final cada casilla importa.",
+               "El monarca toma las riendas del juego."]
+            : ["Seguridad: el Rey busca refugio en {sq}.",
+               "Maniobra de seguridad real en {sq}.",
+               "El Rey se reubica buscando una casilla más sólida.",
+               "El monarca mejora su posición para el combate que se avecina.",
+               "Ajuste real: el Rey busca mayor seguridad en {sq}.",
+               "El Rey se pone a cubierto antes de que la tensión aumente."]
         },
         en: {
           P: ["Strategic advance: Pawn on {sq} strengthens the structure.", "Pawn structure taking shape at {sq}."],
@@ -12136,26 +12614,107 @@ limitations under the License.
           B: ["Bishop dominates the diagonal from {sq}.", "Active piece on the diagonal towards {sq}.", "The bishop sweeps the board from its new post.", "Harmonious bishop development to {sq}."],
           R: ["Rook claims the file on {sq}.", "Rook to {sq}: seeking activity along the rank.", "The Rook activates along the {sq} vertical.", "Controlling the open file from {sq}."],
           Q: ["The Queen centralizes to increase her influence.", "Full board domination with the queen on {sq}.", "The most powerful piece looks for attack angles.", "Strategic centralization of the queen."],
-          K: isEndgame ? ["The King activates: an attacking piece in the endgame.", "The monarch enters the fight — the game is being decided."] : ["Safety first: the King seeks shelter at {sq}.", "Royal safety maneuver at {sq}."]
+          K: isKingEscaping
+            ? ["The King runs to safety at {sq} — escaping the check!",
+               "King dodges the check and heads to {sq}.",
+               "Forced to {sq}: the King escapes the check.",
+               "The King slips away to {sq} — barely made it!"]
+            : isEndgame
+            ? ["The King activates: an attacking piece in the endgame.",
+               "The monarch enters the fight — the game is being decided.",
+               "King centralization: every square counts now.",
+               "Royal march: the king pushes into enemy territory.",
+               "The King takes the reins in the endgame.",
+               "The King steps up — the endgame is all about activity."]
+            : ["Safety first: the King seeks shelter at {sq}.",
+               "Royal safety maneuver at {sq}.",
+               "The King relocates to a more solid square.",
+               "The monarch improves position ahead of the coming battle.",
+               "Royal adjustment: the King seeks greater safety at {sq}.",
+               "The King takes cover before the tension rises."]
         }
       };
 
       const frasesBromas = {
         es: {
-          P: ["¡Ese peón va con más prisa que un niño el último día de cole!", "Peón a {sq}, ¡soñando con ser Dama algún día!"],
-          N: ["¡Vaya salto! ¡Ni Michael Jordan en un castillo hinchable!", "El caballo hace su cosa rara en L y nadie le entiende."],
-          B: ["¡Toma ya! El Alfil barre la diagonal como quien pasa la mopa.", "¡Ojo al láser! El alfil no perdona desde esa diagonal."],
-          R: ["¡Torre de hierro! Por aquí no pasa ni el aire.", "¡Rook & Roll! La torre se activa con ritmo."],
-          Q: ["¡Atención, ha llegado la Jefa! Actuad con naturalidad.", "La dama en {sq} dice: 'Aquí mando yo'."],
-          K: ["El Rey se esconde bajo los palos. ¡Un portero de los de antes!"]
+          P: ["¡Ese peón va con más prisa que un niño el último día de cole!", "Peón a {sq}, ¡soñando con ser Dama algún día!",
+              "¡Ese peón en {sq} tiene complejo de bulldozer!", "Infantería tomando posiciones en {sq}. ¡Ni un paso atrás!",
+              "Peón a {sq}. Lento, seguro y con la mirada puesta en la última fila."],
+          N: ["¡Vaya salto! ¡Ni Michael Jordan en un castillo hinchable!", "El caballo hace su cosa rara en L y nadie le entiende.",
+              "¡Parkour! El caballo sortea las piezas y aterriza en {sq}.", "¿Alguien pidió un taxi saltarín? Caballo en {sq}.",
+              "¡Boing, boing! El caballo rebota hasta {sq}."],
+          B: ["¡Toma ya! El Alfil barre la diagonal como quien pasa la mopa.", "¡Ojo al láser! El alfil no perdona desde esa diagonal.",
+              "El alfil se desliza a {sq} con la elegancia de un patinador sobre hielo.",
+              "¡Corte de espada ninja en diagonal hasta {sq}!", "El alfil va a {sq} por la sombra, para que no le vean."],
+          R: ["¡Torre de hierro! Por aquí no pasa ni el aire.", "¡Rook & Roll! La torre se activa con ritmo.",
+              "¡Abran paso! Vehículo pesado circulando hacia {sq}.",
+              "La torre se planta en {sq} y dice: '¡De aquí no me mueve nadie!'",
+              "¡Esa torre en {sq} tiene más presencia que un portero de discoteca!"],
+          Q: ["¡Atención, ha llegado la Jefa! Actuad con naturalidad.",
+            "La dama en {sq} dice: '¡Aquí mando yo!'.",
+            "¡La Dama cambia de posición! Ahora manda desde {sq}.",
+            "¡La Reina marca su territorio en {sq}! Que tiemble el rival.",
+            "La Jefa ha hablado: la Dama se planta en {sq}.",
+            "¡Ojo al dato! La Dama en {sq} no hace prisioneros.",
+            "La Dama llega a {sq}... ¡Acaba de subir el precio del alquiler en esa zona!",
+            "La Dama en {sq}. Despejen la zona si aprecian su vida."],
+          K: isKingEscaping
+            ? ["¡El Rey sale corriendo a {sq}! ¡Corre, Majestad, corre!",
+               "¡Zas! El Rey escapa a {sq} y se salva del jaque.",
+               "¡Uf, de milagro! El Rey se escapa a {sq}.",
+               "¡A {sq} y a salvo! El Rey esquiva el jaque por los pelos."]
+            : isEndgame
+            ? ["¡El Rey también quiere acción en el final y va a {sq}!",
+               "¡El monarca en {sq}! En el final el Rey también juega.",
+               "¡En el final el Rey es una estrella! Se planta en {sq}."]
+            : ["El Rey se esconde bajo los palos en {sq}. ¡Un portero de los de antes!",
+               "El Rey busca su sitio seguro en {sq}. ¡Muy listo él!",
+               "¡A cubierto, Majestad! El Rey se pone a buen recaudo en {sq}.",
+               "El Rey se va a su cabaña en {sq}. Que estén tranquilas las piezas.",
+               "El Rey dice que en {sq} hace menos corriente. Muy prudente.",
+               "¡Paseíto real hasta {sq}! ¡Que le pongan la alfombra roja!",
+               "El Rey se muda a {sq}. ¡Esperemos que haya traído el escudo!"]
         },
         en: {
-          P: ["Walking like he's lost his bus pass.", "Just a pawn doing pawn things."],
-          N: ["Jumping around like a guy at a wedding.", "Knight's on a mission to find the only open shop at 2 AM."],
-          B: ["Bishop's clearing the way like he's looking for a cinema seat.", "Sniper! Watching the board like a teacher during a math test."],
-          R: ["The Rook is a wall. Nothing's getting through that.", "Control tower! Watching the board like a bouncer."],
-          Q: ["Right, here's the Boss. Act natural.", "The queen on {sq} says: 'I run this board now'."],
-          K: ["Safety first. The Monarch's tucked away."]
+          P: ["Walking like he's lost his bus pass.", "Just a pawn doing pawn things.",
+              "That pawn on {sq} thinks it's a tank — unstoppable!", "Infantry advancing to {sq}. Not one step back!",
+              "Steady march to {sq} — that pawn's got its eye on the back rank."],
+          N: ["Jumping around like a guy at a wedding.", "Knight's on a mission to find the only open shop at 2 AM.",
+              "Parkour! The knight weaves through traffic and sticks the landing on {sq}.",
+              "Did someone order a bouncy taxi? Knight arriving at {sq}.",
+              "Boing, boing! The knight bounces all the way to {sq}."],
+          B: ["Bishop's clearing the way like he's looking for a cinema seat.", "Sniper! Watching the board like a teacher during a math test.",
+              "The bishop glides to {sq} with the grace of a figure skater.",
+              "Ninja sword slash straight down the diagonal to {sq}!",
+              "The bishop sneaks to {sq} through the shadows. Smooth."],
+          R: ["The Rook is a wall. Nothing's getting through that.", "Control tower! Watching the board like a bouncer.",
+              "Make way! Heavy vehicle incoming — heading to {sq}.",
+              "The rook parks at {sq}: 'Nobody's moving me from here.'",
+              "That rook on {sq} has more authority than a bouncer at a nightclub!"],
+          Q: ["Right, here's the Boss. Act natural.",
+            "The queen on {sq} says: 'I run this board now'.",
+            "The Boss relocates to {sq}. Maximum chaos incoming.",
+            "Queen to {sq} — the most dangerous piece just got busier.",
+            "The Queen rolls into {sq} like she owns the place. Which she does.",
+            "Eyes on {sq}! The Boss has moved.",
+            "The Queen arrives at {sq}... property values just went up in the neighbourhood.",
+            "The Queen on {sq}. Clear the area if you value your pieces."],
+          K: isKingEscaping
+            ? ["The King legs it to {sq}! Run, Your Majesty, run!",
+               "Quick! The King dodges the check and hides at {sq}.",
+               "Phew! The King makes it to {sq} just in time.",
+               "King escape! Dashing to {sq} like a pro."]
+            : isEndgame
+            ? ["The King wants some action too — charging to {sq}!",
+               "In the endgame, the King is the star! Moves to {sq}.",
+               "King on the move in the endgame — heading to {sq}."]
+            : ["Safety first — the Monarch tucks away at {sq}.",
+               "The King found his favourite hiding spot at {sq}.",
+               "The King retreats to {sq}. Very sensible, Your Majesty!",
+               "Hiding at {sq}! The King knows when to stay safe.",
+               "The King says {sq} has better draught protection. Very sensible.",
+               "A royal stroll to {sq}! Someone roll out the red carpet!",
+               "The King moves to {sq}. Let's hope he packed his shield."]
         }
       };
 
@@ -12181,19 +12740,29 @@ limitations under the License.
 
       const frasesCapturaBromas = {
         es: {
-          P: ["¡Ñam ñam! Ese peón tenía hambre y se comió {cap} en {sq}.", "Peón abusón quitando a {cap} del medio en {sq}."],
-          N: ["¡Zasca! El caballo aterriza encima de {cap} en {sq}.", "Caballo ninja: aparece de la nada y se lleva {cap}."],
-          B: ["¡Francotirador! El alfil se cobra a {cap} en {sq}.", "¡Cazado en la diagonal! Adiós a {cap}."],
-          R: ["¡La torre pasa como una apisonadora por encima de {cap}!", "¡Boom! La torre derriba a {cap} y se lleva el botín."],
-          Q: ["¡La Jefa no hace prisioneros! Adiós a {cap} en {sq}.", "¡A la saca! La dama hace limpieza y se lleva {cap} en {sq}."],
+          P: ["¡Ñam ñam! Ese peón tenía hambre y se comió {cap} en {sq}.", "Peón abusón quitando a {cap} del medio en {sq}.",
+              "¡A la calle! {cap} es amablemente invitado a salir del tablero en {sq}."],
+          N: ["¡Zasca! El caballo aterriza encima de {cap} en {sq}.", "Caballo ninja: aparece de la nada y se lleva {cap}.",
+              "¡Pisotón ecuestre! El caballo aplasta a {cap} en {sq}."],
+          B: ["¡Francotirador! El alfil se cobra a {cap} en {sq}.", "¡Cazado en la diagonal! Adiós a {cap}.",
+              "¡Zas, en toda la boca! El alfil limpia a {cap} en {sq}."],
+          R: ["¡La torre pasa como una apisonadora por encima de {cap}!", "¡Boom! La torre derriba a {cap} y se lleva el botín.",
+              "¡Aspiradora activada en {sq}! La torre se ha tragado a {cap}."],
+          Q: ["¡La Jefa no hace prisioneros! Adiós a {cap} en {sq}.", "¡A la saca! La dama hace limpieza y se lleva {cap} en {sq}.",
+              "¡Menudo atraco a mano armada! La Dama hace desaparecer a {cap} en {sq}."],
           K: ["¡El Rey también reparte leña y se carga a {cap} en {sq}!", "Con sus propias manos: el Rey echa a {cap}."]
         },
         en: {
-          P: ["Yum yum! That pawn was hungry for {cap} on {sq}.", "Out of my way! The pawn pushes {cap} aside."],
-          N: ["Bam! The knight lands right on {cap} at {sq}.", "Ninja knight: appears from nowhere and takes {cap}."],
-          B: ["Sniper! The bishop claims {cap} on {sq}.", "Caught on the diagonal! Goodbye {cap}."],
-          R: ["The rook rolls over {cap} like a bulldozer on {sq}!", "Boom! The rook knocks down {cap}."],
-          Q: ["The Boss takes no prisoners! {cap} is gone on {sq}.", "In the bag! The queen cleans up {cap} on {sq}."],
+          P: ["Yum yum! That pawn was hungry for {cap} on {sq}.", "Out of my way! The pawn pushes {cap} aside.",
+              "Out you go! {cap} is politely shown the exit at {sq}."],
+          N: ["Bam! The knight lands right on {cap} at {sq}.", "Ninja knight: appears from nowhere and takes {cap}.",
+              "Horsey stomp! The knight flattens {cap} on {sq}."],
+          B: ["Sniper! The bishop claims {cap} on {sq}.", "Caught on the diagonal! Goodbye {cap}.",
+              "Smack! The bishop wipes {cap} clean off {sq}."],
+          R: ["The rook rolls over {cap} like a bulldozer on {sq}!", "Boom! The rook knocks down {cap}.",
+              "Hoover on! The rook sucks up {cap} at {sq}."],
+          Q: ["The Boss takes no prisoners! {cap} is gone on {sq}.", "In the bag! The queen cleans up {cap} on {sq}.",
+              "Armed robbery! The Queen makes {cap} disappear on {sq}."],
           K: ["The King gets his hands dirty taking {cap} on {sq}!", "Doing it himself: the King captures {cap}."]
         }
       };
@@ -12201,8 +12770,7 @@ limitations under the License.
       // 🔍 SPECIAL DETECTORS (Quality & Captures)
       let isQueenCaptured = false;
       let capturedPieceChar = null;
-      let isHugeBlunder = false;
-      let isBrilliant = false;
+      let moveQuality = 0; // -3=blunder -2=mistake -1=inaccuracy 0=neutral 1=nice 2=good 3=very good 4=brilliant
 
       // 1. Extract Captured Piece
       if (isCapture) {
@@ -12213,14 +12781,40 @@ limitations under the License.
         }
       }
 
-      // 2. Evaluate Move Quality against the Engine
-      if (window.snapshotBeforeHumanMove) {
+      // Only evaluate move quality for human moves (snapshot is stale during AI moves)
+      const _isHumanMove = gameMode === 'pvp' || colorWhoMoved === playerColor;
+
+      // 2. Evaluate Move Quality against the Engine (only in middlegame/endgame — opening moves are theory)
+      if (_isHumanMove && window.snapshotBeforeHumanMove && !isOpening) {
         const evBefore = evaluateBoard(window.snapshotBeforeHumanMove, 'hard');
         const evAfter = evaluateBoard(board, 'hard');
         // Delta from the perspective of the player who just moved
         const delta = colorWhoMoved === 'w' ? (evAfter - evBefore) : (evBefore - evAfter);
-        if (delta <= -250) isHugeBlunder = true;
-        if (delta >= 200) isBrilliant = true;
+        if      (delta <= -300) moveQuality = -3; // blunder
+        else if (delta <= -150) moveQuality = -2; // mistake
+        else if (delta <=  -80) moveQuality = -1; // inaccuracy
+        else if (delta >=  400) moveQuality =  4; // brilliant
+        else if (delta >=  250) moveQuality =  3; // very good
+        else if (delta >=  150) moveQuality =  2; // good move
+        else if (delta >=   80) moveQuality =  1; // nice touch
+      }
+
+      // 2b. Hanging-piece check (fires even in the opening — catches "left queen hanging" blunders
+      //     that the eval-delta misses because the penalty fires in both before/after snapshots)
+      if (moveQuality > -3 && _isHumanMove && window.snapshotBeforeHumanMove) {
+        const _opp = colorWhoMoved === 'w' ? 'b' : 'w';
+        let _foundHanging = false;
+        for (let _hr = 0; _hr < 8 && !_foundHanging; _hr++) {
+          for (let _hc = 0; _hc < 8 && !_foundHanging; _hc++) {
+            const _hp = board[_hr][_hc];
+            if (!_hp || _hp === ' ' || colorOf(_hp) !== colorWhoMoved) continue;
+            if ((PIECE_VALUES[_hp.toUpperCase()] || 0) < 300) continue;
+            if (!evaluateSquareSafety(_hr, _hc, colorWhoMoved, board, _opp).isSafe) {
+              _foundHanging = true;
+            }
+          }
+        }
+        if (_foundHanging) moveQuality = -3;
       }
 
 
@@ -12312,13 +12906,62 @@ limitations under the License.
         const phaseFunnyChance = isOpening ? getCommentaryFunnyChance('opening') : (isEndgame ? getCommentaryFunnyChance('endgame') : getCommentaryFunnyChance('normal'));
         const isFunny = Math.random() < phaseFunnyChance;
         toneUsed = isFunny ? 'funny' : 'serious';
-        const pool = isFunny ? frasesBromas[lang][pieceChar] : frasesSerias[lang][pieceChar];
-        actionComment = pickFreshPhrase(pool, `norm_${pieceChar}`).replace('{sq}', targetSq);
 
-        if (commentaryLog.length > 0 && actionComment === commentaryLog[0].html) {
-          const backups = lang === 'en' ? ["A solid maneuver.", "The tension continues on the board."] : ["Una maniobra sólida.", "La tensión continúa en el tablero."];
-          actionComment = backups[Math.floor(Math.random() * backups.length)];
+        if (isEscapingAttacker && escapingFromPiece) {
+          // Piece retreated from a square that was under attack — name the threat
+          const _attName = getLocalizedPieceName(escapingFromPiece);
+          const _pieceNm = getLocalizedPieceName(pieceChar);
+          const _escPool = lang === 'en'
+            ? [`The ${_attName} was threatening! The ${_pieceNm} retreats safely to ${targetSq}.`,
+               `Forced to ${targetSq}: the ${_pieceNm} dodges the ${_attName}'s attack.`,
+               `The ${_pieceNm} escapes to ${targetSq} — the ${_attName} was the danger.`,
+               `Smart retreat to ${targetSq}: the ${_pieceNm} avoids the ${_attName}.`]
+            : [`¡Amenaza de ${_attName}! ${_pieceNm} se pone a salvo en ${targetSq}.`,
+               `Retirada táctica a ${targetSq}: ${_pieceNm} evita el ataque de ${_attName}.`,
+               `${_pieceNm} escapa a ${targetSq}, fuera del alcance de ${_attName}.`,
+               `Movimiento de seguridad a ${targetSq}: el ${_attName} estaba amenazando.`];
+          actionComment = pickFreshPhrase(_escPool, `escape_${pieceChar}`);
+        } else {
+          const pool = isFunny ? frasesBromas[lang][pieceChar] : frasesSerias[lang][pieceChar];
+          actionComment = pickFreshPhrase(pool, `norm_${pieceChar}`).replace('{sq}', targetSq);
+
+          if (commentaryLog.length > 0 && actionComment === commentaryLog[0].html) {
+            const backups = lang === 'en' ? ["A solid maneuver.", "The tension continues on the board."] : ["Una maniobra sólida.", "La tensión continúa en el tablero."];
+            actionComment = backups[Math.floor(Math.random() * backups.length)];
+          }
         }
+      }
+
+      // 🔴 HOPELESS POSITION — fires a dramatic/funny phrase when the human is
+      // completely lost (≥900 cp down). Fires AT MOST ONCE PER GAME: uses the
+      // commentaryStyleMemory['hopeless'] bucket which is cleared on every init().
+      // Once pickFreshPhrase adds an entry to that bucket it stays non-empty for
+      // the rest of the game, so the condition below will be false from then on.
+      const _boardEvalNow = evaluateBoard(board, 'hard');
+      const _humanEvalNow = (typeof playerColor !== 'undefined' && playerColor === 'b') ? _boardEvalNow : -_boardEvalNow;
+      const _alreadyFiredHopeless = (commentaryStyleMemory['hopeless'] || []).length > 0;
+      const _isHopelessPos = _humanEvalNow <= -900 && !_alreadyFiredHopeless && !lastMove.includes('#');
+      if (_isHopelessPos) {
+        toneUsed = 'hopeless';
+        comment = lang === 'en'
+          ? getRnd([
+              "Not even Magnus Carlsen with a magic wand can save this.",
+              "Some positions have no saving grace... and this is one of them.",
+              "The computer has already searched 'how to resign gracefully'.",
+              "Even Kasparov would offer a draw here. And get refused.",
+              "This isn't chess anymore, it's damage control.",
+              "The engine sees no light at the end of this tunnel.",
+              "At this point, the best move is probably a handshake.",
+            ], 'hopeless')
+          : getRnd([
+              "Esto no lo arregla ni Magnus Carlsen con una varita mágica.",
+              "Hay posiciones sin remedio... y esta es una de ellas.",
+              "El ordenador ya busca en Google 'cómo rendirse con dignidad'.",
+              "En esta posición, hasta Kasparov pediría tablas. Y le dirían que no.",
+              "La partida ya no se juega, se sufre.",
+              "El motor no ve luz al final de este túnel.",
+              "A estas alturas, la mejor jugada es probablemente dar la mano.",
+            ], 'hopeless');
       }
 
       // Overrides — order matters: completed mate > promotion > special patterns > isScholarAverted
@@ -12343,69 +12986,172 @@ limitations under the License.
         if (lang === 'en') {
           const phrases = isWhiteMove
             ? [
-              `The game enters the **${openingName}**. ${openingTechNote}`,
-              `White responds with the **${openingName}**. ${openingTechNote}`,
-              `Opening confirmed: **${openingName}**. ${openingTechNote}`,
-              `Classic **${openingName}** on the board. ${openingTechNote}`,
-              `White continues with the **${openingName}**. ${openingTechNote}`,
+              `📖 The game enters the **${openingName}**. ${openingTechNote}`,
+              `📖 White responds with the **${openingName}**. ${openingTechNote}`,
+              `📖 Opening confirmed: **${openingName}**. ${openingTechNote}`,
+              `📖 Classic **${openingName}** on the board. ${openingTechNote}`,
+              `📖 White continues with the **${openingName}**. ${openingTechNote}`,
+              `📖 Theory! The **${openingName}** has been played a thousand times. ${openingTechNote}`,
             ]
             : [
-              `Black responds with the **${openingName}**. ${openingTechNote}`,
-              `Black chooses the **${openingName}**. ${openingTechNote}`,
-              `Black enters the **${openingName}**. ${openingTechNote}`,
+              `📖 Black responds with the **${openingName}**. ${openingTechNote}`,
+              `📖 Black chooses the **${openingName}**. ${openingTechNote}`,
+              `📖 Black enters the **${openingName}**. ${openingTechNote}`,
+              `📖 Black knows their theory — the **${openingName}**. ${openingTechNote}`,
             ];
           comment = getRnd(phrases, 'opening_note');
         } else {
           const phrases = isWhiteMove
             ? [
-              `Se plantea la **${openingName}**. ${openingTechNote}`,
-              `Las blancas responden con la **${openingName}**. ${openingTechNote}`,
-              `Apertura confirmada: **${openingName}**. ${openingTechNote}`,
-              `Clásica **${openingName}** en el tablero. ${openingTechNote}`,
-              `Las blancas continúan con la **${openingName}**. ${openingTechNote}`,
+              `📖 Se plantea la **${openingName}**. ${openingTechNote}`,
+              `📖 Las blancas responden con la **${openingName}**. ${openingTechNote}`,
+              `📖 Apertura confirmada: **${openingName}**. ${openingTechNote}`,
+              `📖 Clásica **${openingName}** en el tablero. ${openingTechNote}`,
+              `📖 Las blancas continúan con la **${openingName}**. ${openingTechNote}`,
+              `📖 ¡Teoría pura! La **${openingName}** se ha jugado mil veces. ${openingTechNote}`,
             ]
             : [
-              `Las negras responden con la **${openingName}**. ${openingTechNote}`,
-              `Las negras eligen la **${openingName}**. ${openingTechNote}`,
-              `El rival opta por la **${openingName}**. ${openingTechNote}`,
+              `📖 Las negras responden con la **${openingName}**. ${openingTechNote}`,
+              `📖 Las negras eligen la **${openingName}**. ${openingTechNote}`,
+              `📖 El rival opta por la **${openingName}**. ${openingTechNote}`,
+              `📖 ¡Las negras conocen su teoría! La **${openingName}**. ${openingTechNote}`,
             ];
           comment = getRnd(phrases, 'opening_note');
         }
       }
+      else if (isOpening && (() => {
+        const cm = lastMove ? lastMove.replace(/[+#?!]/g, '').trim() : '';
+        const moveNum = currentHistory.length;
+        return /^N[ah][36]$/.test(cm)                                          // knight to rim (Nh3/Na3/Nh6/Na6)
+          || (moveNum <= 4 && /^Q[ah][2-7]$/.test(cm) && !cm.includes('x'))   // queen lunges to edge early
+          || (moveNum === 1 && /^[ah][34]$/.test(cm));                         // a3/h3/a4/h4 as first move
+      })()) {
+        toneUsed = 'funny';
+        const cm = lastMove ? lastMove.replace(/[+#?!]/g, '').trim() : '';
+        const isKnightRim = /^N[ah][36]$/.test(cm);
+        const isQueenLunge = /^Q[ah][2-7]$/.test(cm);
+        if (lang === 'en') {
+          const phrases = isKnightRim
+            ? [
+                "😬 Knight to the rim! As masters say: **a knight on the rim is dim**.",
+                "🤦 That knight just moved to the worst square on the board.",
+                "😂 The knight has decided to retire from active chess.",
+                "🫣 Knights on the rim cry at night. Set it free!",
+                "🤭 Magnus Carlsen has left the chat.",
+                "😬 Bold strategy — parking the knight where it controls almost nothing.",
+              ]
+            : isQueenLunge
+            ? [
+                "👸 Queen out this early? The opponent is already planning to chase her.",
+                "😅 An early queen adventure... hope she knows the way back.",
+                "🎯 Bringing the queen out so soon is risky — she might spend the whole game running.",
+                "🤔 The queen wants to party early. This rarely ends well.",
+              ]
+            : [
+                "😐 That pawn doesn't do much for the center... interesting opener.",
+                "🤔 A flank move to start. Unusual, but hey — it's your call!",
+                "😅 An unconventional first move. Points for originality.",
+                "🫤 The center is wide open and we're moving a wing pawn. Classic.",
+              ];
+          comment = getRnd(phrases, 'bad_opening');
+        } else {
+          const phrases = isKnightRim
+            ? [
+                "😬 ¡Caballo al rincón! Como dicen los maestros: **caballo en el borde, caballo que pierde**.",
+                "🤦 Ese caballo acaba de irse a vivir al peor sitio del tablero.",
+                "😂 El caballo decide jubilarse antes de empezar.",
+                "🫣 Los caballos en el borde lloran de noche. ¡Libéralo!",
+                "🤭 Magnus Carlsen ha abandonado el chat.",
+                "😬 Estrategia valiente: aparcar el caballo donde no controla nada.",
+              ]
+            : isQueenLunge
+            ? [
+                "👸 ¡La dama sale a pasear! El rival ya está frotándose las manos para perseguirla.",
+                "😅 Aventura temprana de la dama... esperemos que sepa volver.",
+                "🎯 Sacar la dama tan pronto es arriesgado. Puede pasarse la partida huyendo.",
+                "🤔 La dama quiere salir de fiesta. Esto raramente acaba bien.",
+              ]
+            : [
+                "😐 Ese peón no controla el centro ni un poquito... jugada curiosa.",
+                "🤔 Primer movimiento al flanco. Inusual, ¡pero allá tú!",
+                "😅 Apertura poco convencional. Puntos por originalidad.",
+                "🫤 El centro libre y empezamos con el peón del flanco. Un clásico.",
+              ];
+          comment = getRnd(phrases, 'bad_opening');
+        }
+      }
+      else if (isOpening && !isCapture && !isCheck && (() => {
+        const prevKey = currentHistory.slice(0, -1).map(m => m.replace(/[+#?!]/g, '').trim()).join(',');
+        const cleanMove = lastMove ? lastMove.replace(/[+#?!]/g, '').trim() : '';
+        return OPENING_BOOK[prevKey] && OPENING_BOOK[prevKey].some(opt => opt.m === cleanMove);
+      })() && Math.random() < 0.40) {
+        // 📖 Book theory comment — only fires when the move is actually in OPENING_BOOK (~40% chance)
+        toneUsed = 'serious';
+        const isWhiteMove = colorWhoMoved === 'w';
+        const bookPhrases = lang === 'en'
+          ? [
+            isWhiteMove ? "📖 Book move! White follows well-known theory." : "📖 Black knows the theory — textbook response.",
+            isWhiteMove ? "📖 Classic opening play from White." : "📖 Black stays in the book.",
+            isWhiteMove ? "📖 White follows established opening lines." : "📖 Black answers with known theory.",
+            "📖 Theory! This position has been played thousands of times.",
+            isWhiteMove ? "📖 White sticks to the main line." : "📖 Black replies with a principled book move.",
+            isWhiteMove ? "📖 Well-prepared! White plays solid opening chess." : "📖 Black shows their opening prep.",
+          ]
+          : [
+            isWhiteMove ? "📖 ¡Jugada de libro! Las blancas siguen la teoría." : "📖 ¡Las negras conocen su teoría!",
+            isWhiteMove ? "📖 Apertura clásica de las blancas." : "📖 Las negras se mantienen en el libro.",
+            isWhiteMove ? "📖 Las blancas siguen las líneas teóricas." : "📖 Las negras responden con teoría conocida.",
+            "📖 ¡Teoría pura! Esta posición se ha jugado miles de veces.",
+            isWhiteMove ? "📖 Las blancas se quedan en la línea principal." : "📖 Las negras responden con una jugada de libro.",
+            isWhiteMove ? "📖 ¡Bien preparado! Las blancas juegan ajedrez sólido de apertura." : "📖 Las negras muestran su preparación.",
+          ];
+        comment = getRnd(bookPhrases, 'book_theory');
+      }
       else if (historicalMotif) {
         comment = lang === 'en' ? getRnd([`Historical echo: **${lastMove}** recalls **${historicalMotif.nameEn}**.`], 'historical_note') : getRnd([`Eco histórico: **${lastMove}** recuerda a **${historicalMotif.nameEs}**.`], 'historical_note');
+      }
+      else if (isCheck && moveQuality === -3) {
+        // Check given but a piece is left hanging — don't combine contradictory messages
+        comment = lang === 'en'
+          ? getRnd(["⚠️ Check! But careful — a piece is left unprotected after this move.", "🔔 Check given, but watch out: you have a piece in danger.", "⚡ Check! The king must respond, but so must you — a piece is hanging."], 'check_blunder')
+          : getRnd(["⚠️ ¡Jaque! Pero cuidado — una pieza queda desprotegida tras esta jugada.", "🔔 Das jaque, pero atento: tienes una pieza en peligro.", "⚡ ¡Jaque! El rey debe responder, pero tú también — una pieza está colgada."], 'check_blunder');
+        moveQuality = 0; // message already covers the warning; suppress duplicate annotation
       }
       else if (isCheck && isEndgame) {
         comment = lang === 'en' ? getRnd(["Check! Precision is absolutely required now."], 'end_check') : getRnd(["¡Jaque! Ahora la precisión es absolutamente vital."], 'end_check');
       }
       else if (isCheck) {
-        // Check in middlegame — detect if it also creates a pin or discovered attack
+        const isFunnyCheck = commentaryStyleLevel === 2;
+        toneUsed = isFunnyCheck ? 'funny' : toneUsed;
         const checkPhrases = lang === 'en'
-          ? ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately.", "🎯 A direct check forces the opponent's hand — use the tempo!", "🔥 Check! Good forcing move — keep the pressure on.", "⚡ Check! The king is under fire — watch for tactical follow-ups."]
-          : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato.", "🎯 ¡Jaque directo! Forzamos al rival — ¡aprovecha el tempo!", "🔥 ¡Jaque! Buena jugada forzante — mantén la presión.", "⚡ ¡Jaque! El rey está bajo fuego — atento a los seguimientos tácticos."];
-        comment = getRnd(checkPhrases, 'mid_check');
+          ? isFunnyCheck
+            ? ["🔔 Ding dong! Check! Someone's knocking on the king's door.", "🚨 Eviction notice! That king needs to move — now.", "🔥 Fire alarm! The king is absolutely sweating right now.", "😅 Uh oh! Check. Someone just tripped the alarm wire.", "📣 Check called! The king didn't see that coming."]
+            : ["🔥 Check! The king must respond — every move now counts.", "⚡ Check given! The opponent must deal with this threat immediately.", "🎯 A direct check forces the opponent's hand — use the tempo!", "🔥 Check! Good forcing move — keep the pressure on.", "⚡ Check! The king is under fire — watch for tactical follow-ups."]
+          : isFunnyCheck
+            ? ["🔔 ¡Ding dong! ¡Jaque al canto! Alguien llama a la puerta del rey.", "🚨 ¡Aviso de desahucio! Ese rey tiene que moverse ya.", "🔥 ¡Fuego en la pista! El rey está sudando la gota gorda.", "😅 ¡Uy, uy, uy! Jaque. Alguien pisó el cable de la alarma.", "📣 ¡Jaque! El rey no se lo esperaba para nada."]
+            : ["🔥 ¡Jaque! El rey tiene que responder — cada jugada cuenta ahora.", "⚡ ¡Jaque dado! El rival debe atender esta amenaza de inmediato.", "🎯 ¡Jaque directo! Forzamos al rival — ¡aprovecha el tempo!", "🔥 ¡Jaque! Buena jugada forzante — mantén la presión.", "⚡ ¡Jaque! El rey está bajo fuego — atento a los seguimientos tácticos."];
+        comment = getRnd(checkPhrases, isFunnyCheck ? 'mid_check_funny' : 'mid_check');
+      }
+      else if (commentaryStyleLevel === 2 && moveQuality === -3) {
+        toneUsed = 'funny';
+        comment = lang === 'en'
+          ? getRnd(["😬 Oops... someone hit the wrong button there.", "🎁 This move is proudly sponsored by the Free Gifts Association.", "🤔 Was that a tactic or did your finger slip?", "😅 The opponent's Christmas just came early."], 'blunder_funny')
+          : getRnd(["😬 Uy... creo que alguien le dio al botón equivocado.", "🎁 Esa jugada ha sido patrocinada por la 'Asociación de Regalos Gratuitos'.", "🤔 ¿Eso era una táctica de despiste o se te ha escurrido el dedo?", "😅 La Navidad del rival llegó antes de tiempo."], 'blunder_funny');
       }
       else {
         comment = actionComment;
       }
 
-      // 📊 Append Engine Quality Evaluation at the end
-      if (isHugeBlunder) {
-        comment += lang === 'en'
-          ? "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>Blunder!</strong> A piece is left completely unprotected or advantage is lost.</span>"
-          : "<br><span style='color:var(--danger); font-size:0.85em;'>📉 <strong>¡Error grave!</strong> Una pieza queda sin defensa o se pierde la ventaja.</span>";
-      } else if (isBrilliant) {
-        comment += lang === 'en'
-          ? "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>Brilliant move!</strong> A spectacular tactical vision.</span>"
-          : "<br><span style='color:var(--success); font-size:0.85em;'>🌟 <strong>¡Jugada brillante!</strong> Una visión táctica espectacular.</span>";
+      // 📊 Append Engine Quality Evaluation at the end — only with serious/neutral comments
+      const _appliedQuality = (toneUsed !== 'funny' && moveQuality !== 0) ? moveQuality : 0;
+      if (_appliedQuality !== 0) {
+        comment += buildQualityHtml(_appliedQuality, lang);
       }
-
-      // Renderizado
 
       // Renderizado
       const now = new Date();
       const timeStr = now.toLocaleTimeString(lang === 'en' ? 'en-GB' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
-      commentaryLog.unshift({ html: comment, time: timeStr, tone: toneUsed });
+      commentaryLog.unshift({ html: comment, time: timeStr, tone: toneUsed, quality: _appliedQuality });
       if (commentaryLog.length > 15) commentaryLog.pop();
       list.innerHTML = commentaryLog.map((entry, i) => `
         <div class="commentary-entry" style="border-left: 4px solid ${i === 0 ? (isCapture ? 'var(--danger)' : 'var(--accent)') : 'rgba(168,85,247,0.25)'}; padding: 6px 10px; background: rgba(168,85,247,${i === 0 ? '0.06' : '0.02'}); margin-bottom: 5px; opacity: ${i === 0 ? '1' : '0.6'};">
@@ -12995,10 +13741,15 @@ limitations under the License.
           // 🔍 SEE CHECK: applies to ALL moves (captures AND quiet moves).
           // For captures: if SEE < 0, the piece loses material net even though it captures.
           // For quiet moves: if SEE < -50, the piece lands on a square where it's lost.
+          // FIX: King moves are always legal (the engine already filters illegal ones),
+          // so SEE on the king's destination is meaningless — the king can't be left on
+          // an attacked square. Applying SEE here inflated tacticalPenalty for king
+          // centralization moves, causing the emergency fallback to fire in won positions.
           let seePenalty = 0;
           if (!isMate) {
             const isCapture = board[move.tr][move.tc] !== ' ';
-            const moveSee = see(board, move.tr, move.tc, move.fr, move.fc);
+            const isKingMove = (board[move.fr][move.fc] || ' ').toUpperCase() === 'K';
+            const moveSee = isKingMove ? 0 : see(board, move.tr, move.tc, move.fr, move.fc);
             if (isCapture) {
               if (moveSee < 0) {
                 // Losing capture: e.g. Bxh7 when Nf6 recaptures. SEE < 0 = net material loss.
@@ -13020,12 +13771,15 @@ limitations under the License.
           const severeDrop = reply.delta <= -28 ? Math.abs(reply.delta) : 0;
           let hangingPenalty = (hanging.danger && !isMate && !isProfitableTrade) ? 25 : 0;
 
-          // 🚨 ABANDONED PIECE PENALTY: if this move saves the moving piece but
+          // ABANDONED PIECE PENALTY: if this move saves the moving piece but
           // leaves another friendly piece that was ALREADY hanging still hanging,
           // add a penalty equal to a fraction of its value. This prevents the
           // Professor from recommending "escape moves" that abandon a hanging piece.
+          // FIX: Skip for king moves — the king can't save other pieces anyway;
+          // applying this to king endgame moves inflated the penalty for centralization.
           let abandonedPenalty = 0;
-          if (!isMate) {
+          const isKingMoveAbandoned = (board[move.fr][move.fc] || ' ').toUpperCase() === 'K';
+          if (!isMate && !isKingMoveAbandoned) {
             try {
               const afterMove = simulateMove(board, move);
               for (let r = 0; r < 8; r++) {
@@ -13312,29 +14066,6 @@ limitations under the License.
             }
           }
 
-          // 🔭 X-Ray: latent threats through a blocker
-          // Only relevant after pieces have moved — starting position generates false positives
-          // because pieces are still on their home squares aligned along ranks/files.
-          if (history.length >= 4) {
-            for (let r = 0; r < 8; r++) {
-              for (let c = 0; c < 8; c++) {
-                const p = board[r][c];
-                if (!p || p === ' ' || colorOf(p) !== sideToAnalyze) continue;
-                if ((PIECE_VALUES[p.toUpperCase()] || 0) <= 10) continue;
-                const safety = evaluateSquareSafety(r, c, sideToAnalyze, board, enemyColor);
-                if (safety.hasXRayThreat && safety.isSafe) {
-                  const pName = getLocalizedPieceName(p);
-                  const sq = sqName(r, c);
-                  const xName = safety.xrayThreats[0] ? getLocalizedPieceName(safety.xrayThreats[0].piece) : (en ? 'a piece' : 'una pieza');
-                  contextNotes.push(en
-                    ? `🔭 Your ${pName} on ${sq} looks safe but an enemy ${xName} targets it through a blocker — watch out if that piece moves.`
-                    : `🔭 Tu ${pName} en ${sq} parece segura pero ${getPieceArticle(safety.xrayThreats[0] ? safety.xrayThreats[0].piece : ' ', 'indef')} ${xName} enemigo la apunta a través de un bloqueador — ojo si esa pieza se mueve.`);
-                  break; // one X-Ray warning is enough
-                }
-              }
-            }
-          }
-
           // ♟️ Passed pawn close to promotion
           const myPawnCh = sideToAnalyze === 'w' ? 'P' : 'p';
           const enPawnCh = sideToAnalyze === 'w' ? 'p' : 'P';
@@ -13448,7 +14179,7 @@ limitations under the License.
         // - Endgame (≤10 pieces): 2 options — precision matters more than variety
         let maxShow;
         if (history.length === 0 && !fenPositionLoaded) {
-          maxShow = 20; // First move: show entire opening book — maximally educational
+          maxShow = 11; // First move: show top opening options — maximally educational
         } else if (piecesCount <= 10) {
           maxShow = 2; // Endgame: precision over variety
         } else if (history.length <= 8) {
@@ -13459,6 +14190,17 @@ limitations under the License.
           maxShow = 3; // Middlegame/late game
         }
         let displayList = finalOptions.slice(0, maxShow);
+        // FIX: Remove duplicate labels (same piece + destination from two origins,
+        // e.g. two Rooks that can both reach d1 produce "Torre a d1" twice).
+        {
+          const _seenLabels = new Set();
+          displayList = displayList.filter(opt => {
+            const lbl = formatMoveLabel(opt.move);
+            if (_seenLabels.has(lbl)) return false;
+            _seenLabels.add(lbl);
+            return true;
+          });
+        }
 
         // 🧘 Peace-of-mind message — only when nothing else to say AND no book moves
         const hasBookMoves = displayList.some(o => o.isBook);
@@ -13487,17 +14229,32 @@ limitations under the License.
           return;
         }
 
+        const _bestScore = finalOptions[0]?.score ?? 0;
+        const _posMated  = _bestScore < -90000;   // forced mate against us
+        const _posLosing = _bestScore < -300;
+        const _posTough  = _bestScore < -100;
+
         let msgTexto;
-        if (displayList.length === 1 && displayList[0].isMate) {
+        if (_posMated) {
+          msgTexto = en
+            ? `⚠️ <strong>You are being mated</strong> — try to hold on as long as possible:`
+            : `⚠️ <strong>Te están dando jaque mate</strong> — intenta resistir el mayor tiempo posible:`;
+        } else if (displayList.length === 1 && displayList[0].isMate) {
           msgTexto = en
             ? '🏆 <strong>Checkmate in 1!</strong> This move ends the game:'
             : '🏆 <strong>¡Jaque Mate en 1!</strong> Esta jugada termina la partida:';
+        } else if (_posLosing) {
+          msgTexto = en
+            ? `The position is tough — here are your best options (${displayList.length}):`
+            : `La posición es difícil — aquí están tus mejores opciones (${displayList.length}):`;
         } else if (displayList.length === 1) {
           msgTexto = en
-            ? 'I see 1 very good move in this position:'
-            : 'Veo 1 jugada muy buena en esta posición:';
+            ? (_posTough ? 'Here is the best move available:' : 'I see 1 very good move in this position:')
+            : (_posTough ? 'Aquí está la mejor jugada disponible:' : 'Veo 1 jugada muy buena en esta posición:');
         } else {
-          msgTexto = t('manyGood', { n: displayList.length });
+          msgTexto = _posTough
+            ? (en ? `Here are your best options (${displayList.length}):` : `Estas son tus mejores opciones (${displayList.length}):`)
+            : t('manyGood', { n: displayList.length });
         }
         let msg = `${msgTexto}<div style="margin-top:8px; font-size:13px; line-height:1.4;">`;
         displayList.forEach((opt, idx) => {
@@ -13507,12 +14264,33 @@ limitations under the License.
           let strategicIntent = "";
           if (isBook) {
             strategicIntent = `<strong>${simplifyForKids(opt.name || '')}</strong>: ${simplifyForKids(opt.desc || '')}`;
-          } else if (opt.tacticalPenalty > 150) {
-            // 🛡️ CONTROL DE CORDURA: Si la jugada pierde material grave (penalización alta), 
-            // prohibimos que el generador de texto busque intenciones "brillantes".
-            strategicIntent = en 
-                ? "An emergency move in a very difficult tactical situation." 
-                : "Un movimiento de emergencia en una situación táctica muy complicada.";
+          } else if (opt.tacticalPenalty > 250) {
+            // CONTROL DE CORDURA: high tacticalPenalty means the penalty heuristics
+            // flagged this move (hanging piece, abandoned ally, contested square).
+            // If the engine score is positive the position isn't lost — use a neutral
+            // fallback so the player isn't alarmed. Reserve the alarming text for
+            // genuinely losing positions (engine score < 0).
+            const isLosingPosition = (opt.score !== undefined && opt.score < 0);
+            const _rndPick = arr => arr[Math.floor(Math.random() * arr.length)];
+            strategicIntent = isLosingPosition
+              ? _rndPick(en
+                  ? ["An emergency move in a very difficult tactical situation.",
+                     "The best available option in a tough spot.",
+                     "Damage control — limits the opponent's advantage.",
+                     "The engine's safest choice in this difficult position."]
+                  : ["Un movimiento de emergencia en una situación táctica muy complicada.",
+                     "La mejor opción disponible en una situación difícil.",
+                     "Control de daños — limita la ventaja del rival.",
+                     "La elección más segura del motor en esta posición complicada."])
+              : _rndPick(en
+                  ? ["A solid engine choice for this complex position.",
+                     "The engine's preferred move here.",
+                     "A careful, positional choice.",
+                     "Strategic improvement — subtle but effective."]
+                  : ["Una jugada sólida del motor para esta posición compleja.",
+                     "La opción preferida del motor en esta posición.",
+                     "Mejora posicional sutil pero efectiva.",
+                     "Reubicación estratégica para mejorar la posición."]);
           } else {
             strategicIntent = simplifyForKids(getStrategicIntent(m, sideToAnalyze));
           }
@@ -13537,8 +14315,8 @@ limitations under the License.
                   const savedName = getLocalizedPieceName(p);
                   const savedSq = sqName(r, c);
                   spiderNote = en
-                    ? `<span style="display:block;margin-top:3px;font-size:0.78rem;color:var(--success);">✅ Also rescues your ${savedName} on ${savedSq} that the Spider Sense is warning about.</span>`
-                    : `<span style="display:block;margin-top:3px;font-size:0.78rem;color:var(--success);">✅ También salva tu ${savedName} en ${savedSq} que el Sentido Arácnido señala como amenazada.</span>`;
+                    ? `<span style="display:block;margin-top:4px;padding:3px 7px;border-radius:5px;font-size:0.78rem;background:rgba(245,158,11,0.10);border-left:3px solid #f59e0b;color:#92400e;">⚠️ Also defends your ${savedName} on ${savedSq} — it's under attack!</span>`
+                    : `<span style="display:block;margin-top:4px;padding:3px 7px;border-radius:5px;font-size:0.78rem;background:rgba(245,158,11,0.10);border-left:3px solid #f59e0b;color:#92400e;">⚠️ También defiende tu ${savedName} en ${savedSq} — ¡está bajo ataque!</span>`;
                   break;
                 }
               }
@@ -13552,8 +14330,11 @@ limitations under the License.
             : '';
           const explanation = `<span style="line-height:1.5;">${strategicIntent}</span>${spiderNote}${riskBlock}`;
 
+          const _badge = isBook
+            ? getOpeningStyleTag(opt.name || '', opt.desc || '', currentLanguage)
+            : renderRiskBadge(opt.riskLevel);
           msg += `<div style="margin-bottom:8px; cursor:pointer; padding:6px; border-radius:8px; transition:background 0.2s;" onmouseover="this.style.background='rgba(168,85,247,0.06)'" onmouseout="this.style.background='transparent'" onclick="highlightBookMove(${m.fr}, ${m.fc}, ${m.tr}, ${m.tc})">
-            ${idx + 1}. ${isBook ? '📚 ' : ''}<strong>${formatMoveLabel(m)}</strong> ${renderRiskBadge(opt.riskLevel)}: ${explanation}
+            ${idx + 1}. ${isBook ? '📚 ' : ''}<strong>${formatMoveLabel(m)}</strong> ${_badge}: ${explanation}
           </div>`;
         });
         msg += `</div>`;
@@ -13562,7 +14343,7 @@ limitations under the License.
           ? `<div style="margin-bottom:10px; padding:8px 10px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); font-size:0.82rem;">${t('emergencyCoachLine')}</div>`
           : '';
 
-        pList.innerHTML = `${panicMsg}${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
+        pList.innerHTML = `${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
 
       } catch (err) {
         pList.innerHTML = `<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`;
@@ -13571,6 +14352,21 @@ limitations under the License.
 
     function requestBestMove() {
       lastProfessorAction = 'best';
+
+      // Puzzle mode: reveal the expected next move as a hint
+      if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+        const hintMove = uciToMoveObj(puzzleMode.solution[puzzleMode.step]);
+        const en = currentLanguage === 'en';
+        switchTab('professor');
+        const pList = document.getElementById('professorList');
+        const label = formatMoveLabel(hintMove);
+        pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--accent); padding:12px; margin-bottom:10px;">
+          <span class="hint-icon">💡</span>
+          <span class="hint-text">${en ? '💡 <strong>Hint:</strong> Try moving <strong>' + label + '</strong>.' : '💡 <strong>Pista:</strong> Prueba jugando <strong>' + label + '</strong>.'}</span>
+        </div>`;
+        highlightBookMove(hintMove.fr, hintMove.fc, hintMove.tr, hintMove.tc);
+        return;
+      }
 
       // 1. DETERMINAR TURNO Y PERMISOS (Soporte PvP)
       const currentTurn = turn;
@@ -13743,9 +14539,12 @@ limitations under the License.
             const severeDrop = reply.delta <= -28 ? Math.abs(reply.delta) : 0;
             let hangingPenalty = (hanging.danger && !isMate && !isProfitableTrade) ? 25 : 0;
 
-            // 🚨 ABANDONED PIECE PENALTY (sincronizado con renderProfessorOptions)
+            // ABANDONED PIECE PENALTY (book-path, mirrors renderProfessorOptions).
+            // FIX: Skip for king moves — applying this to king endgame centralization
+            // inflated tacticalPenalty and triggered the emergency fallback in won games.
             let abandonedPenalty = 0;
-            if (!isMate) {
+            const isKingMove_ap = (board[mv.fr][mv.fc] || ' ').toUpperCase() === 'K';
+            if (!isMate && !isKingMove_ap) {
               try {
                 const afterMove = simulateMove(board, mv);
                 const emClr = currentTurn === 'w' ? 'b' : 'w';
@@ -13755,7 +14554,7 @@ limitations under the License.
                   const p = board[r][c];
                   if (!p || p === ' ' || colorOf(p) !== currentTurn) continue;
                   const pVal = PIECE_VALUES[p.toUpperCase()] || 0;
-                  if (pVal < 300) continue; // centipawn scale
+                  if (pVal < 300) continue;
                   const wasSafe = evaluateSquareSafety(r, c, currentTurn, board, emClr).isSafe;
                   const nowSafe = evaluateSquareSafety(r, c, currentTurn, afterMove, emClr).isSafe;
                   if (!wasSafe && !nowSafe) abandonedPenalty += Math.round(pVal * 0.6);
@@ -13771,21 +14570,20 @@ limitations under the License.
             // even though the bishop is lost. Now: SEE < 0 on ANY capture adds a penalty.
             if (!isMate) {
               const isCapture = board[mv.tr][mv.tc] !== ' ';
-              if (isCapture) {
+              // FIX: King moves are always legal — SEE on the king's destination is
+              // meaningless because the king can't be left on an attacked square.
+              // Applying SEE here inflated tacticalPenalty for king endgame moves.
+              const isKingMove_bv = (board[mv.fr][mv.fc] || ' ').toUpperCase() === 'K';
+              if (isCapture && !isKingMove_bv) {
                 // SEE from the moving piece's perspective on the target square.
                 // see(board, toR, toC, fromR, fromC) returns net centipawn gain.
                 // If negative: the piece is immediately recaptured at a loss.
                 const captureSee = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
                 if (captureSee < 0) {
-                  // Losing capture: piece captures but is immediately recaptured for a loss.
-                  // The loss is the absolute SEE value (e.g. -235cp if bishop takes pawn but knight takes bishop).
                   tacticalPenalty += Math.abs(captureSee);
-                  // Escalate risk: a losing capture is always high risk.
                   riskLevel = 'high';
-                  // Also mark isProfitableTrade as false since SEE proves it isn't.
-                  // (isProfitableTrade was computed purely from piece values, ignoring recaptures)
                 }
-              } else if (opt.isBook) {
+              } else if (!isKingMove_bv && opt.isBook) {
                 // Quiet book move: check if landing square is attacked (original SEE logic)
                 const landingSee = see(board, mv.tr, mv.tc, mv.fr, mv.fc);
                 if (landingSee < -50) {
@@ -13856,10 +14654,12 @@ limitations under the License.
 
           // --- 13. MOTOR UNIFICADO (Multi-PV) ---
           // Depth 4 and 5000ms is more reliable on mobile than depth 5 at 6000ms.
-          // At grandmaster level the Professor gets extra depth so its suggestions
-          // match the quality of the AI engine (both run in the same Worker).
-          const profDepth = currentDifficulty === 'grandmaster' ? 8 : 4;
-          const profTimeout = currentDifficulty === 'grandmaster' ? 12000 : 5000;
+          // Professor depth scales with difficulty so suggestions match the AI level.
+          // Easy/Medium: depth 4 (fast, avoids waiting for young players).
+          // Hard: depth 6 (catches mid-range tactics the AI plays at this level).
+          // Grandmaster: depth 8 (professor is disabled at GM, but kept for future use).
+          const profDepth = currentDifficulty === 'grandmaster' ? 8 : currentDifficulty === 'hard' ? 6 : 4;
+          const profTimeout = currentDifficulty === 'grandmaster' ? 12000 : currentDifficulty === 'hard' ? 8000 : 5000;
 
           // --- SNAPSHOT: capture position before launching the async Worker so
           //     we can validate the result belongs to the current position and
@@ -14562,8 +15362,42 @@ limitations under the License.
           : "🧱 Ganancia de espacio: el peón avanza y restringe la movilidad de las piezas enemigas.");
       }
 
-      // 15. SOLID GENERIC FALLBACK
-      return withQS(en ? "It improves your coordination and solidifies the position." : "Mejora la armonía de tus piezas y solidifica la posición general.");
+      // 15a. KING MIDDLEGAME — specific label instead of generic fallback
+      if (piece === 'K') {
+        if (isEnd) {
+          return withQS(en
+            ? "The King steps forward — king activity is decisive in the endgame."
+            : "El Rey avanza — la actividad del rey es decisiva en el final.");
+        }
+        // Middlegame king move: safety improvement
+        return withQS(en
+          ? "The King improves its position, seeking a more solid square."
+          : "El Rey mejora su posici\u00f3n buscando una casilla m\u00e1s s\u00f3lida.");
+      }
+
+      // 15b. ROOK / QUEEN — contextual fallback with icon
+      if (piece === 'R') {
+        // Check if it's moving to an open file (no friendly pawns blocking)
+        const myPawnChar = color === 'w' ? 'P' : 'p';
+        let openFile = true;
+        for (let r = 0; r < 8; r++) if (copy[r][m.tc] === myPawnChar) { openFile = false; break; }
+        if (openFile) {
+          return withQS(en
+            ? "🏰 The Rook occupies an open file, maximizing its range."
+            : "🏰 La Torre ocupa una columna abierta, maximizando su alcance.");
+        }
+        return withQS(en
+          ? "🏰 The Rook repositions to increase pressure."
+          : "🏰 La Torre se reposiciona para aumentar la presi\u00f3n.");
+      }
+      if (piece === 'Q') {
+        return withQS(en
+          ? "\uD83D\uDC51 The Queen repositions to a more active square."
+          : "\uD83D\uDC51 La Dama se reposiciona en una casilla de mayor actividad.");
+      }
+
+      // 15c. SOLID GENERIC FALLBACK
+      return withQS(en ? "It improves your coordination and solidifies the position." : "Mejora la armon\u00eda de tus piezas y solidifica la posici\u00f3n general.");
     }
 
     function getEducationalTip() {
@@ -14720,14 +15554,20 @@ limitations under the License.
           : (board[humanMove.tr][humanMove.tc] !== ' '
             ? (PIECE_VALUES[board[humanMove.tr][humanMove.tc].toUpperCase()] || 0) : 0);
         const isProfitableTrade = targetPieceVal >= myPieceVal;
-        const isRealHanging = hanging.danger && !isProfitableTrade;
+        // Opening gambits: suppress "pawn hanging" in first 10 moves — it's almost always
+        // an intentional offer (Queen's Gambit c4, Sicilian, etc.), not a real mistake.
+        const isOpeningPhase = history.length <= 10;
+        const _isOpeningGambitPawn = pieceMoved.toUpperCase() === 'P' && isOpeningPhase;
+        const _evalAfterHuman = evaluateBoard(window.snapshotAfterHumanMove, 'hard');
+        const _evalFromMoverAfter = moverColor === 'w' ? _evalAfterHuman : -_evalAfterHuman;
+        const isRealHanging = hanging.danger && !isProfitableTrade && !_isOpeningGambitPawn
+          && _evalFromMoverAfter <= 200; // suppress when mover is clearly winning — piece sacrifice accepted
 
         const lostPieces = getLostMaterial(window.snapshotBeforeHumanMove, window.snapshotAfterHumanMove, moverColor);
 
         // 3. OPENING DAMPING — suppress false positives in development phase
         // Normal piece development in the first 10 moves rarely loses real material;
         // a delta of -200 to -350 is usually PST noise, not a tactical blunder.
-        const isOpeningPhase = history.length <= 10;
         const effectiveDelta = isOpeningPhase && !isRealHanging && lostPieces.length === 0
           ? reply.delta * 0.5   // halve the penalty to filter PST noise
           : reply.delta;
@@ -14736,7 +15576,26 @@ limitations under the License.
         const colorIcon = moverColor === 'w' ? '⬜' : '⬛';
         const profPrefix = `${colorIcon} <strong>${en ? 'Coach to ' + colorName : 'Profesor a ' + colorName}:</strong>`;
 
-        if (lostPieces.length > 0 || isRealHanging || effectiveDelta <= -200) {
+        // Guard: delta-based errors only fire when the human is actually losing after the best reply.
+        // A delta of -300 from +600 still leaves the human winning at +300 — not an error.
+        const _worstEvalAbs = reply.worstEval ?? null;
+        const _worstFromMover = _worstEvalAbs !== null
+          ? (moverColor === 'w' ? _worstEvalAbs : -_worstEvalAbs)
+          : (effectiveDelta <= -200 ? -999 : 0); // fallback: trust delta if worstEval missing
+        const _deltaIsRealMistake = effectiveDelta <= -200 && _worstFromMover < -100;
+
+        // King-move-as-best-reply suppression: Kf7/Kf8 as opponent's top reply is not a real threat.
+        // Use the post-human-move board (board is snapshotBefore at this point).
+        const _afterHumanBoard = simulateMove(window.snapshotBeforeHumanMove, humanMove);
+        const _replyIsKingMove = reply.replyMove &&
+          _afterHumanBoard[reply.replyMove.fr]?.[reply.replyMove.fc]?.toUpperCase?.() === 'K';
+        // Suppress delta flag when best reply is a quiet king walk (no capture, no giving check)
+        const _replyIsJustKingWalk = _replyIsKingMove &&
+          _afterHumanBoard[reply.replyMove.tr]?.[reply.replyMove.tc] === ' ';
+
+        const _effectiveDeltaFlag = _deltaIsRealMistake && !_replyIsJustKingWalk;
+
+        if (lostPieces.length > 0 || isRealHanging || _effectiveDeltaFlag) {
           let reason = "";
 
           if (lostPieces.length > 0) {
@@ -15222,9 +16081,6 @@ limitations under the License.
       isViewingHistory = true;
       currentViewPly = ply;
 
-      // Show rocket button in 'flex' mode to respect circular design
-      const btnExit = document.getElementById('btnExitHistory');
-      if (btnExit) btnExit.style.display = 'flex';
 
       // ✨ EFECTO VISUAL: Activamos el pulso de "salto temporal" en el tablero
       const boardEl = document.getElementById('board');
@@ -15257,7 +16113,6 @@ limitations under the License.
     function exitHistoryView() {
       isViewingHistory = false;
       currentViewPly = -1;
-      document.getElementById('btnExitHistory').style.display = 'none';
 
       // ✨ EFECTO VISUAL: Flash de presente
       const boardEl = document.getElementById('board');
@@ -15294,25 +16149,46 @@ limitations under the License.
     }
 
     function updateHistory() {
-      const el = document.getElementById('historyList');
-      el.innerHTML = '';
-      for (let i = 0; i < history.length; i += 2) {
-        const num = Math.floor(i / 2) + 1;
-        const div = document.createElement('div');
-        div.className = 'move-entry';
+      updateMoveStrip();
+    }
 
-        // Each move has a unique ID so it can be highlighted
-        const wMove = history[i];
-        const bMove = history[i + 1] || '';
-
-        div.innerHTML = `
-          <span class="move-num">${num}.</span>
-          <span class="move-clickable" onclick="viewMove(${i})" id="ply-${i}" style="cursor:pointer; padding:2px 6px; border-radius:4px; transition: 0.2s;">${wMove}</span>
-          ${bMove ? `<span class="move-clickable" onclick="viewMove(${i + 1})" id="ply-${i + 1}" style="cursor:pointer; padding:2px 6px; border-radius:4px; margin-left:10px; transition: 0.2s;">${bMove}</span>` : ''}
-        `;
-        el.appendChild(div);
+    function updateMoveStrip() {
+      const scroll = document.getElementById('msScroll');
+      if (!scroll) return;
+      scroll.innerHTML = '';
+      for (let i = 0; i < history.length; i++) {
+        if (i % 2 === 0) {
+          const num = document.createElement('span');
+          num.className = 'ms-num';
+          num.textContent = (i / 2 + 1) + '.';
+          scroll.appendChild(num);
+        }
+        const mv = document.createElement('span');
+        mv.className = 'ms-move';
+        mv.id = 'sply-' + i;
+        mv.textContent = history[i];
+        const idx = i;
+        mv.onclick = () => viewMove(idx);
+        scroll.appendChild(mv);
       }
-      el.scrollTop = el.scrollHeight;
+      // Highlight last move and scroll to it
+      highlightStripPly(isViewingHistory ? currentViewPly : history.length - 1);
+    }
+
+    function highlightStripPly(ply) {
+      document.querySelectorAll('.ms-move').forEach(el => el.classList.remove('ms-active'));
+      const scroll = document.getElementById('msScroll');
+      if (!scroll) return;
+      const target = document.getElementById('sply-' + ply);
+      if (target) {
+        target.classList.add('ms-active');
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      } else if (ply < 0 && history.length > 0) {
+        // No ply selected (present): scroll to end, no highlight
+        scroll.scrollLeft = scroll.scrollWidth;
+      }
+      const msExit = document.getElementById('msExit');
+      if (msExit) msExit.style.display = isViewingHistory ? 'block' : 'none';
     }
 
     function toggleFullscreen() {
@@ -15350,11 +16226,11 @@ limitations under the License.
       }
       text = text.trim();
 
-      const btn = document.getElementById('copyMovesBtn');
-      navigator.clipboard.writeText(text).then(() => {
-        btn.textContent = '✅';
-        setTimeout(() => { btn.textContent = '📋'; }, 1800);
-      }).catch(() => {
+      const flashCopy = () => {
+        const b = document.getElementById('msCopy');
+        if (b) { b.textContent = '✅'; setTimeout(() => { b.textContent = '📋'; }, 1800); }
+      };
+      navigator.clipboard.writeText(text).then(flashCopy).catch(() => {
         // Fallback for browsers without clipboard API
         const ta = document.createElement('textarea');
         ta.value = text;
@@ -15362,25 +16238,12 @@ limitations under the License.
         document.body.appendChild(ta);
         ta.select(); document.execCommand('copy');
         document.body.removeChild(ta);
-        btn.textContent = '✅';
-        setTimeout(() => { btn.textContent = '📋'; }, 1800);
+        flashCopy();
       });
     }
 
     function highlightHistoryList(ply) {
-      document.querySelectorAll('.move-clickable').forEach(el => {
-        el.style.background = 'transparent';
-        el.style.color = 'inherit';
-        el.style.fontWeight = 'normal';
-      });
-      if (ply >= 0) {
-        const active = document.getElementById(`ply-${ply}`);
-        if (active) {
-          active.style.background = 'var(--primary)';
-          active.style.color = 'white';
-          active.style.fontWeight = 'bold';
-        }
-      }
+      highlightStripPly(ply);
     }
 
     // In-game menu handlers
@@ -16036,7 +16899,6 @@ limitations under the License.
     // Track whether the pending challenge is a random puzzle (for reroll)
     let _pendingChallengeFen = null;
     let _pendingChallengeIsRandom = false;
-
     // puzzleItem can be a string (FEN) or a PUZZLES_DB object {fen,themes,rating,descEn,descEs}
     function showFenChallengeModal(puzzleItem, nameOverride, descOverride, isRandom) {
       const en = currentLanguage === 'en';
@@ -16044,6 +16906,7 @@ limitations under the License.
       const fen = isPuzzleObj ? puzzleItem.fen : puzzleItem;
       _pendingChallengeFen = fen;
       _pendingChallengeIsRandom = !!isRandom;
+      _pendingChallengeItem = (isPuzzleObj && puzzleItem.solution) ? puzzleItem : null;
 
       // Use puzzle object's own description if available
       if (isPuzzleObj && !nameOverride && !descOverride) {
@@ -16136,6 +16999,7 @@ limitations under the License.
     function cancelFenChallenge() {
       document.getElementById('fenChallengeModal').classList.remove('show');
       _pendingChallengeFen = null;
+      _pendingChallengeItem = null;
       // Return to the training library modal
       openFenLibrary();
     }
@@ -16151,8 +17015,13 @@ limitations under the License.
       document.getElementById('fenChallengeModal').classList.remove('show');
       if (!_pendingChallengeFen) return;
       document.getElementById('fenInput').value = _pendingChallengeFen;
+      const item = _pendingChallengeItem;
       _pendingChallengeFen = null;
+      _pendingChallengeItem = null;
       loadPositionFromFEN();
+      if (item && item.solution && item.solution.length > 0) {
+        puzzleMode = { solution: item.solution, step: 0 };
+      }
     }
 
     function renderFenList(category) {
@@ -16184,6 +17053,35 @@ limitations under the License.
           );
         };
         const name = en ? item.nameEn : item.nameEs;
+        const desc = en ? item.descEn : item.descEs;
+        btn.innerHTML = `<strong>${name}</strong><span>${desc}</span>`;
+        list.appendChild(btn);
+      });
+
+      // Show PUZZLES_DB entries that have scripted solutions (puzzle mode)
+      const themeToCategory = { mateIn1:'tactic', mateIn2:'tactic', mateIn3:'tactic', mateIn4:'tactic',
+        fork:'tactic', pin:'tactic', skewer:'tactic', discoveredAttack:'tactic', discoveredCheck:'tactic',
+        sacrifice:'tactic', queenSacrifice:'tactic', knightSacrifice:'tactic', greekGift:'tactic',
+        backRankMate:'tactic', smotheredMate:'tactic', trappedPiece:'tactic', doubleAttack:'tactic',
+        pawnEndgame:'endgame', rookEndgame:'endgame', knightEndgame:'endgame', queenEndgame:'endgame',
+        endgame:'endgame', lucena:'endgame', philidor:'endgame', technique:'endgame',
+        breakthrough:'endgame', opposition:'endgame', zugzwang:'endgame',
+        opening:'opening', middlegame:'tactic' };
+      PUZZLES_DB.filter(p => p.solution && p.solution.length > 0).forEach(item => {
+        const firstTheme = (item.themes || [])[0] || '';
+        const itemCat = themeToCategory[firstTheme] || 'tactic';
+        if (category !== 'all' && itemCat !== category) return;
+        const btn = document.createElement('div');
+        btn.className = 'fen-item';
+        btn.style.borderLeft = '3px solid var(--accent)';
+        btn.onclick = () => { closeFenLibrary(); showFenChallengeModal(item, null, null, false); };
+        const themeLabels = { mateIn1:'Mate in 1', mateIn2:'Mate in 2', mateIn3:'Mate in 3', mateIn4:'Mate in 4',
+          pawnEndgame:'Pawn Endgame', rookEndgame:'Rook Endgame', zugzwang:'Zugzwang',
+          promotion:'Promotion', breakthrough:'Breakthrough', opposition:'Opposition' };
+        const themeLabelsEs = { mateIn1:'Mate en 1', mateIn2:'Mate en 2', mateIn3:'Mate en 3', mateIn4:'Mate en 4',
+          pawnEndgame:'Final de Peones', rookEndgame:'Final de Torre', zugzwang:'Zugzwang',
+          promotion:'Coronación', breakthrough:'Irrupción', opposition:'Oposición' };
+        const name = '🧩 ' + (en ? (themeLabels[firstTheme] || firstTheme) : (themeLabelsEs[firstTheme] || firstTheme));
         const desc = en ? item.descEn : item.descEs;
         btn.innerHTML = `<strong>${name}</strong><span>${desc}</span>`;
         list.appendChild(btn);
@@ -16398,6 +17296,7 @@ limitations under the License.
         window.snapshotBeforeHumanMove = null;
         window.snapshotAfterHumanMove = null;
         window.snapshotBeforeRules = null;
+        puzzleMode = null;
         fenPositionLoaded = true; // tell the Professor this isn't move-0 of a normal game
 
         // ✨ FIX: Limpiar al Profesor al cargar nuevo FEN

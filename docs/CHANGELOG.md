@@ -1,9 +1,181 @@
-# Changelog — Monolith Chess
+# Changelog — Airin Chess
 
 All notable changes to this project are documented here.  
 Format: version · size · what changed.
 
 [Go to README.md](../README.md)
+
+---
+## v2.23.0 — Production Release
+**~16,500 lines · ~860 KB**
+
+### Engine: Ten Validated Improvements (v2.22.6 → v2.22.15)
+
+v2.23.0 merges the complete v2.22.x development cycle into production. Each patch was individually validated with a tournament before inclusion. The production baseline being replaced is v2.22.5 (~1732 ELO, 27.5% vs Stockfish depth-7).
+
+**v2.22.6 — Rule of the Square: Broken Duplicate Removed**
+A second Rule of the Square implementation was silently running inside the pawn evaluation loop. Unlike the correct version (gated to pure king-and-pawn endings), this broken copy fired in any endgame and awarded up to +942cp for easily-blockable passed pawns. Produced phantom evaluations of +600–+942cp on quiet moves (identical scores across multiple different moves = definitive phantom signature).
+
+**v2.22.7 / v2.22.10 — Anti-blunder Filter Safety Check + BLOCKED Gate**
+The root SEE filter now has a two-stage gate: (1) a BLOCKED(mate) gate prevents the filter from substituting when the substitute is a known-mate line (score ≤ −100,000), and (2) a BLOCKED(worse:N) gate prevents substitution when the substitute scores more than N cp worse than the original. At v2.22.7 N=200, refined to N=100 in v2.22.10 after tournament analysis.
+
+**v2.22.8 / v2.22.9 — PASS_DANGER Phantom Fixed**
+The `PASS_DANGER` evaluation term had an asymmetry bug: it only penalised White for Black's passed pawns, with no mirror bonus for White's own passed pawns. Fixed with symmetric scoring. The base value was also reduced from 80cp to 25cp (v2.22.9) to prevent marathon endgame draws caused by the engine over-weighting passed pawn danger at equal positions.
+
+**v2.22.11 — Anti-blunder Filter Extended to Losing Captures**
+The root SEE filter previously only checked quiet moves. It now also checks captures where SEE < 0 — catching losing exchanges that the engine's depth-limited search might not resolve correctly.
+
+**v2.22.12 — King Centralization Gate**
+The endgame king activity bonus (`kingCentralization`) now has a guard: the bonus is gated to `eg > 0.5` (genuine endgame). Without this gate, the king received bonus points for walking toward the center in the middlegame, producing phantom "king walk" evaluations of +200–+400cp that distorted move selection.
+
+**v2.22.13 — Repetition Blindness Fix**
+Root moves that would create the 2nd or 3rd repetition of a position were not being scored as repetitions — the `gameHashCount` map was built from the wrong data. Fixed: repetitions at root now score −9000 (strong avoid) unless the engine is already losing badly (score < −500), in which case a draw is accepted. Confirmed: 266 root-rep firings across a 32-game tournament, converting blind draws into real results.
+
+**v2.22.14 — BLOCKED Gate Threshold 100→50cp**
+The anti-blunder filter's BLOCKED gate fires when the substitute move scores N cp worse than the original. At 100cp, the G26 false positive occurred: Nc6xe5 (SEE=−225, clearly correct) was blocked because the substitute scored only 57–63cp worse. Threshold lowered to 50cp.
+
+**v2.22.15 — Rook on 7th Rank Bonus**
+Standard positional bonus added: +40cp (MG) / +25cp (EG), tapered. A rook on the 7th rank (or 2nd rank for Black) attacks the opponent's unmoved pawns and restricts the king. The engine previously earned no bonus for this strong placement.
+
+### Difficulty Levels Recalibrated
+
+| Level | Time budget | Validated ELO | Notes |
+|---|---|---|---|
+| 🐣 Chick (easy) | 0.5 s | — | Depth-2 cap, always reached well before time |
+| 📚 Student (medium) | 1.5 s | — | Depth-4 cap, always reached well before time |
+| 🔥 Wizard (hard) | **15 s** | **~1652** | Searches as deep as time allows |
+| 👑 Wise King (grandmaster) | **30 s** | **~1830** | Searches as deep as time allows |
+
+ELO calibrated on CoolPC Black VIII (AMD Ryzen 7 3700X @ 4.4 GHz, 16 GB DDR4 3200 MHz, ~95k NPS). Wizard and Wise King strength scales with hardware.
+
+### Tournament Results
+
+| Tournament | W | D | L | Score | ELO |
+|---|---|---|---|---|---|
+| 40g PC vs UCI_Elo 1750 (15s) — **Wizard** | 11 | 7 | 22 | 36.3% | ~1652 [CI: 1542–1762] |
+| 40g PC vs UCI_Elo 1750 (30s) — **Wise King** | 21 | 7 | 12 | 61.3% | ~1830 [CI: 1721–1938] |
+
+**Key finding:** Significant White/Black color disparity — White 25.0%, Black 47.5% over the 40-game Wizard run. The engine defends and counterattacks well (reactive play) but does not generate initiative as White. This drives the v2.24.x development roadmap.
+
+### Pedagogical & Coach Improvements
+
+**Graded move quality (7 levels)**
+The coach's "Was it good?" feedback now uses a 7-level scale instead of binary brilliant/blunder. Levels: blunder / mistake / inaccuracy / neutral / nice / good / very good / brilliant, each with a distinct emoji and message. Thresholds are based on centipawn delta relative to the previous position.
+
+**Commentator: no quality annotation during funny commentary**
+When the commentator is in funny mode (e.g. "El caballo hace su cosa rara y nadie le entiende"), quality annotations (e.g. "¡Jugada brillante!") are now suppressed. Technical and humorous tones no longer appear on the same move.
+
+**wasItGood false-positive fixes**
+Three targeted fixes reduce the coach false-positive rate:
+- *Sacrifice gate:* `isRealHanging` now checks `evalAfterMove ≤ 200cp` — intentional sacrifices in winning positions are no longer flagged as hanging pieces.
+- *worstEval guard:* `getImmediateReplyRisk()` now returns `worstEval` (the position after the opponent's best reply), enabling the delta check to use a tighter reference point.
+- *Threshold tightened:* `_worstFromMover < 0` → `< −100` — avoids MISSED_WIN flags when the engine is already clearly ahead (+300cp+) and the opponent's quiet retreat creates only a superficial 1-ply dip.
+
+### UI & Interface Redesign
+
+**Move carousel (desktop & mobile)**
+The move history list has been replaced by a compact horizontal scroll strip positioned directly below the board. Navigation (⏮ ◀ ▶), undo (↩), PGN copy (📋), and a live-game exit button (🚀) sit at each end. The strip auto-scrolls to the active ply and highlights it in the theme accent colour. The previous sidebar history and redundant navigation buttons have been removed.
+
+**Responsive layout overhaul**
+The board wrapper is now a column-flex container: board + advantage bar on the first row, move strip on the second. This eliminates the floating-strip problem on desktop and keeps the board visually self-contained. On mobile the advantage bar is hidden and the layout stacks vertically.
+
+**Top bar redesigned**
+The page title ("♟️ Airin") is integrated into the top bar as a centred gradient element, freeing vertical space. The hamburger menu button moved from a floating fixed position into the top-bar right group alongside the language selector and fullscreen button. The `<h1>` element is kept invisible for JavaScript state detection.
+
+**Side panel streamlined**
+A red "☰ Menú" button was added below "Reiniciar partida" in the side panel for quick in-game menu access on large screens. The left coach panel is wider (max 360 px) and the right info panel is narrower (max 220 px), giving the coach more room for opening suggestions and analysis text.
+
+**Commentary box overflow fixed**
+The commentary list now correctly scrolls within a bounded height instead of growing to overflow the panel. Fix: `min-height: 0` added at every level of the flex chain (`.left-panel`, `.hints-card`, `.tab-pane`) so `overflow-y: auto` on `#commentaryList` activates.
+
+**Football theme contrast fixed**
+The "♟️ Airin" title and "vs Wise King" status text are now white on the football (green) theme, where the previous gradient fill was invisible against the dark green background.
+
+**Commentator: quality suppressed in opening, preserved across language switch**
+Move-quality annotations (📉 Blunder, 👍 Nice move, etc.) no longer appear on the first 10 moves — opening theory moves produce noisy centipawn deltas that don't reflect actual quality. Quality is now stored in the `commentaryLog` entry and re-applied in the correct language when the player switches language mid-game, so annotations are no longer lost on rebuild.
+
+**Commentator: dynamic 📖 book-move phrases**
+When a move is played in the opening phase, the commentator now sometimes (~28% of quiet moves) adds a varied 📖 "theory" comment ("Book move! White follows well-known theory", "Black knows their theory!", "Theory! This position has been played thousands of times", etc.) in addition to or instead of the standard piece commentary. Opening name announcements also now include the 📖 emoji. Six phrases per language with rotation to avoid repetition.
+
+**Opening suggestions: style tags**
+In the "What should I do?" coach panel, book-move suggestions no longer show a uniform "Low risk" badge. Each opening now shows a colour-coded style tag derived from its description: ⚡ Aggressive (orange), 🧱 Solid (green), 🔀 Flexible (blue), ♟️ Positional (amber), 🔮 Hypermodern (purple), or 📖 Theory (grey). The opening list at game start is capped at 11 entries (was 20) to remove duplicates.
+
+**Blunder detection: opening phase and ignored threats**
+Two classes of blunders that previously went unreported now trigger commentary and Training Mode warnings:
+- *Opening-phase hanging pieces:* The commentator's quality scan now runs regardless of `isOpening`. A hanging rook or queen on any move — even move 3 — is flagged as a blunder. Previously the scan was gated to moves 11+.
+- *Ignored threat:* Training Mode now warns when the player plays an unrelated move while their rook or queen is already under attack. Previously the guard only fired for *newly* created threats; an existing hanging queen was silently ignored.
+- *Stale-snapshot fix:* Move quality evaluation is now correctly scoped to human moves only. A stale snapshot was causing intermittent false blunder annotations on AI moves.
+- *Check + blunder:* A new combined comment branch resolves the contradiction where "¡Jaque! Buena jugada" and "📉 ¡Error grave!" appeared on the same move. If a check move also leaves a piece hanging, a single unified warning is shown instead.
+
+**Advantage bar: sigmoid mapping**
+The advantage bar now uses a `tanh(score/600)` sigmoid mapping instead of a linear scale. The linear mapping saturated (pinned to 95%) at ±700cp, making most non-trivial positions look one-sided. The sigmoid matches Lichess/Chess.com behavior: ±100cp ≈ 58%, ±300cp ≈ 73%, ±600cp ≈ 88%, never hard-clips. The queen's early-development penalty is also reduced from 280cp max to 80cp max to prevent the bar from flipping to the wrong side in normal opening positions.
+
+**PGN export: SAN disambiguation**
+The move notation generator now correctly disambiguates when two pieces of the same type can both reach the same square (e.g. `Nbd2` vs `Nfd2`, `Rfe1` vs `Rae1`). Previously the engine emitted bare `Nd2` which Lichess and other tools rejected as ambiguous. Fix covers knights, bishops, rooks, and queens. Both the in-game SAN generator and the book/analysis notation helper are updated.
+
+**Commentator: expanded funny commentary**
+The 🎉 Playful style now has richer variety. New phrases added for all piece types (pawns, knights, bishops, rooks, queens, king) in both Spanish and English — covering piece moves, captures, checks, and blunders. Each category now has 3–5 options with rotation to avoid repetition.
+
+**Coach "What should I do?" — noise reduction**
+The "What should I do?" panel no longer shows a hanging-piece warning banner or X-ray threat notes. Those warnings belong in Hawk Eye (which draws arrows directly on the board) — not as a preamble before the move suggestions. The panel now focuses purely on actionable moves, keeping the two tools clearly separated.
+
+**Defensive rescue notes — urgency styling**
+When a suggested move rescues a piece that is already under attack, the inline note now uses amber warning styling (⚠️ with an orange left border) instead of a green checkmark. Green read as "nice bonus"; amber correctly conveys "this piece is in danger — this move saves it."
+
+---
+
+---
+## v2.22.14 — BLOCKED Filter Threshold Fixed
+**~16,500 lines · ~860 KB**
+
+### Bug Fix — Anti-Blunder Filter: False-Positive Gate Tightened (BLOCKED threshold 100→50cp)
+
+The root anti-blunder filter gate (`BLOCKED(worse:N)` at line 11029) fires when the filter's substitute scores more than N cp worse than the original move. At 100cp, the G26 false positives slipped through: the knight capture Nc6xe5 (SEE=−225, clearly correct) was blocked because the substitute scored only 57–63cp worse — below the old gate.
+
+**Fix:** Threshold lowered from 100cp to 50cp.
+
+```javascript
+// BEFORE
+} else if (_subScore < _topScore - 100) {
+// AFTER
+} else if (_subScore < _topScore - 50) {
+```
+
+**Tournament result (30 games, PC, Stockfish depth-7):** W2 D14 L14 — **30.0% — ~1753 ELO [CI: 1620–1885]**.  
+First complete PC tournament run. First wins vs Stockfish d7 in a complete PC run. Beats production baseline (v2.22.5, 27.5%, ~1732 ELO).
+
+### Tournament Script — UCI_Elo and Skill Level Support
+
+`arena_tournament.js` now supports three Stockfish opponent modes:
+- **Depth mode** (`--depth N`) — historical baseline, ELO estimated
+- **UCI_Elo mode** (`--sf-mode uci_elo --sf-value 1750`) — official calibrated ELO (recommended)
+- **Skill Level mode** (`--sf-mode skill_level --sf-value 3`) — 0–20 with deliberate errors, official ELO
+
+Release tournament from v2.22.15 onwards: `--sf-mode uci_elo --sf-value 1750 --games 40`.
+
+---
+
+## v2.22.6 — Phantom Promotion Bug Fixed
+
+**~16,500 lines · ~860 KB**
+
+### Bug Fix — Rule of the Square: Broken Duplicate Removed (Critical)
+
+A second Rule of the Square implementation existed inside the pawn evaluation loop (`u === 1`, ~line 9099). Unlike the correct version at line ~9690 (which has an `if (!anyMajorMinor)` guard and only fires in pure king-and-pawn endings), this broken copy:
+
+- Had **no guard** — fired in any endgame, including positions with rooks and minor pieces on the board
+- Awarded `bonus += Math.round(600 * eg)` — up to **+942 cp** at `eg=1.57` — for passed pawns that enemy pieces could trivially block or capture
+- Produced **phantom evaluation scores** of +600–+942 cp on quiet moves (identical scores across multiple different moves = phantom signature)
+
+Result: the engine hallucinated unstoppable promotions, played irrational pawn pushes (e.g. `h4??` with a rook defending), and lost evaluative trust in any endgame with pieces present.
+
+**Fix:** Removed the 14-line broken block. The correct implementation (with `!anyMajorMinor` guard + proper passedness check + calibrated 250cp bonus) is preserved at line ~9690.
+
+**Tournament validation (6/20 games, early data):** Zero phantom activations. Score 0W 1L 5D, ~1842 ELO vs baseline ~1732 (v2.22.5).
+
+### Diagnostic — Think Time in Verbose Log
+
+The `📊` console line in the worker now appends `t:${N}ms` — search duration per move. Enables detection of 0ms forced moves (`[dforced/30]`) and abnormally long think times in tournament logs.
 
 ---
 

@@ -1,9 +1,152 @@
-# Historial de cambios — Monolith Chess
+# Historial de cambios — Airin Chess
 
 Todos los cambios relevantes del proyecto están documentados aquí.  
 Formato: versión · tamaño · qué cambió.
 
 [Ir a README_es.md](../README_es.md)
+
+---
+
+## v2.23.0 — Publicación de Producción
+**~16.500 líneas · ~860 KB**
+
+### Motor: Diez Mejoras Validadas (v2.22.6 → v2.22.15)
+
+v2.23.0 fusiona el ciclo de desarrollo v2.22.x completo en producción. Cada parche fue validado individualmente con un torneo antes de su inclusión. La línea de producción sustituida es v2.22.5 (~1732 ELO, 27,5% vs Stockfish profundidad 7).
+
+**v2.22.6 — Regla del Cuadrado: Duplicado Roto Eliminado**
+Una segunda implementación de la Regla del Cuadrado se ejecutaba silenciosamente dentro del bucle de evaluación de peones. A diferencia de la versión correcta (limitada a finales puros de rey y peones), esta copia rota se activaba en cualquier final y otorgaba hasta +942cp por peones pasados fácilmente bloqueables. Producía evaluaciones fantasma de +600–+942cp en jugadas silenciosas.
+
+**v2.22.7 / v2.22.10 — Comprobación de Seguridad del Filtro + Puerta BLOCKED**
+El filtro SEE raíz ahora tiene una puerta de dos etapas: (1) una puerta BLOCKED(mate) evita que el filtro sustituya cuando la sustituta es una línea de mate conocida (puntuación ≤ −100.000), y (2) una puerta BLOCKED(worse:N) evita la sustitución cuando la sustituta puntúa más de N cp peor. En v2.22.7 N=200, refinado a N=100 en v2.22.10.
+
+**v2.22.8 / v2.22.9 — Fantasma PASS_DANGER Corregido**
+El término de evaluación `PASS_DANGER` tenía un error de asimetría: solo penalizaba a las Blancas por los peones pasados de las Negras, sin bono espejo para los propios peones pasados de las Blancas. Corregido con puntuación simétrica. El valor base también se redujo de 80cp a 25cp (v2.22.9) para evitar tablas maratonianas en finales con posiciones iguales.
+
+**v2.22.11 — Filtro Anti-colgadas Extendido a Capturas Perdedoras**
+El filtro SEE raíz anteriormente solo comprobaba jugadas silenciosas. Ahora también comprueba capturas con SEE < 0, detectando intercambios perdedores que la búsqueda de profundidad limitada podría no resolver correctamente.
+
+**v2.22.12 — Puerta de Centralización del Rey**
+El bono de actividad del rey en finales (`kingCentralization`) ahora tiene una comprobación: el bono se activa solo cuando `eg > 0.5` (final genuino). Sin esta puerta, el rey recibía puntos adicionales por caminar hacia el centro en el mediojuego, produciendo evaluaciones fantasma de +200–+400cp.
+
+**v2.22.13 — Corrección de Ceguera de Repetición**
+Las jugadas raíz que crearían la 2.ª o 3.ª repetición de una posición no se puntuaban como repeticiones — el mapa `gameHashCount` se construía con datos incorrectos. Corregido: las repeticiones en raíz ahora reciben −9000 (evitar fuertemente) a menos que el motor ya esté perdiendo claramente (puntuación < −500). Confirmado: 266 activaciones en un torneo de 32 partidas.
+
+**v2.22.14 — Umbral de Puerta BLOCKED 100→50cp**
+Con 100cp, ocurrió el falso positivo G26: Cc6xe5 (SEE=−225, claramente correcto) fue bloqueado porque la sustituta solo puntuaba 57–63cp peor. Umbral reducido a 50cp.
+
+**v2.22.15 — Bono de Torre en 7.ª Fila**
+Bono posicional estándar añadido: +40cp (MG) / +25cp (EG), tapered. Una torre en la 7.ª fila ataca los peones sin mover del rival y restringe al rey. El motor anteriormente no recibía ningún bono por esta colocación fuerte.
+
+### Niveles de Dificultad Recalibrados
+
+| Nivel | Presupuesto de tiempo | ELO validado | Notas |
+|---|---|---|---|
+| 🐣 Pollito (fácil) | 0,5 s | — | Techo profundidad 2, siempre alcanzado antes del tiempo |
+| 📚 Estudiante (medio) | 1,5 s | — | Techo profundidad 4, siempre alcanzado antes del tiempo |
+| 🔥 Mago (difícil) | **15 s** | **~1652** | Busca lo más profundo que el tiempo permite |
+| 👑 Rey Sabio (gran maestro) | **30 s** | **~1830** | Busca lo más profundo que el tiempo permite |
+
+ELO calibrado en CoolPC Black VIII (AMD Ryzen 7 3700X @ 4,4 GHz, 16 GB DDR4 3200 MHz, ~95k NPS). La fuerza del Mago y el Rey Sabio escala con el hardware del usuario.
+
+### Resultados de Torneos
+
+| Torneo | V | E | D | Puntuación | ELO |
+|---|---|---|---|---|---|
+| 40p PC vs UCI_Elo 1750 (15s) — **Mago** | 11 | 7 | 22 | 36,3% | ~1652 [IC: 1542–1762] |
+| 40p PC vs UCI_Elo 1750 (30s) — **Rey Sabio** | 21 | 7 | 12 | 61,3% | ~1830 [IC: 1721–1938] |
+
+**Hallazgo clave:** Disparidad significativa de color Blancas/Negras — Blancas 25,0%, Negras 47,5% en la ejecución de 40 partidas del Mago. El motor defiende y contraataca bien (juego reactivo) pero no genera iniciativa como Blancas. Esto impulsa la hoja de ruta v2.24.x.
+
+### Mejoras Pedagógicas y del Entrenador
+
+**Calidad de jugada con 7 niveles**
+El botón "¿Fue buena?" del Profesor ahora usa una escala de 7 niveles en lugar de brillante/colgada binario. Niveles: colgada / error / imprecisión / neutral / bien / buena / muy buena / brillante, cada uno con un emoji y mensaje distintos. Los umbrales se basan en el delta de centipawns respecto a la posición anterior.
+
+**Comentarista: sin anotación técnica cuando el tono es gracioso**
+Cuando el comentarista está en modo gracioso (ej. "El caballo hace su cosa rara y nadie le entiende"), las anotaciones de calidad (ej. "¡Jugada brillante!") ya no aparecen. Los tonos técnico y humorístico no vuelven a mezclarse en la misma jugada.
+
+**Correcciones de falsos positivos en "¿Fue buena?"**
+Tres correcciones específicas reducen la tasa de falsos positivos del entrenador:
+- *Puerta de sacrificio:* `isRealHanging` ahora comprueba `evalDespuésJugada ≤ 200cp` — los sacrificios intencionales en posiciones ganadoras ya no se marcan como piezas colgadas.
+- *Guardia worstEval:* `getImmediateReplyRisk()` ahora devuelve `worstEval` (la posición tras la mejor respuesta del rival), permitiendo al delta usar un punto de referencia más preciso.
+- *Umbral ajustado:* `_worstFromMover < 0` → `< −100` — evita avisos de JUGADA_PERDIDA cuando el motor ya va claramente ganando (+300cp+) y la retirada silenciosa del rival crea solo una caída superficial de 1 jugada.
+
+### Rediseño de Interfaz y UI
+
+**Carrusel de jugadas (escritorio y móvil)**
+El historial de jugadas en barra lateral ha sido reemplazado por una tira de desplazamiento horizontal compacta situada directamente debajo del tablero. La navegación (⏮ ◀ ▶), deshacer (↩), copiar PGN (📋) y botón de salida de partida en vivo (🚀) están a cada extremo. La tira se desplaza automáticamente hasta la jugada activa y la resalta con el color de acento del tema. Los botones de historial y navegación laterales redundantes han sido eliminados.
+
+**Rediseño de disposición responsiva**
+El contenedor del tablero es ahora un flex-columna: tablero + barra de ventaja en la primera fila, tira de jugadas en la segunda. Esto elimina el problema de la tira flotante en escritorio y mantiene el tablero visualmente autónomo. En móvil la barra de ventaja está oculta y la disposición se apila verticalmente.
+
+**Barra superior rediseñada**
+El título de la página ("♟️ Airin") se integra en la barra superior como elemento central con degradado, liberando espacio vertical. El botón de menú hamburguesa se movió de una posición fija flotante al grupo derecho de la barra superior junto al selector de idioma y el botón de pantalla completa. El elemento `<h1>` se mantiene invisible para la detección de estado en JavaScript.
+
+**Panel lateral simplificado**
+Se añadió un botón rojo "☰ Menú" bajo "Reiniciar partida" en el panel lateral para acceso rápido al menú durante la partida en pantallas grandes. El panel izquierdo del entrenador es más ancho (máx. 360 px) y el panel derecho de información es más estrecho (máx. 220 px), dando al entrenador más espacio para sugerencias de apertura y texto de análisis.
+
+**Corrección del desbordamiento del cuadro de comentarios**
+La lista de comentarios ahora se desplaza correctamente dentro de una altura acotada en lugar de crecer desbordando el panel. Corrección: `min-height: 0` añadido en cada nivel de la cadena flex (`.left-panel`, `.hints-card`, `.tab-pane`) para que `overflow-y: auto` en `#commentaryList` se active.
+
+**Corrección de contraste en el tema fútbol**
+El título "♟️ Airin" y el texto de estado "vs Rey Sabio" ahora son blancos en el tema fútbol (verde), donde el relleno con degradado anterior era invisible sobre el fondo verde oscuro.
+
+**Comentarista: calidad suprimida en apertura, conservada al cambiar idioma**
+Las anotaciones de calidad de jugada (📉 Error grave, 👍 ¡Buen movimiento!, etc.) ya no aparecen en las primeras 10 jugadas — las jugadas de teoría de apertura producen deltas en centipawns con ruido que no reflejan la calidad real. La calidad ahora se almacena en la entrada `commentaryLog` y se vuelve a aplicar en el idioma correcto cuando el jugador cambia de idioma a mitad de partida, de modo que las anotaciones ya no se pierden al reconstruir.
+
+**Comentarista: frases dinámicas de 📖 jugadas de libro**
+Cuando se juega una jugada en la fase de apertura, el comentarista ahora a veces (~28% de jugadas silenciosas) añade un comentario variado de 📖 "teoría" ("¡Jugada de libro! Las blancas siguen la teoría", "¡Las negras conocen su teoría!", "¡Teoría pura! Esta posición se ha jugado miles de veces", etc.). Los anuncios de nombre de apertura también incluyen ahora el emoji 📖. Seis frases por idioma con rotación para evitar repetición.
+
+**Sugerencias de apertura: etiquetas de estilo**
+En el panel del entrenador "¿Qué hago?", las sugerencias de jugadas de libro ya no muestran una insignia uniforme de "Riesgo bajo". Cada apertura muestra ahora una etiqueta de estilo con código de color derivada de su descripción: ⚡ Agresiva (naranja), 🧱 Sólida (verde), 🔀 Flexible (azul), ♟️ Posicional (ámbar), 🔮 Hipermoder. (morado), o 📖 Teórica (gris). La lista de aperturas al inicio de partida está limitada a 11 entradas (era 20) para eliminar duplicados.
+
+**Detección de colgadas: fase de apertura y amenazas ignoradas**
+Dos clases de colgadas que antes no se informaban ahora activan comentarios y avisos del Modo Entrenamiento:
+- *Piezas colgadas en la apertura:* El escaneo de calidad del comentarista ahora se ejecuta independientemente de `isOpening`. Una torre o dama colgada en cualquier jugada — incluso la jugada 3 — se marca como error grave. Antes el escaneo estaba restringido a las jugadas 11 en adelante.
+- *Amenaza ignorada:* El Modo Entrenamiento ahora avisa cuando el jugador hace una jugada no relacionada mientras su torre o dama ya está bajo ataque. Antes la comprobación solo se activaba para amenazas *nuevas*; una dama ya colgada se ignoraba silenciosamente.
+- *Corrección de instantánea obsoleta:* La evaluación de calidad de jugada ahora se aplica correctamente solo a jugadas humanas. Una instantánea obsoleta causaba anotaciones de error intermitentes en las jugadas de la IA.
+- *Jaque + colgada:* Una nueva rama de comentario combinada resuelve la contradicción donde "¡Jaque! Buena jugada" y "📉 ¡Error grave!" aparecían en la misma jugada. Si una jugada de jaque también deja una pieza colgada, se muestra un aviso único y unificado.
+
+**Barra de ventaja: mapeo sigmoidal**
+La barra de ventaja ahora usa un mapeo sigmoidal `tanh(score/600)` en lugar de una escala lineal. La escala lineal saturaba (fijada al 95%) con ±700cp, haciendo que la mayoría de posiciones no triviales parecieran muy desequilibradas. El sigmoide coincide con el comportamiento de Lichess/Chess.com: ±100cp ≈ 58%, ±300cp ≈ 73%, ±600cp ≈ 88%, sin saturación. La penalización por desarrollo prematuro de la dama también se reduce de 280cp máx. a 80cp máx. para evitar que la barra cambie de lado en posiciones normales de apertura.
+
+**Exportación PGN: desambiguación SAN**
+El generador de notación de jugadas ahora desambigua correctamente cuando dos piezas del mismo tipo pueden alcanzar la misma casilla (ej. `Cbd2` vs `Cfd2`, `Tfe1` vs `Tae1`). Antes el motor emitía `Cd2` sin prefijo, que Lichess y otras herramientas rechazaban por ambiguo. La corrección abarca caballos, alfiles, torres y damas. Tanto el generador SAN de partida como el asistente de notación para libros y análisis están actualizados.
+
+**Comentarista: frases graciosas ampliadas**
+El estilo 🎉 Divertido ahora tiene más variedad. Se añaden nuevas frases para todos los tipos de pieza (peones, caballos, alfiles, torres, damas, rey) en español e inglés — para movimientos, capturas, jaques y errores graves. Cada categoría ahora tiene 3–5 opciones con rotación para evitar repetición.
+
+**Panel "¿Qué hago?" — reducción de ruido**
+El panel "¿Qué hago?" ya no muestra el aviso de piezas colgadas ni las notas de amenaza por rayo X. Esos avisos pertenecen al Ojo Halcón (que dibuja flechas directamente en el tablero), no como preámbulo antes de las sugerencias de jugada. El panel se centra ahora en jugadas accionables, manteniendo los dos botones claramente separados.
+
+**Notas de rescate defensivo — estilo de urgencia**
+Cuando una jugada sugerida rescata una pieza que ya está bajo ataque, la nota en línea ahora usa un estilo de aviso ámbar (⚠️ con borde izquierdo naranja) en lugar de un tilde verde. El verde se leía como "bonificación extra"; el ámbar transmite correctamente "esta pieza está en peligro — esta jugada la salva".
+
+---
+
+---
+
+## v2.22.6 — Bug de Promoción Fantasma Corregido
+**~16.500 líneas · ~860 KB**
+
+### Corrección — Regla del Cuadrado: Duplicado Roto Eliminado (Crítico)
+
+Existía una segunda implementación de la Regla del Cuadrado dentro del bucle de evaluación de peones (`u === 1`, ~línea 9099). A diferencia de la versión correcta en la línea ~9690 (que tiene una comprobación `if (!anyMajorMinor)` y solo se activa en finales puros de rey y peones), esta copia rota:
+
+- **No tenía ninguna comprobación** — se activaba en cualquier final, incluyendo posiciones con torres y piezas menores en el tablero
+- Otorgaba `bonus += Math.round(600 * eg)` — hasta **+942 cp** con `eg=1.57` — para peones pasados que las piezas enemigas podían bloquear o capturar trivialmente
+- Producía **evaluaciones fantasma** de +600–+942 cp en jugadas silenciosas (puntuaciones idénticas en múltiples jugadas diferentes = firma de fantasma)
+
+Resultado: el motor alucinaba promociones imparables, jugaba avances de peón irracionales (por ejemplo, `h4??` con una torre defensora) y perdía confiabilidad evaluativa en cualquier final con piezas presentes.
+
+**Corrección:** Eliminado el bloque roto de 14 líneas. La implementación correcta (con comprobación `!anyMajorMinor` + verificación correcta de peón pasado + bono calibrado de 250cp) se conserva en la línea ~9690.
+
+**Validación en torneo (6/20 partidas, datos preliminares):** Cero activaciones de fantasmas. Resultado 0V 1D 5E, ~1842 ELO frente a ~1732 base (v2.22.5).
+
+### Diagnóstico — Tiempo de Pensamiento en Log Detallado
+
+La línea `📊` de la consola del worker ahora añade `t:${N}ms` — duración de búsqueda por jugada. Permite detectar jugadas forzadas de 0ms (`[dforced/30]`) y tiempos de pensamiento anormalmente largos en los logs del torneo.
 
 ---
 

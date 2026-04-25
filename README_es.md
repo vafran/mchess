@@ -1,4 +1,4 @@
-# ♟️ Monolith Chess
+# ♟️ Airin Chess
 
 > Un juego de ajedrez completo en un solo archivo HTML, construido para niños que aprenden a jugar.  
 > Sin instalación. Sin internet. Sin cuentas. Abre el archivo `.html` en cualquier navegador.
@@ -29,7 +29,7 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 
 ### No-objetivos
 
-- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza **~1709 ELO** en el nivel Rey Sabio (validado: 1V 8E 11D vs Stockfish profundidad 7, torneo de 20 partidas, v2.22.2). La cifra exacta depende del hardware.
+- **Derrotar a jugadores titulados.** Esto no es Stockfish. El motor alcanza **~1652 ELO** en el nivel Mago y **~1830 ELO** en el nivel Rey Sabio (validado: torneos de 40 partidas vs UCI_Elo 1750, v2.23.0). La cifra exacta depende del hardware — ver nota de calibración más adelante.
 - **Multijugador en línea.** Solo juego local.
 - **Herramientas avanzadas de preparación.** El libro de aperturas está curado para enseñar, no para preparación profesional.
 - **Rendimiento de referencia.** Un JavaScript limpio y legible tiene prioridad, aunque la v2.1.0 introdujo correcciones críticas en cuellos de botella de bajo nivel.
@@ -38,53 +38,35 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 
 ## Cómo jugar
 
+**Localmente**
+
 1. **Descarga** el archivo `.html`.
 2. **Haz doble clic** sobre él. Se abre en cualquier navegador moderno (Chrome, Firefox, Safari, Edge).
 3. **Elige** *vs IA* o *2 Jugadores* desde el menú principal.
 4. **Haz clic en una pieza** para seleccionarla. Las casillas legales aparecen como puntos.
 5. **Haz clic en un destino** para mover.
 
-Eso es todo. El juego se encarga del resto.
+**En línea**
+
+1. **Ve a** el sitio de GitHub Pages: [https://airinchess.com](https://airinchess.com)  
+2. **Juega directamente** en el navegador. No se necesita descargar nada.
 
 ---
 
 ## Niveles de dificultad
 
-### 🐣 Fácil — *Pollito* (~630 ELO)
-
-**Para:** Principiantes, niños pequeños, jugadores que aprenden las reglas.
-
-Profundidad 2 · 40% de errores · ±12 cp de ruido · sin libro · sin quietud
-
-### 📚 Medio — *Estudiante* (~1010 ELO)
-
-**Para:** Jugadores que conocen las reglas y quieren su primera partida real.
-
-Profundidad 4 · 20% de errores · ±6 cp de ruido · libro (primeros 2 movimientos) · quietud completa
-
-### 🔥 Difícil — *Mago* (~1400 ELO)
-
-**Para:** Jugadores casuales con experiencia que quieren una prueba real.
-
-Profundidad 6 · 5% de errores · sin ruido · libro completo · todas las técnicas activas
-
-### 👑 Maestro — *Rey Sabio* (~1709 ELO validado)
-
-**Para:** Jugadores de club fuertes y amateurs avanzados.
-
-Hasta 30 semijugadas de profundidad (tope de 30s) · 0% de errores · libro completo · evaluación completa · Modo Entrenamiento desactivado automáticamente
-
 <img src="screenshots/ES/characters.png" alt="Personajes" width="300" />
 
+| Nivel | ELO est. | Prof. | Tope de tiempo | Error | Libro |
+|---|---|---|---|---|---|
+| 🐣 Fácil | ~630 | 2 | 0,5s | 40% | ❌ |
+| 📚 Medio | ~1010 | 5 | 5s | 15% | primeros 2 mov. |
+| 🔥 Mago | ~1652 (validado) | hasta 30 | 15s | 0% | ✅ completo |
+| 👑 Rey Sabio | ~1830 (validado) | hasta 30 | 30s | 0% | ✅ completo |
 
-### Tabla resumen
-
-| Nivel | ELO est. | Prof. | Error | Ruido | Libro | Quietud |
-|---|---|---|---|---|---|---|
-| 🐣 Fácil | ~630 | 2 | 40% | ±12 cp | ❌ | ❌ |
-| 📚 Medio | ~1010 | 4 | 20% | ±6 cp | primeros 2 mov. | ✅ |
-| 🔥 Difícil | ~1400 | 6 | 0% | ninguno | ✅ completo | ✅ |
-| 👑 Rey Sabio | ~1709 (validado) | hasta 30 (30s) | 0% | ninguno | ✅ completo | ✅ |
+> **Hardware de calibración ELO:** CoolPC Black VIII — AMD Ryzen 7 3700X @ 4.4 GHz, 16 GB DDR4 3200 MHz (~95k NPS en condiciones de torneo).
+>
+> ⚠️ **Nota sobre el hardware:** Airin es un motor JavaScript puro que se ejecuta en el navegador. Su fuerza escala directamente con la velocidad de la CPU del dispositivo — el presupuesto de tiempo (15s / 30s) es fijo, pero la profundidad de búsqueda alcanzada dentro de ese presupuesto no lo es. En un PC de juego de gama media puedes esperar los valores ELO validados anteriores. En un portátil típico, aproximadamente 50–100 ELO menos; en un teléfono o tableta, 150–250 ELO menos. Fácil y Medio son en la práctica independientes del hardware — sus límites de profundidad (2 y 4) siempre se alcanzan mucho antes de agotar el tiempo en cualquier dispositivo moderno. El Mago y el Rey Sabio buscan tan profundo como el tiempo lo permite, por lo que su fuerza escala con el hardware del usuario.
 
 ---
 
@@ -183,274 +165,50 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
-## Lo nuevo en v2.22.5 — *Recuperación de Caídas en Móvil*
+## Lo nuevo en v2.23.0 — *Publicación de Producción*
 
-### 📱 bestSoFar: Protección contra Caídas del Worker
+Sustituye a v2.22.5 (~1732 ELO, 27,5%) como versión de producción. Incluye diez parches de motor, un rediseño completo de la interfaz y mejoras pedagógicas significativas.
 
-El worker ahora envía un mensaje `bestSoFar` al hilo principal tras cada iteración de profundidad completada. Si el temporizador de seguridad se activa (worker congelado o caído — más probable en móvil), el motor juega el mejor movimiento encontrado en la última profundidad completada, en lugar de caer al modo de respaldo con profundidad 2.
+### 🚀 Motor: Diez Mejoras Acumuladas (v2.22.6 → v2.22.15)
 
-El comportamiento en escritorio es idéntico a v2.22.2. No se requiere torneo — este cambio solo se activa si el worker cae, lo que no ocurre en el uso normal de escritorio.
+Cada parche fue validado con un torneo dedicado antes de su inclusión.
 
-**Además:** Se eliminó el detector automático de colgadas del script de torneos — producía falsos positivos. El análisis manual de PGN con Stockfish es el método fiable.
+- **v2.22.6** — Regla del Cuadrado: bug de evaluación fantasma eliminado (otorgaba hasta +942cp por peones pasados en cualquier final)
+- **v2.22.7/10** — Filtro anti-colgadas: puerta BLOCKED(mate) añadida; puerta BLOCKED(worse) refinada
+- **v2.22.8/9** — PASS_DANGER: bug de asimetría corregido; valor base reducido para evitar tablas maratonianas
+- **v2.22.11** — Filtro anti-colgadas extendido a capturas perdedoras (SEE < 0 en capturas)
+- **v2.22.12** — Puerta de Centralización del Rey: bono de actividad limitado a finales genuinos
+- **v2.22.13** — Ceguera de repetición corregida: jugadas repetidas reciben −9000; confirmadas 266 activaciones en 32 partidas
+- **v2.22.14** — Puerta BLOCKED reducida de 100cp a 50cp
+- **v2.22.15** — Torre en 7.ª fila: bono tapered +40cp MG / +25cp EG
 
----
+**Resultados del torneo (40 partidas cada uno, PC, UCI_Elo 1750):**
+- Nivel Mago (15s/jugada): 11V 7E 22D — **36,3% — ~1652 ELO [IC: 1542–1762]**
+- Nivel Rey Sabio (30s/jugada): 21V 7E 12D — **61,3% — ~1830 ELO [IC: 1721–1938]**
 
-## Lo nuevo en v2.22.4 — *Experimento Umbral SEE (Revertido)*
+### 🎓 Mejoras Pedagógicas y del Comentarista
 
-Se ajustó el umbral SEE del filtro anti-colgadas de −100 a −50cp, con intención de capturar peones colgados. **Revertido** — el umbral más estricto bloqueaba avances de peón intencionales (por ejemplo, e4-e5 con SEE = −100) y causó una regresión a ~1659 ELO.
+- **Detección de colgadas en la apertura** — el comentarista marca piezas colgadas desde la jugada 1; el Modo Entrenamiento también avisa cuando el jugador ignora una dama o torre ya bajo ataque
+- **Desambiguación PGN** — la notación SAN emite correctamente `Cbd2`/`Tfe1` cuando dos piezas del mismo tipo pueden alcanzar la misma casilla; la importación en Lichess/Chess.com ya no rechaza las exportaciones
+- **Precisión de la barra de ventaja** — mapeo sigmoidal (tanh) sustituye la escala lineal; coincide con el comportamiento de Lichess y no satura en ±700cp
+- **Calidad de jugada con 7 niveles** — colgada / error / imprecisión / neutral / bien / buena / muy buena / brillante, cada uno con emoji y mensaje distintos
+- **Comentarista modo divertido ampliado** — frases más variadas para todos los tipos de pieza en español e inglés
+- **Correcciones de falsos positivos del Profesor** — puerta de sacrificio, guardia worstEval, umbral ajustado
 
----
+### 🖥️ Rediseño de Interfaz
 
-## Lo nuevo en v2.22.3 — *Experimentos LMR (Revertidos)*
-
-Se probaron dos cambios de LMR y se revirtieron:
-- Divisor LMR 2,36 → 3,00 (menos agresivo): ELO bajó a ~1631
-- Umbral LMR cambiado a moveCount > 4: ELO bajó a ~1518
-
-Ambas direcciones de LMR más suave empeoraron el rendimiento. La configuración LMR de v2.22.2 parece óptima.
-
----
-
-## Lo nuevo en v2.22.2 — *Corrección del Filtro Anti-Colgadas*
-
-### 🛡️ Filtro Anti-Colgadas en Raíz (Bug de Código Muerto Corregido)
-
-La red de seguridad post-búsqueda del motor — diseñada para rechazar movimientos silenciosos donde SEE < −100 (pieza que se mueve a una casilla atacada) — calculaba la detección correctamente pero **nunca actuaba en consecuencia**. El código que rechazaba la jugada actualizaba `bestOptions` después de que `finalOptions` ya estaba calculado; `postMessage` envía `finalOptions`, por lo que la corrección se descartaba silenciosamente.
-
-**Corrección:** Una línea añadida — `finalOptions = bestOptions` — propagando la decisión del filtro a la salida. El filtro ya identificaba las colgadas correctamente (por ejemplo, Ac5 a una casilla atacada por la dama: SEE = −335). Ahora actúa en consecuencia.
-
-**Resultado del torneo (20 partidas, SF profundidad-7):** 1V 8E 11D — **~1709 ELO**, 0,25 colgadas/partida.
-Primera victoria vs Stockfish desde v2.21.0.
-
----
-
-## Lo nuevo en v2.22.1 — *Estabilidad del Libro de Aperturas*
-
-### 📚 Filtro SEE de Salida del Libro Eliminado
-
-Un filtro SEE en `askWiseKing` comprobaba la seguridad de las piezas en los movimientos del libro antes de jugarlos, rechazando incorrectamente jugadas estándar como `Ab5`, `Ac4` y `Ag5` (alfiles que parecen temporalmente sin defensa en la secuencia). Esto provocaba que el motor se desviara del libro en casi todas las partidas.
-
-**Corrección:** Eliminado el filtro por completo. El libro de aperturas está curado y es de confianza; las jugadas se juegan tal como se recomiendan sin una comprobación de seguridad posterior.
+- **Carrusel de jugadas** — tira horizontal compacta bajo el tablero; sustituye el listado lateral
+- **Disposición responsiva renovada** — tablero + barra de ventaja en fila 1, tira de jugadas en fila 2
+- **Barra superior rediseñada** — título integrado, menú hamburguesa en línea
+- **Etiquetas de estilo en aperturas** — cada sugerencia muestra una insignia de color (⚡ Agresiva, 🧱 Sólida, 🔀 Flexible…)
+- **Frases dinámicas de jugadas de libro** — comentarios variados cuando se juega una jugada teórica
 
 ---
 
-## Lo nuevo en v2.22.0 — *Inteligencia Pedagógica y Conciencia Estratégica*
 
-### 🧠 Análisis "Was It Good?" Reparado
-Se ha reparado la función `analyzeLastMove`. Ahora proporciona una evaluación táctica real (jugada Equilibrada, Imprecisión o Excelente) en lugar de un mensaje genérico.
+## Historial completo de versiones
 
-### 🎙️ Comentarista de Partida Dinámico
-El comentarista ahora lee la puntuación de evaluación del motor para ofrecer comentarios situacionales en tiempo real (por ejemplo, detectando ventajas dominantes o igualdad absoluta).
-
-### 📚 Detección de Aperturas por Turno
-La nomenclatura de apertura (como el Gambito Benko o la Apertura Bird) ahora se restringe lógicamente al juego temprano (primeros 12 movimientos), pasando a notas estratégicas posicionales para el medio juego y el final de partida.
-
----
-
-## Lo nuevo en v2.21.0 — *La Edición de Rendimiento y Tácticas (Final)*
-
-Esta versión es una reescritura completa del motor que alcanza los **1631 ELO** frente a Stockfish profundidad 7. Incluye un cambio arquitectónico masivo a tablero de 8 bits y un nuevo **Paracaídas de Seguridad** para una estabilidad absoluta.
-
-### 🛡️ Paracaídas de Seguridad y Estabilidad Absoluta
-
-Implementado un sistema de seguridad en `askWiseKing` que garantiza que el motor siempre devuelva un movimiento legal, evitando que la IA se "congele" en partidas largas. Combinado con la auditoría pedagógica v3.1 Anti-Freeze, el motor es ahora totalmente resistente a cuelgues.
-
-### 🚀 Tablero en 8 bits — `Int8Array(64)` (NPS ×4–10)
-
-El tablero se migró de un array 8×8 de strings (`'P'`, `'k'`…) a un **`Int8Array(64)` plano** con piezas como enteros (`1–6` = Blancas, `9–14` = Negras).
-
-- **Localidad de caché**: 64 bytes caben en una sola línea de caché L1 — las lecturas del tablero son prácticamente gratuitas.
-- **Aritmética entera en todas partes**: tipo de pieza con `p & 7`, color con `p <= 6`. Sin comparaciones de strings en el camino caliente.
-- **Cero asignaciones en caliente**: todos los buffers (`Int8Array`, `Int32Array`) se preasignan una vez al arrancar el Worker.
-- **Resultado**: **45k–80k NPS** estables frente a ~10k–18k en v2.13.1 a iguales profundidades.
-
-### 📊 Evaluación Tapered MG/EG (tablas PST duales)
-
-Se sustituyeron las tablas PST únicas por **tablas de dos fases** (`PST_MG` / `PST_EG`).
-
-```
-score = (mgVal × ph + egVal × (24 − ph)) / 24   [entero, sin coma flotante en el camino caliente]
-```
-
-La fase `ph` se calcula a partir de las piezas restantes: cada menor = 1, torre = 2, dama = 4. Final puro = 0, apertura completa = 24. Esto permite valorar las piezas correctamente en todas las fases — p.ej. caballos se centralizan en el medio juego y retroceden en el final.
-
-### 🛡️ Heurísticas Escudo y Tormenta del Rey
-
-- **Escudo del Rey** (`eg < 0.3`): premia mantener 3 peones delante del rey enrocado (+25 cp cada uno).
-- **Tormenta de Peones**: penaliza columnas abiertas o semiabierta hacia el rey enrocado, escalado según lo avanzados que estén los peones de cobertura.
-
-### ⚔️ Evaluación de Intercambio Estático (SEE)
-
-Una función completa `see()` evalúa las secuencias de capturas antes de ejecutarlas:
-
-- Capturas ganadoras/iguales (`SEE ≥ 0`) ordenadas por ganancia neta — buscadas primero.
-- Capturas perdedoras (`SEE < 0`) posicionadas por debajo de jugadas silenciosas — descartadas en la quietud.
-- Ataques de rayos X (pieza que aparece al quitar otra) manejados correctamente.
-
-Elimina la clase más frecuente de colgadas del motor: cambiar un alfil por un peón defendido por otro peón.
-
-### 🔁 Detección de Empate por Repetición Restaurada
-
-Tras el refactor al tablero de 8 bits, el historial de la partida se enviaba al Worker como strings pero el bucle de búsqueda usaba claves Zobrist XOR-fold — **nunca estaban conectados**. El motor era completamente ciego a la repetición.
-
-Solución: los strings de `positionHashes` ahora se decodifican a claves Zobrist usando las mismas tablas que `makeMove()`, acumuladas en `historyCount: Map<u32, count>`. La comprobación de empate en `minimax()` es:
-```
-if (searchSet.has(bkS) || historyCount.get(bkS) >= 2) return 0;
-```
-
-### Infraestructura de Torneo
-
-- `arena_tournament.js` v2: torneo de 20 partidas, alternancia de colores, 20 líneas de apertura (cobertura ECO), guardado parcial tras cada partida, log de NPS, intervalos de confianza ELO (Wilson score).
-- Página V8/TurboFan compartida y persistente entre partidas — el código JIT sobrevive entre rondas, el NPS se estabiliza en su pico desde la partida 2.
-- Tiempo máximo de 45 segundos por jugada con detección de página caducada y recarga automática.
-
----
-
-## Novedades en v2.13.1 — *The Memory Update*
-
-- **Fix crítico — Amnesia del Worker TT**: La tabla de transposición, jugadas asesinas e historial se borraban en cada turno en modo torneo. Corregido reutilizando el Web Worker durante toda la partida. La profundidad de búsqueda en finales saltó de d:8–10 a **d:14–18**, con picos en **d:30**. Primeros empates significativos: **3 tablas en 4 partidas vs Stockfish profundidad 6 (~1700 ELO)**.
-- **Libro — Variante de Cambio del Ruy López**: Tras `Axc6 dxc6`, el motor ahora juega `d3` desde el libro en vez de encontrar `Cxe5??` por sí solo (pierde contra `Dd4!`).
-- **Libro — Apertura Inglesa Alekhine Invertida**: Tras `c4 e5 Cf3 e4`, el motor juega `Cd4` desde el libro. Antes se derrumbaba en 40 jugadas.
-- **Libro — Sistema KIA con g3**: 13 entradas nuevas para el sistema `g3 Ag2 Cf3 d3 0-0` contra todas las respuestas negras principales.
-- **Calibración del arena**: `arena_tournament.js` ahora permite elegir la profundidad de Stockfish al inicio, con ELOs calibrados por nivel.
-
----
-
-## Novedades en v2.12.0
-
-- **Expansión Masiva del Libro de Aperturas**: ~120+ entradas nuevas cubriendo QGD, Eslava, Italiana, Francesa y Caro-Kann, con soporte de transposiciones (Nf3/c4/g3-primero) y parches tácticos para el Gambito de Rey.
-- **Optimización NPS de Seguridad del Rey**: Ray-casting inverso que multiplica el NPS en apertura de ~500 a ~10.000+.
-- **Mejoras en Jaque Pastor**: El comentarista ahora detecta amenazas de f7 con mayor precisión e independientemente del orden de jugadas.
-- **Estabilidad del Motor**: Corregidos bugs críticos de TDZ y repeticiones Zobrist.
-
----
-
-## Novedades en v2.11.0
-
-Esta versión, la **Edición de Bugfixes y Evaluación**, añade +130 ELO sobre v2.10 (benchmark: ~1818 vs Stockfish profundidad 10, 10 partidas), corrige 5 bugs de correctitud y desbloquea búsqueda más profunda en finales.
-
-### Motor
-- **Captura al paso en quiescence** — El EP ahora es visible para el filtro de quietud, MVV-LVA y poda delta.
-- **Regla de los 50 movimientos en minimax** — el motor devuelve 0 (tablas) cuando `halfMoveClock ≥ 100`.
-- **Profundidad Rey Sabio 12 → 30** — el tiempo (30s) es el límite real. En finales, d:12 era el cuello de botella; ahora la ID llega tan lejos como el reloj permita.
-- **Límite Q-search** — quietud sin jaque tope en 5 (antes 8). NPS medio +56% (18K → 28K).
-
-### Evaluación
-- Peligro de peón pasado enemigo: penalización exponencial por rango (rango 7 = 270 cp extra — el motor bloquea).
-- Bonus de centralización del rey en el final (`eg > 0.4`).
-- Deflación de bonus posicionales: outpost, seguridad del rey, columnas abiertas, penalización dama temprana, todos reducidos para evitar sacrificios de material.
-
-### UI / Reglas
-- Orden de detección de tablas corregido: K vs K ya no se declara como ahogado.
-- Comentarista del Jaque Pastor cubre variantes con Qf3 y Bc5.
-- El Profesor valora correctamente las capturas al paso.
-
----
-
-## Novedades en v2.1.0
-
-Esta versión, la **Edición de Rendimiento y Heurística**, aporta un salto masivo en fuerza táctica y velocidad de ejecución (+80% NPS) a través de optimizaciones de bajo nivel y heurísticas posicionales clásicas.
-
-### Búsqueda de Alto Rendimiento (40k+ NPS)
-Hemos eliminado los tres mayores cuellos de botella del motor:
-- **Caché de Posición del Rey (O(1))**: Ya no se escanea el tablero para encontrar a los reyes; sus posiciones se cachean y actualizan en tiempo real.
-- **Ray-Casting Inverso**: La detección `isAtk` (pieza atacada) ahora utiliza ráfagas de rayos hacia afuera en lugar de bucles sobre el tablero, reduciendo drásticamente el tiempo de computación.
-- **Lazy Selection Sort**: Reemplazado el `.sort()` genérico por una ordenación por selección manual con puntuaciones precalculadas en `Int32Array`, permitiendo cortes Alpha-Beta mucho más rápidos.
-
-### Heurística Avanzada (HCE)
-- **Evaluación Tapered**: Los valores de las piezas se interpolan suavemente entre el Medio Juego y el Final (ej: ajuste de paridad Alfil/Caballo según la fase).
-- **Movilidad Segura**: Las bonificaciones de movilidad para piezas menores ahora se calculan solo para casillas no controladas por peones enemigos.
-- **Lógica de Peones Pasados**: Escaneo de ruta (penalización por casillas de promoción disputadas) y la **Regla del Cuadrado** (detección geométrica de peones imparables en finales).
-- **Tabla Hash de Peones**: Caché basada en Zobrist para estructuras de peones para evitar escaneos redundantes.
-
----
-
-## Novedades en v2.0.0
-
-Esta versión incluye una gran actualización arquitectónica del motor junto con una reconstrucción completa de la capa pedagógica. El motor ya no es solo un soporte; ahora es un núcleo táctico refinado.
-
-### Teoría de aperturas en el Profesor
-
-Los dos botones principales del Profesor ahora hablan el lenguaje de las aperturas de ajedrez.
-
-**Análisis (🔍)** detecta si la posición actual tiene continuaciones teóricas conocidas. Si las tiene, dice *"Sigues dentro de la teoría — pulsa ¿Qué hago? para ver las jugadas teóricas."* Si has salido del libro, también lo dice con claridad.
-
-**¿Qué hago? (🎯)** muestra una línea de cabecera con el nombre de la apertura y el número de continuaciones teóricas disponibles, justo encima de la lista de jugadas. Tras 1.Nf3 Nf6 ves: *"📚 Apertura Reti — 3 continuaciones teóricas disponibles abajo."* Tras 1.d4 Nf6 2.c4 e6 3.Nc3 Ab4: *"📚 Defensa Nimzoindia"*. La detección utiliza un algoritmo amplio que reconoce posiciones aunque la secuencia exacta no esté almacenada como clave del libro.
-
-### Detección de Oportunidades Perdidas
-El Profesor ahora no solo te regaña cuando te dejas una pieza, sino que es capaz de detectar si **dejaste escapar una táctica de oro** (como un jaque mate o ganar material limpio) por centrarte demasiado en responder a la última jugada del rival. Te mostrará exactamente cuál era la jugada oculta y su intención estratégica.
-
-### Comentarista en 3ª Persona y Huevos de Pascua
-El locutor ahora narra las partidas en estricta tercera persona, separando su rol del trato directo del Profesor. Además, nombra explícitamente la pieza capturada respetando su género gramatical (*"capturando la Torre"*, *"capturando el Caballo"*) e incluye nuevos chistes limpios y huevos de pascua musicales (como cantar *Runaway* de Queen cuando la Dama huye).
-
-### Libro de aperturas ampliado
-
-De 48 posiciones / 140 entradas a **~100 posiciones / ~280 entradas**. Nueva cobertura: Defensa Francesa (Winawer, Tarrasch, Avance, Cambio), Escandinava, Caro-Kann (Clásica, Karpov, Avance), Apertura Inglesa (Simétrica, Anglo-India, Cuatro Caballos), Nimzoindia (Rubinstein, Clásica, Sämisch), Grünfeld, India de Dama, Benoni, Reti con todas las respuestas negras, Sistema Londres ampliado y Siciliana Abierta.
-
-Posiciones que antes generaban un falso *"ya saliste del libro"* en la jugada 2 — como 1.Cf3 Cf6 o 1.d4 e6 — ahora se detectan correctamente como líneas teóricas.
-
-### Librería de Entrenamiento
-
-Un nuevo botón **🧩 Entrenamiento** aparece directamente en el menú principal — ya no está enterrado en Opciones. Abre una biblioteca de 36 posiciones de aprendizaje organizadas en tres pestañas:
-
-- **Aperturas (7)** — Mate del Pastor, Trampa de Legal, Gambito Budapest, Fried Liver, Gambito de Rey, error de la Petrov, tenedor de los Cuatro Caballos
-- **Táctica (15)** — Mate del pasillo, tenedor de caballo, clavada absoluta, ataque a la descubierta, jaque doble, enfilada, trampa de dama, jaque ahogado, mate de Anastasia, mate Árabe, zugzwang, sacrificio de alfil en h6, batería, y más
-- **Finales (14)** — Escalera, mate de dama, oposición de reyes, coronación, Lucena, Philidor, regla del cuadrado, alfil del color equivocado, dos alfiles vs rey, y más
-
-El botón **🎲 Reto Aleatorio** carga uno de **30 puzzles tácticos curados** al azar. Cada puzzle incluye un tema específico (Mate en 1, Tenedor, Clavada, Ensarte, Ataque Descubierto, Coronación, Sacrificio) y una descripción bilingüe que explica el reto. Un botón **🎲 Otro** dentro del modal del reto permite pasar a otro puzzle sin volver a la librería.
-
-### Soporte completo para jugar como Negras
-
-Corregido un error de transición que impedía que la IA continuara la partida si el jugador humano elegía jugar con Negras. El sistema ahora gestiona el cambio de bando de forma fluida en todos los niveles.
-
-### Corrección del jaque mate en 1
-
-Cuando existe un jaque mate en 1, el Profesor ahora muestra exactamente una jugada con la cabecera *"🏆 ¡Jaque Mate en 1! Esta jugada termina la partida."* Antes, la garantía pedagógica forzaba que apareciera una segunda jugada irrelevante incluso cuando la partida ya estaba ganada.
-
-### Corrección del bug del estilo del comentarista
-
-El nivel "Más serio" (nivel 0) era imposible de seleccionar — `parseInt("0") || 1` devuelve `1` en JavaScript porque `0` es falsy. Corregido con una comprobación explícita de `isNaN`. Ambos menús ahora también muestran etiquetas de escala (*Serio | Mixto | Divertido*) directamente debajo del control deslizante.
-
-### Corrección de la detección de victorias
-
-En el modo IA, el confeti ahora solo se lanza cuando gana el humano. Antes se lanzaba en ambos casos.
-
-### Antirepetición 2.0 (Estándar FIDE)
-
-El Rey Sabio ahora entiende el valor estratégico de las tablas. Mientras que las versiones anteriores usaban una penalización ciega para las posiciones repetidas, la v2.0.0 evalúa la triple repetición como exactamente **0.0 (Tablas)**.
-
-Este cambio arquitectónico permite al motor:
-- **Forzar el empate** por repetición cuando está en desventaja material (ej. perdiendo una pieza contra un rival más fuerte).
-- **Evitar el empate** por repetición cuando va ganando, buscando líneas alternativas de victoria en su lugar.
-
-Combinado con una implementación corregida de **Zobrist Hashing** que rastrea los derechos de enroque y el estado de la captura al paso, el motor ya no cae en bucles infinitos de "barajado de piezas" en mediojuegos complejos.
-
-### Motor — Bugs críticos corregidos
-
-**Ventanas de aspiración para Negras** — los límites se pasaban a `minimax` en el espacio de las Blancas. Con Negras, `(α, β)` debe invertirse a `(-β, -α)`. Sin este fix el Rey Sabio con Negras quedaba ciego desde profundidad 3 y jugaba cosas como Rd7 en jugada 7 con una pieza gratis disponible.
-
-**Ventana nula PVS para el minimizador** — usaba `(α, α+1)` para ambos lados. El correcto para un nodo minimizador es `(β-1, β)`.
-
-**Condición de re-búsqueda LMR** — la guarda `v < β` era incorrecta: cualquier `v > α` debe disparar una re-búsqueda completa independientemente de si también supera β. Sin este fix, búsquedas superficiales con scores muy altos se aceptaban sin verificar.
-
-**Actualización alpha multiPV** — mezclaba espacios de puntuación para Negras, colapsando la ventana en posiciones buenas para ellas.
-
-**Failsafe de ventana de aspiración** — tras 3 intentos fallidos, ahora se garantiza una búsqueda con ventana completa como cuarto fallback.
-
-### Motor — Mejoras de fuerza
-
-- **Corrección del Efecto Horizonte:** La búsqueda de quietud (*Quiescence*) ahora evalúa jaques hasta profundidad 2, evitando que la IA se quede ciega y se deje piezas colgadas en secuencias largas de capturas.
-- **Prevención de ataques suicidas:** El motor ya no sacrifica material a lo loco para exponer al rey enemigo si sus propios caballos y alfiles aún no se han desarrollado (`attackerUndeveloped <= 1`).
-- Peón pasado escala **×4.5** en finales (antes ×3) y el rey se centraliza antes (`eg > 0.4`).
-- Ordenación por jugada TT (score 1.000.000, por encima de cualquier captura)
-- Heurística de contramovimiento (score 48.000)
-- Preordenación MVV-LVA de jugadas raíz antes de la primera iteración
-- Poda de futilidad extendida a profundidad 3 (margen 500 cp)
-- Ventana de aspiración ampliada a ±75 cp (antes ±50)
-- Valores de piezas ajustados: C=305, A=333
-- Bucle de seguridad del rey corregido: cada pieza contada una vez (antes se contaba una vez por casilla de zona atacada)
-
----
+Consulta [docs/CHANGELOG_es.md](docs/CHANGELOG_es.md) para el historial completo de versiones.
 
 ## Arquitectura interna
 
@@ -507,10 +265,44 @@ Requiere ES2017+. Probado en Chrome 90+, Firefox 88+, Safari 14+.
 
 ## Cómo contribuir
 
-- **Bugs y features:** Abre un **Issue** describiendo el error o la petición de nueva funcionalidad (pasos para reproducir, comportamiento esperado vs real, capturas si aplican). Los Issues son el lugar preferido para discutir y ordenar tareas.
-- **Cambios de código:** Haz fork del repositorio, crea una rama `fix/descripcion-corta` o `feature/descripcion-corta` y abre un **Pull Request**. PRs pequeños y centrados facilitan la revisión.
-- **Pruebas y scripts:** Si tu cambio afecta a los scripts en `stockfish_tests`, incluye los pasos de configuración y logs relevantes en la descripción del PR. Consulta `stockfish_tests/README_es.md` para la configuración de pruebas.
-- **Revisión y comunicación:** Usa Issues para solicitar revisiones o discutir diseño; los mantenedores triarán y etiquetarán las contribuciones.
+Airin es un único archivo `.html` sin paso de compilación, sin bundler y sin gestor de paquetes. Se abre en cualquier navegador y funciona directamente — lo que significa que muchas contribuciones se pueden probar en minutos.
+
+### Contribuciones sencillas — sin torneo necesario
+
+| Área | Qué hacer |
+|---|---|
+| Bugs | Abre un Issue con pasos para reproducir + captura de pantalla |
+| Frases del comentarista | Añade entradas al objeto `I18N` en los bloques `es:` y `en:` |
+| Libro de aperturas | Añade líneas a `OPENING_BOOK` (SAN separado por comas → `[{m, w}]`). Solo jugadas teóricas inequívocas — una jugada errónea del libro se ejecuta en todas las partidas |
+| Posiciones de entrenamiento | Añade FENs a la Biblioteca de Entrenamiento con tema y descripción |
+| UI / CSS | Edita estilos en línea o variables CSS; prueba abriendo el archivo directamente |
+
+### Cambios al motor — torneo requerido
+
+El motor de búsqueda es un alfa-beta de ~1.200 líneas dentro de un Web Worker. Cualquier cambio en la evaluación, los parámetros de búsqueda o el orden de jugadas requiere validación por torneo antes de poder fusionarse:
+
+- **Validación de desarrollo (cada parche):** torneo de 20 partidas (~4 horas a 15s/jugada, ~7–8 horas a 30s/jugada)
+- **Aprobación para release (fusión a main):** torneo de 40 partidas con UCI_Elo (~7,5 horas a 15s/jugada, ~14–16 horas a 30s/jugada)
+
+```bash
+cd stockfish_tests
+# Desarrollo — valida cada parche (~4h a 15s)
+node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
+# Release — requerido antes de abrir un PR a main (~7,5h a 15s)
+node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 40
+```
+
+Requiere Node.js, Puppeteer y `stockfish.exe` en la raíz del proyecto.
+
+**La regla:** un cambio por PR. Nunca combines dos cambios al motor — si el ELO cae, no podrás aislar la causa. Ejecuta los torneos en un PC de escritorio (los portátiles sufren throttling térmico y producen estimaciones de ELO poco fiables). Incluye el JSON del torneo en la descripción del PR.
+
+### Notas de arquitectura
+
+- El juego completo vive en `mChess.html` (~860 KB, ~16.500 líneas). No hay otros archivos fuente.
+- **Dos motores:** el Web Worker (juega todas las partidas reales) y el motor del hilo principal (solo para el Entrenador/análisis, nunca juega). Los cambios en uno no afectan al otro.
+- **El código del Worker** es un string JS dentro de `createEngineWorker()` — edítalo como JS normal; el navegador lo vuelve a analizar en cada carga.
+- **Bump de versión obligatorio** en cada cambio al motor — 4 lugares en el HTML: comentario `<!--`, `<title>`, texto del botón y `console.log`.
+- **Pruebas:** abre el archivo via `file:///` directamente. No se necesita servidor.
 
 
 ---
@@ -543,7 +335,7 @@ Copyright 2026 Aaron Vazquez Fraga
 
 ## Cómo se construyó
 
-Monolith Chess fue diseñado y dirigido por Aaron Vazquez Fraga. El código fue escrito casi en su totalidad por asistentes de inteligencia artificial.
+Airin Chess fue diseñado y dirigido por Aaron Vazquez Fraga. El código fue escrito casi en su totalidad por asistentes de inteligencia artificial.
 
 La mayor parte de la implementación — arquitectura del motor, técnicas de búsqueda, el sistema del Profesor, el libro de aperturas, la librería de entrenamiento y la mayoría de las correcciones de bugs — fue escrita por **Claude Sonnet** (Anthropic). **Gemini Pro** (Google) contribuyó a decisiones estructurales tempranas y enfoques alternativos. **ChatGPT** (OpenAI) ayudó con problemas concretos en las fases iniciales del desarrollo.
 
@@ -553,4 +345,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Monolith Chess v2.22.5 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*
+*Airin Chess v2.22.6 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*

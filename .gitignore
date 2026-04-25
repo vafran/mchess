@@ -35,3 +35,9 @@ partidas_guardadas/
 # === Archivos de configuración local ===
 # Si tienes archivos de configuración específicos para tu entorno, como claves API o configuraciones de desarrollo
 .claude
+
+# === PR descriptions (local only) ===
+pr_*.md
+
+# === Tournament screenshot analysis folders ===
+stockfish_tests/Tournament_*/
