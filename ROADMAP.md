@@ -102,6 +102,19 @@ Same one-patch-per-version discipline, 15s tournaments only.
 - Commentator improvements from easy/medium Surface game data
 - All changes committed to feat branch, no engine change, no tournament needed
 
+#### Pedagogical backlog (from audit, post-v2.23.0)
+
+**P1 — Filter high-risk moves from "What should I do?" top recommendations**  
+When `getMoveRiskLevel` returns `'high'` AND `hanging.danger = true` AND `!isProfitableTrade`, the move should not appear as the #1 suggestion if any lower-risk alternative exists. Currently it can surface as top choice because the emergency fallback (`validatedOptions` empty → show all sorted by penalty) doesn't distinguish "forced-bad" from "bad-but-avoidable."  
+*Risk:* medium — must not leave the list empty in forced-bad positions (all moves lose something).  
+*Test scenarios needed:* (a) safe moves exist alongside a hanging one → high-risk demoted; (b) all moves lose material → emergency fallback still shows something; (c) forced sacrifice that looks high-risk but is the correct move → not suppressed.
+
+**P2 — Append tactical notes to check-evasion descriptions**  
+`getStrategicIntent` returns immediately at rule #0 (escape check) via `return withQS(evasion_string)`. `withQS` already appends mate threats and large material gains, but fork/pin/discovered-attack praise from rules 3–15 is skipped entirely. Result: "🛡️ Evasion! You move your piece to save your King." even when the evasion also creates a fork.  
+*Fix:* restructure rule #0 to build the evasion string and then fall through to tactical detection, appending any findings rather than returning immediately.  
+*Risk:* low — worst case is a slightly wrong tactical label; no crash risk.  
+*Test:* position where escaping check with a piece simultaneously creates a fork or pin.
+
 ### Track 2: ELO Gauntlet (run in parallel during the week)
 
 **Run on desktop** (no thermal throttle, peak search depth). Script already ready.
