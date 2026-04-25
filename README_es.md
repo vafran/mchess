@@ -574,10 +574,44 @@ Requiere ES2017+. Probado en Chrome 90+, Firefox 88+, Safari 14+.
 
 ## Cómo contribuir
 
-- **Bugs y features:** Abre un **Issue** describiendo el error o la petición de nueva funcionalidad (pasos para reproducir, comportamiento esperado vs real, capturas si aplican). Los Issues son el lugar preferido para discutir y ordenar tareas.
-- **Cambios de código:** Haz fork del repositorio, crea una rama `fix/descripcion-corta` o `feature/descripcion-corta` y abre un **Pull Request**. PRs pequeños y centrados facilitan la revisión.
-- **Pruebas y scripts:** Si tu cambio afecta a los scripts en `stockfish_tests`, incluye los pasos de configuración y logs relevantes en la descripción del PR. Consulta `stockfish_tests/README_es.md` para la configuración de pruebas.
-- **Revisión y comunicación:** Usa Issues para solicitar revisiones o discutir diseño; los mantenedores triarán y etiquetarán las contribuciones.
+Airin es un único archivo `.html` sin paso de compilación, sin bundler y sin gestor de paquetes. Se abre en cualquier navegador y funciona directamente — lo que significa que muchas contribuciones se pueden probar en minutos.
+
+### Contribuciones sencillas — sin torneo necesario
+
+| Área | Qué hacer |
+|---|---|
+| Bugs | Abre un Issue con pasos para reproducir + captura de pantalla |
+| Frases del comentarista | Añade entradas al objeto `I18N` en los bloques `es:` y `en:` |
+| Libro de aperturas | Añade líneas a `OPENING_BOOK` (SAN separado por comas → `[{m, w}]`). Solo jugadas teóricas inequívocas — una jugada errónea del libro se ejecuta en todas las partidas |
+| Posiciones de entrenamiento | Añade FENs a la Biblioteca de Entrenamiento con tema y descripción |
+| UI / CSS | Edita estilos en línea o variables CSS; prueba abriendo el archivo directamente |
+
+### Cambios al motor — torneo requerido
+
+El motor de búsqueda es un alfa-beta de ~1.200 líneas dentro de un Web Worker. Cualquier cambio en la evaluación, los parámetros de búsqueda o el orden de jugadas requiere validación por torneo antes de poder fusionarse:
+
+- **Validación de desarrollo (cada parche):** torneo de 20 partidas
+- **Aprobación para release (fusión a main):** torneo de 40 partidas con UCI_Elo
+
+```bash
+cd stockfish_tests
+# Desarrollo — valida cada parche
+node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
+# Release — requerido antes de abrir un PR a main
+node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 40
+```
+
+Requiere Node.js, Puppeteer y `stockfish.exe` en la raíz del proyecto.
+
+**La regla:** un cambio por PR. Nunca combines dos cambios al motor — si el ELO cae, no podrás aislar la causa. Ejecuta los torneos en un PC de escritorio (los portátiles sufren throttling térmico y producen estimaciones de ELO poco fiables). Incluye el JSON del torneo en la descripción del PR.
+
+### Notas de arquitectura
+
+- El juego completo vive en `mChess.html` (~860 KB, ~16.500 líneas). No hay otros archivos fuente.
+- **Dos motores:** el Web Worker (juega todas las partidas reales) y el motor del hilo principal (solo para el Entrenador/análisis, nunca juega). Los cambios en uno no afectan al otro.
+- **El código del Worker** es un string JS dentro de `createEngineWorker()` — edítalo como JS normal; el navegador lo vuelve a analizar en cada carga.
+- **Bump de versión obligatorio** en cada cambio al motor — 4 lugares en el HTML: comentario `<!--`, `<title>`, texto del botón y `console.log`.
+- **Pruebas:** abre el archivo via `file:///` directamente. No se necesita servidor.
 
 
 ---

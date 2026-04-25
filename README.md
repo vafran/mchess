@@ -584,10 +584,44 @@ ES2017+ required. Tested on Chrome 90+, Firefox 88+, Safari 14+.
 
 ## How to Contribute
 
-- **Bugs & features:** Please open an **Issue** describing the bug or feature request with steps to reproduce, expected vs actual behaviour, and screenshots when helpful. Issues are the preferred place for discussion and triage.
-- **Code changes:** Fork the repo, create a branch named `fix/your-brief-desc` or `feature/your-brief-desc`, and open a **Pull Request**. Small, focused PRs are easier to review.
-- **Tests & scripts:** If you change or run the `stockfish_tests` scripts, list any setup steps in the PR and include relevant logs. See `stockfish_tests/README.md` for test setup.
-- **Review & communication:** Use Issues to request reviews or design feedback; maintainers will label and triage incoming contributions.
+Airin is a single `.html` file with no build step, no bundler, no package manager. Open it in any browser and it runs — which means many contributions take minutes to try.
+
+### Easy contributions — no tournament needed
+
+| Area | What |
+|---|---|
+| Bug reports | Open an Issue with steps to reproduce + screenshot |
+| Commentary phrases | Add entries to the `I18N` object in both `es:` and `en:` blocks |
+| Opening book | Add lines to `OPENING_BOOK` (comma-separated SAN → `[{m, w}]`). Only unambiguous theoretical moves — a wrong book move fires every game |
+| Training positions | Add FENs to the Training Library with theme and description |
+| UI / CSS | Edit inline styles or CSS variables; test by opening the file directly |
+
+### Engine changes — tournament required
+
+The search engine is a ~1,200-line alpha-beta inside a Web Worker. Any change to evaluation, search parameters, or move ordering requires tournament validation before it can merge:
+
+- **Development validation (each patch):** 20-game tournament
+- **Release sign-off (merging to main):** 40-game tournament with UCI_Elo
+
+```bash
+cd stockfish_tests
+# Development — validate each patch
+node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
+# Release — required before opening a PR to main
+node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 40
+```
+
+Requires Node.js, Puppeteer, and `stockfish.exe` in the project root.
+
+**The rule:** one change per PR. Never combine two engine changes — if ELO drops, you cannot isolate the cause. Run tournaments on a desktop PC (laptops thermal-throttle and produce unreliable ELO estimates). Include the tournament JSON in the PR description.
+
+### Architecture notes
+
+- The entire game lives in `mChess.html` (~860 KB, ~16,500 lines). No other source files.
+- **Two engines:** the Web Worker (plays all game moves) and the main-thread engine (Coach/analysis only, never plays). Changes to one do not affect the other.
+- **Worker code** is a JS string inside `createEngineWorker()` — edit it like normal JS, the browser re-parses it on each load.
+- **Version bump required** for every engine change — 4 places in the HTML: `<!--` comment, `<title>`, button text, `console.log`.
+- **Testing:** open via `file:///` directly. No server needed.
 
 
 ## Stockfish Tests (Training the Engine)
