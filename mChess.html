@@ -3396,6 +3396,93 @@ limitations under the License.
       } catch (_) { }
     }
 
+    // ── Trophy System ─────────────────────────────────────────────────────────
+    const TROPHY_DEFS = {
+      // Category 1 — Progression & Milestones
+      first_blood:             { icon:'🩸', cat:1, name:{es:'Primera Sangre',      en:'First Blood'},         desc:{es:'Gana tu primera partida.',                                          en:'Win your first game.'} },
+      chicken_hunter:          { icon:'🍗', cat:1, name:{es:'Cazador de Pollos',   en:'Chicken Hunter'},      desc:{es:'Derrota al Pollito 5 veces.',                                        en:'Defeat the Easy bot 5 times.'} },
+      fried_chicken:           { icon:'⚡', cat:1, name:{es:'Pollo Frito',         en:'Fried Chicken'},       desc:{es:'Derrota al Pollito en menos de 20 movimientos.',                    en:'Defeat the Easy bot in under 20 moves.'} },
+      graduation:              { icon:'🎓', cat:1, name:{es:'La Graduación',       en:'The Graduation'},      desc:{es:'Derrota al Estudiante por primera vez.',                             en:'Defeat the Student for the first time.'} },
+      magic_trick:             { icon:'🎩', cat:1, name:{es:'El Truco de Magia',   en:'Magic Trick'},         desc:{es:'Derrota al Mago por primera vez.',                                   en:'Defeat the Magician for the first time.'} },
+      king_slayer:             { icon:'👑', cat:1, name:{es:'El Mata Reyes',       en:'The King Slayer'},     desc:{es:'Derrota al Rey Sabio por primera vez.',                              en:'Defeat the Wise King for the first time.'} },
+      // Category 2 — Technical & Late-Game
+      pure_pride:              { icon:'🛡️', cat:2, name:{es:'Orgullo Puro',        en:'Pure Pride'},          desc:{es:'Gana sin deshacer ni pedir ayuda (Medio o superior).',               en:'Win without undos or hints (Medium or higher).'} },
+      iron_castle:             { icon:'🏰', cat:2, name:{es:'Castillo de Hierro',  en:'Iron Castle'},         desc:{es:'Gana enrocando sin mover el rey después.',                           en:'Win by castling and never moving your king again.'} },
+      david_goliath:           { icon:'🗿', cat:2, name:{es:'David y Goliat',      en:'David vs Goliath'},    desc:{es:'Gana tras llegar a −500cp o peor.',                                 en:'Win a game where your eval reached −500cp or worse.'} },
+      illusion_breaker:        { icon:'🌀', cat:2, name:{es:'El Rompe-Ilusiones',  en:'Illusion Breaker'},    desc:{es:'Fuerza tablas contra El Mago.',                                      en:'Force a draw against The Magician.'} },
+      no_tricks:               { icon:'🧩', cat:2, name:{es:'Sin Trucos',          en:'No Tricks Allowed'},   desc:{es:'Derrota al Mago sin pedir ayuda.',                                   en:'Defeat The Magician without any hints.'} },
+      royal_endurance:         { icon:'⏳', cat:2, name:{es:'Resistencia Real',    en:'Royal Endurance'},     desc:{es:'Sobrevive más de 60 movimientos contra el Rey Sabio.',               en:'Survive more than 60 moves against the Wise King.'} },
+      the_immortal:            { icon:'💎', cat:2, name:{es:'El Inmortal',         en:'The Immortal'},        desc:{es:'Derrota al Rey Sabio sin deshacer ningún movimiento.',               en:'Defeat the Wise King without undoing any move.'} },
+      usurper:                 { icon:'♟️', cat:2, name:{es:'El Usurpador',        en:'The Usurper'},         desc:{es:'Da jaque mate al Rey Sabio con un peón.',                            en:'Checkmate the Wise King with a pawn.'} },
+      // Category 3 — Easter Eggs (hidden until unlocked)
+      panic_mode:              { icon:'😱', cat:3, hidden:true, name:{es:'¡No entres en pánico!', en:"Don't Panic!"},        desc:{es:'Gana con más de 5 deshacer.',                           en:'Win with more than 5 undos.'} },
+      dumb_dumber:             { icon:'🤦', cat:3, hidden:true, name:{es:'Tonto y Más Tonto',     en:'Dumb and Dumber'},     desc:{es:'Empata contra el Pollito.',                             en:'Draw against the Easy bot.'} },
+      oops_queen:              { icon:'😬', cat:3, hidden:true, name:{es:'¿Mi Dama?',              en:'Oops, My Queen?'},     desc:{es:'Gana tras perder tu dama sin compensación.',            en:'Win after losing your queen without compensation.'} },
+      // Category 4 — The Historians (real-time, sacrifice required)
+      secret_marshall_qg3:    { icon:'🌧️', cat:4, name:{es:'La Lluvia de Oro',      en:'Golden Rain'},         desc:{es:'Sacrifica la dama en g3 — el golpe inmortal de Marshall contra Capablanca (Nueva York, 1918).',  en:'Sacrifice the queen to g3 — Marshall\'s immortal stroke vs Capablanca (New York, 1918).'} },
+      secret_vladimirov_bh6:  { icon:'💥', cat:4, name:{es:'El Cañonazo',           en:'The Cannon Shot'},     desc:{es:'Sacrifica el alfil en h6 — motivo clásico popularizado por Vladimirov.',                         en:'Sacrifice the bishop to h6 — the classical motif popularized by Vladimirov.'} },
+      secret_sanz_rxb2:       { icon:'🚂', cat:4, name:{es:'La Locomotora',         en:'The Locomotive'},      desc:{es:'Sacrifica la torre en b2 — tema de rotura clásico del estudio de Sanz.',                          en:'Sacrifice the rook to b2 — the classic breakthrough theme from Sanz\'s study.'} },
+      secret_shirov_bh3:      { icon:'🔥', cat:4, name:{es:'Fuego en el Tablero',   en:'Fire on Board'},       desc:{es:'Sacrifica el alfil en h3 — Bh3!! inmortal de Shirov vs Tópálov (Linares, 1996).',                 en:'Sacrifice the bishop to h3 — Shirov\'s immortal Bh3!! vs Topalov (Linares, 1996).'} },
+      grand_historian:        { icon:'📜', cat:4, name:{es:'El Gran Historiador',   en:'The Grand Historian'}, desc:{es:'Desbloquea los 4 motivos históricos.',                                                             en:'Unlock all 4 historical motifs.'} },
+    };
+
+    function unlockTrophy(id) {
+      if (!currentProfile) return;
+      if (currentProfile.unlockedTrophies.some(t => t.id === id)) return;
+      currentProfile.unlockedTrophies.push({ id, unlockedAt: new Date().toISOString() });
+      saveProfile();
+      const def = TROPHY_DEFS[id];
+      const name = def ? (def.name[currentLanguage] || def.name.es) : id;
+      showToast(`🏆 ${name}`, 4500);
+      console.log(`[Statistician] Trophy unlocked: ${id}`);
+    }
+
+    function checkTrophyUnlocks(result, difficulty, movesCount) {
+      const p = currentProfile;
+      if (!p) return;
+      if (result === 'win') {
+        if (p.stats.totalWins === 1) unlockTrophy('first_blood');
+        if (difficulty === 'easy') {
+          if (p.bots.easy.w >= 5) unlockTrophy('chicken_hunter');
+          if (movesCount <= 40)    unlockTrophy('fried_chicken'); // ≤20 full moves
+        }
+        if (difficulty === 'medium'      && p.bots.medium.w === 1)      unlockTrophy('graduation');
+        if (difficulty === 'hard'        && p.bots.hard.w === 1)        unlockTrophy('magic_trick');
+        if (difficulty === 'grandmaster' && p.bots.grandmaster.w === 1) unlockTrophy('king_slayer');
+        if (['medium','hard','grandmaster'].includes(difficulty) && sessionUndos === 0 && sessionHints === 0)
+          unlockTrophy('pure_pride');
+        if (sessionCastled && !sessionKingMoved)                              unlockTrophy('iron_castle');
+        if (sessionMinEval !== Infinity && sessionMinEval <= -500)            unlockTrophy('david_goliath');
+        if (difficulty === 'hard'        && sessionHints === 0)               unlockTrophy('no_tricks');
+        if (difficulty === 'grandmaster' && sessionUndos === 0)               unlockTrophy('the_immortal');
+        if (difficulty === 'grandmaster' && history.length > 0) {
+          const last = history[history.length - 1].replace(/[+#]/g, '');
+          if (!/^[NBRQK]/.test(last) && !/^O/.test(last)) unlockTrophy('usurper');
+        }
+        if (sessionUndos > 5)      unlockTrophy('panic_mode');
+        if (sessionQueenBlundered) unlockTrophy('oops_queen');
+      }
+      if (result === 'draw') {
+        if (difficulty === 'hard') unlockTrophy('illusion_breaker');
+        if (difficulty === 'easy') unlockTrophy('dumb_dumber');
+      }
+      // royal_endurance: survived >60 full moves (>120 plies) against grandmaster
+      if (difficulty === 'grandmaster' && movesCount > 120) unlockTrophy('royal_endurance');
+    }
+
+    function checkHistorianTrophies(type, tr, tc) {
+      if (!currentProfile || gameMode !== 'ai') return;
+      // Sacrifice criterion: the destination is attacked by an opponent piece after the move
+      if (!isSquareAttacked(tr, tc, playerColor, board)) return;
+      const all4 = ['secret_marshall_qg3','secret_vladimirov_bh6','secret_sanz_rxb2','secret_shirov_bh3'];
+      if (type === 'Q' && tr === 5 && tc === 6) unlockTrophy('secret_marshall_qg3');    // g3
+      if (type === 'B' && tr === 2 && tc === 7) unlockTrophy('secret_vladimirov_bh6');  // h6
+      if (type === 'R' && tr === 6 && tc === 1) unlockTrophy('secret_sanz_rxb2');       // b2
+      if (type === 'B' && tr === 5 && tc === 7) unlockTrophy('secret_shirov_bh3');      // h3
+      if (all4.every(id => currentProfile.unlockedTrophies.some(t => t.id === id)))
+        unlockTrophy('grand_historian');
+    }
+
     function updateMatchStats(result, difficulty, movesCount) {
       if (!currentProfile || gameMode !== 'ai') return;
       sessionPendingResult = { result, difficulty, movesCount }; // store for reviewGame path
@@ -3427,6 +3514,7 @@ limitations under the License.
         } catch (_) { /* eval may fail in checkmate positions; record still saves */ }
       }
 
+      checkTrophyUnlocks(result, difficulty, movesCount);
       saveProfile();
       console.log(`[Statistician] Match saved — result:${result} diff:${difficulty} moves:${movesCount} undos:${sessionUndos} hints:${sessionHints}`);
     }
@@ -5272,6 +5360,10 @@ limitations under the License.
       board[sr][sc] = ' ';
       board[tr][tc] = piece;
       if (rookMoveInfo) board[rookMoveInfo.tr][rookMoveInfo.tc] = (color === 'w') ? 'R' : 'r';
+
+      // Statistician: historian trophy check (uses post-move board to detect attacks)
+      if (gameMode === 'ai' && color === playerColor && !isCastle)
+        checkHistorianTrophies(type, tr, tc);
 
       // Tell render which pieces are "flying"
       window.currentAnimList = animList;
