@@ -281,14 +281,14 @@ Airin es un único archivo `.html` sin paso de compilación, sin bundler y sin g
 
 El motor de búsqueda es un alfa-beta de ~1.200 líneas dentro de un Web Worker. Cualquier cambio en la evaluación, los parámetros de búsqueda o el orden de jugadas requiere validación por torneo antes de poder fusionarse:
 
-- **Validación de desarrollo (cada parche):** torneo de 20 partidas
-- **Aprobación para release (fusión a main):** torneo de 40 partidas con UCI_Elo
+- **Validación de desarrollo (cada parche):** torneo de 20 partidas (~4 horas a 15s/jugada, ~7–8 horas a 30s/jugada)
+- **Aprobación para release (fusión a main):** torneo de 40 partidas con UCI_Elo (~7,5 horas a 15s/jugada, ~14–16 horas a 30s/jugada)
 
 ```bash
 cd stockfish_tests
-# Desarrollo — valida cada parche
+# Desarrollo — valida cada parche (~4h a 15s)
 node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
-# Release — requerido antes de abrir un PR a main
+# Release — requerido antes de abrir un PR a main (~7,5h a 15s)
 node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 40
 ```
 

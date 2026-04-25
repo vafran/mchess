@@ -278,14 +278,14 @@ Airin is a single `.html` file with no build step, no bundler, no package manage
 
 The search engine is a ~1,200-line alpha-beta inside a Web Worker. Any change to evaluation, search parameters, or move ordering requires tournament validation before it can merge:
 
-- **Development validation (each patch):** 20-game tournament
-- **Release sign-off (merging to main):** 40-game tournament with UCI_Elo
+- **Development validation (each patch):** 20-game tournament (~4 hours at 15s/move, ~7–8 hours at 30s/move)
+- **Release sign-off (merging to main):** 40-game tournament with UCI_Elo (~7.5 hours at 15s/move, ~14–16 hours at 30s/move)
 
 ```bash
 cd stockfish_tests
-# Development — validate each patch
+# Development — validate each patch (~4h at 15s)
 node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 20
-# Release — required before opening a PR to main
+# Release — required before opening a PR to main (~7.5h at 15s)
 node arena_tournament.js --batch --sf-mode uci_elo --sf-value 1750 --games 40
 ```
 
