@@ -3350,6 +3350,14 @@ limitations under the License.
 
     let currentProfile = null;
 
+    // Session counters — reset on every init()
+    let sessionUndos          = 0;
+    let sessionHints          = 0;
+    let sessionMinEval        = Infinity; // lowest eval seen (cp, from player's perspective)
+    let sessionQueenBlundered = false;    // true if opponent captured player's queen uncontested
+    let sessionCastled        = false;    // true once the player castles
+    let sessionKingMoved      = false;    // true if king moves again after castling
+
     function loadProfile() {
       try {
         const raw = localStorage.getItem(PROFILE_KEY);
@@ -3384,6 +3392,36 @@ limitations under the License.
       try {
         localStorage.setItem(PROFILE_KEY, JSON.stringify(currentProfile));
       } catch (_) { }
+    }
+
+    function updateMatchStats(result, difficulty, movesCount) {
+      if (!currentProfile || gameMode !== 'ai') return;
+      const p = currentProfile;
+
+      p.stats.totalGames++;
+      if (result === 'win')       p.stats.totalWins++;
+      else if (result === 'draw') p.stats.totalDraws++;
+      else                        p.stats.totalLosses++;
+
+      p.stats.totalUndos    += sessionUndos;
+      p.stats.hintsUsed     += sessionHints;
+
+      const bot = p.bots[difficulty] || p.bots.easy;
+      if (result === 'win')       bot.w++;
+      else if (result === 'draw') bot.d++;
+      else                        bot.l++;
+
+      if (result === 'win') {
+        if (p.records.fastestWin === null || movesCount < p.records.fastestWin)
+          p.records.fastestWin = movesCount;
+        const finalEval = evaluateBoard(board, 'hard');
+        const playerEval = playerColor === 'w' ? finalEval : -finalEval;
+        if (p.records.highestEvalWin === null || playerEval > p.records.highestEvalWin)
+          p.records.highestEvalWin = playerEval;
+      }
+
+      saveProfile();
+      console.log(`[Statistician] Match saved — result:${result} diff:${difficulty} moves:${movesCount} undos:${sessionUndos} hints:${sessionHints}`);
     }
 
     // ── Game Autosave ─────────────────────────────────────────────────────────
@@ -4192,6 +4230,14 @@ limitations under the License.
       window.snapshotBeforeRules = null;
       puzzleMode = null;
 
+      // Statistician: reset session counters
+      sessionUndos          = 0;
+      sessionHints          = 0;
+      sessionMinEval        = Infinity;
+      sessionQueenBlundered = false;
+      sessionCastled        = false;
+      sessionKingMoved      = false;
+
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
       if (pList) {
@@ -4340,6 +4386,12 @@ limitations under the License.
       // Get current board score
       // evaluateBoard devuelve + para blancas y - para negras
       const score = evaluateBoard(board, 'hard');
+
+      // Statistician: track worst position seen this game (from player's perspective)
+      if (gameMode === 'ai' && history.length > 0) {
+        const playerScore = playerColor === 'w' ? score : -score;
+        if (playerScore < sessionMinEval) sessionMinEval = playerScore;
+      }
 
       // Sigmoid mapping (tanh): same approach used by Lichess/Chess.com.
       // tanh(score/600): +100cp≈58%, +300cp≈73%, +600cp≈88%, never hard-clips.
@@ -5146,6 +5198,11 @@ limitations under the License.
       let isCapture = captured !== ' ';
       let epCapture = false;
 
+      // Statistician: queen blunder detection (opponent captures player's queen)
+      if (gameMode === 'ai' && captured.toUpperCase() === 'Q' && colorOf(captured) === playerColor) {
+        sessionQueenBlundered = true;
+      }
+
       // 2. CASTLING LOGIC
       let isCastle = false;
       let rookMoveInfo = null;
@@ -5169,6 +5226,12 @@ limitations under the License.
             notation = 'O-O-O';
           }
         }
+      }
+
+      // Statistician: castling and king-movement tracking
+      if (gameMode === 'ai' && color === playerColor) {
+        if (isCastle) sessionCastled = true;
+        else if (type === 'K' && sessionCastled) sessionKingMoved = true;
       }
 
       // Compute SAN disambiguation before the board is mutated
@@ -5369,8 +5432,8 @@ limitations under the License.
 
       // 13. FIN DE PARTIDA O IA
       // ★ FIX 3: Draw conditions BEFORE !hasMove so K vs K etc. don't reach !hasMove as stalemate
-      if (halfMoveClock >= 100) { setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? '50-move rule.' : 'Regla de los 50 movimientos.'), 400); return; }
-      if (isInsufficientMaterial(board)) { setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Insufficient material.' : 'Falta de material.'), 400); return; }
+      if (halfMoveClock >= 100) { updateMatchStats('draw', currentDifficulty, history.length); setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? '50-move rule.' : 'Regla de los 50 movimientos.'), 400); return; }
+      if (isInsufficientMaterial(board)) { updateMatchStats('draw', currentDifficulty, history.length); setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Insufficient material.' : 'Falta de material.'), 400); return; }
 
       if (!hasMove) {
         if (isCheckOnNext) {
@@ -5380,6 +5443,7 @@ limitations under the License.
           const humanWon = gameMode === 'pvp' || winnerColor === playerColor;
           const en = currentLanguage === 'en';
 
+          updateMatchStats(humanWon ? 'win' : 'loss', currentDifficulty, history.length);
           if (humanWon) {
             // Human wins → confetti + character defeat speech
             playVictorySound();
@@ -5409,6 +5473,7 @@ limitations under the License.
             }, 400);
           }
         } else {
+          updateMatchStats('draw', currentDifficulty, history.length);
           setTimeout(() => showStatus('🤝 ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'),
             currentLanguage === 'en' ? 'Stalemate.' : 'Empate por ahogado.'), 400);
         }
@@ -5421,7 +5486,7 @@ limitations under the License.
       if (gameMode === 'ai' && turn !== playerColor) triggerAI();
     }
     function ignoreDrawClaim() { document.getElementById('drawClaimModal').classList.remove('show'); if (gameMode === 'ai' && turn !== playerColor) triggerAI(); }
-    function acceptDrawClaim() { document.getElementById('drawClaimModal').classList.remove('show'); showStatus('🤝 ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Claimed by threefold repetition.' : 'Reclamadas por triple repetición.'); }
+    function acceptDrawClaim() { document.getElementById('drawClaimModal').classList.remove('show'); updateMatchStats('draw', currentDifficulty, history.length); showStatus('🤝 ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Claimed by threefold repetition.' : 'Reclamadas por triple repetición.'); }
 
     function isInsufficientMaterial(brd) {
       let whiteKnights = 0, whiteBishops = 0, blackKnights = 0, blackBishops = 0, total = 0;
@@ -5530,6 +5595,7 @@ limitations under the License.
     // ── Undo ─────────────────────────────────
     function undoMove() {
       if (aiThinking) return;
+      sessionUndos++;
 
       if (gameMode === 'ai' && currentDifficulty === 'hard') {
         playErrorSound();
@@ -13267,6 +13333,7 @@ limitations under the License.
     }
 
     function analyzePosition() {
+      sessionHints++;
       const pList = document.getElementById('professorList');
       if (!pList) return;
 
@@ -14436,6 +14503,7 @@ limitations under the License.
     }
 
     function requestBestMove() {
+      sessionHints++;
       lastProfessorAction = 'best';
 
       // Puzzle mode: reveal the expected next move as a hint
@@ -15553,6 +15621,7 @@ limitations under the License.
     }
 
     function analyzeLastMove() {
+      sessionHints++;
       lastProfessorAction = 'wasgood';
       const pList = document.getElementById('professorList');
 
@@ -17254,6 +17323,7 @@ limitations under the License.
 
     window.hawkEyeTimer = null;
     function toggleHawksEye() {
+      sessionHints++;
       clearArrows(); // Limpia flechas previas
       if (window.hawkEyeTimer) { clearTimeout(window.hawkEyeTimer); window.hawkEyeTimer = null; }
       const enemyColor = turn === 'w' ? 'b' : 'w';
