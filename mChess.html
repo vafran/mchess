@@ -2407,6 +2407,8 @@ limitations under the License.
       <button class="menu-btn secondary" id="btnMainTraining" onclick="openFenLibrary()"
         style="margin-top:4px; background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); border-color: rgba(16,185,129,0.4); color: var(--text);">🧩
         Entrenamiento</button>
+      <button class="menu-btn secondary" id="btnMainProfile" onclick="openProfileModal()"
+        style="margin-top:4px; background: linear-gradient(135deg, rgba(168,85,247,0.12), rgba(244,114,182,0.10)); border-color: rgba(168,85,247,0.3); color: var(--text);">🏆 Mi Perfil</button>
       <button onclick="toggleFullscreen()"
         style="margin-top:8px; background:none; border:1px solid rgba(168,85,247,0.3); border-radius:10px; cursor:pointer; font-size:0.85rem; padding:7px 16px; color:var(--text-light); width:100%; transition:all 0.2s;"
         onmouseover="this.style.background='rgba(168,85,247,0.08)'" onmouseout="this.style.background='none'">🔲
@@ -3527,6 +3529,27 @@ limitations under the License.
         currentProfile = JSON.parse(JSON.stringify(defaultProfile));
       }
       console.log(`[Statistician] Profile loaded — games: ${currentProfile.stats.totalGames}, trophies: ${currentProfile.unlockedTrophies.length}`);
+      migrateProfileTrophies();
+    }
+
+    function migrateProfileTrophies() {
+      // Grant trophies that should already be earned based on stored W/D/L data
+      // (covers games played before Phase 3 was added, or future schema additions)
+      const p = currentProfile;
+      if (!p) return;
+      const has = (id) => p.unlockedTrophies.some(t => t.id === id);
+      const grant = (id) => {
+        if (!has(id)) { p.unlockedTrophies.push({ id, unlockedAt: new Date().toISOString() }); }
+      };
+      let changed = false;
+      const before = p.unlockedTrophies.length;
+      if (p.stats.totalWins >= 1)  grant('first_blood');
+      if (p.bots.easy.w >= 5)      grant('chicken_hunter');
+      if (p.bots.medium.w >= 1)    grant('graduation');
+      if (p.bots.hard.w >= 1)      grant('magic_trick');
+      if (p.bots.grandmaster.w >= 1) grant('king_slayer');
+      changed = p.unlockedTrophies.length > before;
+      if (changed) { saveProfile(); console.log(`[Statistician] Migration granted ${p.unlockedTrophies.length - before} retroactive trophy/trophies`); }
     }
 
     function saveProfile() {
@@ -3799,7 +3822,7 @@ limitations under the License.
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
         mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?',
-        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento',
+        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento', btnProfile: '🏆 Mi Perfil',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
         optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual',
@@ -3875,7 +3898,7 @@ limitations under the License.
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
         mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?',
-        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training',
+        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training', btnProfile: '🏆 My Profile',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
         optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme',
@@ -4056,7 +4079,7 @@ limitations under the License.
     function applyTranslations() {
       const map = {
         titleMain: 'mainTitle', menuTitleMain: 'mainTitle', menuSubtitleMain: 'mainSubtitle',
-        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining',
+        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining', btnMainProfile: 'btnProfile',
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
         colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
         optionsTitle: 'optionsTitle', optionsLanguageLabel: 'languageLabel', optionsThemeLabel: 'themeLabel', commentaryStyleLabel: 'commentaryStyle', btnOptionsBack: 'backMenu', optionsLoadFenLabel: 'loadFen',
@@ -5932,7 +5955,7 @@ limitations under the License.
         ? `${fastestWin} ${_('profileMoves')}`
         : _('profileNone');
       const highestEvalText = highestEval !== null && highestEval !== undefined
-        ? `+${highestEval}cp`
+        ? `+${Math.min(Math.round(highestEval), 2000)}cp`
         : _('profileNone');
 
       box.innerHTML = `
