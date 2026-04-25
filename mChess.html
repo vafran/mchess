@@ -14294,13 +14294,26 @@ limitations under the License.
             // fallback so the player isn't alarmed. Reserve the alarming text for
             // genuinely losing positions (engine score < 0).
             const isLosingPosition = (opt.score !== undefined && opt.score < 0);
+            const _rndPick = arr => arr[Math.floor(Math.random() * arr.length)];
             strategicIntent = isLosingPosition
-              ? (en
-                  ? "An emergency move in a very difficult tactical situation."
-                  : "Un movimiento de emergencia en una situacion tactica muy complicada.")
-              : (en
-                  ? "A solid engine choice for this complex position."
-                  : "Una jugada solida del motor para esta posicion compleja.");
+              ? _rndPick(en
+                  ? ["An emergency move in a very difficult tactical situation.",
+                     "The best available option in a tough spot.",
+                     "Damage control — limits the opponent's advantage.",
+                     "The engine's safest choice in this difficult position."]
+                  : ["Un movimiento de emergencia en una situación táctica muy complicada.",
+                     "La mejor opción disponible en una situación difícil.",
+                     "Control de daños — limita la ventaja del rival.",
+                     "La elección más segura del motor en esta posición complicada."])
+              : _rndPick(en
+                  ? ["A solid engine choice for this complex position.",
+                     "The engine's preferred move here.",
+                     "A careful, positional choice.",
+                     "Strategic improvement — subtle but effective."]
+                  : ["Una jugada sólida del motor para esta posición compleja.",
+                     "La opción preferida del motor en esta posición.",
+                     "Mejora posicional sutil pero efectiva.",
+                     "Reubicación estratégica para mejorar la posición."]);
           } else {
             strategicIntent = simplifyForKids(getStrategicIntent(m, sideToAnalyze));
           }
