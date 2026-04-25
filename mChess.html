@@ -3320,6 +3320,72 @@ limitations under the License.
     const COMMENTARY_STYLE_STORAGE_KEY = 'te_commentary_style_level';
     let commentaryStyleLevel = 1; // 0=serio, 1=mixto, 2=divertido
 
+    // ── The Statistician — Player Profile ────────────────────────────────────
+    const PROFILE_KEY = 'airin_player_profile';
+
+    const defaultProfile = {
+      id: Date.now().toString(36),
+      playerName: 'Player 1',
+      stats: {
+        totalGames: 0,
+        totalWins: 0,
+        totalDraws: 0,
+        totalLosses: 0,
+        totalUndos: 0,
+        hintsUsed: 0,
+        piecesCaptured: 0
+      },
+      records: {
+        fastestWin: null,        // fewest moves to win (number or null)
+        highestEvalWin: null     // highest centipawn eval at end of a won game (number or null)
+      },
+      bots: {
+        easy:        { w: 0, d: 0, l: 0 },
+        medium:      { w: 0, d: 0, l: 0 },
+        hard:        { w: 0, d: 0, l: 0 },
+        grandmaster: { w: 0, d: 0, l: 0 }
+      },
+      unlockedTrophies: []       // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
+    };
+
+    let currentProfile = null;
+
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          // Deep-merge with defaultProfile so new fields added in future versions auto-appear
+          currentProfile = {
+            ...defaultProfile,
+            ...saved,
+            stats:   { ...defaultProfile.stats,   ...(saved.stats   || {}) },
+            records: { ...defaultProfile.records,  ...(saved.records || {}) },
+            bots:    {
+              easy:        { ...defaultProfile.bots.easy,        ...((saved.bots || {}).easy        || {}) },
+              medium:      { ...defaultProfile.bots.medium,      ...((saved.bots || {}).medium      || {}) },
+              hard:        { ...defaultProfile.bots.hard,        ...((saved.bots || {}).hard        || {}) },
+              grandmaster: { ...defaultProfile.bots.grandmaster, ...((saved.bots || {}).grandmaster || {}) }
+            },
+            unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : []
+          };
+        } else {
+          currentProfile = JSON.parse(JSON.stringify(defaultProfile));
+          currentProfile.id = Date.now().toString(36);
+          saveProfile();
+        }
+      } catch (_) {
+        currentProfile = JSON.parse(JSON.stringify(defaultProfile));
+      }
+      console.log(`[Statistician] Profile loaded — games: ${currentProfile.stats.totalGames}, trophies: ${currentProfile.unlockedTrophies.length}`);
+    }
+
+    function saveProfile() {
+      try {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(currentProfile));
+      } catch (_) { }
+    }
+
     // ── Game Autosave ─────────────────────────────────────────────────────────
     const GAME_SAVE_KEY = 'mchess_saved_game';
 
@@ -16344,6 +16410,7 @@ limitations under the License.
 
     // ── Start ────────────────────────────────
     createBackground('magic');
+    loadProfile();
     init();
 
     // 💾 BOOT: auto-resume saved game if one exists, otherwise show menu
