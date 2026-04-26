@@ -3524,6 +3524,7 @@ limitations under the License.
     let sessionKingMoved          = false;    // true if king moves again after castling
     let sessionEnPassantCaptured  = false;    // true if player captured en passant this game
     let sessionPromotedToKnight   = false;    // true if player promoted to knight this game
+    let sessionStartedFromFen     = false;    // true if the game started from a loaded FEN (blocks end-of-game trophies)
     let sessionGameRecorded       = false;    // true once updateMatchStats has fired for this game
     let sessionPendingResult      = null;     // {result, difficulty, movesCount} — held for reviewGame path
 
@@ -3631,6 +3632,7 @@ limitations under the License.
     function checkTrophyUnlocks(result, difficulty, movesCount) {
       const p = currentProfile;
       if (!p) return;
+      if (sessionStartedFromFen) return; // FEN-loaded games don't count toward trophies
       if (result === 'win') {
         if (p.stats.totalWins === 1) unlockTrophy('first_blood');
         if (difficulty === 'easy') {
@@ -4581,6 +4583,7 @@ limitations under the License.
       sessionKingMoved         = false;
       sessionEnPassantCaptured = false;
       sessionPromotedToKnight  = false;
+      sessionStartedFromFen    = false;
       sessionGameRecorded      = false;
       sessionPendingResult     = null;
 
@@ -18019,7 +18022,8 @@ limitations under the License.
         window.snapshotAfterHumanMove = null;
         window.snapshotBeforeRules = null;
         puzzleMode = null;
-        fenPositionLoaded = true; // tell the Professor this isn't move-0 of a normal game
+        fenPositionLoaded = true;     // tell the Professor this isn't move-0 of a normal game
+        sessionStartedFromFen = true; // block end-of-game trophies for FEN-loaded games
 
         // ✨ FIX: Limpiar al Profesor al cargar nuevo FEN
         const pList = document.getElementById('professorList');
