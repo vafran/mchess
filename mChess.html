@@ -3645,11 +3645,19 @@ limitations under the License.
       if (!currentProfile || gameMode !== 'ai') return;
       // Sacrifice criterion: the destination is attacked by an opponent piece after the move
       if (!isSquareAttacked(tr, tc, playerColor, board)) return;
+      // Material phase check: count non-pawn, non-king pieces to gate each trophy
+      // to a material range matching the historical game it echoes
+      let nonPawnPieces = 0;
+      for (let r = 0; r < 8; r++)
+        for (let c = 0; c < 8; c++) {
+          const p = board[r][c];
+          if (p !== ' ' && p.toUpperCase() !== 'P' && p.toUpperCase() !== 'K') nonPawnPieces++;
+        }
       const all4 = ['secret_marshall_qg3','secret_vladimirov_bh6','secret_sanz_rxb2','secret_shirov_bh3'];
-      if (type === 'Q' && tr === 5 && tc === 6) unlockTrophy('secret_marshall_qg3');    // g3
-      if (type === 'B' && tr === 2 && tc === 7) unlockTrophy('secret_vladimirov_bh6');  // h6
-      if (type === 'R' && tr === 6 && tc === 1) unlockTrophy('secret_sanz_rxb2');       // b2
-      if (type === 'B' && tr === 5 && tc === 7) unlockTrophy('secret_shirov_bh3');      // h3
+      if (type === 'Q' && tr === 5 && tc === 6 && nonPawnPieces >= 8) unlockTrophy('secret_marshall_qg3');    // g3  — rich middlegame
+      if (type === 'B' && tr === 2 && tc === 7 && nonPawnPieces >= 6) unlockTrophy('secret_vladimirov_bh6');  // h6  — middlegame attack
+      if (type === 'R' && tr === 6 && tc === 1 && nonPawnPieces >= 2 && nonPawnPieces <= 8) unlockTrophy('secret_sanz_rxb2'); // b2 — endgame
+      if (type === 'B' && tr === 5 && tc === 7 && nonPawnPieces <= 5)  unlockTrophy('secret_shirov_bh3');      // h3  — deep endgame R+B vs R
       if (all4.every(id => currentProfile.unlockedTrophies.some(t => t.id === id)))
         unlockTrophy('grand_historian');
     }
@@ -7957,6 +7965,7 @@ limitations under the License.
     const HISTORICAL_MOVE_MOTIFS = [
       {
         id: 'marshall_qg3', move: 'Qg3', side: 'b', minPly: 12,
+        sq: [5, 6], minP: 8,          // rich middlegame — g3
         nameEs: 'Marshall vs Levitsky (1912)', nameEn: 'Marshall vs Levitsky (1912)',
         commentEs: 'evoca el célebre sacrificio de dama de Marshall en Breslavia 1912, una idea táctica de gran imaginación.',
         commentEn: 'echoes Marshall\'s famous queen sacrifice in Breslau 1912, a deeply imaginative tactical idea.',
@@ -7965,6 +7974,7 @@ limitations under the License.
       },
       {
         id: 'vladimirov_bh6', move: 'Bh6', side: 'w', minPly: 10,
+        sq: [2, 7], minP: 6,          // middlegame attack — h6
         nameEs: 'Vladimirov vs Epishin (1987)', nameEn: 'Vladimirov vs Epishin (1987)',
         commentEs: 'recuerda el “cañonazo” de Vladimirov: iniciativa y coordinación por encima del material inmediato.',
         commentEn: 'recalls Vladimirov\'s “cannon shot”: initiative and coordination over immediate material count.',
@@ -7973,6 +7983,7 @@ limitations under the License.
       },
       {
         id: 'sanz_rxb2', move: 'Rxb2', side: 'b', minPly: 20,
+        sq: [6, 1], minP: 2, maxP: 8, // endgame — b2
         nameEs: 'Sanz vs Ortueta (Madrid, 1933)', nameEn: 'Sanz vs Ortueta (Madrid, 1933)',
         commentEs: 'es un guiño al famoso sacrificio de torre de Sanz para activar peones pasados imparables.',
         commentEn: 'is a nod to Sanz\'s famous rook sacrifice to unleash unstoppable passed pawns.',
@@ -7981,6 +7992,7 @@ limitations under the License.
       },
       {
         id: 'shirov_bh3', move: 'Bh3', side: 'b', minPly: 24,
+        sq: [5, 7], maxP: 5,          // deep endgame R+B vs R — h3
         nameEs: 'Shirov vs Topalov (Linares, 1998)', nameEn: 'Shirov vs Topalov (Linares, 1998)',
         commentEs: 'recuerda la mítica entrega de alfil de Shirov, una idea de final tan precisa como estética.',
         commentEn: 'recalls Shirov\'s legendary bishop sacrifice, an endgame idea as precise as it is aesthetic.',
@@ -7998,11 +8010,24 @@ limitations under the License.
       return HISTORICAL_MOVE_MOTIFS.find(m => m.side === side && plyCount >= m.minPly && m.move === clean) || null;
     }
 
-    function detectHistoricalMotifFromHistory(currentHistory) {
+    function detectHistoricalMotifFromHistory(currentHistory, brd) {
       if (!currentHistory || !currentHistory.length) return null;
       const lastMove = currentHistory[currentHistory.length - 1];
       const mover = currentHistory.length % 2 === 1 ? 'w' : 'b';
-      return detectHistoricalMotifByMoveNotation(lastMove, mover, currentHistory.length);
+      const motif = detectHistoricalMotifByMoveNotation(lastMove, mover, currentHistory.length);
+      if (!motif || !brd) return motif;
+      // Sacrifice check: destination must be attacked by the opponent after the move
+      if (motif.sq && !isSquareAttacked(motif.sq[0], motif.sq[1], mover, brd)) return null;
+      // Material gate: count non-pawn, non-king pieces to match historical game phase
+      let nonPawnPieces = 0;
+      for (let r = 0; r < 8; r++)
+        for (let c = 0; c < 8; c++) {
+          const p = brd[r][c];
+          if (p !== ' ' && p.toUpperCase() !== 'P' && p.toUpperCase() !== 'K') nonPawnPieces++;
+        }
+      if (motif.minP !== undefined && nonPawnPieces < motif.minP) return null;
+      if (motif.maxP !== undefined && nonPawnPieces > motif.maxP) return null;
+      return motif;
     }
 
     function sqToRc(sq) {
@@ -13183,7 +13208,7 @@ limitations under the License.
         openingName = perspectiveName(localizeOpeningName(openingMatch.name), colorWhoMoved);
         openingTechNote = localizeOpeningDescription(openingMatch.desc);
       }
-      const historicalMotif = detectHistoricalMotifFromHistory(currentHistory);
+      const historicalMotif = detectHistoricalMotifFromHistory(currentHistory, board);
 
       // 🧠 NORMAL DICTIONARIES (3rd Person Narrative)
       const frasesSerias = {
@@ -13901,7 +13926,7 @@ limitations under the License.
 
       // ── 1. OPENING THEORY ─────────────────────────────────────────────────
       if (history.length > 0) {
-        const motif = detectHistoricalMotifFromHistory(history);
+        const motif = detectHistoricalMotifFromHistory(history, board);
         if (motif) {
           notes.push({
             icon: '📚',
