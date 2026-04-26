@@ -1722,6 +1722,37 @@ limitations under the License.
       border-color: rgba(168,85,247,0.5);
     }
 
+    /* ── First-run modal ────────────────────── */
+    .first-run-card { text-align: center; }
+    .first-run-emoji { font-size: 3rem; margin-bottom: 10px; }
+    .first-run-title {
+      font-size: 1.25rem; font-weight: 800; margin-bottom: 10px; color: var(--text);
+    }
+    .first-run-body {
+      font-size: 0.92rem; line-height: 1.55; opacity: 0.8;
+      margin-bottom: 18px; color: var(--text);
+    }
+    .first-run-input {
+      width: 100%; box-sizing: border-box;
+      padding: 11px 14px; border-radius: 12px;
+      border: 2px solid rgba(168,85,247,0.35);
+      font-family: inherit; font-size: 1rem; font-weight: 700;
+      color: var(--text); background: rgba(168,85,247,0.05);
+      outline: none; margin-bottom: 14px;
+      transition: border-color 0.15s;
+    }
+    .first-run-input:focus { border-color: rgba(168,85,247,0.7); }
+    .first-run-btn {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #a855f7, #f472b6);
+      border: none; border-radius: 14px;
+      font-family: inherit; font-size: 1rem; font-weight: 800;
+      color: #fff; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(168,85,247,0.35);
+      transition: opacity 0.15s;
+    }
+    .first-run-btn:hover { opacity: 0.9; }
+
     /* ── Trophy story overlay ───────────────── */
     .trophy-story-overlay {
       position: fixed; inset: 0; z-index: 500;
@@ -2925,6 +2956,17 @@ limitations under the License.
     </div>
   </div>
 
+  <!-- First-run profile setup -->
+  <div id="firstRunModal" class="trophy-story-overlay" style="z-index:700;">
+    <div class="trophy-story-card first-run-card">
+      <div class="first-run-emoji">🏆</div>
+      <div class="first-run-title" id="firstRunTitle"></div>
+      <div class="first-run-body" id="firstRunBody"></div>
+      <input id="firstRunInput" class="first-run-input" maxlength="24" spellcheck="false">
+      <button class="first-run-btn" id="firstRunBtn" onclick="saveFirstRunName()"></button>
+    </div>
+  </div>
+
   <!-- Trophy story overlay -->
   <div id="trophyStoryOverlay" class="trophy-story-overlay" onclick="if(event.target===this)closeTrophyStory()">
     <div class="trophy-story-card">
@@ -3697,11 +3739,17 @@ limitations under the License.
           currentProfile = JSON.parse(JSON.stringify(defaultProfile));
           currentProfile.id = Date.now().toString(36);
           saveProfile();
+          setTimeout(() => showFirstRunModal(), 200); // new profile — prompt for a name
         }
       } catch (_) {
         currentProfile = JSON.parse(JSON.stringify(defaultProfile));
       }
       console.log(`[Statistician] Profile loaded — games: ${currentProfile.stats.totalGames}, trophies: ${currentProfile.unlockedTrophies.length}`);
+      // Also prompt for a name if profile exists but was never personalised
+      if (currentProfile.stats.totalGames === 0 &&
+          (currentProfile.playerName === 'Player 1' || currentProfile.playerName === '')) {
+        setTimeout(() => showFirstRunModal(), 200);
+      }
       migrateProfileTrophies();
     }
 
@@ -4138,7 +4186,11 @@ limitations under the License.
         streakMilestone: '¡victorias seguidas!',
         streakCurrent: 'Racha actual',
         streakBest: 'Mejor racha',
-        recentGames: 'Últimas partidas'
+        recentGames: 'Últimas partidas',
+        firstRunTitle: '¡Bienvenido a Airin Chess!',
+        firstRunBody: 'Aquí iremos guardando tus victorias, derrotas, rachas y trofeos especiales. ¿Cómo te llamamos?',
+        firstRunPlaceholder: 'Tu nombre',
+        firstRunBtn: '¡Vamos a jugar!'
 
       },
       en: {
@@ -4225,7 +4277,11 @@ limitations under the License.
         streakMilestone: 'wins in a row!',
         streakCurrent: 'Current streak',
         streakBest: 'Best streak',
-        recentGames: 'Recent games'
+        recentGames: 'Recent games',
+        firstRunTitle: 'Welcome to Airin Chess!',
+        firstRunBody: 'We\'ll keep track of your wins, losses, streaks and special trophies. What should we call you?',
+        firstRunPlaceholder: 'Your name',
+        firstRunBtn: 'Let\'s play!'
       }
     };
 
@@ -6313,6 +6369,29 @@ limitations under the License.
 
     function closeProfileModal() {
       document.getElementById('profileModal').classList.remove('show');
+    }
+
+    function showFirstRunModal() {
+      const modal = document.getElementById('firstRunModal');
+      if (!modal) return;
+      document.getElementById('firstRunTitle').textContent = t('firstRunTitle');
+      document.getElementById('firstRunBody').textContent  = t('firstRunBody');
+      document.getElementById('firstRunBtn').textContent   = t('firstRunBtn');
+      const input = document.getElementById('firstRunInput');
+      input.placeholder = t('firstRunPlaceholder');
+      input.value = '';
+      modal.classList.add('show');
+      setTimeout(() => input.focus(), 300);
+      input.onkeydown = (e) => { if (e.key === 'Enter') saveFirstRunName(); };
+    }
+
+    function saveFirstRunName() {
+      const input = document.getElementById('firstRunInput');
+      const name = (input?.value || '').trim();
+      if (name) {
+        saveProfileName(name);
+      }
+      document.getElementById('firstRunModal').classList.remove('show');
     }
 
     function openTrophyStory(id) {
