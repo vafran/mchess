@@ -1672,6 +1672,21 @@ limitations under the License.
     }
     .profile-close-btn:hover { background: rgba(168,85,247,0.20); }
 
+    .profile-portability-row {
+      display: flex; gap: 10px; margin-bottom: 10px;
+    }
+    .profile-port-btn {
+      flex: 1; padding: 10px 8px;
+      background: rgba(99,179,237,0.10);
+      border: 1px solid rgba(99,179,237,0.25);
+      border-radius: 14px; font-size: 0.88rem;
+      font-family: inherit; font-weight: 700;
+      color: var(--text); cursor: pointer;
+      transition: background 0.15s; text-align: center;
+    }
+    .profile-port-btn:hover { background: rgba(99,179,237,0.22); }
+    .profile-import-label { display: flex; align-items: center; justify-content: center; }
+
     /* ── Screen system ─────────────────────── */
     .screen-overlay {
       position: fixed;
@@ -3913,7 +3928,11 @@ limitations under the License.
         profileLocked: 'Bloqueado',
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
-        profileNone: '—'
+        profileNone: '—',
+        profileExport: '⬇️ Exportar datos',
+        profileImport: '⬆️ Importar datos',
+        profileImportSuccess: '✅ Datos importados. Recargando…',
+        profileImportError: '❌ Archivo inválido. Comprueba que sea un guardado de Airin.'
 
       },
       en: {
@@ -3989,7 +4008,11 @@ limitations under the License.
         profileLocked: 'Locked',
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
-        profileNone: '—'
+        profileNone: '—',
+        profileExport: '⬇️ Export data',
+        profileImport: '⬆️ Import data',
+        profileImportSuccess: '✅ Data imported. Reloading…',
+        profileImportError: '❌ Invalid file. Make sure it\'s an Airin save.'
       }
     };
 
@@ -6032,6 +6055,13 @@ limitations under the License.
           ${trophySection(4,'profileCat4')}
         </div>
 
+        <div class="profile-portability-row">
+          <button class="profile-port-btn" onclick="exportProfile()">${_('profileExport')}</button>
+          <label class="profile-port-btn profile-import-label">
+            ${_('profileImport')}
+            <input type="file" accept=".json" style="display:none" onchange="importProfile(this)">
+          </label>
+        </div>
         <button class="profile-close-btn" onclick="closeProfileModal()">${_('profileClose')}</button>
       `;
 
@@ -6049,6 +6079,39 @@ limitations under the License.
       saveProfile();
       const input = document.getElementById('profileNameInput');
       if (input) input.value = name;
+    }
+
+    function exportProfile() {
+      if (!currentProfile) return;
+      const json = JSON.stringify(currentProfile, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'airin_save.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importProfile(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          // Validate required keys before accepting
+          if (!data.id || !data.playerName || !data.stats || !data.bots || !Array.isArray(data.unlockedTrophies))
+            throw new Error('missing keys');
+          localStorage.setItem(PROFILE_KEY, JSON.stringify(data));
+          showToast(t('profileImportSuccess'), 3000);
+          setTimeout(() => location.reload(), 1200);
+        } catch (_) {
+          showToast(t('profileImportError'), 4000);
+        }
+      };
+      reader.readAsText(file);
+      input.value = ''; // reset so the same file can be re-imported if needed
     }
 
     // Show a character reaction bubble after the game ends
