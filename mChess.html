@@ -2587,6 +2587,12 @@ limitations under the License.
         Entrenamiento</button>
       <button class="menu-btn secondary" id="btnMainProfile" onclick="openProfileModal()"
         style="margin-top:4px; background: linear-gradient(135deg, rgba(168,85,247,0.12), rgba(244,114,182,0.10)); border-color: rgba(168,85,247,0.3); color: var(--text);">🏆 Mi Perfil</button>
+      <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
+        <button class="menu-btn secondary" id="btnMainSaveGame" onclick="exportProfile()"
+          style="flex:1; font-size:0.85rem; padding:10px 6px;">💾 Guardar</button>
+        <button class="menu-btn secondary" id="btnMainLoadGame" onclick="document.getElementById('globalFileInput').click()"
+          style="flex:1; font-size:0.85rem; padding:10px 6px;">📂 Cargar</button>
+      </div>
       <button onclick="toggleFullscreen()"
         style="margin-top:8px; background:none; border:1px solid rgba(168,85,247,0.3); border-radius:10px; cursor:pointer; font-size:0.85rem; padding:7px 16px; color:var(--text-light); width:100%; transition:all 0.2s;"
         onmouseover="this.style.background='rgba(168,85,247,0.08)'" onmouseout="this.style.background='none'">🔲
@@ -2750,6 +2756,12 @@ limitations under the License.
           style="flex:1; font-size:0.85rem; padding:10px 6px;">🤖 vs IA</button>
       </div>
       <button class="menu-btn secondary" id="btnOpenProfile" onclick="openProfileModal(); closeIngameMenu();">🏆 Mi Perfil</button>
+      <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
+        <button class="menu-btn secondary" id="btnIngameSaveGame" onclick="exportProfile(); closeIngameMenu();"
+          style="flex:1; font-size:0.85rem; padding:10px 6px;">💾 Guardar</button>
+        <button class="menu-btn secondary" id="btnIngameLoadGame" onclick="document.getElementById('globalFileInput').click(); closeIngameMenu();"
+          style="flex:1; font-size:0.85rem; padding:10px 6px;">📂 Cargar</button>
+      </div>
       <button class="menu-btn secondary" id="btnIngameOptions" onclick="showIngameOptions()">&#9881;&#65039;
         Opciones</button>
       <button class="menu-btn secondary" id="btnRestartGameMenu" onclick="newGameFromMenu()">&#128260; Reiniciar
@@ -2976,6 +2988,9 @@ limitations under the License.
       <div class="trophy-story-body" id="trophyStoryBody"></div>
     </div>
   </div>
+
+  <!-- Global hidden file input for Load game (accessible from main menu, in-game menu, and profile) -->
+  <input type="file" id="globalFileInput" accept=".airin" style="display:none" onchange="importProfile(this)">
 
   <!-- Trophy celebration overlay -->
   <div id="trophyCelebration" class="trophy-celebration" onclick="this.classList.remove('show')">
@@ -4201,6 +4216,8 @@ limitations under the License.
         profileNone: '—',
         profileExport: '💾 Guardar partida',
         profileImport: '📂 Cargar partida',
+        btnSaveShort: '💾 Guardar',
+        btnLoadShort: '📂 Cargar',
         profileImportSuccess: '✅ Partida cargada. Recargando…',
         profileImportError: '❌ Archivo inválido. Comprueba que sea un guardado de Airin.',
         trophyFilterAll: 'Todos',
@@ -4292,6 +4309,8 @@ limitations under the License.
         profileNone: '—',
         profileExport: '💾 Save game',
         profileImport: '📂 Load game',
+        btnSaveShort: '💾 Save',
+        btnLoadShort: '📂 Load',
         profileImportSuccess: '✅ Game loaded. Reloading…',
         profileImportError: '❌ Invalid file. Make sure it\'s an Airin save.',
         trophyFilterAll: 'All',
@@ -4419,11 +4438,13 @@ limitations under the License.
       const map = {
         titleMain: 'mainTitle', menuTitleMain: 'mainTitle', menuSubtitleMain: 'mainSubtitle',
         btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining', btnMainProfile: 'btnProfile',
+        btnMainSaveGame: 'btnSaveShort', btnMainLoadGame: 'btnLoadShort',
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
         colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
         optionsTitle: 'optionsTitle', optionsLanguageLabel: 'languageLabel', optionsThemeLabel: 'themeLabel', commentaryStyleLabel: 'commentaryStyle', btnOptionsBack: 'backMenu', optionsLoadFenLabel: 'loadFen',
         ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnOpenProfile: 'btnOpenProfile', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
         btnQuickPvp: 'quickPvp', btnQuickAi: 'quickAi',
+        btnIngameSaveGame: 'btnSaveShort', btnIngameLoadGame: 'btnLoadShort',
         ingameOptionsTitle: 'optionsTitle', igCommentaryStyleLabel: 'commentaryStyle',
         igLanguageLabel: 'languageLabel', igModeLabel: 'modeLabel', igDiffLabel: 'diffLabel', igThemeLabel: 'themeLabel', igOptionsBack: 'backMenu',
         optSliderSerious: 'sliderSerious', optSliderMixed: 'sliderMixed', optSliderFunny: 'sliderFunny',
