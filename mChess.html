@@ -4199,9 +4199,9 @@ limitations under the License.
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
         profileNone: '—',
-        profileExport: '⬇️ Exportar datos',
-        profileImport: '⬆️ Importar datos',
-        profileImportSuccess: '✅ Datos importados. Recargando…',
+        profileExport: '💾 Guardar partida',
+        profileImport: '📂 Cargar partida',
+        profileImportSuccess: '✅ Partida cargada. Recargando…',
         profileImportError: '❌ Archivo inválido. Comprueba que sea un guardado de Airin.',
         trophyFilterAll: 'Todos',
         trophyFilterEarned: 'Conseguidos',
@@ -4290,9 +4290,9 @@ limitations under the License.
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
         profileNone: '—',
-        profileExport: '⬇️ Export data',
-        profileImport: '⬆️ Import data',
-        profileImportSuccess: '✅ Data imported. Reloading…',
+        profileExport: '💾 Save game',
+        profileImport: '📂 Load game',
+        profileImportSuccess: '✅ Game loaded. Reloading…',
         profileImportError: '❌ Invalid file. Make sure it\'s an Airin save.',
         trophyFilterAll: 'All',
         trophyFilterEarned: 'Earned',
@@ -6381,7 +6381,7 @@ limitations under the License.
           <button class="profile-port-btn" onclick="exportProfile()">${_('profileExport')}</button>
           <label class="profile-port-btn profile-import-label">
             ${_('profileImport')}
-            <input type="file" accept=".json" style="display:none" onchange="importProfile(this)">
+            <input type="file" accept=".airin" style="display:none" onchange="importProfile(this)">
           </label>
         </div>
         <button class="profile-close-btn" onclick="closeProfileModal()">${_('profileClose')}</button>
@@ -6461,12 +6461,17 @@ limitations under the License.
 
     function exportProfile() {
       if (!currentProfile) return;
-      const json = JSON.stringify(currentProfile, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'airin_save.json';
+      const json    = JSON.stringify(currentProfile);
+      const encoded = btoa(unescape(encodeURIComponent(json))); // base64, UTF-8 safe
+      const blob    = new Blob([encoded], { type: 'application/octet-stream' });
+      const url     = URL.createObjectURL(blob);
+      const a       = document.createElement('a');
+      a.href        = url;
+      const safeName = (currentProfile.playerName || 'airin')
+        .replace(/[^a-zA-Z0-9_\-áéíóúüñÁÉÍÓÚÜÑ ]/g, '')
+        .trim().replace(/\s+/g, '_') || 'airin';
+      const dateStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      a.download = `${safeName}_${dateStr}.airin`;
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -6477,7 +6482,8 @@ limitations under the License.
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const data = JSON.parse(e.target.result);
+          const decoded = decodeURIComponent(escape(atob(e.target.result.trim())));
+          const data    = JSON.parse(decoded);
           // Validate required keys before accepting
           if (!data.id || !data.playerName || !data.stats || !data.bots || !Array.isArray(data.unlockedTrophies))
             throw new Error('missing keys');
@@ -6489,7 +6495,7 @@ limitations under the License.
         }
       };
       reader.readAsText(file);
-      input.value = ''; // reset so the same file can be re-imported if needed
+      input.value = ''; // reset so the same file can be re-imported
     }
 
     // Show a character reaction bubble after the game ends
