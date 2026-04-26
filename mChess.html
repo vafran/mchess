@@ -1722,6 +1722,40 @@ limitations under the License.
       border-color: rgba(168,85,247,0.5);
     }
 
+    /* ── Trophy story overlay ───────────────── */
+    .trophy-story-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.5); padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .trophy-story-overlay.show { opacity: 1; pointer-events: all; }
+    .trophy-story-card {
+      background: linear-gradient(160deg, #fff 0%, #fdf4ff 100%);
+      border: 2px solid rgba(168,85,247,0.25);
+      border-radius: 24px; padding: 28px 24px 24px;
+      max-width: 380px; width: 100%; position: relative;
+      box-shadow: 0 12px 48px rgba(168,85,247,0.25);
+      transform: translateY(20px); transition: transform 0.25s ease;
+    }
+    .trophy-story-overlay.show .trophy-story-card { transform: translateY(0); }
+    .trophy-story-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; font-size: 1.1rem;
+      cursor: pointer; opacity: 0.5; color: var(--text);
+    }
+    .trophy-story-close:hover { opacity: 1; }
+    .trophy-story-icon { font-size: 2.4rem; text-align: center; margin-bottom: 8px; }
+    .trophy-story-name {
+      font-size: 1.1rem; font-weight: 800; text-align: center;
+      margin-bottom: 14px; color: var(--text);
+    }
+    .trophy-story-body {
+      font-size: 0.9rem; line-height: 1.6;
+      color: var(--text); opacity: 0.85;
+    }
+
     /* ── Trophy celebration overlay ──────────── */
     .trophy-celebration {
       position: fixed; inset: 0; z-index: 600;
@@ -1772,6 +1806,9 @@ limitations under the License.
     .dot-w { background: #4ade80; }
     .dot-d { background: #facc15; }
     .dot-l { background: #f87171; }
+    .trophy-story-hint {
+      font-size: 0.75rem; margin-top: 4px; opacity: 0.5;
+    }
 
     /* ── Screen system ─────────────────────── */
     .screen-overlay {
@@ -2888,6 +2925,16 @@ limitations under the License.
     </div>
   </div>
 
+  <!-- Trophy story overlay -->
+  <div id="trophyStoryOverlay" class="trophy-story-overlay" onclick="if(event.target===this)closeTrophyStory()">
+    <div class="trophy-story-card">
+      <button class="trophy-story-close" onclick="closeTrophyStory()">✕</button>
+      <div class="trophy-story-icon" id="trophyStoryIcon"></div>
+      <div class="trophy-story-name" id="trophyStoryName"></div>
+      <div class="trophy-story-body" id="trophyStoryBody"></div>
+    </div>
+  </div>
+
   <!-- Trophy celebration overlay -->
   <div id="trophyCelebration" class="trophy-celebration" onclick="this.classList.remove('show')">
     <div class="trophy-celebration-card">
@@ -3710,10 +3757,34 @@ limitations under the License.
       the_rebel:               { icon:'♞', cat:3, hidden:true, name:{es:'El Rebelde',           en:'The Rebel'},             desc:{es:'Coronas un peón con Caballo y ganas.',                                  en:'Promote a pawn to a Knight and win.'} },
       night_owl:               { icon:'🦉', cat:3, hidden:true, name:{es:'Noctámbulo',          en:'Night Owl'},             desc:{es:'Gana una partida entre medianoche y las 4 de la mañana.',              en:'Win a game between midnight and 4 AM.'} },
       // Category 4 — The Historians (real-time, sacrifice required)
-      secret_marshall_qg3:    { icon:'🪙', cat:4, name:{es:'La Lluvia de Oro',      en:'Golden Rain'},         desc:{es:'Dama a g3 atacada — evoca el célebre sacrificio de Marshall vs Levitsky (Breslavia, 1912). ¿Fue buena en tu posición?',  en:'Queen to g3 under attack — echoes Marshall\'s famous queen sacrifice vs Levitsky (Breslau, 1912). Was it good in yours?'} },
-      secret_vladimirov_bh6:  { icon:'💥', cat:4, name:{es:'El Cañonazo',           en:'The Cannon Shot'},     desc:{es:'Alfil a h6 atacado — recuerda el "cañonazo" de Vladimirov vs Epishin (1987). ¿Fue buena en tu posición?',           en:'Bishop to h6 under attack — recalls Vladimirov\'s "cannon shot" vs Epishin (1987). Was it good in yours?'} },
-      secret_sanz_rxb2:       { icon:'🚂', cat:4, name:{es:'La Locomotora',         en:'The Locomotive'},      desc:{es:'Torre a b2 atacada — guiño al sacrificio de Sanz vs Ortueta (Madrid, 1933). ¿Fue buena en tu posición?',            en:'Rook to b2 under attack — a nod to Sanz\'s rook sacrifice vs Ortueta (Madrid, 1933). Was it good in yours?'} },
-      secret_shirov_bh3:      { icon:'🔥', cat:4, name:{es:'Fuego en el Tablero',   en:'Fire on Board'},       desc:{es:'Alfil a h3 atacado — recuerda la mítica entrega de Shirov vs Tópálov (Linares, 1998). ¿Fue buena en tu posición?',  en:'Bishop to h3 under attack — recalls Shirov\'s legendary sacrifice vs Topalov (Linares, 1998). Was it good in yours?'} },
+      secret_marshall_qg3:    { icon:'🪙', cat:4, name:{es:'La Lluvia de Oro',      en:'Golden Rain'},
+        desc:{es:'Dama a g3 atacada — evoca el célebre sacrificio de Marshall vs Levitsky (Breslavia, 1912). ¿Fue buena en tu posición?',  en:'Queen to g3 under attack — echoes Marshall\'s famous queen sacrifice vs Levitsky (Breslau, 1912). Was it good in yours?'},
+        story:{
+          es:'En Breslavia, 1912, Frank Marshall jugó Dg3!! — una dama que podía ser capturada de tres maneras distintas. En vez de tomar, amenazaba jaque mate irresistible. La sala entera se quedó en silencio... y luego el público lanzó monedas de oro al tablero para celebrar la jugada más brillante que jamás habían visto.',
+          en:'In Breslau, 1912, Frank Marshall played Qg3!! — a queen that could be captured in three different ways. Instead of being taken, it threatened unstoppable checkmate. The room fell silent... then the audience threw gold coins onto the board to celebrate the most brilliant move they had ever seen.'
+        }
+      },
+      secret_vladimirov_bh6:  { icon:'💥', cat:4, name:{es:'El Cañonazo',           en:'The Cannon Shot'},
+        desc:{es:'Alfil a h6 atacado — recuerda el "cañonazo" de Vladimirov vs Epishin (1987). ¿Fue buena en tu posición?', en:'Bishop to h6 under attack — recalls Vladimirov\'s "cannon shot" vs Epishin (1987). Was it good in yours?'},
+        story:{
+          es:'En 1987, Vladislav Vladimirov sacrificó su alfil en h6 como un cañonazo: la pieza parecía perdida, pero desató un ataque al rey tan feroz que el rival no tuvo respuesta. La iniciativa valió más que el material. Una demostración de que en ajedrez, el tiempo y el ataque pueden valer más que las piezas.',
+          en:'In 1987, Vladislav Vladimirov sacrificed his bishop on h6 like a cannon shot: the piece seemed lost, but it unleashed a kingside attack so fierce that his opponent had no answer. Initiative proved worth more than material — a lesson that in chess, time and attack can outweigh pieces.'
+        }
+      },
+      secret_sanz_rxb2:       { icon:'🚂', cat:4, name:{es:'La Locomotora',         en:'The Locomotive'},
+        desc:{es:'Torre a b2 atacada — guiño al sacrificio de Sanz vs Ortueta (Madrid, 1933). ¿Fue buena en tu posición?', en:'Rook to b2 under attack — a nod to Sanz\'s rook sacrifice vs Ortueta (Madrid, 1933). Was it good in yours?'},
+        story:{
+          es:'Madrid, 1933. Ortueta jugó Txb2, sacrificando la torre. Parecía un error, pero escondía una cadena de peones imparables que avanzaban como una locomotora. La combinación es tan perfecta que muchos la llaman "la combinación inmortal". Un peón pequeño puede ser más peligroso que una torre si nadie puede detenerlo.',
+          en:'Madrid, 1933. Ortueta played Rxb2, sacrificing the rook. It looked like a blunder, but it hid an unstoppable chain of advancing pawns — rolling forward like a locomotive. The combination is so perfect that many call it "the immortal combination." A small pawn can be more dangerous than a rook if nothing can stop it.'
+        }
+      },
+      secret_shirov_bh3:      { icon:'🔥', cat:4, name:{es:'Fuego en el Tablero',   en:'Fire on Board'},
+        desc:{es:'Alfil a h3 atacado — recuerda la mítica entrega de Shirov vs Tópálov (Linares, 1998). ¿Fue buena en tu posición?', en:'Bishop to h3 under attack — recalls Shirov\'s legendary sacrifice vs Topalov (Linares, 1998). Was it good in yours?'},
+        story:{
+          es:'Linares, 1998. En un final que parecía tablas, Alexei Shirov jugó Ah3!! — una entrega de alfil que ni los mejores ordenadores del mundo entendieron en ese momento. La jugada ganaba gracias a una carrera de peones calculada con precisión milimétrica. Kasparov dijo que era "la jugada más bella que jamás había visto". El libro de Shirov se llama "Fuego en el Tablero".',
+          en:'Linares, 1998. In what looked like a drawn endgame, Alexei Shirov played Bh3!! — a bishop sacrifice that even the world\'s best computers couldn\'t understand at the time. The move won through a pawn race calculated with pinpoint precision. Kasparov called it "the most beautiful move I have ever seen." Shirov\'s book is named "Fire on Board."'
+        }
+      },
       grand_historian:        { icon:'📜', cat:4, name:{es:'El Gran Historiador',   en:'The Grand Historian'}, desc:{es:'Desbloquea los 4 motivos históricos.',                                                             en:'Unlock all 4 historical motifs.'} },
     };
 
@@ -6138,11 +6209,15 @@ limitations under the License.
           const dateStr = unlocked
             ? `${_('profileUnlockedOn')} ${new Date((p.unlockedTrophies.find(t=>t.id===id)||{}).unlockedAt||'').toLocaleDateString()}`
             : `🔒 ${_('profileLocked')}`;
-          return `<div class="trophy-card ${unlocked?'unlocked':'locked'}">
+          const hasStory = def.story && (def.story.es || def.story.en);
+          const storyAttr = hasStory ? `onclick="openTrophyStory('${id}')" style="cursor:pointer"` : '';
+          const storyHint = hasStory ? `<div class="trophy-story-hint">📖</div>` : '';
+          return `<div class="trophy-card ${unlocked?'unlocked':'locked'}" ${storyAttr}>
             <div class="trophy-icon">${def.icon}</div>
             <div class="trophy-name">${name}</div>
             <div class="trophy-desc">${desc}</div>
             <div class="trophy-date">${dateStr}</div>
+            ${storyHint}
           </div>`;
         }).join('');
         return `<div class="profile-cat-header">${_('profileCat'+catNum)}</div>
@@ -6238,6 +6313,19 @@ limitations under the License.
 
     function closeProfileModal() {
       document.getElementById('profileModal').classList.remove('show');
+    }
+
+    function openTrophyStory(id) {
+      const def = TROPHY_DEFS[id];
+      if (!def || !def.story) return;
+      document.getElementById('trophyStoryIcon').textContent = def.icon;
+      document.getElementById('trophyStoryName').textContent = def.name[currentLanguage] || def.name.es;
+      document.getElementById('trophyStoryBody').textContent = def.story[currentLanguage] || def.story.es;
+      document.getElementById('trophyStoryOverlay').classList.add('show');
+    }
+
+    function closeTrophyStory() {
+      document.getElementById('trophyStoryOverlay').classList.remove('show');
     }
 
     function filterTrophies(type) {
