@@ -101,6 +101,70 @@ Sentido Araña (piezas atacadas brillan), casillas de destino con código de col
 
 ---
 
+## Perfil de Jugador y Vitrina de Trofeos
+
+Airin te recuerda. Cada partida que juegas queda registrada, y tu progreso se recompensa.
+
+### 📊 Tu Perfil
+
+Al abrir Airin por primera vez te pedirá tu nombre. A partir de ahí registra tu historial completo.
+
+- **Estadísticas de por vida** — partidas totales, victorias, tablas, derrotas, deshacer usados, pistas pedidas
+- **Salón de los Récords** — victoria más rápida (menos jugadas) y mayor ventaja de evaluación conseguida
+- **Barras W/D/L por bot** — registro desglosado por nivel de dificultad con colores
+- **Nombre editable** — pulsa sobre tu nombre en el perfil para cambiarlo en cualquier momento
+
+<img src="screenshots/ES/profile_stats.png" alt="Perfil de Jugador" width="500" />
+![alt text](image.png)
+
+### 🏆 La Vitrina de Trofeos
+
+42 logros desbloqueables en cuatro categorías.
+
+**Progresión y Hitos** — derrota cada nivel de dificultad, gana en menos de 20 jugadas, realiza tu primera captura al paso.
+
+**Desafíos Técnicos** — gana sin pistas ni deshacer, sobrevive 60 jugadas contra el Rey Sabio, da jaque mate con un peón, fuerza tablas desde una posición perdida.
+
+**Huevos de Pascua (ocultos)** — 8 trofeos secretos. Sus nombres están ocultos hasta que los desbloqueas. Ya los descubrirás.
+
+**Los Historiadores** — recrea sacrificios legendarios de la historia del ajedrez. Si mueves la pieza exacta a la casilla exacta en las condiciones adecuadas, Airin reconoce el momento y otorga el trofeo en tiempo real.
+
+<img src="screenshots/ES/trophy_cabinet.png" alt="Vitrina de Trofeos" width="500" />
+
+### 🏛️ Los Historiadores
+
+Cuatro momentos históricos están escondidos en el juego. Cada uno requiere un sacrificio específico en condiciones de material concretas:
+
+| Trofeo | Partida | Momento |
+|--------|---------|---------|
+| 🌧️ La Lluvia de Oro | Marshall vs Levitsky, 1912 | Dama a g3, atacada, mediojuego rico |
+| 💥 El Cañonazo | Vladimirov vs Epishin, 1987 | Alfil a h6, atacado, mediojuego |
+| 🚂 La Locomotora | Sanz vs Ortueta, 1933 | Torre a b2, atacada, final |
+| 🔥 Fuego en el Tablero | Shirov vs Topalov, 1998 | Alfil a h3, atacado, final profundo |
+
+Desbloquea los cuatro para obtener el trofeo Platino: **El Gran Historiador**.
+
+La pestaña **Leyendas** de la Librería de Entrenamiento te permite cargar las posiciones exactas de estas partidas para estudiarlas y practicar los sacrificios.
+
+<img src="screenshots/ES/trophy_historians.png" alt="Trofeos Historiadores" width="500" />
+
+### 🎉 Celebraciones en Tiempo Real
+
+Cuando desbloqueas un trofeo durante una partida, aparece inmediatamente una notificación emergente — no hace falta revisar la vitrina. El juego reconoce el momento en el acto.
+
+<img src="screenshots/ES/trophy_toast.png" alt="Notificación de Trofeo" width="400" />
+
+### 💾 Guardar y Cargar
+
+Tu perfil vive en el navegador. Para llevarlo a otro dispositivo:
+
+- **Exportar** — descarga `airin_save.json` en tu dispositivo
+- **Importar** — sube un archivo exportado anteriormente para restaurar tu perfil en cualquier dispositivo
+
+<img src="screenshots/ES/profile_export.png" alt="Exportar Perfil" width="400" />
+
+---
+
 ## El Comentarista
 
 Narra cada movimiento en tiempo real. Reconoce nombres de aperturas, formación del Mate del Pastor, Regalo Griego, incursiones de caballo, motivos históricos y cambios importantes de material.
@@ -124,6 +188,7 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | Táctica | 15 | Tenedor, clavada, enfilada, descubierta, pasillo, zugzwang |
 | Finales | 14 | Lucena, Philidor, regla del cuadrado, oposición, alfil equivocado |
 | Aleatorio | 30 | Puzzles tácticos curados con tema: mate, tenedor, clavada, ensarte, sacrificio, coronación |
+| Leyendas | 4 | Las 4 posiciones históricas detrás de los trofeos Historiadores (Marshall, Vladimirov, Sanz-Ortueta, Shirov-Topalov) |
 
 <img src="screenshots/ES/training.png" alt="Librearía FEN de entrenamiento" width="500" />
 

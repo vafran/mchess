@@ -99,6 +99,68 @@ Spider Sense (attacked pieces glow), colour-coded move destinations, blunder pre
 
 ---
 
+## Player Profile & Trophy Cabinet
+
+Airin remembers you. Every game you play is tracked, and your progress is rewarded.
+
+### 📊 Your Profile
+
+Upon starting for the first time, Airin asks for your name. From that point on, it tracks your full history.
+
+- **Lifetime stats** — total games, wins, draws, losses, undos used, hints requested
+- **Hall of Records** — fastest win (fewest moves) and highest evaluation advantage ever achieved
+- **Per-bot W/D/L bars** — colour-coded record against each difficulty level
+- **Editable name** — tap your name in the profile to rename yourself at any time
+
+<img src="screenshots/EN/profile_stats.png" alt="Player Profile" width="500" />
+
+### 🏆 The Trophy Cabinet
+
+42 unlockable achievements across four categories.
+
+**Progression & Milestones** — defeat each difficulty level, win in under 20 moves, pull off your first en passant.
+
+**Technical Challenges** — win with zero hints and zero undos, survive 60 moves against Wise King, checkmate with a pawn, force a draw from a losing position.
+
+**Easter Eggs (hidden)** — 8 secret trophies. Their names are hidden until you unlock them. You'll figure them out.
+
+**The Historians** — recreate legendary sacrifices from chess history. If you play the exact piece to the exact square under the right conditions, Airin recognises the moment and awards the trophy in real time.
+
+<img src="screenshots/EN/trophy_cabinet.png" alt="Trophy Cabinet" width="500" />
+
+
+### 🏛️ The Historians
+
+Four historical moments are hidden in the game. Each requires a specific sacrifice under specific material conditions:
+
+| Trophy | Echoes | Moment |
+|--------|--------|--------|
+| 🌧️ Golden Rain | Marshall vs Levitsky, 1912 | Queen to g3, attacked, rich middlegame |
+| 💥 The Cannon | Vladimirov vs Epishin, 1987 | Bishop to h6, attacked, middlegame |
+| 🚂 The Locomotive | Sanz vs Ortueta, 1933 | Rook to b2, attacked, endgame |
+| 🔥 Fire on the Board | Shirov vs Topalov, 1998 | Bishop to h3, attacked, deep endgame |
+
+Unlock all four to earn the Platinum trophy: **The Great Historian**.
+
+The Training Library's **Legends** tab lets you load the exact positions from these games to study and practice the sacrifices.
+
+<img src="screenshots/EN/trophy_historians.png" alt="Historian Trophies" width="500" />
+
+### 🎉 Real-Time Celebrations
+
+When you unlock a trophy mid-game, a celebration popup appears immediately — you don't need to check the cabinet. The game acknowledges the moment as it happens.
+
+### 💾 Save & Load
+
+Your profile lives in your browser. To carry it across devices:
+
+- **Export** — downloads `<profile_name>_<current_date>.airin` to your device downloads folder.
+- **Import** — upload a previously exported file to restore your profile on any device
+
+
+---
+
+
 ## The Commentator
 
 Narrates every move in real time. Recognises opening names, Scholar's Mate formation, Greek Gift sacrifice, knight fork incursions, historical motifs, and major material swings.
@@ -121,6 +183,7 @@ Three styles, with labels now visible under the slider:
 | Tactics | 15 | Fork, pin, skewer, discovered attack, back rank, zugzwang |
 | Endgames | 14 | Lucena, Philidor, square rule, king opposition, wrong bishop |
 | Random | 30 | Curated tactical puzzles with themes: mate, fork, pin, skewer, sacrifice, promotion |
+| Legends | 4 | The 4 historical positions behind the Historian trophies (Marshall, Vladimirov, Sanz-Ortueta, Shirov-Topalov) |
 
 <img src="screenshots/EN/training.png" alt="FEN Training Library" width="300" />
 
