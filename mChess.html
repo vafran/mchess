@@ -4105,6 +4105,7 @@ limitations under the License.
 
       checkTrophyUnlocks(result, difficulty, movesCount);
       saveProfile();
+      saveGameState(); // persist sessionGameRecorded:true so a page reload can't double-count this result
       console.log(`[Statistician] Match saved — result:${result} diff:${difficulty} moves:${movesCount} undos:${sessionUndos} hints:${sessionHints}`);
     }
 
@@ -4138,6 +4139,7 @@ limitations under the License.
           sessionQueenBlundered: !!sessionQueenBlundered,
           sessionEnPassantCaptured: !!sessionEnPassantCaptured,
           sessionPromotedToKnight: !!sessionPromotedToKnight,
+          sessionKnightEverMoved: !!sessionKnightEverMoved,
           undoStack: undoStack ? [...undoStack] : [],
           ts: Date.now()
         };
@@ -4195,6 +4197,7 @@ limitations under the License.
         sessionQueenBlundered     = !!s.sessionQueenBlundered;
         sessionEnPassantCaptured  = !!s.sessionEnPassantCaptured;
         sessionPromotedToKnight   = !!s.sessionPromotedToKnight;
+        sessionKnightEverMoved    = !!s.sessionKnightEverMoved;
         const diffCfg = DIFF_SETTINGS[currentDifficulty];
         if (diffCfg) { aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit; }
         undoStack = Array.isArray(s.undoStack) ? s.undoStack : [];
@@ -6001,9 +6004,16 @@ limitations under the License.
         capturedByWhite: [...capturedByWhite],
         capturedByBlack: [...capturedByBlack],
         lastFrom: lastFrom ? [...lastFrom] : null,
-        lastTo: lastTo ? [...lastTo] : null,
+        lastTo: lastTo ? [...lastTo ] : null,
         halfMoveClock,
-        positionHashes: [...positionHashes], // Restore on undo to prevent ghost repetition hashes
+        positionHashes: [...positionHashes],
+        // Session booleans snapshot — restored on undo so flags don't persist past the move they were set on
+        _sessionQueenBlundered:   sessionQueenBlundered,
+        _sessionCastled:          sessionCastled,
+        _sessionKingMoved:        sessionKingMoved,
+        _sessionKnightEverMoved:  sessionKnightEverMoved,
+        _sessionEnPassantCaptured: sessionEnPassantCaptured,
+        _sessionPromotedToKnight: sessionPromotedToKnight,
       });
       if (undoStack.length > MAX_UNDO_STATES) undoStack.shift();
 
@@ -6778,6 +6788,15 @@ limitations under the License.
       lastFrom = s.lastFrom; lastTo = s.lastTo;
       halfMoveClock = s.halfMoveClock || 0;
       positionHashes = s.positionHashes ? [...s.positionHashes] : [];
+      // Restore session booleans to pre-move state (prevents flags set by undone moves from persisting)
+      if ('_sessionQueenBlundered' in s) {
+        sessionQueenBlundered    = s._sessionQueenBlundered;
+        sessionCastled           = s._sessionCastled;
+        sessionKingMoved         = s._sessionKingMoved;
+        sessionKnightEverMoved   = s._sessionKnightEverMoved;
+        sessionEnPassantCaptured = s._sessionEnPassantCaptured;
+        sessionPromotedToKnight  = s._sessionPromotedToKnight;
+      }
       selected = null; legalMoves = [];
       document.getElementById('statusBanner').classList.remove('show');
       playMoveSound();
