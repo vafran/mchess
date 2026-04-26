@@ -1687,6 +1687,41 @@ limitations under the License.
     .profile-port-btn:hover { background: rgba(99,179,237,0.22); }
     .profile-import-label { display: flex; align-items: center; justify-content: center; }
 
+    .trophy-progress-wrap {
+      width: 100%; height: 10px;
+      background: rgba(168,85,247,0.12);
+      border-radius: 99px; overflow: hidden;
+      margin: 10px 0 4px;
+    }
+    .trophy-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #a855f7, #f472b6);
+      border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+    .trophy-progress-label {
+      text-align: right; font-size: 0.78rem;
+      color: rgba(168,85,247,0.8); font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .trophy-filter-row {
+      display: flex; gap: 8px; margin-bottom: 14px;
+    }
+    .trophy-filter-btn {
+      flex: 1; padding: 7px 4px;
+      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168,85,247,0.18);
+      border-radius: 10px; font-size: 0.82rem;
+      font-family: inherit; font-weight: 700;
+      color: var(--text); cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .trophy-filter-btn:hover { background: rgba(168,85,247,0.18); }
+    .trophy-filter-btn.active {
+      background: linear-gradient(135deg, rgba(168,85,247,0.25), rgba(244,114,182,0.20));
+      border-color: rgba(168,85,247,0.5);
+    }
+
     /* ── Screen system ─────────────────────── */
     .screen-overlay {
       position: fixed;
@@ -3934,7 +3969,10 @@ limitations under the License.
         profileExport: '⬇️ Exportar datos',
         profileImport: '⬆️ Importar datos',
         profileImportSuccess: '✅ Datos importados. Recargando…',
-        profileImportError: '❌ Archivo inválido. Comprueba que sea un guardado de Airin.'
+        profileImportError: '❌ Archivo inválido. Comprueba que sea un guardado de Airin.',
+        trophyFilterAll: 'Todos',
+        trophyFilterEarned: 'Conseguidos',
+        trophyFilterPending: 'Pendientes'
 
       },
       en: {
@@ -4014,7 +4052,10 @@ limitations under the License.
         profileExport: '⬇️ Export data',
         profileImport: '⬆️ Import data',
         profileImportSuccess: '✅ Data imported. Reloading…',
-        profileImportError: '❌ Invalid file. Make sure it\'s an Airin save.'
+        profileImportError: '❌ Invalid file. Make sure it\'s an Airin save.',
+        trophyFilterAll: 'All',
+        trophyFilterEarned: 'Earned',
+        trophyFilterPending: 'Pending'
       }
     };
 
@@ -6016,6 +6057,10 @@ limitations under the License.
         ? `+${Math.min(Math.round(highestEval), 2000)}cp`
         : _('profileNone');
 
+      const totalTrophyCount = Object.keys(TROPHY_DEFS).length;
+      const unlockedCount    = p ? p.unlockedTrophies.length : 0;
+      const totalTrophyPct   = Math.round(unlockedCount / totalTrophyCount * 100);
+
       box.innerHTML = `
         <button class="profile-close" onclick="closeProfileModal()" title="${_('profileClose')}">✕</button>
         <div class="profile-hero">
@@ -6052,6 +6097,15 @@ limitations under the License.
 
         <div>
           <div class="profile-section-title">${_('profileTrophiesTitle')}</div>
+          <div class="trophy-progress-wrap">
+            <div class="trophy-progress-bar" style="width:${totalTrophyPct}%"></div>
+          </div>
+          <div class="trophy-progress-label">${unlockedCount} / ${totalTrophyCount}</div>
+          <div class="trophy-filter-row">
+            <button id="trophyFilter_all"     class="trophy-filter-btn active" onclick="filterTrophies('all')"    >${_('trophyFilterAll')}</button>
+            <button id="trophyFilter_unlocked" class="trophy-filter-btn"       onclick="filterTrophies('unlocked')">${_('trophyFilterEarned')}</button>
+            <button id="trophyFilter_pending"  class="trophy-filter-btn"       onclick="filterTrophies('pending')" >${_('trophyFilterPending')}</button>
+          </div>
           ${trophySection(1,'profileCat1')}
           ${trophySection(2,'profileCat2')}
           ${trophySection(3,'profileCat3')}
@@ -6073,6 +6127,26 @@ limitations under the License.
 
     function closeProfileModal() {
       document.getElementById('profileModal').classList.remove('show');
+    }
+
+    function filterTrophies(type) {
+      document.querySelectorAll('.trophy-card').forEach(card => {
+        const isUnlocked = card.classList.contains('unlocked');
+        const isPending  = card.classList.contains('locked') || card.classList.contains('mystery');
+        if (type === 'all')      card.style.display = '';
+        else if (type === 'unlocked') card.style.display = isUnlocked ? '' : 'none';
+        else                          card.style.display = isPending  ? '' : 'none';
+      });
+      // Also hide/show category headers when all cards in that section are hidden
+      document.querySelectorAll('.profile-cat-header').forEach(header => {
+        const grid = header.nextElementSibling;
+        if (!grid) return;
+        const visible = [...grid.querySelectorAll('.trophy-card')].some(c => c.style.display !== 'none');
+        header.style.display = visible ? '' : 'none';
+      });
+      document.querySelectorAll('.trophy-filter-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('trophyFilter_' + type);
+      if (activeBtn) activeBtn.classList.add('active');
     }
 
     function saveProfileName(value) {
