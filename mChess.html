@@ -3501,14 +3501,16 @@ limitations under the License.
     let currentProfile = null;
 
     // Session counters — reset on every init()
-    let sessionUndos          = 0;
-    let sessionHints          = 0;
-    let sessionMinEval        = Infinity; // lowest eval seen (cp, from player's perspective)
-    let sessionQueenBlundered = false;    // true if opponent captured player's queen uncontested
-    let sessionCastled        = false;    // true once the player castles
-    let sessionKingMoved      = false;    // true if king moves again after castling
-    let sessionGameRecorded   = false;    // true once updateMatchStats has fired for this game
-    let sessionPendingResult  = null;     // {result, difficulty, movesCount} — held for reviewGame path
+    let sessionUndos              = 0;
+    let sessionHints              = 0;
+    let sessionMinEval            = Infinity; // lowest eval seen (cp, from player's perspective)
+    let sessionQueenBlundered     = false;    // true if opponent captured player's queen uncontested
+    let sessionCastled            = false;    // true once the player castles
+    let sessionKingMoved          = false;    // true if king moves again after castling
+    let sessionEnPassantCaptured  = false;    // true if player captured en passant this game
+    let sessionPromotedToKnight   = false;    // true if player promoted to knight this game
+    let sessionGameRecorded       = false;    // true once updateMatchStats has fired for this game
+    let sessionPendingResult      = null;     // {result, difficulty, movesCount} — held for reviewGame path
 
     function loadProfile() {
       try {
@@ -3576,6 +3578,7 @@ limitations under the License.
       graduation:              { icon:'🎓', cat:1, name:{es:'La Graduación',       en:'The Graduation'},      desc:{es:'Derrota al Estudiante por primera vez.',                             en:'Defeat the Student for the first time.'} },
       magic_trick:             { icon:'🎩', cat:1, name:{es:'El Truco de Magia',   en:'Magic Trick'},         desc:{es:'Derrota al Mago por primera vez.',                                   en:'Defeat the Magician for the first time.'} },
       king_slayer:             { icon:'👑', cat:1, name:{es:'El Mata Reyes',       en:'The King Slayer'},     desc:{es:'Derrota al Rey Sabio por primera vez.',                              en:'Defeat the Wise King for the first time.'} },
+      first_en_passant:        { icon:'👣', cat:1, name:{es:'¡Al Paso!',           en:'En Passant!'},         desc:{es:'Captura al paso por primera vez.',                                   en:'Perform your first en passant capture.'} },
       // Category 2 — Technical & Late-Game
       pure_pride:              { icon:'🛡️', cat:2, name:{es:'Orgullo Puro',        en:'Pure Pride'},          desc:{es:'Gana sin deshacer ni pedir ayuda (Medio o superior).',               en:'Win without undos or hints (Medium or higher).'} },
       iron_castle:             { icon:'🏰', cat:2, name:{es:'Castillo de Hierro',  en:'Iron Castle'},         desc:{es:'Gana enrocando sin mover el rey después.',                           en:'Win by castling and never moving your king again.'} },
@@ -3586,9 +3589,11 @@ limitations under the License.
       the_immortal:            { icon:'💎', cat:2, name:{es:'El Inmortal',         en:'The Immortal'},        desc:{es:'Derrota al Rey Sabio sin deshacer ningún movimiento.',               en:'Defeat the Wise King without undoing any move.'} },
       usurper:                 { icon:'♟️', cat:2, name:{es:'El Usurpador',        en:'The Usurper'},         desc:{es:'Da jaque mate al Rey Sabio con un peón.',                            en:'Checkmate the Wise King with a pawn.'} },
       // Category 3 — Easter Eggs (hidden until unlocked)
-      panic_mode:              { icon:'😱', cat:3, hidden:true, name:{es:'¡No entres en pánico!', en:"Don't Panic!"},        desc:{es:'Gana con más de 5 deshacer.',                           en:'Win with more than 5 undos.'} },
-      dumb_dumber:             { icon:'🤦', cat:3, hidden:true, name:{es:'Tonto y Más Tonto',     en:'Dumb and Dumber'},     desc:{es:'Empata contra el Pollito.',                             en:'Draw against the Easy bot.'} },
-      oops_queen:              { icon:'😬', cat:3, hidden:true, name:{es:'¿Mi Dama?',              en:'Oops, My Queen?'},     desc:{es:'Gana tras perder tu dama sin compensación.',            en:'Win after losing your queen without compensation.'} },
+      dumb_dumber:             { icon:'🤦', cat:3, hidden:true, name:{es:'Tonto y Más Tonto',  en:'Dumb and Dumber'},       desc:{es:'Empata contra el Pollito.',                                             en:'Draw against the Easy bot.'} },
+      oops_queen:              { icon:'😬', cat:3, hidden:true, name:{es:'¿Mi Dama?',           en:'Oops, My Queen?'},       desc:{es:'Gana tras perder tu dama sin compensación.',                            en:'Win after losing your queen without compensation.'} },
+      ancient_law:             { icon:'👻', cat:3, hidden:true, name:{es:'La Ley Antigua',      en:'The Ancient Law'},       desc:{es:'Gana una partida en la que capturaste al paso.',                        en:'Win a game where you captured en passant.'} },
+      the_rebel:               { icon:'♞', cat:3, hidden:true, name:{es:'El Rebelde',           en:'The Rebel'},             desc:{es:'Coronas un peón con Caballo y ganas.',                                  en:'Promote a pawn to a Knight and win.'} },
+      night_owl:               { icon:'🦉', cat:3, hidden:true, name:{es:'Noctámbulo',          en:'Night Owl'},             desc:{es:'Gana una partida entre medianoche y las 4 de la mañana.',              en:'Win a game between midnight and 4 AM.'} },
       // Category 4 — The Historians (real-time, sacrifice required)
       secret_marshall_qg3:    { icon:'🌧️', cat:4, name:{es:'La Lluvia de Oro',      en:'Golden Rain'},         desc:{es:'Dama a g3 atacada — evoca el célebre sacrificio de Marshall vs Levitsky (Breslavia, 1912). ¿Fue buena en tu posición?',  en:'Queen to g3 under attack — echoes Marshall\'s famous queen sacrifice vs Levitsky (Breslau, 1912). Was it good in yours?'} },
       secret_vladimirov_bh6:  { icon:'💥', cat:4, name:{es:'El Cañonazo',           en:'The Cannon Shot'},     desc:{es:'Alfil a h6 atacado — recuerda el "cañonazo" de Vladimirov vs Epishin (1987). ¿Fue buena en tu posición?',           en:'Bishop to h6 under attack — recalls Vladimirov\'s "cannon shot" vs Epishin (1987). Was it good in yours?'} },
@@ -3630,8 +3635,10 @@ limitations under the License.
           const last = history[history.length - 1].replace(/[+#]/g, '');
           if (!/^[NBRQK]/.test(last) && !/^O/.test(last)) unlockTrophy('usurper');
         }
-        if (sessionUndos > 5)      unlockTrophy('panic_mode');
-        if (sessionQueenBlundered) unlockTrophy('oops_queen');
+        if (sessionQueenBlundered)                    unlockTrophy('oops_queen');
+        if (sessionEnPassantCaptured)                 unlockTrophy('ancient_law');
+        if (sessionPromotedToKnight)                  unlockTrophy('the_rebel');
+        if (new Date().getHours() < 4)                unlockTrophy('night_owl');
       }
       if (result === 'draw') {
         if (difficulty === 'hard') unlockTrophy('illusion_breaker');
@@ -4543,14 +4550,16 @@ limitations under the License.
       puzzleMode = null;
 
       // Statistician: reset session counters
-      sessionUndos          = 0;
-      sessionHints          = 0;
-      sessionMinEval        = Infinity;
-      sessionQueenBlundered = false;
-      sessionCastled        = false;
-      sessionKingMoved      = false;
-      sessionGameRecorded   = false;
-      sessionPendingResult  = null;
+      sessionUndos             = 0;
+      sessionHints             = 0;
+      sessionMinEval           = Infinity;
+      sessionQueenBlundered    = false;
+      sessionCastled           = false;
+      sessionKingMoved         = false;
+      sessionEnPassantCaptured = false;
+      sessionPromotedToKnight  = false;
+      sessionGameRecorded      = false;
+      sessionPendingResult     = null;
 
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
@@ -5600,6 +5609,11 @@ limitations under the License.
         const epPiece = board[sr][tc];
         if (color === 'w') capturedByWhite.push(epPiece); else capturedByBlack.push(epPiece);
         board[sr][tc] = ' ';
+        // Statistician: first en passant ever (fires immediately, any game mode)
+        if (gameMode === 'ai' && color === playerColor) {
+          sessionEnPassantCaptured = true;
+          unlockTrophy('first_en_passant');
+        }
       }
 
       // 5. REGISTRO DE CAPTURAS NORMALES
@@ -5622,6 +5636,7 @@ limitations under the License.
           // If init() ran while the modal was open, abort — don't corrupt the new game
           if (makeMoveGeneration !== _promoGen) { animating = false; return; }
           board[tr][tc] = promoPiece;
+          if (promoPiece.toUpperCase() === 'N') sessionPromotedToKnight = true;
           animating = false; // ✨ Liberar DESPUÉS del modal
         }
       } else {
