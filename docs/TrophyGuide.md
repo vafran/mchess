@@ -16,7 +16,7 @@
 | 🎓 | **The Graduation** | Defeat the Student bot (Medium) for the first time. |
 | 🎩 | **Magic Trick** | Defeat the Magician bot (Hard) for the first time. |
 | 👑 | **The King Slayer** | Defeat the Wise King (Master) for the first time. |
-| 👣 | **En Passant!** | Perform your first en passant capture in any game. |
+| 👣 | **Ghost Hunter** | Perform **two** en passant captures in a single game. |
 | 🔔 | **Check!** | Give check for the very first time. |
 | 👑 | **I Am Queen!** | Promote a pawn to any piece for the first time. |
 | 🏰 | **My Castle!** | Castle (kingside or queenside) for the first time ever. |
@@ -26,7 +26,7 @@
 > - The first five are earned by just playing regularly. Start on Easy and work your way up.
 > - **Check!** fires on your very first check delivery — even on move 1 if you find a Scholar's Mate setup.
 > - **I Am Queen!** fires regardless of what piece you promote to.
-> - **En Passant!** and **Ghost Capture!** are different trophies — the first one tracks per-game, the second is a lifetime first.
+> - **Ghost Hunter** and **Ghost Capture!** are different trophies — the first one tracks per-game (do it twice), the second is a lifetime first.
 
 ---
 
@@ -37,7 +37,7 @@
 |------|-----------------|---------------|
 | 🛡️ | **Pure Pride** | Win a full game on Medium or harder **without** using Undo or asking the Coach for help. |
 | 🏰 | **Iron Castle** | Castle during a game and then **never move your king again** — and win. |
-| 🗿 | **David vs Goliath** | Win a game where your position reached −500 centipawns (eval bar near the bottom) or worse. |
+| 🗿 | **David vs Goliath** | Win against the Hard or Grandmaster bot after your position reached −500 centipawns (eval bar near the bottom) or worse. |
 | 🌀 | **Illusion Breaker** | Force a draw (stalemate or 3-fold repetition) against the Hard bot (Magician). |
 | 🧩 | **No Tricks Allowed** | Defeat the Hard bot (Magician) without using any Coach hints. |
 | ⏳ | **Royal Endurance** | Survive more than 60 moves in a single game against the Wise King (Master). |
@@ -46,7 +46,7 @@
 
 > **Tips:**
 > - **Iron Castle**: castle early and play a positional game. Avoid king walks!
-> - **David vs Goliath**: play a game where you fall behind, then mount a comeback. Watch the eval bar go deep red and then come back.
+> - **David vs Goliath**: survive a massive blunder against the hardest bots, then mount a comeback. Watch the eval bar go deep red and then come back.
 > - **The Usurper**: advance a passed pawn to the 7th rank and use it for checkmate. Works best in endgames with a back-rank setup.
 
 ---
@@ -102,7 +102,7 @@
 
 | Icon | Trophy (ES / EN) | How to unlock |
 |------|-----------------|---------------|
-| 🐛 | **Ant Army** | Move **5 different pawns** in a single game (any pawn on any file). |
+| 🐛 | **Ant Army** | Move **5 different pawns** off their starting squares in a single game. |
 | 🐝 | **Queen Bee** | Win a game where the **queen delivers the final capture** that sets up checkmate. |
 
 > **Tips:**
@@ -188,7 +188,7 @@ Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive
 | ♞ | **The Rebel** | 🔒 Who says a pawn has to become a queen? |
 | 🦉 | **Night Owl** | 🔒 Some people play chess at... unusual hours. |
 | 🙈 | **Knights? Who Needs Them?** | 🔒 Win a game while your knights stay home on b1 and g1 the whole time. |
-| 🐱 | **Copycat** | 🔒 Imitation is the sincerest form of flattery — for the first three moves, at least. |
+| 🐱 | **Mirror Moves** | 🔒 Imitation is the sincerest form of flattery — for the first three moves, at least. |
 | 🥲 | **The Survivor** | 🔒 Sometimes one little pawn is all you need. |
 
 ---
