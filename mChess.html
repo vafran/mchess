@@ -1,4 +1,4 @@
-<!--
+﻿<!--
 Airin v2.23.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
@@ -3713,7 +3713,9 @@ limitations under the License.
       },
       streak: { current: 0, best: 0 },
       recentResults: [],           // last 10 results: 'w' | 'd' | 'l'
-      unlockedTrophies: []         // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
+      unlockedTrophies: [],        // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
+      playDates: [],               // ISO date strings 'YYYY-MM-DD' when player played
+      namedOpeningsPlayed: []      // distinct named opening keys seen across games
     };
 
     let currentProfile = null;
@@ -3730,6 +3732,15 @@ limitations under the License.
     let sessionStartedFromFen     = false;    // true if the game started from a loaded FEN (blocks end-of-game trophies)
     let sessionGameRecorded       = false;    // true once updateMatchStats has fired for this game
     let sessionPendingResult      = null;     // {result, difficulty, movesCount} — held for reviewGame path
+    // 🎒 Child-friendly session trackers
+    let sessionPawnSquaresMoved   = new Set(); // distinct from-squares of pawns the player moved
+    let sessionKnightEverMoved    = false;    // did the player move a knight this game?
+    let sessionNoMaterialLost     = true;     // stays true if player never loses a piece
+    let sessionMirrorCount        = 0;        // how many of the first 3 moves mirror the opponent
+    let sessionFirstCheckGiven    = false;    // player gave check for the first time
+    let sessionFirstPromotion     = false;    // player promoted a pawn for the first time
+    let sessionFirstCastle        = false;    // player castled for the first time (any game, ever)
+    let sessionLastCapturePiece   = null;     // last piece player captured ('Q','R','B','N','P')
 
     function loadProfile() {
       try {
@@ -3750,7 +3761,9 @@ limitations under the License.
             },
             streak:          { ...defaultProfile.streak, ...(saved.streak || {}) },
             recentResults:   Array.isArray(saved.recentResults) ? saved.recentResults : [],
-            unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : []
+            unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : [],
+            playDates:        Array.isArray(saved.playDates) ? saved.playDates : [],
+            namedOpeningsPlayed: Array.isArray(saved.namedOpeningsPlayed) ? saved.namedOpeningsPlayed : []
           };
         } else {
           currentProfile = JSON.parse(JSON.stringify(defaultProfile));
@@ -3794,6 +3807,17 @@ limitations under the License.
       try {
         localStorage.setItem(PROFILE_KEY, JSON.stringify(currentProfile));
       } catch (_) { }
+    }
+
+    function _checkTimeBasedTrophies(p) {
+      // Record today's date
+      const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+      if (!p.playDates.includes(today)) { p.playDates.push(today); saveProfile(); }
+      // 📅 daily_player: played on at least 5 distinct calendar days
+      if (p.playDates.length >= 5) unlockTrophy('daily_player');
+      // 🛋️ weekend_warrior: played on both a Saturday (day 6) and a Sunday (day 0)
+      const days = new Set(p.playDates.map(d => new Date(d).getDay()));
+      if (days.has(0) && days.has(6)) unlockTrophy('weekend_warrior');
     }
 
     // ── Trophy System ─────────────────────────────────────────────────────────
@@ -3851,6 +3875,28 @@ limitations under the License.
         }
       },
       grand_historian:        { icon:'📜', cat:4, name:{es:'El Gran Historiador',   en:'The Grand Historian'}, desc:{es:'Desbloquea los 4 motivos históricos.',                                                             en:'Unlock all 4 historical motifs.'} },
+      // Merged into Cat 1 (Progression) — beginner mechanic milestones
+      first_check:             { icon:'🔔', cat:1, name:{es:'¡Jaque!',                en:'Check!'},              desc:{es:'Da jaque por primera vez.',                                          en:'Give check for the very first time.'} },
+      first_promotion:         { icon:'👑', cat:1, name:{es:'¡Soy Reina!',            en:'I Am Queen!'},         desc:{es:'Corona un peón por primera vez.',                                    en:'Promote a pawn for the very first time.'} },
+      first_castle_ever:       { icon:'🏰', cat:1, name:{es:'¡Mi Castillo!',          en:'My Castle!'},          desc:{es:'Enroca por primera vez en tu vida.',                                 en:'Castle for the very first time ever.'} },
+      first_enp_ever:          { icon:'👻', cat:1, name:{es:'¡Al Paso Fantasma!',     en:'Ghost Capture!'},      desc:{es:'Captura al paso por primera vez en tu vida.',                        en:'Capture en passant for the very first time ever.'} },
+      // Cat 3 (Easter Eggs) — hidden Fun & Silly trophies moved here
+      pawn_army:               { icon:'🐛', cat:8, name:{es:'Ejército de Hormigas',   en:'Ant Army'},            desc:{es:'Mueve 5 peones distintos en una partida.',                           en:'Move 5 different pawns in one game.'} },
+      queen_bee:               { icon:'🐝', cat:8, name:{es:'La Abeja Reina',         en:'Queen Bee'},           desc:{es:'Gana capturando con la dama en el último movimiento.',                en:'Win with the queen as the final capture.'} },
+      no_knights:              { icon:'🙈', cat:3, hidden:true, name:{es:'¿Caballos? ¿Para qué?', en:'Knights? Who Needs Them?'}, desc:{es:'Gana sin mover ningún caballo.',          en:'Win a game without ever moving a knight.'} },
+      copy_cat:                { icon:'🐱', cat:3, hidden:true, name:{es:'El Espejo',              en:'Copycat'},                  desc:{es:'Imita los 3 primeros movimientos del rival exactamente.', en:"Mirror the opponent's first 3 moves exactly."} },
+      last_pawn:               { icon:'🥲', cat:3, hidden:true, name:{es:'El Superviviente',       en:'The Survivor'},             desc:{es:'Gana con solo 1 peón propio en el tablero.',              en:'Win with only 1 pawn remaining.'} },
+      // Cat 5 — Speed & Challenge
+      lightning_win:           { icon:'⚡', cat:5, name:{es:'¡Rayo!',                 en:'Lightning!'},          desc:{es:'Gana en 15 movimientos o menos (Medio o superior).',                en:'Win in 15 moves or fewer (Medium or harder).'} },
+      comeback_kid:            { icon:'💪', cat:5, name:{es:'El Gran Regreso',        en:'Comeback Kid'},        desc:{es:'Gana tras estar 400 puntos por debajo.',                             en:'Win after being down 400 centipawns or more.'} },
+      perfect_endgame:         { icon:'♟️', cat:5, name:{es:'Clínica de Ajedrez',     en:'Chess Clinic'},        desc:{es:'Gana sin perder ni una sola pieza.',                                 en:'Win without losing a single piece.'} },
+      // Cat 6 — Streaks & Loyalty
+      three_in_a_row:          { icon:'🔥', cat:6, name:{es:'Tripleta',               en:'Hat Trick'},           desc:{es:'Gana 3 partidas seguidas.',                                          en:'Win 3 games in a row.'} },
+      daily_player:            { icon:'📅', cat:6, name:{es:'¡Cada Día!',             en:'Every Day!'},          desc:{es:'Juega en 5 días de calendario distintos.',                           en:'Play on 5 different calendar days.'} },
+      weekend_warrior:         { icon:'🛋️', cat:6, name:{es:'Guerrero del Fin de Semana', en:'Weekend Warrior'}, desc:{es:'Juega en sábado Y en domingo.',                                      en:'Play on both Saturday and Sunday.'} },
+      // Cat 7 — Learning
+      professor_fan:           { icon:'🦉', cat:7, name:{es:'El Estudiante',          en:'The Student'},         desc:{es:'Usa la ayuda del Profesor 10 veces en total.',                       en:'Use the Professor hint 10 times in total.'} },
+      opening_explorer:        { icon:'🗺️', cat:7, name:{es:'El Explorador',          en:'The Explorer'},        desc:{es:'Juega 5 aperturas distintas con nombre.',                            en:'Play 5 different named openings across games.'} },
     };
 
     function unlockTrophy(id) {
@@ -3866,7 +3912,7 @@ limitations under the License.
     function showTrophyCelebration(def, id) {
       const name  = def ? (def.name[currentLanguage] || def.name.es) : id;
       const icon  = def ? def.icon : '🏆';
-      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜' };
+      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '🔥', 7: '📚', 8: '🎭' };
       const label = def ? (catLabels[def.cat] + ' ' + t('profileCat' + def.cat)) : '🏆';
       document.getElementById('trophyCelebIcon').textContent  = icon;
       document.getElementById('trophyCelebLabel').textContent = label;
@@ -3904,6 +3950,22 @@ limitations under the License.
         if (sessionEnPassantCaptured)                 unlockTrophy('ancient_law');
         if (sessionPromotedToKnight)                  unlockTrophy('the_rebel');
         if (new Date().getHours() < 4)                unlockTrophy('night_owl');
+        // ⚡ Speed & Challenge
+        if (['medium','hard','grandmaster'].includes(difficulty) && movesCount <= 30)
+          unlockTrophy('lightning_win');  // ≤15 full moves per player
+        if (sessionMinEval !== Infinity && sessionMinEval <= -400) unlockTrophy('comeback_kid');
+        if (sessionNoMaterialLost)                    unlockTrophy('perfect_endgame');
+        // 🐝 Fun & Silly — win conditions
+        if (sessionLastCapturePiece === 'Q')          unlockTrophy('queen_bee');
+        if (!sessionKnightEverMoved)                  unlockTrophy('no_knights');
+        if (sessionMirrorCount >= 3)                  unlockTrophy('copy_cat');
+        // last_pawn: player has exactly 1 pawn left
+        const myPawn = playerColor === 'w' ? 'P' : 'p';
+        let pawnCount = 0;
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (board[r][c] === myPawn) pawnCount++;
+        if (pawnCount === 1)                          unlockTrophy('last_pawn');
+        // 🐛 pawn_army
+        if (sessionPawnSquaresMoved.size >= 5)        unlockTrophy('pawn_army');
       }
       if (result === 'draw') {
         if (difficulty === 'hard') unlockTrophy('illusion_breaker');
@@ -3911,6 +3973,17 @@ limitations under the License.
       }
       // royal_endurance: survived >60 full moves (>120 plies) against grandmaster
       if (difficulty === 'grandmaster' && movesCount > 120) unlockTrophy('royal_endurance');
+      // 🔥 three_in_a_row: last 3 results are all wins
+      if (p.recentResults.length >= 3) {
+        const last3 = p.recentResults.slice(-3);
+        if (last3.every(r => r === 'w')) unlockTrophy('three_in_a_row');
+      }
+      // 📅 daily_player & weekend_warrior — tracked in profile.playDates
+      _checkTimeBasedTrophies(p);
+      // 🦉 professor_fan
+      if (p.stats.hintsUsed >= 10) unlockTrophy('professor_fan');
+      // 🗺️ opening_explorer — tracked in profile.namedOpeningsPlayed
+      if ((p.namedOpeningsPlayed || []).length >= 5) unlockTrophy('opening_explorer');
     }
 
     // Extra pawn-structure gates for motifs where piece count alone is not enough
@@ -4212,6 +4285,10 @@ limitations under the License.
         profileCat2: '🧠 Técnico',
         profileCat3: '🥚 Easter Eggs',
         profileCat4: '📜 Los Historiadores',
+        profileCat5: '⚡ Velocidad y Reto',
+        profileCat6: '🔥 Rachas y Fidelidad',
+        profileCat7: '📚 Aprendizaje',
+        profileCat8: '🎭 Divertidos',
         profileLocked: 'Bloqueado',
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
@@ -4305,6 +4382,10 @@ limitations under the License.
         profileCat2: '🧠 Technical',
         profileCat3: '🥚 Easter Eggs',
         profileCat4: '📜 The Historians',
+        profileCat5: '⚡ Speed & Challenge',
+        profileCat6: '🔥 Streaks & Loyalty',
+        profileCat7: '📚 Learning',
+        profileCat8: '🎭 Fun & Silly',
         profileLocked: 'Locked',
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
@@ -4899,6 +4980,15 @@ limitations under the License.
       sessionStartedFromFen    = false;
       sessionGameRecorded      = false;
       sessionPendingResult     = null;
+      // 🎒 Child-friendly session resets
+      sessionPawnSquaresMoved  = new Set();
+      sessionKnightEverMoved   = false;
+      sessionNoMaterialLost    = true;
+      sessionMirrorCount       = 0;
+      sessionFirstCheckGiven   = false;
+      sessionFirstPromotion    = false;
+      sessionFirstCastle       = false;
+      sessionLastCapturePiece  = null;
 
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
@@ -5892,8 +5982,29 @@ limitations under the License.
 
       // Statistician: castling and king-movement tracking
       if (gameMode === 'ai' && color === playerColor) {
-        if (isCastle) sessionCastled = true;
-        else if (type === 'K' && sessionCastled) sessionKingMoved = true;
+        if (isCastle) {
+          sessionCastled = true;
+          // 🏰 first_castle_ever — any game, once in lifetime
+          if (!sessionFirstCastle) { sessionFirstCastle = true; unlockTrophy('first_castle_ever'); }
+        } else if (type === 'K' && sessionCastled) sessionKingMoved = true;
+        // 🐛 pawn_army: track distinct pawn from-squares
+        if (type === 'P' && !isCastle) sessionPawnSquaresMoved.add(sr * 8 + sc);
+        // 🙈 no_knights: flag if player ever moves a knight
+        if (type === 'N') sessionKnightEverMoved = true;
+        // 🐱 copy_cat: mirror opponent's moves (odd plies = player if player is White)
+        if (history.length >= 1 && history.length <= 3 && history.length % 2 === 1) {
+          const opponentLastMove = history[history.length - 2];
+          const playerThisMove  = sqName(tr, tc);
+          if (opponentLastMove && opponentLastMove.replace(/[+#!?]/g,'').endsWith(playerThisMove)) sessionMirrorCount++;
+        }
+        // ♟️ perfect_endgame: detect if player lost any material this move
+        if (!isCastle && captured !== ' ' && color !== playerColor) sessionNoMaterialLost = false;
+        // 🐝 queen_bee: track last piece player captured
+        if (captured !== ' ' && color === playerColor) sessionLastCapturePiece = captured.toUpperCase();
+      }
+      // ♟️ perfect_endgame for opponent captures too
+      if (gameMode === 'ai' && color !== playerColor && captured !== ' ') {
+        if (colorOf(captured) === playerColor) sessionNoMaterialLost = false;
       }
 
       // Compute SAN disambiguation before the board is mutated
@@ -5952,6 +6063,7 @@ limitations under the License.
         if (gameMode === 'ai' && color === playerColor) {
           sessionEnPassantCaptured = true;
           unlockTrophy('first_en_passant');
+          unlockTrophy('first_enp_ever'); // 👻 child-friendly Cat 5 version
         }
       }
 
@@ -5976,6 +6088,11 @@ limitations under the License.
           if (makeMoveGeneration !== _promoGen) { animating = false; return; }
           board[tr][tc] = promoPiece;
           if (promoPiece.toUpperCase() === 'N') sessionPromotedToKnight = true;
+          // 👑 first_promotion — once in a lifetime
+          if (!sessionFirstPromotion && gameMode === 'ai' && color === playerColor) {
+            sessionFirstPromotion = true;
+            unlockTrophy('first_promotion');
+          }
           animating = false; // ✨ Liberar DESPUÉS del modal
         }
       } else {
@@ -6026,6 +6143,11 @@ limitations under the License.
       const hasMove = hasAnyLegalMove(nextColor);
 
       if (isCheckOnNext) notation += hasMove ? '+' : '#';
+      // 🔔 first_check: player gives check for the very first time
+      if (isCheckOnNext && gameMode === 'ai' && color === playerColor && !sessionFirstCheckGiven) {
+        sessionFirstCheckGiven = true;
+        unlockTrophy('first_check');
+      }
       history.push(notation);
       if (fenPositionLoaded) fenPositionLoaded = false; // first move played, now treat as normal game
       // 🔁 Register position hash for repetition detection - INCLUIR castleRights y EP
@@ -6396,8 +6518,12 @@ limitations under the License.
           </div>
           ${trophySection(1,'profileCat1')}
           ${trophySection(2,'profileCat2')}
-          ${trophySection(3,'profileCat3')}
+          ${trophySection(5,'profileCat5')}
+          ${trophySection(6,'profileCat6')}
+          ${trophySection(7,'profileCat7')}
+          ${trophySection(8,'profileCat8')}
           ${trophySection(4,'profileCat4')}
+          ${trophySection(3,'profileCat3')}
         </div>
 
         <div class="profile-portability-row">
@@ -13708,8 +13834,16 @@ limitations under the License.
       if (isOpening && openingMatch && shouldAnnounceOpening(currentHistory, openingMatch, board)) {
         openingName = perspectiveName(localizeOpeningName(openingMatch.name), colorWhoMoved);
         openingTechNote = localizeOpeningDescription(openingMatch.desc);
+        // 🗺️ opening_explorer: track distinct named openings in profile
+        if (currentProfile && openingMatch.name && gameMode === 'ai' && !sessionStartedFromFen) {
+          const key = openingMatch.name.toLowerCase().trim();
+          if (!currentProfile.namedOpeningsPlayed.includes(key)) {
+            currentProfile.namedOpeningsPlayed.push(key);
+            saveProfile();
+          }
+        }
       }
-      const historicalMotif = detectHistoricalMotifFromHistory(currentHistory, board, false, colorWhoMoved);
+      const historicalMotif = detectHistoricalMotifFromHistory(currentHistory, board, colorWhoMoved);
 
       // 🧠 NORMAL DICTIONARIES (3rd Person Narrative)
       const frasesSerias = {
@@ -17769,7 +17903,7 @@ limitations under the License.
         nameEn: "🔥 Fire on the Board — Shirov vs Topalov 1998",
         descEs: "Juegan negras — posición exacta (movimiento 47). Alexei Shirov jugó Axh3!! en Linares 1998 — una entrega de alfil tan precisa como estética. El rey blanco está en g2 y el alfil irá a h3. Desbloquea el trofeo 🔥 Fuego en el Tablero.",
         descEn: "Black to move — exact game position (move 47). Alexei Shirov played Bh3!! in Linares 1998 — a bishop sacrifice as precise as it is beautiful. The white king stands on g2 and the bishop heads to h3. Unlocks the 🔥 Fire on the Board trophy.",
-        fen: "8/8/4kpp1/3p1b2/p6P/2B3P1/6K1/8 b - h3 0 47"
+        fen: "8/8/4kpp1/3p1b2/p6P/2B5/6P1/6K1 b - - 2 47"
       }
     ];
 
@@ -17945,59 +18079,6 @@ limitations under the License.
         descEs: "Mate en 3 para negras. La dama y la torre cooperan. Un brillante sacrificio de interferencia corta la torre blanca de la defensa del pasillo."
       },
 
-      // ── Famous game classics ──────────────────────────────────────────────
-      {
-        fen: "r3r1k1/ppq2ppp/1bpp1n2/8/2PP4/1P2PNP1/PBQ2PBP/R4RK1 b - - 0 1",
-        themes: ["tactic", "sacrifice", "initiative"], rating: 1700,
-        descEn: "Black to play. Inspired by Tal's style — a piece sacrifice opens the kingside with a 4-move forcing sequence.",
-        descEs: "Negras juegan. Inspirado en el estilo de Tal: un sacrificio de pieza abre el flanco de rey con una secuencia forzada de 4 movimientos."
-      },
-      {
-        fen: "r1b2rk1/2q1bppp/p2pp3/1p6/3BP3/1BN2Q2/PPP3PP/4RRK1 w - - 0 1",
-        themes: ["tactics", "discoveredAttack", "pin"], rating: 1750,
-        descEn: "White to play. A 4-move combination involving a discovered attack and a pin demolishes Black's position. Find it!",
-        descEs: "Blancas juegan. Una combinación de 4 movimientos con un ataque descubierto y una clavada destruye la posición negra. ¡Encuéntrala!"
-      },
-      {
-        fen: "2r3k1/1b3ppp/p3pn2/3p4/1p1P4/4BN1P/PP1QBPP1/4R1K1 b - - 0 1",
-        themes: ["sacrifice", "queenSacrifice", "tactics"], rating: 1800,
-        descEn: "Black to play. A queen sacrifice on g2 sets off a 4-move combination that wins material or forces checkmate.",
-        descEs: "Negras juegan. Un sacrificio de dama en g2 desencadena una combinación de 4 movimientos que gana material o fuerza el jaque mate."
-      },
-
-      // ── LEYENDAS: PARTIDAS HISTÓRICAS ────────────────────────────────────────
-      {
-        cat: 'historical',
-        nameEs: "🪙 La Lluvia de Oro — Marshall 1912",
-        nameEn: "🪙 The Golden Rain — Marshall 1912",
-        descEs: "Juegan negras — posición exacta del juego (movimiento 23). Frank Marshall sacrificó su dama en g3 contra Levitsky en Breslavia 1912 — los espectadores lanzaron monedas de oro al tablero. Juega Dxg3!! Desbloquea el trofeo 🪙 La Lluvia de Oro.",
-        descEn: "Black to move — exact game position (move 23). Frank Marshall sacrificed his queen on g3 against Levitsky in Breslau 1912 — spectators threw gold coins at the board. Play Qg3!! Unlocks the 🪙 Golden Rain trophy.",
-        fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23"
-      },
-      {
-        cat: 'historical',
-        nameEs: "💥 El Cañonazo — Vladimirov 1987",
-        nameEn: "💥 The Cannon Shot — Vladimirov 1987",
-        descEs: "Juegan blancas. Vladimirov sorprendió al mundo sacrificando el alfil en h6 contra Epishin en 1987 — iniciativa y coordinación por encima del material. Juega Axh6!! Desbloquea el trofeo 💥 El Cañonazo.",
-        descEn: "White to move. Vladimirov stunned the world by sacrificing the bishop on h6 against Epishin in 1987 — initiative and coordination over material. Play Bh6!! Unlocks the 💥 Cannon Shot trophy.",
-        fen: "r1b2k2/pp3pR1/p2b4/3p4/4B3/1q6/1P3PPP/1K1Q1R2 w - - 0 26"
-      },
-      {
-        cat: 'historical',
-        nameEs: "🚂 La Locomotora — Ortueta vs Sanz 1933",
-        nameEn: "🚂 The Locomotive — Ortueta vs Sanz 1933",
-        descEs: "Juegan negras — posición exacta (movimiento 31). En Madrid 1933, Sanz inmortaliza el sacrificio de torre en b2 para liberar peones pasados imparables. Juega Txb2!! Desbloquea el trofeo 🚂 La Locomotora.",
-        descEn: "Black to move — exact game position (move 31). In Madrid 1933, Sanz immortalized the rook sacrifice on b2 to unleash unstoppable passed pawns. Play Rxb2!! Unlocks the 🚂 Locomotive trophy.",
-        fen: "8/R1B5/1b6/6p1/2p5/2N2P2/1r2PPP1/6K1 b - - 0 31"
-      },
-      {
-        cat: 'historical',
-        nameEs: "🔥 Fuego en el Tablero — Shirov vs Topalov 1998",
-        nameEn: "🔥 Fire on the Board — Shirov vs Topalov 1998",
-        descEs: "Juegan negras — posición exacta (movimiento 47). Alexei Shirov jugó Axh3!! en Linares 1998 — una entrega de alfil tan precisa como estética. El rey blanco está en g2 y el alfil irá a h3. Desbloquea el trofeo 🔥 Fuego en el Tablero.",
-        descEn: "Black to move — exact game position (move 47). Alexei Shirov played Bh3!! in Linares 1998 — a bishop sacrifice as precise as it is beautiful. The white king stands on g2 and the bishop heads to h3. Unlocks the 🔥 Fire on the Board trophy.",
-        fen: "8/8/4kpp1/3p1b2/p6P/2B3P1/6K1/8 b - h3 0 47"
-      }
     ];
 
 
