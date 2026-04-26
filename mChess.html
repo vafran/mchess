@@ -3108,6 +3108,8 @@ limitations under the License.
         <button class="panel-tab-btn" onclick="renderFenList('opening')" id="tabFen-opening">Aperturas</button>
         <button class="panel-tab-btn" onclick="renderFenList('tactic')" id="tabFen-tactic">Táctica</button>
         <button class="panel-tab-btn" onclick="renderFenList('endgame')" id="tabFen-endgame">Finales</button>
+        <button class="panel-tab-btn" onclick="renderFenList('historical')" id="tabFen-historical"
+          style="background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.10)); border-color:rgba(251,191,36,0.4); color:var(--text);">📜 Leyendas</button>
       </div>
 
       <div id="fenLibraryList" style="overflow-y: auto; flex: 1; text-align: left; padding-right: 5px;">
@@ -3947,7 +3949,7 @@ limitations under the License.
           if (p !== ' ' && p.toUpperCase() !== 'P' && p.toUpperCase() !== 'K') nonPawnPieces++;
         }
       const all4 = ['secret_marshall_qg3','secret_vladimirov_bh6','secret_sanz_rxb2','secret_shirov_bh3'];
-      if (type === 'Q' && tr === 5 && tc === 6 && nonPawnPieces >= 8) unlockTrophy('secret_marshall_qg3');    // g3  — rich middlegame
+      if (type === 'Q' && tr === 5 && tc === 6 && nonPawnPieces >= 6) unlockTrophy('secret_marshall_qg3');    // g3  — rich middlegame
       if (type === 'B' && tr === 2 && tc === 7 && nonPawnPieces >= 6) unlockTrophy('secret_vladimirov_bh6');  // h6  — middlegame attack
       if (type === 'R' && tr === 6 && tc === 1 && nonPawnPieces >= 2 && nonPawnPieces <= 8 && motifPawnCheck('secret_sanz_rxb2', board, playerColor)) unlockTrophy('secret_sanz_rxb2');
       if (type === 'B' && tr === 5 && tc === 7 && nonPawnPieces <= 5 && motifPawnCheck('secret_shirov_bh3', board, playerColor)) unlockTrophy('secret_shirov_bh3');
@@ -8450,7 +8452,7 @@ limitations under the License.
     const HISTORICAL_MOVE_MOTIFS = [
       {
         id: 'marshall_qg3', move: 'Qg3', side: 'b', minPly: 12,
-        sq: [5, 6], minP: 8,          // rich middlegame — g3
+        sq: [5, 6], minP: 6,          // rich middlegame — g3
         nameEs: 'Marshall vs Levitsky (1912)', nameEn: 'Marshall vs Levitsky (1912)',
         commentEs: 'evoca el célebre sacrificio de dama de Marshall en Breslavia 1912, una idea táctica de gran imaginación.',
         commentEn: 'echoes Marshall\'s famous queen sacrifice in Breslau 1912, a deeply imaginative tactical idea.',
@@ -8495,15 +8497,28 @@ limitations under the License.
       return HISTORICAL_MOVE_MOTIFS.find(m => m.side === side && plyCount >= m.minPly && m.move === clean) || null;
     }
 
-    function detectHistoricalMotifFromHistory(currentHistory, brd) {
+    // strict=true (default): full gates for trophy system (material + pawn structure + minPly).
+    // strict=false: commentary mode — only requires notation match + side + sacrifice check.
+    //   Commentary and trophies are designed to fire together: commentary uses the same
+    //   sacrifice gate (attacked square) but skips material/pawn/minPly so it always
+    //   echoes any historically-shaped sacrifice regardless of game phase.
+    // moverColor: pass the actual color that moved (avoids parity bug when FEN starts with Black).
+    function detectHistoricalMotifFromHistory(currentHistory, brd, strict = true, moverColor = null) {
       if (!currentHistory || !currentHistory.length) return null;
       const lastMove = currentHistory[currentHistory.length - 1];
-      const mover = currentHistory.length % 2 === 1 ? 'w' : 'b';
-      const motif = detectHistoricalMotifByMoveNotation(lastMove, mover, currentHistory.length);
+      // If moverColor not provided, derive from parity (only correct for White-to-start games).
+      const mover = moverColor || (currentHistory.length % 2 === 1 ? 'w' : 'b');
+      const plyCount = currentHistory.length;
+      // In non-strict (commentary) mode skip the minPly gate so commentary always fires
+      // with the trophy — both just need: right piece, right square, square is attacked.
+      const motif = strict
+        ? detectHistoricalMotifByMoveNotation(lastMove, mover, plyCount)
+        : (HISTORICAL_MOVE_MOTIFS.find(m => m.side === mover && m.move === normalizeNotation(lastMove)) || null);
       if (!motif || !brd) return motif;
       // Sacrifice check: destination must be attacked by the opponent after the move
       if (motif.sq && !isSquareAttacked(motif.sq[0], motif.sq[1], mover, brd)) return null;
-      // Material gate: count non-pawn, non-king pieces to match historical game phase
+      if (!strict) return motif; // commentary only needs the sacrifice condition
+      // Strict: material gate + pawn structure (trophy system)
       let nonPawnPieces = 0;
       for (let r = 0; r < 8; r++)
         for (let c = 0; c < 8; c++) {
@@ -13694,7 +13709,7 @@ limitations under the License.
         openingName = perspectiveName(localizeOpeningName(openingMatch.name), colorWhoMoved);
         openingTechNote = localizeOpeningDescription(openingMatch.desc);
       }
-      const historicalMotif = detectHistoricalMotifFromHistory(currentHistory, board);
+      const historicalMotif = detectHistoricalMotifFromHistory(currentHistory, board, false, colorWhoMoved);
 
       // 🧠 NORMAL DICTIONARIES (3rd Person Narrative)
       const frasesSerias = {
@@ -14223,7 +14238,12 @@ limitations under the License.
         comment = getRnd(bookPhrases, 'book_theory');
       }
       else if (historicalMotif) {
-        comment = lang === 'en' ? getRnd([`Historical echo: **${lastMove}** recalls **${historicalMotif.nameEn}**.`], 'historical_note') : getRnd([`Eco histórico: **${lastMove}** recuerda a **${historicalMotif.nameEs}**.`], 'historical_note');
+        toneUsed = 'serious';
+        const _hm = historicalMotif;
+        comment = lang === 'en'
+          ? `⚡ **${lastMove}** ${_hm.commentEn} *(${_hm.nameEn})*`
+          : `⚡ **${lastMove}** ${_hm.commentEs} *(${_hm.nameEs})*`;
+        moveQuality = 0; // historical echo is its own annotation; don't double-up with quality label
       }
       else if (isCheck && moveQuality === -3) {
         // Check given but a piece is left hanging — don't combine contradictory messages
@@ -14412,7 +14432,7 @@ limitations under the License.
 
       // ── 1. OPENING THEORY ─────────────────────────────────────────────────
       if (history.length > 0) {
-        const motif = detectHistoricalMotifFromHistory(history, board);
+        const motif = detectHistoricalMotifFromHistory(history, board, true, turn === 'w' ? 'b' : 'w');
         if (motif) {
           notes.push({
             icon: '📚',
@@ -17717,6 +17737,40 @@ limitations under the License.
         descEn: "White to move. The a-pawn with wrong bishop can be a tricky draw.",
         fen: "k7/P7/K7/8/8/8/8/8 w - - 0 1"
       },
+
+      // ── LEYENDAS: PARTIDAS HISTÓRICAS ────────────────────────────────────────
+      {
+        cat: 'historical',
+        nameEs: "🪙 La Lluvia de Oro — Marshall 1912",
+        nameEn: "🪙 The Golden Rain — Marshall 1912",
+        descEs: "Juegan negras — posición exacta del juego (movimiento 23). Frank Marshall sacrificó su dama en g3 contra Levitsky en Breslavia 1912 — los espectadores lanzaron monedas de oro al tablero. Juega Dxg3!! Desbloquea el trofeo 🪙 La Lluvia de Oro.",
+        descEn: "Black to move — exact game position (move 23). Frank Marshall sacrificed his queen on g3 against Levitsky in Breslau 1912 — spectators threw gold coins at the board. Play Qg3!! Unlocks the 🪙 Golden Rain trophy.",
+        fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23"
+      },
+      {
+        cat: 'historical',
+        nameEs: "💥 El Cañonazo — Vladimirov 1987",
+        nameEn: "💥 The Cannon Shot — Vladimirov 1987",
+        descEs: "Juegan blancas. Vladimirov sorprendió al mundo sacrificando el alfil en h6 contra Epishin en 1987 — iniciativa y coordinación por encima del material. Juega Axh6!! Desbloquea el trofeo 💥 El Cañonazo.",
+        descEn: "White to move. Vladimirov stunned the world by sacrificing the bishop on h6 against Epishin in 1987 — initiative and coordination over material. Play Bh6!! Unlocks the 💥 Cannon Shot trophy.",
+        fen: "r1b2k2/pp3pR1/p2b4/3p4/4B3/1q6/1P3PPP/1K1Q1R2 w - - 0 26"
+      },
+      {
+        cat: 'historical',
+        nameEs: "🚂 La Locomotora — Ortueta vs Sanz 1933",
+        nameEn: "🚂 The Locomotive — Ortueta vs Sanz 1933",
+        descEs: "Juegan negras — posición exacta (movimiento 31). En Madrid 1933, Sanz inmortaliza el sacrificio de torre en b2 para liberar peones pasados imparables. Juega Txb2!! Desbloquea el trofeo 🚂 La Locomotora.",
+        descEn: "Black to move — exact game position (move 31). In Madrid 1933, Sanz immortalized the rook sacrifice on b2 to unleash unstoppable passed pawns. Play Rxb2!! Unlocks the 🚂 Locomotive trophy.",
+        fen: "8/R1B5/1b6/6p1/2p5/2N2P2/1r2PPP1/6K1 b - - 0 31"
+      },
+      {
+        cat: 'historical',
+        nameEs: "🔥 Fuego en el Tablero — Shirov vs Topalov 1998",
+        nameEn: "🔥 Fire on the Board — Shirov vs Topalov 1998",
+        descEs: "Juegan negras — posición exacta (movimiento 47). Alexei Shirov jugó Axh3!! en Linares 1998 — una entrega de alfil tan precisa como estética. El rey blanco está en g2 y el alfil irá a h3. Desbloquea el trofeo 🔥 Fuego en el Tablero.",
+        descEn: "Black to move — exact game position (move 47). Alexei Shirov played Bh3!! in Linares 1998 — a bishop sacrifice as precise as it is beautiful. The white king stands on g2 and the bishop heads to h3. Unlocks the 🔥 Fire on the Board trophy.",
+        fen: "8/8/4kpp1/3p1b2/p6P/2B3P1/6K1/8 b - h3 0 47"
+      }
     ];
 
     // 🎲 BASE DE DATOS DE PUZZLES ALEATORIOS (100 posiciones curadas)
@@ -17909,6 +17963,40 @@ limitations under the License.
         themes: ["sacrifice", "queenSacrifice", "tactics"], rating: 1800,
         descEn: "Black to play. A queen sacrifice on g2 sets off a 4-move combination that wins material or forces checkmate.",
         descEs: "Negras juegan. Un sacrificio de dama en g2 desencadena una combinación de 4 movimientos que gana material o fuerza el jaque mate."
+      },
+
+      // ── LEYENDAS: PARTIDAS HISTÓRICAS ────────────────────────────────────────
+      {
+        cat: 'historical',
+        nameEs: "🪙 La Lluvia de Oro — Marshall 1912",
+        nameEn: "🪙 The Golden Rain — Marshall 1912",
+        descEs: "Juegan negras — posición exacta del juego (movimiento 23). Frank Marshall sacrificó su dama en g3 contra Levitsky en Breslavia 1912 — los espectadores lanzaron monedas de oro al tablero. Juega Dxg3!! Desbloquea el trofeo 🪙 La Lluvia de Oro.",
+        descEn: "Black to move — exact game position (move 23). Frank Marshall sacrificed his queen on g3 against Levitsky in Breslau 1912 — spectators threw gold coins at the board. Play Qg3!! Unlocks the 🪙 Golden Rain trophy.",
+        fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23"
+      },
+      {
+        cat: 'historical',
+        nameEs: "💥 El Cañonazo — Vladimirov 1987",
+        nameEn: "💥 The Cannon Shot — Vladimirov 1987",
+        descEs: "Juegan blancas. Vladimirov sorprendió al mundo sacrificando el alfil en h6 contra Epishin en 1987 — iniciativa y coordinación por encima del material. Juega Axh6!! Desbloquea el trofeo 💥 El Cañonazo.",
+        descEn: "White to move. Vladimirov stunned the world by sacrificing the bishop on h6 against Epishin in 1987 — initiative and coordination over material. Play Bh6!! Unlocks the 💥 Cannon Shot trophy.",
+        fen: "r1b2k2/pp3pR1/p2b4/3p4/4B3/1q6/1P3PPP/1K1Q1R2 w - - 0 26"
+      },
+      {
+        cat: 'historical',
+        nameEs: "🚂 La Locomotora — Ortueta vs Sanz 1933",
+        nameEn: "🚂 The Locomotive — Ortueta vs Sanz 1933",
+        descEs: "Juegan negras — posición exacta (movimiento 31). En Madrid 1933, Sanz inmortaliza el sacrificio de torre en b2 para liberar peones pasados imparables. Juega Txb2!! Desbloquea el trofeo 🚂 La Locomotora.",
+        descEn: "Black to move — exact game position (move 31). In Madrid 1933, Sanz immortalized the rook sacrifice on b2 to unleash unstoppable passed pawns. Play Rxb2!! Unlocks the 🚂 Locomotive trophy.",
+        fen: "8/R1B5/1b6/6p1/2p5/2N2P2/1r2PPP1/6K1 b - - 0 31"
+      },
+      {
+        cat: 'historical',
+        nameEs: "🔥 Fuego en el Tablero — Shirov vs Topalov 1998",
+        nameEn: "🔥 Fire on the Board — Shirov vs Topalov 1998",
+        descEs: "Juegan negras — posición exacta (movimiento 47). Alexei Shirov jugó Axh3!! en Linares 1998 — una entrega de alfil tan precisa como estética. El rey blanco está en g2 y el alfil irá a h3. Desbloquea el trofeo 🔥 Fuego en el Tablero.",
+        descEn: "Black to move — exact game position (move 47). Alexei Shirov played Bh3!! in Linares 1998 — a bishop sacrifice as precise as it is beautiful. The white king stands on g2 and the bishop heads to h3. Unlocks the 🔥 Fire on the Board trophy.",
+        fen: "8/8/4kpp1/3p1b2/p6P/2B3P1/6K1/8 b - h3 0 47"
       }
     ];
 
@@ -17926,6 +18014,7 @@ limitations under the License.
       document.getElementById('tabFen-opening').textContent = en ? 'Openings' : 'Aperturas';
       document.getElementById('tabFen-tactic').textContent = en ? 'Tactics' : 'Táctica';
       document.getElementById('tabFen-endgame').textContent = en ? 'Endgames' : 'Finales';
+      document.getElementById('tabFen-historical').textContent = en ? '📜 Legends' : '📜 Leyendas';
       document.getElementById('fenModePvp').textContent = en ? '👫 2 Players' : '👫 2 Jugadores';
       document.getElementById('fenModeAi').textContent = en ? '🤖 vs AI' : '🤖 vs IA';
       document.getElementById('fenDiffEasy').textContent = en ? '🐣 Easy' : '🐣 Fácil';
@@ -18156,7 +18245,7 @@ limitations under the License.
       const en = currentLanguage === 'en';
       list.innerHTML = '';
 
-      ['all', 'opening', 'tactic', 'endgame'].forEach(cat => {
+      ['all', 'opening', 'tactic', 'endgame', 'historical'].forEach(cat => {
         const tab = document.getElementById(`tabFen-${cat}`);
         if (tab) {
           tab.classList.toggle('active', cat === category);
