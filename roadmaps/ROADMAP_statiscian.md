@@ -1,107 +1,107 @@
 # 🚀 ROADMAP: "THE STATISTICIAN" RELEASE
 
-## 🧠 PHASE 1: Data Structure (The Brain in LocalStorage)
+## 🧠 PHASE 1: Data Structure (The Brain in LocalStorage) ✅
 The goal of this phase is to create the data mold for the player and ensure it saves automatically.
 
-* **1.1 Create the `defaultProfile`:** A JSON object that will contain:
-    * `id` and `playerName` (e.g., "Player 1").
-    * `stats`: Global counters (`totalGames`, `totalUndos`, `hintsUsed`, `piecesCaptured`).
-    * `records`: `fastestWin` (fewest moves) and `highestEvalWin`.
-    * `bots`: A Win/Draw/Loss record separated by level (`easy`, `medium`, `hard`, `grandmaster`) — keys must match the game's internal difficulty strings exactly.
-    * `unlockedTrophies`: An empty array `[]` to store the IDs of earned trophies, each with an `id` and `unlockedAt` (ISO date string).
-* **1.2 Memory Manager:** Program the `loadProfile()` function (retrieves from `localStorage` when the app starts) and `saveProfile()` (overwrites `localStorage` whenever there's a change).
-
-> **Architecture note:** The localStorage key must be distinct from the existing `mchess_saved_game` key to avoid conflicts.
-
----
-
-## ⚡ PHASE 2: Event Interceptors (The Sensors)
-We need the chess engine to notify "The Statistician" when things happen on the board.
-
-* **2.1 Session Counters:** Temporary variables that reset at the start of each game via `init()`:
-    * `sessionUndos` — incremented on every undo.
-    * `sessionHints` — incremented on every Hawk Eye activation and every Professor button press (Analysis, What should I do?, Was it good?).
-    * `sessionMinEval` — tracks the *lowest* eval (in centipawns, from the player's perspective) seen during the game. Updated after every move via `evaluateBoard()`. Required for the `david_goliath` trophy.
-    * `sessionQueenBlundered` — boolean flag, set to `true` when the player's queen is captured on a square where it was not defended (SEE < 0 at capture time). Cleared to `false` if the queen was traded (opponent queen also off the board). Required for `oops_queen`.
-    * `sessionCastled` — boolean, set to `true` the first time the player castles. Required for `iron_castle`.
-    * `sessionKingMoved` — boolean, set to `true` if the player's king moves after castling. Required for `iron_castle`.
-
-* **2.2 Intercept Buttons:** Wire up the session counters:
-    * `undoMove()` → `sessionUndos++`
-    * `toggleHawksEye()` → `sessionHints++`
-    * `analyzePosition()`, `requestBestMove()`, `analyzeLastMove()` → `sessionHints++` each
-
-* **2.3 End-Game Hook:** In the function where the game detects Checkmate or a Draw, inject a call to `updateMatchStats(result, difficulty, movesCount)` which:
-    * Updates `profile.bots[difficulty]` W/D/L record.
-    * Updates `profile.stats` global counters.
-    * Updates `profile.records` if applicable (fastest win, highest eval win).
-    * Calls `checkTrophyUnlocks(result, difficulty, movesCount)`.
-    * Calls `saveProfile()`.
+* **1.1 Create the `defaultProfile`:** A JSON object that contains:
+    * `id` and `playerName` (editable inline in the profile modal).
+    * `stats`: Global counters (`totalGames`, `totalWins`, `totalDraws`, `totalLosses`, `totalUndos`, `hintsUsed`, `piecesCaptured`).
+    * `records`: `fastestWin` (fewest moves) and `highestEvalWin` (capped at 2000 cp in display).
+    * `bots`: Win/Draw/Loss record separated by level (`easy`, `medium`, `hard`, `grandmaster`).
+    * `unlockedTrophies`: Array of `{ id, unlockedAt }` (ISO date string).
+* **1.2 Memory Manager:** `loadProfile()` (retrieves from `localStorage` on startup) and `saveProfile()` (overwrites `localStorage` on every change).
+    * localStorage key: `mchess_player_profile` (distinct from `mchess_saved_game`).
 
 ---
 
-## 🏆 PHASE 3: The Trophy Dictionary (Total Gamification)
-This is the official list we will implement. Each trophy has an ID, Name, Description, and unlock condition.
+## ⚡ PHASE 2: Event Interceptors (The Sensors) ✅
+Session variables reset in `init()`. All counters are per-game.
+
+* **Session Counters:**
+    * `sessionUndos` — incremented in `undoMove()`.
+    * `sessionHints` — incremented on Hawk Eye, Analysis, What should I do?, Was it good?.
+    * `sessionMinEval` — lowest eval (cp, player's perspective) seen during the game.
+    * `sessionQueenBlundered` — boolean, set when opponent captures the player's queen.
+    * `sessionCastled` — boolean, set on the player's first castle.
+    * `sessionKingMoved` — boolean, set if king moves after castling.
+    * `sessionEnPassantCaptured` — boolean, set when player captures en passant.
+    * `sessionPromotedToKnight` — boolean, set when player promotes a pawn to a knight.
+
+* **End-Game Hook:** `updateMatchStats(result, difficulty, movesCount)`:
+    * Guarded by `sessionGameRecorded` (exactly-once semantics).
+    * `sessionPendingResult` stored at entry so `reviewGame()` can trigger it defensively.
+    * Try-catch around `evaluateBoard()` (can throw in checkmate positions).
+    * Updates `profile.bots[difficulty]` W/D/L, global stats, records, then calls `checkTrophyUnlocks()` and `saveProfile()`.
+
+* **`reviewGame()` guard:** Calls `updateMatchStats` if stats were not yet recorded (fixes the case where the player clicks Review instead of New Game after checkmate).
+
+---
+
+## 🏆 PHASE 3: The Trophy Dictionary ✅
+25 trophies across 4 categories. `unlockTrophy(id)` is idempotent and fires a toast.
+`migrateProfileTrophies()` runs on `loadProfile()` to retroactively grant milestone trophies derivable from existing W/D/L data.
 
 **🏅 Category 1: Progression & Milestones**
-* `first_blood` - **First Blood:** Win your first game against any bot.
-* `chicken_hunter` - **Chicken Hunter:** Defeat the Easy level (Little Chick) 5 times.
-* `fried_chicken` - **Fried Chicken:** Defeat the Easy level in under 20 moves.
-* `graduation` - **The Graduation:** Defeat the Medium level (Student) for the first time.
-* `magic_trick` - **Magic Trick:** Defeat the Hard level (The Magician) for the first time.
-* `king_slayer` - **The King Slayer:** Defeat the Grandmaster level (The Wise King) for the first time.
+* `first_blood` 🩸 — **Primera Sangre:** Win your first game against any bot.
+* `chicken_hunter` 🐔 — **Cazador de Pollitos:** Defeat Easy 5 times.
+* `fried_chicken` 🍗 — **Pollo Frito:** Defeat Easy in under 20 moves (≤40 half-moves).
+* `graduation` 🎓 — **La Graduación:** Defeat Medium for the first time.
+* `magic_trick` 🎩 — **Truco de Magia:** Defeat Hard for the first time.
+* `king_slayer` 👑 — **El Mata Reyes:** Defeat Grandmaster for the first time.
+* `first_en_passant` 👣 — **¡Al Paso!:** Perform your first ever en passant capture. Fires immediately when it happens (not at end of game).
 
 **🧠 Category 2: Technical & Late-Game Challenges**
-* `pure_pride` - **Pure Pride:** Win against Medium or higher with `sessionUndos === 0` AND `sessionHints === 0`.
-* `iron_castle` - **Iron Castle:** Win a game where `sessionCastled === true` AND `sessionKingMoved === false` (castled and king never moved again).
-* `david_goliath` - **David vs Goliath:** Win a game where `sessionMinEval` reached −500cp or worse at some point (severe disadvantage). Requires the `sessionMinEval` tracker from Phase 2.1.
-* `illusion_breaker` - **Illusion Breaker:** Force a draw (Stalemate or 3-fold repetition) against The Magician.
-* `no_tricks` - **No Tricks Allowed:** Defeat The Magician with `sessionHints === 0`.
-* `royal_endurance` - **Royal Endurance:** Survive for more than 60 moves against The Wise King.
-* `the_immortal` - **The Immortal:** Defeat The Wise King with `sessionUndos === 0`.
-* `usurper` - **The Usurper:** Checkmate The Wise King using a pawn (final move is a pawn move that delivers checkmate — detectable from the last SAN entry).
+* `pure_pride` 🧠 — **Orgullo Puro:** Win vs Medium or higher with 0 undos AND 0 hints.
+* `iron_castle` 🏰 — **Castillo de Hierro:** Win after castling without ever moving the king again.
+* `david_goliath` 🪨 — **David vs Goliat:** Win a game where `sessionMinEval` reached −500 cp or worse.
+* `illusion_breaker` 🎭 — **Rompe Ilusiones:** Force a draw (stalemate or 3-fold) against Hard.
+* `no_tricks` 🚫 — **Sin Trucos:** Defeat Hard with 0 hints.
+* `royal_endurance` ⏳ — **Resistencia Real:** Survive more than 60 full moves against Grandmaster.
+* `the_immortal` 💎 — **El Inmortal:** Defeat Grandmaster with 0 undos.
+* `usurper` ♟️ — **El Usurpador:** Checkmate Grandmaster with a pawn (last SAN entry is a pawn move).
 
-**🐣 Category 3: Easter Eggs (Hidden Trophies)**
-* `panic_mode` - **Don't Panic!:** Win a game where `sessionUndos > 5`.
-* `dumb_dumber` - **Dumb and Dumber:** End in a draw (Stalemate/Draw) against the Easy level.
-* `oops_queen` - **Oops, My Queen?:** Win a game where `sessionQueenBlundered === true` (queen was lost without trade). Requires the `sessionQueenBlundered` tracker from Phase 2.1.
+**🐣 Category 3: Easter Eggs (hidden — show "???" until unlocked)**
+* `dumb_dumber` 🤦 — **Tonto y Más Tonto:** Draw against Easy.
+* `oops_queen` 😬 — **¿Mi Dama?:** Win after losing your queen without compensation.
+* `ancient_law` 👻 — **La Ley Antigua:** Win a game where you captured en passant.
+* `the_rebel` ♞ — **El Rebelde:** Promote a pawn to a Knight and win.
+* `night_owl` 🦉 — **Noctámbulo:** Win a game between midnight and 4 AM.
 
-**📜 Category 4: The Historians (Real-Time triggers)**
+**📜 Category 4: The Historians (real-time — sacrifice required)**
 
-Triggered during the game, not at end-of-game. Each requires the player to play a specific move that is *also a sacrifice* — i.e., the piece lands on a square where SEE < 0 (it can be captured for a net loss). A purely safe move to that square does not qualify.
+Triggered during the game when the player moves a specific piece to a specific square **and** that square is attacked by the opponent after the move (SEE < 0 equivalent — `isSquareAttacked` on the post-move board). Additionally gated by a **material count** (non-pawn, non-king pieces) that matches the historical game's phase:
 
-* `secret_marshall_qg3` - **Golden Rain:** Play a queen sacrifice to g3 (Qg3, SEE < 0).
-* `secret_vladimirov_bh6` - **The Cannon Shot:** Play a bishop sacrifice to h6 (Bh6, SEE < 0).
-* `secret_sanz_rxb2` - **The Locomotive:** Play a rook sacrifice to b2 (Rxb2, SEE < 0).
-* `secret_shirov_bh3` - **Fire on Board:** Play a bishop sacrifice to h3 (Bh3, SEE < 0).
-* `grand_historian` - **The Grand Historian (Platinum):** Unlock all 4 historical motifs above.
+* `secret_marshall_qg3` 🌧️ — **La Lluvia de Oro:** Queen to g3, attacked, `nonPawnPieces >= 8` (rich middlegame). Echoes Marshall vs Levitsky, Breslau 1912.
+* `secret_vladimirov_bh6` 💥 — **El Cañonazo:** Bishop to h6, attacked, `nonPawnPieces >= 6` (middlegame). Echoes Vladimirov vs Epishin, 1987.
+* `secret_sanz_rxb2` 🚂 — **La Locomotora:** Rook to b2, attacked, `2 <= nonPawnPieces <= 8` (endgame). Echoes Sanz vs Ortueta, Madrid 1933.
+* `secret_shirov_bh3` 🔥 — **Fuego en el Tablero:** Bishop to h3, attacked, `nonPawnPieces <= 5` (deep endgame). Echoes Shirov vs Topalov, Linares 1998.
+* `grand_historian` 📜 — **El Gran Historiador (Platino):** Unlock all 4 historian trophies.
 
-> **Detection:** check after every human `makeMove()`. If the move's destination square matches and main-thread SEE returns < 0 for that square, call `unlockTrophy(id)`.
+> **Detection (both trophies and commentary):** `checkHistorianTrophies()` is called after every human `makeMove()`. `detectHistoricalMotifFromHistory()` (commentary) accepts an optional `brd` parameter; both share the same `sq`/`minP`/`maxP` fields from `HISTORICAL_MOVE_MOTIFS`. The `minPly` gate (10–24 half-moves depending on motif) prevents false positives in the opening. Commentary fires on `addCommentaryEntry` and in the Professor's analysis panel.
 
 ---
 
-## 🎨 PHASE 4: User Interface (The Showcase)
-The player needs a place to see their achievements.
+## 🎨 PHASE 4: User Interface (The Showcase) ✅
 
-* **4.1 Profile Modal:** A pop-up overlay `div` accessible from the main menu.
+* **4.1 Profile Modal:** Overlay `div`, opened via a button in the main menu and the in-game menu (crown icon).
 
-* **4.2 Summary Panel:** Display:
-    * **Avatar** — the character portrait of the highest bot level defeated so far (Easy → Little Chick art, Medium → Student art, Hard → Magician art, Grandmaster → Wise King art). Falls back to a default pawn icon if no bot has been defeated yet.
-    * **Overall winrate** (%) across all games.
-    * **Per-bot W/D/L bars** — one row per difficulty level showing wins, draws, losses.
+* **4.2 Summary Panel:**
+    * **Avatar** — portrait of the highest bot level defeated (Easy → Chick, Medium → Student, Hard → Magician, Grandmaster → Wise King). Falls back to a default pawn icon.
+    * **Editable player name** — inline `<input>` with dashed underline hint, saves on blur/Enter via `saveProfileName()`. Defaults to "Player 1".
+    * **Stats chips** — Games, Wins, Draws, Losses.
+    * **Records** — Fastest win (moves) and Highest eval win (cp, capped at 2000 in display).
+    * **Per-bot W/D/L bars** — one row per difficulty, color-coded (green/amber/red segments).
 
-* **4.3 The Trophy Cabinet:** A CSS grid iterating over the full trophy list from Phase 3:
+* **4.3 The Trophy Cabinet:** CSS grid iterating over `TROPHY_DEFS`:
     * **Unlocked:** full colour icon + name + unlock date.
     * **Locked (visible):** greyscale icon + name + description visible.
     * **Hidden Easter Egg (locked):** shows only "???" — name and description hidden until unlocked.
 
-* **4.4 Toast Notifications:** Reuse the existing `showToast()` / `toastContainer` infrastructure already in the game. Call `showToast(trophyUnlockedMessage)` from `unlockTrophy(id)` whenever a new trophy is earned. No new toast system needed.
-
-> **i18n note:** All trophy names and descriptions need entries in both `es:` and `en:` blocks of the `I18N` object. That is approximately 50 new keys. Add them before implementing the UI so the modal is bilingual from day one.
+* **4.4 Toast Notifications:** `showToast()` called from `unlockTrophy()` with `durationMs = 4500`. Toast fade-out is dynamic — the `toastOut` animation delay is computed as `durationMs - 400ms` so the visible duration matches the JS timeout exactly.
 
 ---
 
-## 💾 PHASE 5: Portability (Export / Import)
+## 💾 PHASE 5: Portability (Export / Import) 🔲
 The cherry on top to make this a truly professional web app.
 
 * **5.1 Export Data:** A button in the Profile that takes `JSON.stringify(currentProfile)`, creates a text `Blob`, generates a `<a download="airin_save.json">` link, and triggers a click programmatically.
@@ -111,10 +111,10 @@ The cherry on top to make this a truly professional web app.
 
 ## 📋 Implementation Order
 
-1. **Phase 1** — data structure + localStorage manager (no UI, testable via console)
-2. **Phase 2** — session counters + end-game hook (no UI, testable via console)
-3. **Phase 3** — `checkTrophyUnlocks()` + `unlockTrophy()` logic (toast fires, no cabinet yet)
-4. **Phase 4** — profile modal + trophy cabinet UI
-5. **Phase 5** — export / import buttons
+1. ✅ **Phase 1** — data structure + localStorage manager
+2. ✅ **Phase 2** — session counters + end-game hook
+3. ✅ **Phase 3** — `checkTrophyUnlocks()` + `unlockTrophy()` logic
+4. ✅ **Phase 4** — profile modal + trophy cabinet UI
+5. 🔲 **Phase 5** — export / import buttons
 
 Each phase is independently testable before the next begins.
