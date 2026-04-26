@@ -6,6 +6,21 @@ Format: version · size · what changed.
 [Go to README.md](../README.md)
 
 ---
+## v2.24.0 — The Statistician
+**~16,500 lines · ~860 KB**
+
+### Player Profile & Game Tracking
+- **Persistent Player Profiles:** Players are now prompted for a name on their first run. Persistent profiles track total games, win rates, and records.
+- **Game Tracking:** Real-time tracking of win/loss streaks (current and best) and historical match data.
+- **Hall of Records:** Airin now tracks your fastest wins and your highest evaluation advantages.
+- **Portability:** Added functionality to export and import profile data and game states via save files.
+
+### The Trophy Cabinet
+- **42 Unlockable Achievements:** A brand new achievement system featuring 42 unique unlockable trophies across 8 categories (Progression, Technical, Speed & Challenge, Streaks & Loyalty, Learning, Fun & Silly, The Historians, and hidden Easter Eggs).
+- **In-Game Celebrations:** Trophies trigger real-time, non-intrusive popup celebrations during gameplay when conditions are met.
+- **Historical Motifs Detection:** The engine now recognizes and rewards famous historical sacrifices (e.g., Marshall's "Golden Rain") if played in-game.
+
+---
 ## v2.23.0 — Production Release
 **~16,500 lines · ~860 KB**
 
