@@ -6220,6 +6220,8 @@ limitations under the License.
       const toast = document.createElement('div');
       toast.className = 'toast';
       toast.textContent = msg;
+      const outDelay = Math.max(0, durationMs - 400);
+      toast.style.animation = `toastIn 0.4s ease, toastOut 0.4s ease ${outDelay}ms forwards`;
       container.appendChild(toast);
       setTimeout(() => toast.remove(), durationMs);
     }
