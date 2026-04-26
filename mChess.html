@@ -4140,6 +4140,12 @@ limitations under the License.
           sessionEnPassantCaptured: !!sessionEnPassantCaptured,
           sessionPromotedToKnight: !!sessionPromotedToKnight,
           sessionKnightEverMoved: !!sessionKnightEverMoved,
+          sessionNoMaterialLost: !!sessionNoMaterialLost,
+          sessionLastCapturePiece: sessionLastCapturePiece,
+          sessionMirrorCount,
+          sessionPawnsMovedFromStart,
+          sessionEnPassantCount,
+          sessionFirstCastle: !!sessionFirstCastle,
           undoStack: undoStack ? [...undoStack] : [],
           ts: Date.now()
         };
@@ -4198,6 +4204,12 @@ limitations under the License.
         sessionEnPassantCaptured  = !!s.sessionEnPassantCaptured;
         sessionPromotedToKnight   = !!s.sessionPromotedToKnight;
         sessionKnightEverMoved    = !!s.sessionKnightEverMoved;
+        sessionNoMaterialLost     = s.sessionNoMaterialLost !== undefined ? !!s.sessionNoMaterialLost : true;
+        sessionLastCapturePiece   = s.sessionLastCapturePiece || null;
+        sessionMirrorCount        = s.sessionMirrorCount || 0;
+        sessionPawnsMovedFromStart = s.sessionPawnsMovedFromStart || 0;
+        sessionEnPassantCount     = s.sessionEnPassantCount || 0;
+        sessionFirstCastle        = !!s.sessionFirstCastle;
         const diffCfg = DIFF_SETTINGS[currentDifficulty];
         if (diffCfg) { aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit; }
         undoStack = Array.isArray(s.undoStack) ? s.undoStack : [];
@@ -6007,13 +6019,18 @@ limitations under the License.
         lastTo: lastTo ? [...lastTo ] : null,
         halfMoveClock,
         positionHashes: [...positionHashes],
-        // Session booleans snapshot — restored on undo so flags don't persist past the move they were set on
-        _sessionQueenBlundered:   sessionQueenBlundered,
-        _sessionCastled:          sessionCastled,
-        _sessionKingMoved:        sessionKingMoved,
-        _sessionKnightEverMoved:  sessionKnightEverMoved,
+        // Session snapshot — restored on undo so flags/counts don't persist past the move they were set on
+        _sessionQueenBlundered:    sessionQueenBlundered,
+        _sessionCastled:           sessionCastled,
+        _sessionKingMoved:         sessionKingMoved,
+        _sessionKnightEverMoved:   sessionKnightEverMoved,
         _sessionEnPassantCaptured: sessionEnPassantCaptured,
-        _sessionPromotedToKnight: sessionPromotedToKnight,
+        _sessionPromotedToKnight:  sessionPromotedToKnight,
+        _sessionNoMaterialLost:    sessionNoMaterialLost,
+        _sessionLastCapturePiece:  sessionLastCapturePiece,
+        _sessionMirrorCount:       sessionMirrorCount,
+        _sessionPawnsMovedFromStart: sessionPawnsMovedFromStart,
+        _sessionEnPassantCount:    sessionEnPassantCount,
       });
       if (undoStack.length > MAX_UNDO_STATES) undoStack.shift();
 
@@ -6790,12 +6807,17 @@ limitations under the License.
       positionHashes = s.positionHashes ? [...s.positionHashes] : [];
       // Restore session booleans to pre-move state (prevents flags set by undone moves from persisting)
       if ('_sessionQueenBlundered' in s) {
-        sessionQueenBlundered    = s._sessionQueenBlundered;
-        sessionCastled           = s._sessionCastled;
-        sessionKingMoved         = s._sessionKingMoved;
-        sessionKnightEverMoved   = s._sessionKnightEverMoved;
-        sessionEnPassantCaptured = s._sessionEnPassantCaptured;
-        sessionPromotedToKnight  = s._sessionPromotedToKnight;
+        sessionQueenBlundered      = s._sessionQueenBlundered;
+        sessionCastled             = s._sessionCastled;
+        sessionKingMoved           = s._sessionKingMoved;
+        sessionKnightEverMoved     = s._sessionKnightEverMoved;
+        sessionEnPassantCaptured   = s._sessionEnPassantCaptured;
+        sessionPromotedToKnight    = s._sessionPromotedToKnight;
+        sessionNoMaterialLost      = s._sessionNoMaterialLost;
+        sessionLastCapturePiece    = s._sessionLastCapturePiece;
+        sessionMirrorCount         = s._sessionMirrorCount;
+        sessionPawnsMovedFromStart = s._sessionPawnsMovedFromStart;
+        sessionEnPassantCount      = s._sessionEnPassantCount;
       }
       selected = null; legalMoves = [];
       document.getElementById('statusBanner').classList.remove('show');
