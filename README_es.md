@@ -115,7 +115,7 @@ Al abrir Airin por primera vez te pedirá tu nombre. A partir de ahí registra t
 - **Nombre editable** — pulsa sobre tu nombre en el perfil para cambiarlo en cualquier momento
 
 <img src="screenshots/ES/profile_stats.png" alt="Perfil de Jugador" width="500" />
-![alt text](image.png)
+
 
 ### 🏆 La Vitrina de Trofeos
 
