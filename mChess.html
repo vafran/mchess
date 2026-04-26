@@ -3048,6 +3048,18 @@ limitations under the License.
     </div>
   </div>
 
+  <!-- Profile Reset Confirmation Modal -->
+  <div class="confirm-modal" id="confirmProfileResetModal" style="z-index: 500;">
+    <div class="confirm-box">
+      <h3 id="confirmProfileResetTitle"></h3>
+      <p id="confirmProfileResetDesc"></p>
+      <div class="confirm-buttons">
+        <button class="btn btn-secondary" id="confirmProfileResetCancel" onclick="hideProfileResetConfirm()"></button>
+        <button class="btn btn-primary" id="confirmProfileResetOk" style="background: var(--danger);" onclick="executeProfileReset()"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings Change Confirmation Modal -->
   <div class="confirm-modal" id="confirmSettingsModal" style="z-index: 300;">
     <div class="confirm-box">
@@ -4296,6 +4308,11 @@ limitations under the License.
         profileNone: '—',
         profileExport: '💾 Guardar partida',
         profileImport: '📂 Cargar partida',
+        profileReset: '❌ Borrar Perfil',
+        profileResetTitle: '⚠️ ¿Borrar Perfil?',
+        profileResetDesc: '¿Estás seguro de que quieres borrar todos tus trofeos y estadísticas? ¡Se recomienda guardar tu perfil actual (Exportar) antes de hacer esto!',
+        profileResetCancel: 'Cancelar',
+        profileResetOk: 'Sí, borrar perfil',
         btnSaveShort: '💾 Guardar',
         btnLoadShort: '📂 Cargar',
         profileImportSuccess: '✅ Partida cargada. Recargando…',
@@ -4393,6 +4410,11 @@ limitations under the License.
         profileNone: '—',
         profileExport: '💾 Save game',
         profileImport: '📂 Load game',
+        profileReset: '❌ Reset Profile',
+        profileResetTitle: '⚠️ Reset Profile?',
+        profileResetDesc: 'Are you sure you want to delete all your trophies and statistics? It is highly recommended to save your current profile (Export) before doing this!',
+        profileResetCancel: 'Cancel',
+        profileResetOk: 'Yes, reset profile',
         btnSaveShort: '💾 Save',
         btnLoadShort: '📂 Load',
         profileImportSuccess: '✅ Game loaded. Reloading…',
@@ -6537,6 +6559,7 @@ limitations under the License.
             ${_('profileImport')}
             <input type="file" accept=".airin" style="display:none" onchange="importProfile(this)">
           </label>
+          <button class="profile-port-btn" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" onclick="confirmResetProfile()">${_('profileReset')}</button>
         </div>
         <button class="profile-close-btn" onclick="closeProfileModal()">${_('profileClose')}</button>
       `;
@@ -6650,6 +6673,24 @@ limitations under the License.
       };
       reader.readAsText(file);
       input.value = ''; // reset so the same file can be re-imported
+    }
+    function confirmResetProfile() {
+      document.getElementById('confirmProfileResetTitle').textContent = t('profileResetTitle');
+      document.getElementById('confirmProfileResetDesc').textContent = t('profileResetDesc');
+      document.getElementById('confirmProfileResetCancel').textContent = t('profileResetCancel');
+      document.getElementById('confirmProfileResetOk').textContent = t('profileResetOk');
+      document.getElementById('confirmProfileResetModal').classList.add('show');
+    }
+
+    function hideProfileResetConfirm() {
+      document.getElementById('confirmProfileResetModal').classList.remove('show');
+    }
+
+    function executeProfileReset() {
+      localStorage.removeItem(PROFILE_KEY);
+      // Also remove current game state if it exists, to start completely fresh
+      localStorage.removeItem('mchess_saved_game');
+      location.reload();
     }
 
     // Show a character reaction bubble after the game ends
