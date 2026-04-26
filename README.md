@@ -159,44 +159,24 @@ Three styles, with labels now visible under the slider:
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
 
-## What's new in v2.23.0 — *Production Release*
+## What's new in v2.24.0 — *The Statistician*
 
-Replaces v2.22.5 (~1732 ELO, 27.5%) as the production version. Includes ten engine patches, a full UI redesign, and significant pedagogical improvements.
+Welcome to Airin v2.24.0! This massive update introduces **The Statistician**, giving Airin a memory and bringing your chess journey to life.
 
-### 🚀 Engine: Ten Cumulative Improvements (v2.22.6 → v2.22.15)
+### 📊 Player Profiles & Tracking
+* **Your Profile:** Upon starting, Airin will now ask for your name. You can view your lifetime statistics, including total games played, win/loss/draw rates, and your best and current win streaks.
+* **Hall of Records:** Airin now tracks your fastest wins and your highest evaluation advantages.
+* **Save & Load:** You can now export your entire profile and game progress to a file and load it later on any device.
 
-Each patch was validated with a dedicated tournament before inclusion.
+### 🏆 The Trophy Cabinet
+* **42 Unlockable Achievements:** We've added a massive Trophy Cabinet! Earn rewards for everything from your first check and pawn promotion, to winning in under 15 moves, to pulling off crazy comebacks.
+* **Hidden Easter Eggs:** There are 8 secret trophies tucked away. You won't know what they are until you accidentally (or intentionally) trigger them.
+* **The Historians:** Recreate legendary moments from chess history! If you manage to find the same brilliant sacrifices played by masters like Marshall or Vladimirov, Airin will recognize it and reward you.
 
-- **v2.22.6** — Rule of the Square: phantom evaluation bug removed (was awarding up to +942cp for easily-blockable passed pawns in any endgame)
-- **v2.22.7/10** — Anti-blunder filter: BLOCKED(mate) gate added; BLOCKED(worse) gate refined
-- **v2.22.8/9** — PASS_DANGER: asymmetry bug fixed (was only penalising White); base value reduced to prevent marathon draws
-- **v2.22.11** — Anti-blunder filter extended to losing captures (SEE < 0 on captures)
-- **v2.22.12** — King Centralization Gate: endgame king activity bonus gated to genuine endgames only
-- **v2.22.13** — Repetition blindness fixed: root moves repeating the position 2+ times now score −9000; confirmed 266 firings across a 32-game tournament
-- **v2.22.14** — Anti-blunder filter BLOCKED gate lowered from 100cp to 50cp
-- **v2.22.15** — Rook on 7th rank: +40cp MG / +25cp EG tapered bonus
+### 🎉 In-Game Celebrations
+* When you unlock an achievement, a celebration popup will appear in real-time during your game. Airin now remembers your victories. Let's see how many trophies you can collect!
 
-**Tournament results (40 games each, PC, UCI_Elo 1750):**
-- Wizard level (15s/move): W11 D7 L22 — **36.3% — ~1652 ELO [CI: 1542–1762]**
-- Wise King level (30s/move): W21 D7 L12 — **61.3% — ~1830 ELO [CI: 1721–1938]**
-
-### 🎓 Teaching & Commentator Improvements
-
-- **Blunder detection in the opening** — the commentator now flags hanging pieces from move 1, not just move 11+. Training Mode also warns when the player ignores an already-hanging rook or queen
-- **PGN disambiguation** — SAN notation now correctly emits `Nbd2`/`Rfe1` when two pieces of the same type can reach the same square; Lichess/Chess.com import no longer rejects exported games
-- **Advantage bar accuracy** — sigmoid (tanh) mapping replaces the old linear scale; matches Lichess behaviour and no longer saturates at ±700cp
-- **Graded move quality (7 levels)** — blunder / mistake / inaccuracy / neutral / nice / good / very good / brilliant, each with distinct emoji and message
-- **Commentator: expanded playful mode** — richer phrase sets for all piece types (moves, captures, checks, blunders) in both Spanish and English
-- **Commentator: no quality annotation in funny mode** — humorous and technical commentary no longer appear on the same move
-- **Coach false-positive fixes** — three targeted fixes to "Was it good?": sacrifice gate, worstEval guard, threshold tightened
-
-### 🖥️ UI Redesign
-
-- **Move carousel** — compact horizontal scroll strip below the board replaces the sidebar list
-- **Responsive layout overhaul** — board + advantage bar on row 1, move strip on row 2; mobile stacks vertically
-- **Top bar redesigned** — title integrated, hamburger moved inline, cleaner vertical space
-- **Opening style tags** — each opening suggestion now shows a colour-coded style badge (⚡ Aggressive, 🧱 Solid, 🔀 Flexible, etc.)
-- **Dynamic 📖 book-move phrases** — varied commentary when a book move is played
+*(For the complete engine updates from v2.23.0 and prior, see the full Changelog).*
 
 ---
 
@@ -348,4 +328,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Airin Chess v2.22.14 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*
+*Airin Chess v2.24.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*

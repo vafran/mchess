@@ -1,0 +1,208 @@
+# 🏆 Airin Chess — Trophy Guide
+
+> **42 trophies total** | Hidden Easter Eggs marked with 🔒  
+> Version: v2.23.0+
+
+---
+
+## 🏅 Progression
+*Milestones you'll unlock naturally as you play and improve.*
+
+| Icon | Trophy (ES / EN) | How to unlock |
+|------|-----------------|---------------|
+| 🩸 | **First Blood** | Win your very first game in any mode. |
+| 🍗 | **Chicken Hunter** | Defeat the Easy bot (Pollito) 5 times total. |
+| ⚡ | **Fried Chicken** | Defeat the Easy bot in under 20 moves. |
+| 🎓 | **The Graduation** | Defeat the Student bot (Medium) for the first time. |
+| 🎩 | **Magic Trick** | Defeat the Magician bot (Hard) for the first time. |
+| 👑 | **The King Slayer** | Defeat the Wise King (Master) for the first time. |
+| 👣 | **En Passant!** | Perform your first en passant capture in any game. |
+| 🔔 | **Check!** | Give check for the very first time. |
+| 👑 | **I Am Queen!** | Promote a pawn to any piece for the first time. |
+| 🏰 | **My Castle!** | Castle (kingside or queenside) for the first time ever. |
+| 👻 | **Ghost Capture!** | Capture en passant for the very first time ever. |
+
+> **Tips:**
+> - The first five are earned by just playing regularly. Start on Easy and work your way up.
+> - **Check!** fires on your very first check delivery — even on move 1 if you find a Scholar's Mate setup.
+> - **I Am Queen!** fires regardless of what piece you promote to.
+> - **En Passant!** and **Ghost Capture!** are different trophies — the first one tracks per-game, the second is a lifetime first.
+
+---
+
+## 🧠 Technical
+*Achievements for high-quality, disciplined play.*
+
+| Icon | Trophy (ES / EN) | How to unlock |
+|------|-----------------|---------------|
+| 🛡️ | **Pure Pride** | Win a full game on Medium or harder **without** using Undo or asking the Coach for help. |
+| 🏰 | **Iron Castle** | Castle during a game and then **never move your king again** — and win. |
+| 🗿 | **David vs Goliath** | Win a game where your position reached −500 centipawns (eval bar near the bottom) or worse. |
+| 🌀 | **Illusion Breaker** | Force a draw (stalemate or 3-fold repetition) against the Hard bot (Magician). |
+| 🧩 | **No Tricks Allowed** | Defeat the Hard bot (Magician) without using any Coach hints. |
+| ⏳ | **Royal Endurance** | Survive more than 60 moves in a single game against the Wise King (Master). |
+| 💎 | **The Immortal** | Defeat the Wise King without ever pressing Undo. |
+| ♟️ | **The Usurper** | Deliver checkmate to the Wise King using a **pawn** as the mating piece. |
+
+> **Tips:**
+> - **Iron Castle**: castle early and play a positional game. Avoid king walks!
+> - **David vs Goliath**: play a game where you fall behind, then mount a comeback. Watch the eval bar go deep red and then come back.
+> - **The Usurper**: advance a passed pawn to the 7th rank and use it for checkmate. Works best in endgames with a back-rank setup.
+
+---
+
+## ⚡ Speed & Challenge
+*For players who like to play fast or push through adversity.*
+
+| Icon | Trophy (ES / EN) | How to unlock |
+|------|-----------------|---------------|
+| ⚡ | **Lightning!** | Win in **15 moves or fewer** on Medium difficulty or harder. |
+| 💪 | **Comeback Kid** | Win a game after being down **400 centipawns** or more at any point. |
+| ♟️ | **Chess Clinic** | Win a game **without losing a single piece** (pawns included). |
+
+> **Tips:**
+> - **Lightning!**: Scholar's Mate or Italian Game traps can work on Easy/Medium. The 4-move Scholar's Mate is 4 moves — well under 15.
+> - **Comeback Kid**: you need to be at −400 or worse *and* win. Let the situation get bad, then fight back.
+> - **Chess Clinic**: very hard to achieve. Play defensively, avoid trading, and steer into a won endgame safely.
+
+---
+
+## 🔥 Streaks & Loyalty
+*For dedicated players who keep coming back.*
+
+| Icon | Trophy (ES / EN) | How to unlock |
+|------|-----------------|---------------|
+| 🔥 | **Hat Trick** | Win **3 games in a row** in the same session or across sessions. |
+| 📅 | **Every Day!** | Play at least one game on **5 different calendar days** total. |
+| 🛋️ | **Weekend Warrior** | Play at least one game on a **Saturday** AND at least one on a **Sunday** (can be different weeks). |
+
+> **Tips:**
+> - **Hat Trick**: losses reset the streak counter. Win 3 in a row — doesn't need to be in the same sitting.
+> - **Every Day!**: just play at least one game whenever you open the app. Unlocks after 5 separate days.
+> - **Weekend Warrior**: play any game on Saturday, any game on Sunday. They don't need to be the same weekend.
+
+---
+
+## 📚 Learning
+*For curious players who use the tools Airin provides.*
+
+| Icon | Trophy (ES / EN) | How to unlock |
+|------|-----------------|---------------|
+| 🦉 | **The Student** | Use any Coach feature (Analysis, What should I do?, or Was it good?) a total of **10 times** across all games. |
+| 🗺️ | **The Explorer** | Play through **5 different named openings** across any games (the Commentator must announce the opening name). |
+
+> **Tips:**
+> - **The Student**: open the Coach tab and press any of the three buttons — each press counts. Available on Easy, Medium, and Hard.
+> - **The Explorer**: play e4 e5 (Italian/Ruy Lopez area), d4 d5 (Queen's Gambit), c4 (English), Nf3 (Réti), etc. Each named line the Commentator announces counts as one discovery.
+
+---
+
+## 🎭 Fun & Silly
+*Quirky challenges for creative players.*
+
+| Icon | Trophy (ES / EN) | How to unlock |
+|------|-----------------|---------------|
+| 🐛 | **Ant Army** | Move **5 different pawns** in a single game (any pawn on any file). |
+| 🐝 | **Queen Bee** | Win a game where the **queen delivers the final capture** that sets up checkmate. |
+
+> **Tips:**
+> - **Ant Army**: push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.
+> - **Queen Bee**: you need the queen to be the piece that makes the last capture before mate. Set up a position where your queen captures the defending piece and then checkmate follows.
+
+---
+
+## 📜 The Historians
+*Recreate legendary moments from chess history — in your own games.*
+
+These trophies unlock when you play a **historically famous sacrifice** and the resulting square is **still under attack** — meaning your move carries the same spirit of the original. You don't need to be in the exact historical position. The engine recognises the pattern regardless.
+
+---
+
+### 🪙 Golden Rain
+**Marshall vs Levitsky — Breslau, 1912**
+
+**The move:** Play **Qg3** (queen to g3) with the queen under attack.
+
+> Frank Marshall sacrificed his queen on g3 — a piece that could be captured in three different ways. Instead of being taken, it threatened unstoppable checkmate. The room fell silent, then the audience threw gold coins onto the board to celebrate the most brilliant move they had ever seen.
+
+**How to unlock:** In any game as Black, move your queen to g3 while it can be captured by the opponent. The engine will detect the echo of Marshall's sacrifice.
+
+**Practice position:** Use the FEN Library in-game → "La Lluvia de Oro — Marshall 1912" — to set up the exact historical position and try the move.
+
+---
+
+### 💥 The Cannon Shot
+**Vladimirov vs Epishin — 1987**
+
+**The move:** Play **Bxh6** or **Bh6** (bishop to h6) with the bishop under attack.
+
+> Vladislav Vladimirov sacrificed his bishop on h6 like a cannon shot: the piece seemed lost, but it unleashed a kingside attack so fierce his opponent had no answer. Initiative proved worth more than material.
+
+**How to unlock:** In any game as White, move your bishop to h6 while it is under attack by the opponent.
+
+**Practice position:** Use the FEN Library → "El Cañonazo — Vladimirov 1987".
+
+---
+
+### 🚂 The Locomotive
+**Ortueta vs Sanz — Madrid, 1933**
+
+**The move:** Play **Rxb2** (rook to b2) with the rook under attack.
+
+> Ortueta played Rxb2, sacrificing the rook. It looked like a blunder, but it hid an unstoppable chain of advancing pawns — rolling forward like a locomotive. Many call it "the immortal combination." A small pawn can be more dangerous than a rook if nothing can stop it.
+
+**How to unlock:** In any game as Black, move your rook to b2 while it is under attack.
+
+**Practice position:** Use the FEN Library → "La Locomotora — Ortueta vs Sanz 1933".
+
+---
+
+### 🔥 Fire on Board
+**Shirov vs Topalov — Linares, 1998**
+
+**The move:** Play **Bh3** (bishop to h3) with the bishop under attack.
+
+> In what looked like a drawn endgame, Alexei Shirov played Bh3!! — a bishop sacrifice that even the world's best computers couldn't understand at the time. The move won through a pawn race calculated with pinpoint precision. Kasparov called it "the most beautiful move I have ever seen."
+
+**How to unlock:** In any game as Black, move your bishop to h3 while it is under attack.
+
+**Practice position:** Use the FEN Library → "Fuego en el Tablero — Shirov vs Topalov 1998".
+
+---
+
+### 📜 The Grand Historian
+Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive, Fire on Board).
+
+---
+
+## 🥚 Easter Eggs
+*Hidden trophies — you won't see them until you find them. Hints only!*
+
+> These trophies are intentionally obscure. If you want the full challenge, stop reading here!
+
+| Icon | Trophy (ES / EN) | Hint |
+|------|-----------------|------|
+| 🤦 | **Dumb and Dumber** | 🔒 Sometimes the simplest opponent is the hardest to beat badly enough… |
+| 😬 | **Oops, My Queen?** | 🔒 They said you couldn't win after losing your most powerful piece for nothing. They were wrong. |
+| 👻 | **The Ancient Law** | 🔒 En passant is the law. Always has been. |
+| ♞ | **The Rebel** | 🔒 Who says a pawn has to become a queen? |
+| 🦉 | **Night Owl** | 🔒 Some people play chess at... unusual hours. |
+| 🙈 | **Knights? Who Needs Them?** | 🔒 Win a game while your knights stay home on b1 and g1 the whole time. |
+| 🐱 | **Copycat** | 🔒 Imitation is the sincerest form of flattery — for the first three moves, at least. |
+| 🥲 | **The Survivor** | 🔒 Sometimes one little pawn is all you need. |
+
+---
+
+## Totals at a Glance
+
+| Category | Count |
+|---|---|
+| 🏅 Progression | 11 |
+| 🧠 Technical | 8 |
+| ⚡ Speed & Challenge | 3 |
+| 🔥 Streaks & Loyalty | 3 |
+| 📚 Learning | 2 |
+| 🎭 Fun & Silly | 2 |
+| 📜 The Historians | 5 |
+| 🥚 Easter Eggs (hidden) | 8 |
+| **Total** | **42** |

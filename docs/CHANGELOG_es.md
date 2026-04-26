@@ -7,6 +7,22 @@ Formato: versión · tamaño · qué cambió.
 
 ---
 
+## v2.24.0 — El Estadístico
+**~16.500 líneas · ~860 KB**
+
+### Perfil del Jugador y Estadísticas
+- **Perfiles Persistentes:** Al empezar, Airin ahora te pedirá tu nombre. El perfil guarda tus partidas totales, tasas de victorias y récords personales.
+- **Rastreo de Partidas:** Seguimiento en tiempo real de rachas de victorias y derrotas (actual y mejor), e historial de la partida.
+- **Salón de los Récords:** Airin registra tus victorias más rápidas y tus mayores ventajas de evaluación en la partida.
+- **Portabilidad:** Nueva función para exportar e importar datos de perfil y estados de juego mediante archivos de guardado.
+
+### La Vitrina de Trofeos
+- **42 Logros Desbloqueables:** Un sistema de logros completamente nuevo con 42 trofeos únicos repartidos en 8 categorías (Progresión, Técnica, Velocidad y Reto, Rachas y Lealtad, Aprendizaje, Diversión, Los Historiadores y Huevos de Pascua ocultos).
+- **Celebraciones en el Juego:** Al desbloquear trofeos, aparecerán notificaciones emergentes en tiempo real durante tu partida.
+- **Detección de Motivos Históricos:** El motor ahora reconoce y recompensa famosos sacrificios históricos (ej. "La Lluvia de Oro" de Marshall) si se juegan en la partida.
+
+---
+
 ## v2.23.0 — Publicación de Producción
 **~16.500 líneas · ~860 KB**
 

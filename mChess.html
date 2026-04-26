@@ -1,5 +1,5 @@
 <!--
-Airin v2.23.0
+Airin v2.24.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Airin v2.23.0</title>
+  <title>Airin v2.24.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -1532,6 +1532,315 @@ limitations under the License.
       font-size: 1.1rem;
     }
 
+    /* ── Profile Modal ─────────────────────── */
+    .profile-box {
+      background: var(--card, rgba(255,255,255,0.96));
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 2px solid rgba(168,85,247,0.18);
+      box-shadow: var(--shadow);
+      padding: 28px 28px 24px;
+      width: min(560px, 94vw);
+      max-height: 88vh;
+      overflow-y: auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .profile-close {
+      position: absolute;
+      top: 14px; right: 16px;
+      background: rgba(168,85,247,0.10);
+      border: none; border-radius: 50%;
+      width: 32px; height: 32px;
+      font-size: 1rem; cursor: pointer;
+      color: var(--text); line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .profile-close:hover { background: rgba(168,85,247,0.22); }
+    .profile-hero {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .profile-avatar-wrap {
+      font-size: 3.4rem; line-height: 1;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 50%; width: 72px; height: 72px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(168,85,247,0.25);
+    }
+    .profile-player-name {
+      font-size: 1.35rem; font-weight: 800;
+      color: var(--text);
+    }
+    .profile-name-input {
+      font-size: 1.35rem; font-weight: 800;
+      color: var(--text); font-family: inherit;
+      background: none; border: none;
+      border-bottom: 2px dashed rgba(168,85,247,0.35);
+      padding: 0 2px 1px; width: 180px; max-width: 100%;
+      outline: none; transition: border-color 0.15s;
+    }
+    .profile-name-input:focus { border-bottom-color: var(--primary); }
+    .profile-headline {
+      font-size: 0.9rem; color: var(--text-light);
+      margin-top: 2px;
+    }
+    .profile-section-title {
+      font-size: 1rem; font-weight: 700;
+      color: var(--text-light);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding-bottom: 4px; margin-bottom: 8px;
+    }
+    .profile-stat-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .profile-stat-chip {
+      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168,85,247,0.15);
+      border-radius: 12px; padding: 8px 14px;
+      font-size: 0.9rem; color: var(--text);
+      flex: 1; min-width: 80px; text-align: center;
+    }
+    .profile-stat-chip strong { display: block; font-size: 1.3rem; color: var(--primary); }
+    .profile-bot-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 7px; font-size: 0.88rem;
+    }
+    .profile-bot-label {
+      min-width: 120px; color: var(--text); font-weight: 600;
+    }
+    .profile-bot-bar-wrap {
+      flex: 1; display: flex; height: 14px; border-radius: 8px; overflow: hidden;
+      background: rgba(168,85,247,0.08);
+    }
+    .profile-bot-bar-w { background: #22c55e; }
+    .profile-bot-bar-d { background: #f59e0b; }
+    .profile-bot-bar-l { background: #ef4444; }
+    .profile-bot-tally {
+      min-width: 72px; text-align: right; color: var(--text-light); font-size: 0.8rem;
+    }
+    .profile-records-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .profile-record-chip {
+      background: rgba(168,85,247,0.06);
+      border: 1px solid rgba(168,85,247,0.12);
+      border-radius: 10px; padding: 6px 12px;
+      font-size: 0.85rem; color: var(--text); flex: 1; min-width: 100px;
+    }
+    .profile-record-chip span { display: block; font-size: 0.75rem; color: var(--text-light); }
+    .profile-cat-header {
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--text-light);
+      margin: 10px 0 6px;
+    }
+    .trophy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+      gap: 8px;
+    }
+    .trophy-card {
+      border-radius: 14px; padding: 10px 10px 8px;
+      text-align: center; font-size: 0.78rem;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      border: 1px solid rgba(168,85,247,0.12);
+      background: rgba(168,85,247,0.04);
+      transition: transform 0.12s;
+    }
+    .trophy-card:hover { transform: translateY(-2px); }
+    .trophy-card.unlocked {
+      background: linear-gradient(135deg, rgba(168,85,247,0.10), rgba(244,114,182,0.08));
+      border-color: rgba(168,85,247,0.3);
+    }
+    .trophy-card.locked { filter: grayscale(0.7); opacity: 0.6; }
+    .trophy-card.mystery { opacity: 0.5; }
+    .trophy-icon { font-size: 1.9rem; line-height: 1.1; }
+    .trophy-name { font-weight: 700; color: var(--text); font-size: 0.8rem; }
+    .trophy-desc { color: var(--text-light); font-size: 0.72rem; line-height: 1.3; }
+    .trophy-date { color: var(--primary); font-size: 0.70rem; margin-top: 2px; }
+    .profile-close-btn {
+      width: 100%; padding: 12px;
+      background: rgba(168,85,247,0.10);
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 14px; font-size: 1rem;
+      font-family: inherit; font-weight: 700;
+      color: var(--text); cursor: pointer;
+      transition: background 0.15s;
+    }
+    .profile-close-btn:hover { background: rgba(168,85,247,0.20); }
+
+    .profile-portability-row {
+      display: flex; gap: 10px; margin-bottom: 10px;
+    }
+    .profile-port-btn {
+      flex: 1; padding: 10px 8px;
+      background: rgba(99,179,237,0.10);
+      border: 1px solid rgba(99,179,237,0.25);
+      border-radius: 14px; font-size: 0.88rem;
+      font-family: inherit; font-weight: 700;
+      color: var(--text); cursor: pointer;
+      transition: background 0.15s; text-align: center;
+    }
+    .profile-port-btn:hover { background: rgba(99,179,237,0.22); }
+    .profile-import-label { display: flex; align-items: center; justify-content: center; }
+
+    .trophy-progress-wrap {
+      width: 100%; height: 10px;
+      background: rgba(168,85,247,0.12);
+      border-radius: 99px; overflow: hidden;
+      margin: 10px 0 4px;
+    }
+    .trophy-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #a855f7, #f472b6);
+      border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+    .trophy-progress-label {
+      text-align: right; font-size: 0.78rem;
+      color: rgba(168,85,247,0.8); font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .trophy-filter-row {
+      display: flex; gap: 8px; margin-bottom: 14px;
+    }
+    .trophy-filter-btn {
+      flex: 1; padding: 7px 4px;
+      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168,85,247,0.18);
+      border-radius: 10px; font-size: 0.82rem;
+      font-family: inherit; font-weight: 700;
+      color: var(--text); cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .trophy-filter-btn:hover { background: rgba(168,85,247,0.18); }
+    .trophy-filter-btn.active {
+      background: linear-gradient(135deg, rgba(168,85,247,0.25), rgba(244,114,182,0.20));
+      border-color: rgba(168,85,247,0.5);
+    }
+
+    /* ── First-run modal ────────────────────── */
+    .first-run-card { text-align: center; }
+    .first-run-emoji { font-size: 3rem; margin-bottom: 10px; }
+    .first-run-title {
+      font-size: 1.25rem; font-weight: 800; margin-bottom: 10px; color: var(--text);
+    }
+    .first-run-body {
+      font-size: 0.92rem; line-height: 1.55; opacity: 0.8;
+      margin-bottom: 18px; color: var(--text);
+    }
+    .first-run-input {
+      width: 100%; box-sizing: border-box;
+      padding: 11px 14px; border-radius: 12px;
+      border: 2px solid rgba(168,85,247,0.35);
+      font-family: inherit; font-size: 1rem; font-weight: 700;
+      color: var(--text); background: rgba(168,85,247,0.05);
+      outline: none; margin-bottom: 14px;
+      transition: border-color 0.15s;
+    }
+    .first-run-input:focus { border-color: rgba(168,85,247,0.7); }
+    .first-run-btn {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #a855f7, #f472b6);
+      border: none; border-radius: 14px;
+      font-family: inherit; font-size: 1rem; font-weight: 800;
+      color: #fff; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(168,85,247,0.35);
+      transition: opacity 0.15s;
+    }
+    .first-run-btn:hover { opacity: 0.9; }
+
+    /* ── Trophy story overlay ───────────────── */
+    .trophy-story-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.5); padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .trophy-story-overlay.show { opacity: 1; pointer-events: all; }
+    .trophy-story-card {
+      background: linear-gradient(160deg, #fff 0%, #fdf4ff 100%);
+      border: 2px solid rgba(168,85,247,0.25);
+      border-radius: 24px; padding: 28px 24px 24px;
+      max-width: 380px; width: 100%; position: relative;
+      box-shadow: 0 12px 48px rgba(168,85,247,0.25);
+      transform: translateY(20px); transition: transform 0.25s ease;
+    }
+    .trophy-story-overlay.show .trophy-story-card { transform: translateY(0); }
+    .trophy-story-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; font-size: 1.1rem;
+      cursor: pointer; opacity: 0.5; color: var(--text);
+    }
+    .trophy-story-close:hover { opacity: 1; }
+    .trophy-story-icon { font-size: 2.4rem; text-align: center; margin-bottom: 8px; }
+    .trophy-story-name {
+      font-size: 1.1rem; font-weight: 800; text-align: center;
+      margin-bottom: 14px; color: var(--text);
+    }
+    .trophy-story-body {
+      font-size: 0.9rem; line-height: 1.6;
+      color: var(--text); opacity: 0.85;
+    }
+
+    /* ── Trophy celebration overlay ──────────── */
+    .trophy-celebration {
+      position: fixed; inset: 0; z-index: 600;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .trophy-celebration.show { opacity: 1; pointer-events: all; }
+    .trophy-celebration-card {
+      background: linear-gradient(145deg, #fff 0%, #fdf4ff 100%);
+      border: 2px solid rgba(168,85,247,0.35);
+      border-radius: 28px; padding: 36px 48px;
+      text-align: center;
+      box-shadow: 0 16px 60px rgba(168,85,247,0.35);
+      transform: scale(0.7); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .trophy-celebration.show .trophy-celebration-card { transform: scale(1); }
+    .trophy-celebration-icon { font-size: 4rem; line-height: 1; margin-bottom: 10px; }
+    .trophy-celebration-label {
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(168,85,247,0.7); margin-bottom: 6px;
+    }
+    .trophy-celebration-name {
+      font-size: 1.4rem; font-weight: 800;
+      background: linear-gradient(135deg,#a855f7,#f472b6);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* ── Streak & recent results ─────────────── */
+    .profile-streak-row {
+      display: flex; gap: 10px; margin: 10px 0 4px;
+    }
+    .profile-streak-chip {
+      flex: 1; text-align: center; padding: 8px 6px;
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 12px; font-size: 0.82rem; font-weight: 700;
+    }
+    .profile-streak-chip strong { display: block; font-size: 1.3rem; }
+    .recent-dots-row {
+      display: flex; gap: 5px; align-items: center;
+      margin: 8px 0 2px; flex-wrap: wrap;
+    }
+    .recent-dot {
+      width: 13px; height: 13px; border-radius: 50%;
+    }
+    .dot-w { background: #4ade80; }
+    .dot-d { background: #facc15; }
+    .dot-l { background: #f87171; }
+    .trophy-story-hint {
+      font-size: 0.75rem; margin-top: 4px; opacity: 0.5;
+    }
+
     /* ── Screen system ─────────────────────── */
     .screen-overlay {
       position: fixed;
@@ -2276,13 +2585,21 @@ limitations under the License.
       <button class="menu-btn secondary" id="btnMainTraining" onclick="openFenLibrary()"
         style="margin-top:4px; background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); border-color: rgba(16,185,129,0.4); color: var(--text);">🧩
         Entrenamiento</button>
+      <button class="menu-btn secondary" id="btnMainProfile" onclick="openProfileModal()"
+        style="margin-top:4px; background: linear-gradient(135deg, rgba(168,85,247,0.12), rgba(244,114,182,0.10)); border-color: rgba(168,85,247,0.3); color: var(--text);">🏆 Mi Perfil</button>
+      <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
+        <button class="menu-btn secondary" id="btnMainSaveGame" onclick="exportProfile()"
+          style="flex:1; font-size:0.85rem; padding:10px 6px;">💾 Guardar</button>
+        <button class="menu-btn secondary" id="btnMainLoadGame" onclick="document.getElementById('globalFileInput').click()"
+          style="flex:1; font-size:0.85rem; padding:10px 6px;">📂 Cargar</button>
+      </div>
       <button onclick="toggleFullscreen()"
         style="margin-top:8px; background:none; border:1px solid rgba(168,85,247,0.3); border-radius:10px; cursor:pointer; font-size:0.85rem; padding:7px 16px; color:var(--text-light); width:100%; transition:all 0.2s;"
         onmouseover="this.style.background='rgba(168,85,247,0.08)'" onmouseout="this.style.background='none'">🔲
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Airin v2.23.0 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Airin v2.24.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -2437,6 +2754,13 @@ limitations under the License.
           style="flex:1; font-size:0.85rem; padding:10px 6px;">👫 2 Jugadores</button>
         <button class="menu-btn secondary" id="btnQuickAi" onclick="quickNewGame('ai')"
           style="flex:1; font-size:0.85rem; padding:10px 6px;">🤖 vs IA</button>
+      </div>
+      <button class="menu-btn secondary" id="btnOpenProfile" onclick="openProfileModal(); closeIngameMenu();">🏆 Mi Perfil</button>
+      <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
+        <button class="menu-btn secondary" id="btnIngameSaveGame" onclick="exportProfile(); closeIngameMenu();"
+          style="flex:1; font-size:0.85rem; padding:10px 6px;">💾 Guardar</button>
+        <button class="menu-btn secondary" id="btnIngameLoadGame" onclick="document.getElementById('globalFileInput').click(); closeIngameMenu();"
+          style="flex:1; font-size:0.85rem; padding:10px 6px;">📂 Cargar</button>
       </div>
       <button class="menu-btn secondary" id="btnIngameOptions" onclick="showIngameOptions()">&#9881;&#65039;
         Opciones</button>
@@ -2637,6 +2961,46 @@ limitations under the License.
     </div>
   </div>
 
+  <!-- Profile Modal -->
+  <div class="confirm-modal" id="profileModal" style="z-index:400;" onclick="if(event.target===this)closeProfileModal()">
+    <div class="profile-box" id="profileBoxContent">
+      <!-- populated dynamically by openProfileModal() -->
+    </div>
+  </div>
+
+  <!-- First-run profile setup -->
+  <div id="firstRunModal" class="trophy-story-overlay" style="z-index:700;">
+    <div class="trophy-story-card first-run-card">
+      <div class="first-run-emoji">🏆</div>
+      <div class="first-run-title" id="firstRunTitle"></div>
+      <div class="first-run-body" id="firstRunBody"></div>
+      <input id="firstRunInput" class="first-run-input" maxlength="24" spellcheck="false">
+      <button class="first-run-btn" id="firstRunBtn" onclick="saveFirstRunName()"></button>
+    </div>
+  </div>
+
+  <!-- Trophy story overlay -->
+  <div id="trophyStoryOverlay" class="trophy-story-overlay" onclick="if(event.target===this)closeTrophyStory()">
+    <div class="trophy-story-card">
+      <button class="trophy-story-close" onclick="closeTrophyStory()">✕</button>
+      <div class="trophy-story-icon" id="trophyStoryIcon"></div>
+      <div class="trophy-story-name" id="trophyStoryName"></div>
+      <div class="trophy-story-body" id="trophyStoryBody"></div>
+    </div>
+  </div>
+
+  <!-- Global hidden file input for Load game (accessible from main menu, in-game menu, and profile) -->
+  <input type="file" id="globalFileInput" accept=".airin" style="display:none" onchange="importProfile(this)">
+
+  <!-- Trophy celebration overlay -->
+  <div id="trophyCelebration" class="trophy-celebration" onclick="this.classList.remove('show')">
+    <div class="trophy-celebration-card">
+      <div class="trophy-celebration-icon" id="trophyCelebIcon"></div>
+      <div class="trophy-celebration-label" id="trophyCelebLabel"></div>
+      <div class="trophy-celebration-name" id="trophyCelebName"></div>
+    </div>
+  </div>
+
   <!-- Status overlay -->
   <div class="status-banner" id="statusBanner">
     <div class="status-box">
@@ -2744,6 +3108,8 @@ limitations under the License.
         <button class="panel-tab-btn" onclick="renderFenList('opening')" id="tabFen-opening">Aperturas</button>
         <button class="panel-tab-btn" onclick="renderFenList('tactic')" id="tabFen-tactic">Táctica</button>
         <button class="panel-tab-btn" onclick="renderFenList('endgame')" id="tabFen-endgame">Finales</button>
+        <button class="panel-tab-btn" onclick="renderFenList('historical')" id="tabFen-historical"
+          style="background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.10)); border-color:rgba(251,191,36,0.4); color:var(--text);">📜 Leyendas</button>
       </div>
 
       <div id="fenLibraryList" style="overflow-y: auto; flex: 1; text-align: left; padding-right: 5px;">
@@ -2777,7 +3143,7 @@ limitations under the License.
       <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Airin</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
-        v2.23.0</div>
+        v2.24.0</div>
 
       <div
         style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
@@ -3320,6 +3686,400 @@ limitations under the License.
     const COMMENTARY_STYLE_STORAGE_KEY = 'te_commentary_style_level';
     let commentaryStyleLevel = 1; // 0=serio, 1=mixto, 2=divertido
 
+    // ── The Statistician — Player Profile ────────────────────────────────────
+    const PROFILE_KEY = 'airin_player_profile';
+
+    const defaultProfile = {
+      id: Date.now().toString(36),
+      playerName: 'Player 1',
+      stats: {
+        totalGames: 0,
+        totalWins: 0,
+        totalDraws: 0,
+        totalLosses: 0,
+        totalUndos: 0,
+        hintsUsed: 0,
+        piecesCaptured: 0
+      },
+      records: {
+        fastestWin: null,        // fewest moves to win (number or null)
+        highestEvalWin: null     // highest centipawn eval at end of a won game (number or null)
+      },
+      bots: {
+        easy:        { w: 0, d: 0, l: 0 },
+        medium:      { w: 0, d: 0, l: 0 },
+        hard:        { w: 0, d: 0, l: 0 },
+        grandmaster: { w: 0, d: 0, l: 0 }
+      },
+      streak: { current: 0, best: 0 },
+      recentResults: [],           // last 10 results: 'w' | 'd' | 'l'
+      unlockedTrophies: [],        // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
+      playDates: [],               // ISO date strings 'YYYY-MM-DD' when player played
+      namedOpeningsPlayed: []      // distinct named opening keys seen across games
+    };
+
+    let currentProfile = null;
+
+    // Session counters — reset on every init()
+    let sessionUndos              = 0;
+    let sessionHints              = 0;
+    let sessionMinEval            = Infinity; // lowest eval seen (cp, from player's perspective)
+    let sessionQueenBlundered     = false;    // true if opponent captured player's queen uncontested
+    let sessionCastled            = false;    // true once the player castles
+    let sessionKingMoved          = false;    // true if king moves again after castling
+    let sessionEnPassantCaptured  = false;    // true if player captured en passant this game
+    let sessionPromotedToKnight   = false;    // true if player promoted to knight this game
+    let sessionStartedFromFen     = false;    // true if the game started from a loaded FEN (blocks end-of-game trophies)
+    let sessionGameRecorded       = false;    // true once updateMatchStats has fired for this game
+    let sessionPendingResult      = null;     // {result, difficulty, movesCount} — held for reviewGame path
+    // 🎒 Child-friendly session trackers
+    let sessionPawnSquaresMoved   = new Set(); // distinct from-squares of pawns the player moved
+    let sessionKnightEverMoved    = false;    // did the player move a knight this game?
+    let sessionNoMaterialLost     = true;     // stays true if player never loses a piece
+    let sessionMirrorCount        = 0;        // how many of the first 3 moves mirror the opponent
+    let sessionFirstCheckGiven    = false;    // player gave check for the first time
+    let sessionFirstPromotion     = false;    // player promoted a pawn for the first time
+    let sessionFirstCastle        = false;    // player castled for the first time (any game, ever)
+    let sessionLastCapturePiece   = null;     // last piece player captured ('Q','R','B','N','P')
+
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          // Deep-merge with defaultProfile so new fields added in future versions auto-appear
+          currentProfile = {
+            ...defaultProfile,
+            ...saved,
+            stats:   { ...defaultProfile.stats,   ...(saved.stats   || {}) },
+            records: { ...defaultProfile.records,  ...(saved.records || {}) },
+            bots:    {
+              easy:        { ...defaultProfile.bots.easy,        ...((saved.bots || {}).easy        || {}) },
+              medium:      { ...defaultProfile.bots.medium,      ...((saved.bots || {}).medium      || {}) },
+              hard:        { ...defaultProfile.bots.hard,        ...((saved.bots || {}).hard        || {}) },
+              grandmaster: { ...defaultProfile.bots.grandmaster, ...((saved.bots || {}).grandmaster || {}) }
+            },
+            streak:          { ...defaultProfile.streak, ...(saved.streak || {}) },
+            recentResults:   Array.isArray(saved.recentResults) ? saved.recentResults : [],
+            unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : [],
+            playDates:        Array.isArray(saved.playDates) ? saved.playDates : [],
+            namedOpeningsPlayed: Array.isArray(saved.namedOpeningsPlayed) ? saved.namedOpeningsPlayed : []
+          };
+        } else {
+          currentProfile = JSON.parse(JSON.stringify(defaultProfile));
+          currentProfile.id = Date.now().toString(36);
+          saveProfile();
+          setTimeout(() => showFirstRunModal(), 200); // new profile — prompt for a name
+        }
+      } catch (_) {
+        currentProfile = JSON.parse(JSON.stringify(defaultProfile));
+      }
+      console.log(`[Statistician] Profile loaded — games: ${currentProfile.stats.totalGames}, trophies: ${currentProfile.unlockedTrophies.length}`);
+      // Also prompt for a name if profile exists but was never personalised
+      if (currentProfile.stats.totalGames === 0 &&
+          (currentProfile.playerName === 'Player 1' || currentProfile.playerName === '')) {
+        setTimeout(() => showFirstRunModal(), 200);
+      }
+      migrateProfileTrophies();
+    }
+
+    function migrateProfileTrophies() {
+      // Grant trophies that should already be earned based on stored W/D/L data
+      // (covers games played before Phase 3 was added, or future schema additions)
+      const p = currentProfile;
+      if (!p) return;
+      const has = (id) => p.unlockedTrophies.some(t => t.id === id);
+      const grant = (id) => {
+        if (!has(id)) { p.unlockedTrophies.push({ id, unlockedAt: new Date().toISOString() }); }
+      };
+      let changed = false;
+      const before = p.unlockedTrophies.length;
+      if (p.stats.totalWins >= 1)  grant('first_blood');
+      if (p.bots.easy.w >= 5)      grant('chicken_hunter');
+      if (p.bots.medium.w >= 1)    grant('graduation');
+      if (p.bots.hard.w >= 1)      grant('magic_trick');
+      if (p.bots.grandmaster.w >= 1) grant('king_slayer');
+      changed = p.unlockedTrophies.length > before;
+      if (changed) { saveProfile(); console.log(`[Statistician] Migration granted ${p.unlockedTrophies.length - before} retroactive trophy/trophies`); }
+    }
+
+    function saveProfile() {
+      try {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(currentProfile));
+      } catch (_) { }
+    }
+
+    function _checkTimeBasedTrophies(p) {
+      // Record today's date
+      const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+      if (!p.playDates.includes(today)) { p.playDates.push(today); saveProfile(); }
+      // 📅 daily_player: played on at least 5 distinct calendar days
+      if (p.playDates.length >= 5) unlockTrophy('daily_player');
+      // 🛋️ weekend_warrior: played on both a Saturday (day 6) and a Sunday (day 0)
+      const days = new Set(p.playDates.map(d => new Date(d).getDay()));
+      if (days.has(0) && days.has(6)) unlockTrophy('weekend_warrior');
+    }
+
+    // ── Trophy System ─────────────────────────────────────────────────────────
+    const TROPHY_DEFS = {
+      // Category 1 — Progression & Milestones
+      first_blood:             { icon:'🩸', cat:1, name:{es:'Primera Sangre',      en:'First Blood'},         desc:{es:'Gana tu primera partida.',                                          en:'Win your first game.'} },
+      chicken_hunter:          { icon:'🍗', cat:1, name:{es:'Cazador de Pollos',   en:'Chicken Hunter'},      desc:{es:'Derrota al Pollito 5 veces.',                                        en:'Defeat the Easy bot 5 times.'} },
+      fried_chicken:           { icon:'⚡', cat:1, name:{es:'Pollo Frito',         en:'Fried Chicken'},       desc:{es:'Derrota al Pollito en menos de 20 movimientos.',                    en:'Defeat the Easy bot in under 20 moves.'} },
+      graduation:              { icon:'🎓', cat:1, name:{es:'La Graduación',       en:'The Graduation'},      desc:{es:'Derrota al Estudiante por primera vez.',                             en:'Defeat the Student for the first time.'} },
+      magic_trick:             { icon:'🎩', cat:1, name:{es:'El Truco de Magia',   en:'Magic Trick'},         desc:{es:'Derrota al Mago por primera vez.',                                   en:'Defeat the Magician for the first time.'} },
+      king_slayer:             { icon:'👑', cat:1, name:{es:'El Mata Reyes',       en:'The King Slayer'},     desc:{es:'Derrota al Rey Sabio por primera vez.',                              en:'Defeat the Wise King for the first time.'} },
+      first_en_passant:        { icon:'👣', cat:1, name:{es:'¡Al Paso!',           en:'En Passant!'},         desc:{es:'Captura al paso por primera vez.',                                   en:'Perform your first en passant capture.'} },
+      // Category 2 — Technical & Late-Game
+      pure_pride:              { icon:'🛡️', cat:2, name:{es:'Orgullo Puro',        en:'Pure Pride'},          desc:{es:'Gana sin deshacer ni pedir ayuda (Medio o superior).',               en:'Win without undos or hints (Medium or higher).'} },
+      iron_castle:             { icon:'🏰', cat:2, name:{es:'Castillo de Hierro',  en:'Iron Castle'},         desc:{es:'Gana enrocando sin mover el rey después.',                           en:'Win by castling and never moving your king again.'} },
+      david_goliath:           { icon:'🗿', cat:2, name:{es:'David y Goliat',      en:'David vs Goliath'},    desc:{es:'Gana tras llegar a −500cp o peor.',                                 en:'Win a game where your eval reached −500cp or worse.'} },
+      illusion_breaker:        { icon:'🌀', cat:2, name:{es:'El Rompe-Ilusiones',  en:'Illusion Breaker'},    desc:{es:'Fuerza tablas contra El Mago.',                                      en:'Force a draw against The Magician.'} },
+      no_tricks:               { icon:'🧩', cat:2, name:{es:'Sin Trucos',          en:'No Tricks Allowed'},   desc:{es:'Derrota al Mago sin pedir ayuda.',                                   en:'Defeat The Magician without any hints.'} },
+      royal_endurance:         { icon:'⏳', cat:2, name:{es:'Resistencia Real',    en:'Royal Endurance'},     desc:{es:'Sobrevive más de 60 movimientos contra el Rey Sabio.',               en:'Survive more than 60 moves against the Wise King.'} },
+      the_immortal:            { icon:'💎', cat:2, name:{es:'El Inmortal',         en:'The Immortal'},        desc:{es:'Derrota al Rey Sabio sin deshacer ningún movimiento.',               en:'Defeat the Wise King without undoing any move.'} },
+      usurper:                 { icon:'♟️', cat:2, name:{es:'El Usurpador',        en:'The Usurper'},         desc:{es:'Da jaque mate al Rey Sabio con un peón.',                            en:'Checkmate the Wise King with a pawn.'} },
+      // Category 3 — Easter Eggs (hidden until unlocked)
+      dumb_dumber:             { icon:'🤦', cat:3, hidden:true, name:{es:'Tonto y Más Tonto',  en:'Dumb and Dumber'},       desc:{es:'Empata contra el Pollito.',                                             en:'Draw against the Easy bot.'} },
+      oops_queen:              { icon:'😬', cat:3, hidden:true, name:{es:'¿Mi Dama?',           en:'Oops, My Queen?'},       desc:{es:'Gana tras perder tu dama sin compensación.',                            en:'Win after losing your queen without compensation.'} },
+      ancient_law:             { icon:'👻', cat:3, hidden:true, name:{es:'La Ley Antigua',      en:'The Ancient Law'},       desc:{es:'Gana una partida en la que capturaste al paso.',                        en:'Win a game where you captured en passant.'} },
+      the_rebel:               { icon:'♞', cat:3, hidden:true, name:{es:'El Rebelde',           en:'The Rebel'},             desc:{es:'Coronas un peón con Caballo y ganas.',                                  en:'Promote a pawn to a Knight and win.'} },
+      night_owl:               { icon:'🦉', cat:3, hidden:true, name:{es:'Noctámbulo',          en:'Night Owl'},             desc:{es:'Gana una partida entre medianoche y las 4 de la mañana.',              en:'Win a game between midnight and 4 AM.'} },
+      // Category 4 — The Historians (real-time, sacrifice required)
+      secret_marshall_qg3:    { icon:'🪙', cat:4, name:{es:'La Lluvia de Oro',      en:'Golden Rain'},
+        desc:{es:'Dama a g3 atacada — evoca el célebre sacrificio de Marshall vs Levitsky (Breslavia, 1912). ¿Fue buena en tu posición?',  en:'Queen to g3 under attack — echoes Marshall\'s famous queen sacrifice vs Levitsky (Breslau, 1912). Was it good in yours?'},
+        story:{
+          es:'En Breslavia, 1912, Frank Marshall jugó Dg3!! — una dama que podía ser capturada de tres maneras distintas. En vez de tomar, amenazaba jaque mate irresistible. La sala entera se quedó en silencio... y luego el público lanzó monedas de oro al tablero para celebrar la jugada más brillante que jamás habían visto.',
+          en:'In Breslau, 1912, Frank Marshall played Qg3!! — a queen that could be captured in three different ways. Instead of being taken, it threatened unstoppable checkmate. The room fell silent... then the audience threw gold coins onto the board to celebrate the most brilliant move they had ever seen.'
+        }
+      },
+      secret_vladimirov_bh6:  { icon:'💥', cat:4, name:{es:'El Cañonazo',           en:'The Cannon Shot'},
+        desc:{es:'Alfil a h6 atacado — recuerda el "cañonazo" de Vladimirov vs Epishin (1987). ¿Fue buena en tu posición?', en:'Bishop to h6 under attack — recalls Vladimirov\'s "cannon shot" vs Epishin (1987). Was it good in yours?'},
+        story:{
+          es:'En 1987, Vladislav Vladimirov sacrificó su alfil en h6 como un cañonazo: la pieza parecía perdida, pero desató un ataque al rey tan feroz que el rival no tuvo respuesta. La iniciativa valió más que el material. Una demostración de que en ajedrez, el tiempo y el ataque pueden valer más que las piezas.',
+          en:'In 1987, Vladislav Vladimirov sacrificed his bishop on h6 like a cannon shot: the piece seemed lost, but it unleashed a kingside attack so fierce that his opponent had no answer. Initiative proved worth more than material — a lesson that in chess, time and attack can outweigh pieces.'
+        }
+      },
+      secret_sanz_rxb2:       { icon:'🚂', cat:4, name:{es:'La Locomotora',         en:'The Locomotive'},
+        desc:{es:'Torre a b2 atacada — guiño al sacrificio de Sanz vs Ortueta (Madrid, 1933). ¿Fue buena en tu posición?', en:'Rook to b2 under attack — a nod to Sanz\'s rook sacrifice vs Ortueta (Madrid, 1933). Was it good in yours?'},
+        story:{
+          es:'Madrid, 1933. Ortueta jugó Txb2, sacrificando la torre. Parecía un error, pero escondía una cadena de peones imparables que avanzaban como una locomotora. La combinación es tan perfecta que muchos la llaman "la combinación inmortal". Un peón pequeño puede ser más peligroso que una torre si nadie puede detenerlo.',
+          en:'Madrid, 1933. Ortueta played Rxb2, sacrificing the rook. It looked like a blunder, but it hid an unstoppable chain of advancing pawns — rolling forward like a locomotive. The combination is so perfect that many call it "the immortal combination." A small pawn can be more dangerous than a rook if nothing can stop it.'
+        }
+      },
+      secret_shirov_bh3:      { icon:'🔥', cat:4, name:{es:'Fuego en el Tablero',   en:'Fire on Board'},
+        desc:{es:'Alfil a h3 atacado — recuerda la mítica entrega de Shirov vs Tópálov (Linares, 1998). ¿Fue buena en tu posición?', en:'Bishop to h3 under attack — recalls Shirov\'s legendary sacrifice vs Topalov (Linares, 1998). Was it good in yours?'},
+        story:{
+          es:'Linares, 1998. En un final que parecía tablas, Alexei Shirov jugó Ah3!! — una entrega de alfil que ni los mejores ordenadores del mundo entendieron en ese momento. La jugada ganaba gracias a una carrera de peones calculada con precisión milimétrica. Kasparov dijo que era "la jugada más bella que jamás había visto". El libro de Shirov se llama "Fuego en el Tablero".',
+          en:'Linares, 1998. In what looked like a drawn endgame, Alexei Shirov played Bh3!! — a bishop sacrifice that even the world\'s best computers couldn\'t understand at the time. The move won through a pawn race calculated with pinpoint precision. Kasparov called it "the most beautiful move I have ever seen." Shirov\'s book is named "Fire on Board."'
+        }
+      },
+      grand_historian:        { icon:'📜', cat:4, name:{es:'El Gran Historiador',   en:'The Grand Historian'}, desc:{es:'Desbloquea los 4 motivos históricos.',                                                             en:'Unlock all 4 historical motifs.'} },
+      // Merged into Cat 1 (Progression) — beginner mechanic milestones
+      first_check:             { icon:'🔔', cat:1, name:{es:'¡Jaque!',                en:'Check!'},              desc:{es:'Da jaque por primera vez.',                                          en:'Give check for the very first time.'} },
+      first_promotion:         { icon:'👑', cat:1, name:{es:'¡Soy Reina!',            en:'I Am Queen!'},         desc:{es:'Corona un peón por primera vez.',                                    en:'Promote a pawn for the very first time.'} },
+      first_castle_ever:       { icon:'🏰', cat:1, name:{es:'¡Mi Castillo!',          en:'My Castle!'},          desc:{es:'Enroca por primera vez en tu vida.',                                 en:'Castle for the very first time ever.'} },
+      first_enp_ever:          { icon:'👻', cat:1, name:{es:'¡Al Paso Fantasma!',     en:'Ghost Capture!'},      desc:{es:'Captura al paso por primera vez en tu vida.',                        en:'Capture en passant for the very first time ever.'} },
+      // Cat 3 (Easter Eggs) — hidden Fun & Silly trophies moved here
+      pawn_army:               { icon:'🐛', cat:8, name:{es:'Ejército de Hormigas',   en:'Ant Army'},            desc:{es:'Mueve 5 peones distintos en una partida.',                           en:'Move 5 different pawns in one game.'} },
+      queen_bee:               { icon:'🐝', cat:8, name:{es:'La Abeja Reina',         en:'Queen Bee'},           desc:{es:'Gana capturando con la dama en el último movimiento.',                en:'Win with the queen as the final capture.'} },
+      no_knights:              { icon:'🙈', cat:3, hidden:true, name:{es:'¿Caballos? ¿Para qué?', en:'Knights? Who Needs Them?'}, desc:{es:'Gana sin mover ningún caballo.',          en:'Win a game without ever moving a knight.'} },
+      copy_cat:                { icon:'🐱', cat:3, hidden:true, name:{es:'El Espejo',              en:'Copycat'},                  desc:{es:'Imita los 3 primeros movimientos del rival exactamente.', en:"Mirror the opponent's first 3 moves exactly."} },
+      last_pawn:               { icon:'🥲', cat:3, hidden:true, name:{es:'El Superviviente',       en:'The Survivor'},             desc:{es:'Gana con solo 1 peón propio en el tablero.',              en:'Win with only 1 pawn remaining.'} },
+      // Cat 5 — Speed & Challenge
+      lightning_win:           { icon:'⚡', cat:5, name:{es:'¡Rayo!',                 en:'Lightning!'},          desc:{es:'Gana en 15 movimientos o menos (Medio o superior).',                en:'Win in 15 moves or fewer (Medium or harder).'} },
+      comeback_kid:            { icon:'💪', cat:5, name:{es:'El Gran Regreso',        en:'Comeback Kid'},        desc:{es:'Gana tras estar 400 puntos por debajo.',                             en:'Win after being down 400 centipawns or more.'} },
+      perfect_endgame:         { icon:'♟️', cat:5, name:{es:'Clínica de Ajedrez',     en:'Chess Clinic'},        desc:{es:'Gana sin perder ni una sola pieza.',                                 en:'Win without losing a single piece.'} },
+      // Cat 6 — Streaks & Loyalty
+      three_in_a_row:          { icon:'🔥', cat:6, name:{es:'Tripleta',               en:'Hat Trick'},           desc:{es:'Gana 3 partidas seguidas.',                                          en:'Win 3 games in a row.'} },
+      daily_player:            { icon:'📅', cat:6, name:{es:'¡Cada Día!',             en:'Every Day!'},          desc:{es:'Juega en 5 días de calendario distintos.',                           en:'Play on 5 different calendar days.'} },
+      weekend_warrior:         { icon:'🛋️', cat:6, name:{es:'Guerrero del Fin de Semana', en:'Weekend Warrior'}, desc:{es:'Juega en sábado Y en domingo.',                                      en:'Play on both Saturday and Sunday.'} },
+      // Cat 7 — Learning
+      professor_fan:           { icon:'🦉', cat:7, name:{es:'El Estudiante',          en:'The Student'},         desc:{es:'Usa la ayuda del Profesor 10 veces en total.',                       en:'Use the Professor hint 10 times in total.'} },
+      opening_explorer:        { icon:'🗺️', cat:7, name:{es:'El Explorador',          en:'The Explorer'},        desc:{es:'Juega 5 aperturas distintas con nombre.',                            en:'Play 5 different named openings across games.'} },
+    };
+
+    function unlockTrophy(id) {
+      if (!currentProfile) return;
+      if (currentProfile.unlockedTrophies.some(t => t.id === id)) return;
+      currentProfile.unlockedTrophies.push({ id, unlockedAt: new Date().toISOString() });
+      saveProfile();
+      const def = TROPHY_DEFS[id];
+      showTrophyCelebration(def, id);
+      console.log(`[Statistician] Trophy unlocked: ${id}`);
+    }
+
+    function showTrophyCelebration(def, id) {
+      const name  = def ? (def.name[currentLanguage] || def.name.es) : id;
+      const icon  = def ? def.icon : '🏆';
+      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '🔥', 7: '📚', 8: '🎭' };
+      const label = def ? (catLabels[def.cat] + ' ' + t('profileCat' + def.cat)) : '🏆';
+      document.getElementById('trophyCelebIcon').textContent  = icon;
+      document.getElementById('trophyCelebLabel').textContent = label;
+      document.getElementById('trophyCelebName').textContent  = name;
+      const el = document.getElementById('trophyCelebration');
+      el.classList.add('show');
+      clearTimeout(el._hideTimer);
+      el._hideTimer = setTimeout(() => el.classList.remove('show'), 2800);
+    }
+
+    function checkTrophyUnlocks(result, difficulty, movesCount) {
+      const p = currentProfile;
+      if (!p) return;
+      if (sessionStartedFromFen) return; // FEN-loaded games don't count toward trophies
+      if (result === 'win') {
+        if (p.stats.totalWins === 1) unlockTrophy('first_blood');
+        if (difficulty === 'easy') {
+          if (p.bots.easy.w >= 5) unlockTrophy('chicken_hunter');
+          if (movesCount <= 40)    unlockTrophy('fried_chicken'); // ≤20 full moves
+        }
+        if (difficulty === 'medium'      && p.bots.medium.w === 1)      unlockTrophy('graduation');
+        if (difficulty === 'hard'        && p.bots.hard.w === 1)        unlockTrophy('magic_trick');
+        if (difficulty === 'grandmaster' && p.bots.grandmaster.w === 1) unlockTrophy('king_slayer');
+        if (['medium','hard','grandmaster'].includes(difficulty) && sessionUndos === 0 && sessionHints === 0)
+          unlockTrophy('pure_pride');
+        if (sessionCastled && !sessionKingMoved)                              unlockTrophy('iron_castle');
+        if (sessionMinEval !== Infinity && sessionMinEval <= -500)            unlockTrophy('david_goliath');
+        if (difficulty === 'hard'        && sessionHints === 0)               unlockTrophy('no_tricks');
+        if (difficulty === 'grandmaster' && sessionUndos === 0)               unlockTrophy('the_immortal');
+        if (difficulty === 'grandmaster' && history.length > 0) {
+          const last = history[history.length - 1].replace(/[+#]/g, '');
+          if (!/^[NBRQK]/.test(last) && !/^O/.test(last)) unlockTrophy('usurper');
+        }
+        if (sessionQueenBlundered)                    unlockTrophy('oops_queen');
+        if (sessionEnPassantCaptured)                 unlockTrophy('ancient_law');
+        if (sessionPromotedToKnight)                  unlockTrophy('the_rebel');
+        if (new Date().getHours() < 4)                unlockTrophy('night_owl');
+        // ⚡ Speed & Challenge
+        if (['medium','hard','grandmaster'].includes(difficulty) && movesCount <= 30)
+          unlockTrophy('lightning_win');  // ≤15 full moves per player
+        if (sessionMinEval !== Infinity && sessionMinEval <= -400) unlockTrophy('comeback_kid');
+        if (sessionNoMaterialLost)                    unlockTrophy('perfect_endgame');
+        // 🐝 Fun & Silly — win conditions
+        if (sessionLastCapturePiece === 'Q')          unlockTrophy('queen_bee');
+        if (!sessionKnightEverMoved)                  unlockTrophy('no_knights');
+        if (sessionMirrorCount >= 3)                  unlockTrophy('copy_cat');
+        // last_pawn: player has exactly 1 pawn left
+        const myPawn = playerColor === 'w' ? 'P' : 'p';
+        let pawnCount = 0;
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (board[r][c] === myPawn) pawnCount++;
+        if (pawnCount === 1)                          unlockTrophy('last_pawn');
+        // 🐛 pawn_army
+        if (sessionPawnSquaresMoved.size >= 5)        unlockTrophy('pawn_army');
+      }
+      if (result === 'draw') {
+        if (difficulty === 'hard') unlockTrophy('illusion_breaker');
+        if (difficulty === 'easy') unlockTrophy('dumb_dumber');
+      }
+      // royal_endurance: survived >60 full moves (>120 plies) against grandmaster
+      if (difficulty === 'grandmaster' && movesCount > 120) unlockTrophy('royal_endurance');
+      // 🔥 three_in_a_row: last 3 results are all wins
+      if (p.recentResults.length >= 3) {
+        const last3 = p.recentResults.slice(-3);
+        if (last3.every(r => r === 'w')) unlockTrophy('three_in_a_row');
+      }
+      // 📅 daily_player & weekend_warrior — tracked in profile.playDates
+      _checkTimeBasedTrophies(p);
+      // 🦉 professor_fan
+      if (p.stats.hintsUsed >= 10) unlockTrophy('professor_fan');
+      // 🗺️ opening_explorer — tracked in profile.namedOpeningsPlayed
+      if ((p.namedOpeningsPlayed || []).length >= 5) unlockTrophy('opening_explorer');
+    }
+
+    // Extra pawn-structure gates for motifs where piece count alone is not enough
+    function motifPawnCheck(motifId, brd, moverColor) {
+      const pawn = moverColor === 'w' ? 'P' : 'p';
+      if (motifId === 'secret_sanz_rxb2') {
+        // Locomotive: player must have an advanced pawn on b-file (col 1) or c-file (col 2)
+        // mirroring the historical b3/c4 passed-pawn chain — rows 2–5 covers ranks 3–6 for both colors
+        for (let r = 2; r <= 5; r++)
+          if (brd[r][1] === pawn || brd[r][2] === pawn) return true;
+        return false;
+      }
+      if (motifId === 'secret_shirov_bh3') {
+        // Fire on Board: player must have a pawn deep in enemy territory (near promotion)
+        // White: rows 1–3 (ranks 5–7); Black: rows 4–6 (ranks 2–4)
+        const lo = moverColor === 'w' ? 1 : 4;
+        const hi = moverColor === 'w' ? 3 : 6;
+        for (let r = lo; r <= hi; r++)
+          for (let c = 0; c < 8; c++)
+            if (brd[r][c] === pawn) return true;
+        return false;
+      }
+      return true; // Marshall and Vladimirov need no pawn check
+    }
+
+    function checkHistorianTrophies(type, tr, tc) {
+      if (!currentProfile || gameMode !== 'ai') return;
+      // Sacrifice criterion: the destination is attacked by an opponent piece after the move
+      if (!isSquareAttacked(tr, tc, playerColor, board)) return;
+      // Material phase check: count non-pawn, non-king pieces to gate each trophy
+      // to a material range matching the historical game it echoes
+      let nonPawnPieces = 0;
+      for (let r = 0; r < 8; r++)
+        for (let c = 0; c < 8; c++) {
+          const p = board[r][c];
+          if (p !== ' ' && p.toUpperCase() !== 'P' && p.toUpperCase() !== 'K') nonPawnPieces++;
+        }
+      const all4 = ['secret_marshall_qg3','secret_vladimirov_bh6','secret_sanz_rxb2','secret_shirov_bh3'];
+      if (type === 'Q' && tr === 5 && tc === 6 && nonPawnPieces >= 6) unlockTrophy('secret_marshall_qg3');    // g3  — rich middlegame
+      if (type === 'B' && tr === 2 && tc === 7 && nonPawnPieces >= 6) unlockTrophy('secret_vladimirov_bh6');  // h6  — middlegame attack
+      if (type === 'R' && tr === 6 && tc === 1 && nonPawnPieces >= 2 && nonPawnPieces <= 8 && motifPawnCheck('secret_sanz_rxb2', board, playerColor)) unlockTrophy('secret_sanz_rxb2');
+      if (type === 'B' && tr === 5 && tc === 7 && nonPawnPieces <= 5 && motifPawnCheck('secret_shirov_bh3', board, playerColor)) unlockTrophy('secret_shirov_bh3');
+      if (all4.every(id => currentProfile.unlockedTrophies.some(t => t.id === id)))
+        unlockTrophy('grand_historian');
+    }
+
+    function updateMatchStats(result, difficulty, movesCount) {
+      if (!currentProfile || gameMode !== 'ai') return;
+      sessionPendingResult = { result, difficulty, movesCount }; // store for reviewGame path
+      if (sessionGameRecorded) return;
+      sessionGameRecorded = true;
+      const p = currentProfile;
+
+      p.stats.totalGames++;
+      if (result === 'win')       p.stats.totalWins++;
+      else if (result === 'draw') p.stats.totalDraws++;
+      else                        p.stats.totalLosses++;
+
+      p.stats.totalUndos    += sessionUndos;
+      p.stats.hintsUsed     += sessionHints;
+
+      // Streak
+      if (result === 'win') {
+        p.streak.current++;
+        if (p.streak.current > p.streak.best) p.streak.best = p.streak.current;
+        if ([3, 5, 10].includes(p.streak.current))
+          setTimeout(() => showToast(`🔥 ${p.streak.current} ${t('streakMilestone')}`, 4000), 2800);
+      } else {
+        p.streak.current = 0;
+      }
+
+      // Recent results (last 10)
+      p.recentResults.push(result === 'win' ? 'w' : result === 'draw' ? 'd' : 'l');
+      if (p.recentResults.length > 10) p.recentResults.shift();
+
+      const bot = p.bots[difficulty] || p.bots.easy;
+      if (result === 'win')       bot.w++;
+      else if (result === 'draw') bot.d++;
+      else                        bot.l++;
+
+      if (result === 'win') {
+        if (p.records.fastestWin === null || movesCount < p.records.fastestWin)
+          p.records.fastestWin = movesCount;
+        try {
+          const finalEval = evaluateBoard(board, 'hard');
+          const playerEval = playerColor === 'w' ? finalEval : -finalEval;
+          if (p.records.highestEvalWin === null || playerEval > p.records.highestEvalWin)
+            p.records.highestEvalWin = playerEval;
+        } catch (_) { /* eval may fail in checkmate positions; record still saves */ }
+      }
+
+      checkTrophyUnlocks(result, difficulty, movesCount);
+      saveProfile();
+      console.log(`[Statistician] Match saved — result:${result} diff:${difficulty} moves:${movesCount} undos:${sessionUndos} hints:${sessionHints}`);
+    }
+
     // ── Game Autosave ─────────────────────────────────────────────────────────
     const GAME_SAVE_KEY = 'mchess_saved_game';
 
@@ -3461,7 +4221,7 @@ limitations under the License.
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
         mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?',
-        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento',
+        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento', btnProfile: '🏆 Mi Perfil',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
         optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual',
@@ -3509,7 +4269,47 @@ limitations under the License.
         diffLabel: '💪 Dificultad',
         sliderSerious: '🧐 Serio',
         sliderMixed: '⚖️ Mixto',
-        sliderFunny: '🎉 Divertido'
+        sliderFunny: '🎉 Divertido',
+        btnOpenProfile: '🏆 Mi Perfil',
+        profileTitle: 'Tu Perfil',
+        profileStatsTitle: '📊 Estadísticas',
+        profileGames: 'Partidas',
+        profileWinRate: 'Victorias',
+        profileWins: 'V', profileDraws: 'E', profileLosses: 'D',
+        profileRecords: '🏅 Récords',
+        profileFastestWin: 'Victoria más rápida',
+        profileHighestEval: 'Mayor ventaja en victoria',
+        profileMoves: 'movs.',
+        profileTrophiesTitle: '🏆 Vitrina de Trofeos',
+        profileCat1: '🏅 Progresión',
+        profileCat2: '🧠 Técnico',
+        profileCat3: '🥚 Easter Eggs',
+        profileCat4: '📜 Los Historiadores',
+        profileCat5: '⚡ Velocidad y Reto',
+        profileCat6: '🔥 Rachas y Fidelidad',
+        profileCat7: '📚 Aprendizaje',
+        profileCat8: '🎭 Divertidos',
+        profileLocked: 'Bloqueado',
+        profileUnlockedOn: 'Desbloqueado:',
+        profileClose: 'Cerrar',
+        profileNone: '—',
+        profileExport: '💾 Guardar partida',
+        profileImport: '📂 Cargar partida',
+        btnSaveShort: '💾 Guardar',
+        btnLoadShort: '📂 Cargar',
+        profileImportSuccess: '✅ Partida cargada. Recargando…',
+        profileImportError: '❌ Archivo inválido. Comprueba que sea un guardado de Airin.',
+        trophyFilterAll: 'Todos',
+        trophyFilterEarned: 'Conseguidos',
+        trophyFilterPending: 'Pendientes',
+        streakMilestone: '¡victorias seguidas!',
+        streakCurrent: 'Racha actual',
+        streakBest: 'Mejor racha',
+        recentGames: 'Últimas partidas',
+        firstRunTitle: '¡Bienvenido a Airin Chess!',
+        firstRunBody: 'Aquí iremos guardando tus victorias, derrotas, rachas y trofeos especiales. ¿Cómo te llamamos?',
+        firstRunPlaceholder: 'Tu nombre',
+        firstRunBtn: '¡Vamos a jugar!'
 
       },
       en: {
@@ -3518,7 +4318,7 @@ limitations under the License.
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
         mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?',
-        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training',
+        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training', btnProfile: '🏆 My Profile',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
         optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme',
@@ -3566,7 +4366,47 @@ limitations under the License.
         diffLabel: '💪 Difficulty',
         sliderSerious: '🧐 Serious',
         sliderMixed: '⚖️ Mixed',
-        sliderFunny: '🎉 Playful'
+        sliderFunny: '🎉 Playful',
+        btnOpenProfile: '🏆 My Profile',
+        profileTitle: 'Your Profile',
+        profileStatsTitle: '📊 Statistics',
+        profileGames: 'Games',
+        profileWinRate: 'Win Rate',
+        profileWins: 'W', profileDraws: 'D', profileLosses: 'L',
+        profileRecords: '🏅 Records',
+        profileFastestWin: 'Fastest win',
+        profileHighestEval: 'Best eval on win',
+        profileMoves: 'moves',
+        profileTrophiesTitle: '🏆 Trophy Cabinet',
+        profileCat1: '🏅 Progression',
+        profileCat2: '🧠 Technical',
+        profileCat3: '🥚 Easter Eggs',
+        profileCat4: '📜 The Historians',
+        profileCat5: '⚡ Speed & Challenge',
+        profileCat6: '🔥 Streaks & Loyalty',
+        profileCat7: '📚 Learning',
+        profileCat8: '🎭 Fun & Silly',
+        profileLocked: 'Locked',
+        profileUnlockedOn: 'Unlocked:',
+        profileClose: 'Close',
+        profileNone: '—',
+        profileExport: '💾 Save game',
+        profileImport: '📂 Load game',
+        btnSaveShort: '💾 Save',
+        btnLoadShort: '📂 Load',
+        profileImportSuccess: '✅ Game loaded. Reloading…',
+        profileImportError: '❌ Invalid file. Make sure it\'s an Airin save.',
+        trophyFilterAll: 'All',
+        trophyFilterEarned: 'Earned',
+        trophyFilterPending: 'Pending',
+        streakMilestone: 'wins in a row!',
+        streakCurrent: 'Current streak',
+        streakBest: 'Best streak',
+        recentGames: 'Recent games',
+        firstRunTitle: 'Welcome to Airin Chess!',
+        firstRunBody: 'We\'ll keep track of your wins, losses, streaks and special trophies. What should we call you?',
+        firstRunPlaceholder: 'Your name',
+        firstRunBtn: 'Let\'s play!'
       }
     };
 
@@ -3680,12 +4520,14 @@ limitations under the License.
     function applyTranslations() {
       const map = {
         titleMain: 'mainTitle', menuTitleMain: 'mainTitle', menuSubtitleMain: 'mainSubtitle',
-        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining',
+        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining', btnMainProfile: 'btnProfile',
+        btnMainSaveGame: 'btnSaveShort', btnMainLoadGame: 'btnLoadShort',
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
         colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
         optionsTitle: 'optionsTitle', optionsLanguageLabel: 'languageLabel', optionsThemeLabel: 'themeLabel', commentaryStyleLabel: 'commentaryStyle', btnOptionsBack: 'backMenu', optionsLoadFenLabel: 'loadFen',
-        ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
+        ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnOpenProfile: 'btnOpenProfile', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
         btnQuickPvp: 'quickPvp', btnQuickAi: 'quickAi',
+        btnIngameSaveGame: 'btnSaveShort', btnIngameLoadGame: 'btnLoadShort',
         ingameOptionsTitle: 'optionsTitle', igCommentaryStyleLabel: 'commentaryStyle',
         igLanguageLabel: 'languageLabel', igModeLabel: 'modeLabel', igDiffLabel: 'diffLabel', igThemeLabel: 'themeLabel', igOptionsBack: 'backMenu',
         optSliderSerious: 'sliderSerious', optSliderMixed: 'sliderMixed', optSliderFunny: 'sliderFunny',
@@ -4057,7 +4899,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Airin v2.23.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Airin v2.24.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -4125,6 +4967,28 @@ limitations under the License.
       window.snapshotAfterHumanMove = null;
       window.snapshotBeforeRules = null;
       puzzleMode = null;
+
+      // Statistician: reset session counters
+      sessionUndos             = 0;
+      sessionHints             = 0;
+      sessionMinEval           = Infinity;
+      sessionQueenBlundered    = false;
+      sessionCastled           = false;
+      sessionKingMoved         = false;
+      sessionEnPassantCaptured = false;
+      sessionPromotedToKnight  = false;
+      sessionStartedFromFen    = false;
+      sessionGameRecorded      = false;
+      sessionPendingResult     = null;
+      // 🎒 Child-friendly session resets
+      sessionPawnSquaresMoved  = new Set();
+      sessionKnightEverMoved   = false;
+      sessionNoMaterialLost    = true;
+      sessionMirrorCount       = 0;
+      sessionFirstCheckGiven   = false;
+      sessionFirstPromotion    = false;
+      sessionFirstCastle       = false;
+      sessionLastCapturePiece  = null;
 
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
@@ -4274,6 +5138,12 @@ limitations under the License.
       // Get current board score
       // evaluateBoard devuelve + para blancas y - para negras
       const score = evaluateBoard(board, 'hard');
+
+      // Statistician: track worst position seen this game (from player's perspective)
+      if (gameMode === 'ai' && history.length > 0) {
+        const playerScore = playerColor === 'w' ? score : -score;
+        if (playerScore < sessionMinEval) sessionMinEval = playerScore;
+      }
 
       // Sigmoid mapping (tanh): same approach used by Lichess/Chess.com.
       // tanh(score/600): +100cp≈58%, +300cp≈73%, +600cp≈88%, never hard-clips.
@@ -5080,6 +5950,11 @@ limitations under the License.
       let isCapture = captured !== ' ';
       let epCapture = false;
 
+      // Statistician: queen blunder detection (opponent captures player's queen)
+      if (gameMode === 'ai' && captured.toUpperCase() === 'Q' && colorOf(captured) === playerColor) {
+        sessionQueenBlundered = true;
+      }
+
       // 2. CASTLING LOGIC
       let isCastle = false;
       let rookMoveInfo = null;
@@ -5103,6 +5978,33 @@ limitations under the License.
             notation = 'O-O-O';
           }
         }
+      }
+
+      // Statistician: castling and king-movement tracking
+      if (gameMode === 'ai' && color === playerColor) {
+        if (isCastle) {
+          sessionCastled = true;
+          // 🏰 first_castle_ever — any game, once in lifetime
+          if (!sessionFirstCastle) { sessionFirstCastle = true; unlockTrophy('first_castle_ever'); }
+        } else if (type === 'K' && sessionCastled) sessionKingMoved = true;
+        // 🐛 pawn_army: track distinct pawn from-squares
+        if (type === 'P' && !isCastle) sessionPawnSquaresMoved.add(sr * 8 + sc);
+        // 🙈 no_knights: flag if player ever moves a knight
+        if (type === 'N') sessionKnightEverMoved = true;
+        // 🐱 copy_cat: mirror opponent's moves (odd plies = player if player is White)
+        if (history.length >= 1 && history.length <= 3 && history.length % 2 === 1) {
+          const opponentLastMove = history[history.length - 2];
+          const playerThisMove  = sqName(tr, tc);
+          if (opponentLastMove && opponentLastMove.replace(/[+#!?]/g,'').endsWith(playerThisMove)) sessionMirrorCount++;
+        }
+        // ♟️ perfect_endgame: detect if player lost any material this move
+        if (!isCastle && captured !== ' ' && color !== playerColor) sessionNoMaterialLost = false;
+        // 🐝 queen_bee: track last piece player captured
+        if (captured !== ' ' && color === playerColor) sessionLastCapturePiece = captured.toUpperCase();
+      }
+      // ♟️ perfect_endgame for opponent captures too
+      if (gameMode === 'ai' && color !== playerColor && captured !== ' ') {
+        if (colorOf(captured) === playerColor) sessionNoMaterialLost = false;
       }
 
       // Compute SAN disambiguation before the board is mutated
@@ -5135,6 +6037,10 @@ limitations under the License.
       board[tr][tc] = piece;
       if (rookMoveInfo) board[rookMoveInfo.tr][rookMoveInfo.tc] = (color === 'w') ? 'R' : 'r';
 
+      // Statistician: historian trophy check (uses post-move board to detect attacks)
+      if (gameMode === 'ai' && color === playerColor && !isCastle)
+        checkHistorianTrophies(type, tr, tc);
+
       // Tell render which pieces are "flying"
       window.currentAnimList = animList;
       render();
@@ -5153,6 +6059,12 @@ limitations under the License.
         const epPiece = board[sr][tc];
         if (color === 'w') capturedByWhite.push(epPiece); else capturedByBlack.push(epPiece);
         board[sr][tc] = ' ';
+        // Statistician: first en passant ever (fires immediately, any game mode)
+        if (gameMode === 'ai' && color === playerColor) {
+          sessionEnPassantCaptured = true;
+          unlockTrophy('first_en_passant');
+          unlockTrophy('first_enp_ever'); // 👻 child-friendly Cat 5 version
+        }
       }
 
       // 5. REGISTRO DE CAPTURAS NORMALES
@@ -5175,6 +6087,12 @@ limitations under the License.
           // If init() ran while the modal was open, abort — don't corrupt the new game
           if (makeMoveGeneration !== _promoGen) { animating = false; return; }
           board[tr][tc] = promoPiece;
+          if (promoPiece.toUpperCase() === 'N') sessionPromotedToKnight = true;
+          // 👑 first_promotion — once in a lifetime
+          if (!sessionFirstPromotion && gameMode === 'ai' && color === playerColor) {
+            sessionFirstPromotion = true;
+            unlockTrophy('first_promotion');
+          }
           animating = false; // ✨ Liberar DESPUÉS del modal
         }
       } else {
@@ -5225,6 +6143,11 @@ limitations under the License.
       const hasMove = hasAnyLegalMove(nextColor);
 
       if (isCheckOnNext) notation += hasMove ? '+' : '#';
+      // 🔔 first_check: player gives check for the very first time
+      if (isCheckOnNext && gameMode === 'ai' && color === playerColor && !sessionFirstCheckGiven) {
+        sessionFirstCheckGiven = true;
+        unlockTrophy('first_check');
+      }
       history.push(notation);
       if (fenPositionLoaded) fenPositionLoaded = false; // first move played, now treat as normal game
       // 🔁 Register position hash for repetition detection - INCLUIR castleRights y EP
@@ -5303,8 +6226,8 @@ limitations under the License.
 
       // 13. FIN DE PARTIDA O IA
       // ★ FIX 3: Draw conditions BEFORE !hasMove so K vs K etc. don't reach !hasMove as stalemate
-      if (halfMoveClock >= 100) { setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? '50-move rule.' : 'Regla de los 50 movimientos.'), 400); return; }
-      if (isInsufficientMaterial(board)) { setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Insufficient material.' : 'Falta de material.'), 400); return; }
+      if (halfMoveClock >= 100) { updateMatchStats('draw', currentDifficulty, history.length); setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? '50-move rule.' : 'Regla de los 50 movimientos.'), 400); return; }
+      if (isInsufficientMaterial(board)) { updateMatchStats('draw', currentDifficulty, history.length); setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Insufficient material.' : 'Falta de material.'), 400); return; }
 
       if (!hasMove) {
         if (isCheckOnNext) {
@@ -5314,6 +6237,7 @@ limitations under the License.
           const humanWon = gameMode === 'pvp' || winnerColor === playerColor;
           const en = currentLanguage === 'en';
 
+          updateMatchStats(humanWon ? 'win' : 'loss', currentDifficulty, history.length);
           if (humanWon) {
             // Human wins → confetti + character defeat speech
             playVictorySound();
@@ -5343,6 +6267,7 @@ limitations under the License.
             }, 400);
           }
         } else {
+          updateMatchStats('draw', currentDifficulty, history.length);
           setTimeout(() => showStatus('🤝 ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'),
             currentLanguage === 'en' ? 'Stalemate.' : 'Empate por ahogado.'), 400);
         }
@@ -5355,7 +6280,7 @@ limitations under the License.
       if (gameMode === 'ai' && turn !== playerColor) triggerAI();
     }
     function ignoreDrawClaim() { document.getElementById('drawClaimModal').classList.remove('show'); if (gameMode === 'ai' && turn !== playerColor) triggerAI(); }
-    function acceptDrawClaim() { document.getElementById('drawClaimModal').classList.remove('show'); showStatus('🤝 ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Claimed by threefold repetition.' : 'Reclamadas por triple repetición.'); }
+    function acceptDrawClaim() { document.getElementById('drawClaimModal').classList.remove('show'); updateMatchStats('draw', currentDifficulty, history.length); showStatus('🤝 ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Claimed by threefold repetition.' : 'Reclamadas por triple repetición.'); }
 
     function isInsufficientMaterial(brd) {
       let whiteKnights = 0, whiteBishops = 0, blackKnights = 0, blackBishops = 0, total = 0;
@@ -5440,8 +6365,286 @@ limitations under the License.
     }
 
     function reviewGame() {
+      // Defensive flush: if makeMove()'s async tail was skipped for any reason, record now
+      if (!sessionGameRecorded && sessionPendingResult) {
+        updateMatchStats(sessionPendingResult.result, sessionPendingResult.difficulty, sessionPendingResult.movesCount);
+      }
       // Hide the end-game banner so the player can analyse the final position
       document.getElementById('statusBanner').classList.remove('show');
+    }
+
+    // ── Profile Modal ────────────────────────────────────────────────────────
+
+    function openProfileModal() {
+      const p = currentProfile;
+      const box = document.getElementById('profileBoxContent');
+      const L = currentLanguage;
+      const _ = (k) => t(k);
+
+      // Determine avatar: highest bot level with at least 1 win
+      const levels = ['grandmaster','hard','medium','easy'];
+      const avatarLevel = levels.find(lv => p && p.bots[lv] && p.bots[lv].w > 0);
+      const avatarEmoji = avatarLevel ? (characterDialogs[avatarLevel]?.emoji || '♟️') : '♟️';
+      const avatarTitle = avatarLevel ? (characterDialogs[avatarLevel]?.name[L] || '') : '';
+
+      const totalGames = p ? p.stats.totalGames : 0;
+      const winRate = totalGames > 0 ? Math.round((p.stats.totalWins / totalGames) * 100) : 0;
+      const fastestWin = p?.records?.fastestWin;
+      const highestEval = p?.records?.highestEvalWin;
+
+      // Bot bar helper
+      function botBar(lv) {
+        const b = p?.bots[lv] || {w:0,d:0,l:0};
+        const total = b.w + b.d + b.l || 1;
+        const wPct = (b.w/total*100).toFixed(1);
+        const dPct = (b.d/total*100).toFixed(1);
+        const lPct = (b.l/total*100).toFixed(1);
+        const ch = characterDialogs[lv];
+        const emoji = ch?.emoji || '♟️';
+        const name  = ch?.name[L] || lv;
+        return `<div class="profile-bot-row">
+          <span class="profile-bot-label">${emoji} ${name}</span>
+          <div class="profile-bot-bar-wrap">
+            <div class="profile-bot-bar-w" style="width:${wPct}%"></div>
+            <div class="profile-bot-bar-d" style="width:${dPct}%"></div>
+            <div class="profile-bot-bar-l" style="width:${lPct}%"></div>
+          </div>
+          <span class="profile-bot-tally">${b.w}${_('profileWins')} ${b.d}${_('profileDraws')} ${b.l}${_('profileLosses')}</span>
+        </div>`;
+      }
+
+      // Trophy cabinet helper
+      function trophySection(catNum, catKey) {
+        const ids = Object.entries(TROPHY_DEFS).filter(([,d]) => d.cat === catNum).map(([id]) => id);
+        const unlockedSet = new Set((p?.unlockedTrophies || []).map(t => t.id));
+        const cards = ids.map(id => {
+          const def = TROPHY_DEFS[id];
+          const unlocked = unlockedSet.has(id);
+          const isHidden = def.hidden && !unlocked;
+          if (isHidden) {
+            return `<div class="trophy-card mystery">
+              <div class="trophy-icon">❓</div>
+              <div class="trophy-name">???</div>
+              <div class="trophy-desc">???</div>
+            </div>`;
+          }
+          const name = def.name[L] || def.name.es;
+          const desc = def.desc[L] || def.desc.es;
+          const dateStr = unlocked
+            ? `${_('profileUnlockedOn')} ${new Date((p.unlockedTrophies.find(t=>t.id===id)||{}).unlockedAt||'').toLocaleDateString()}`
+            : `🔒 ${_('profileLocked')}`;
+          const hasStory = def.story && (def.story.es || def.story.en);
+          const storyAttr = hasStory ? `onclick="openTrophyStory('${id}')" style="cursor:pointer"` : '';
+          const storyHint = hasStory ? `<div class="trophy-story-hint">📖</div>` : '';
+          return `<div class="trophy-card ${unlocked?'unlocked':'locked'}" ${storyAttr}>
+            <div class="trophy-icon">${def.icon}</div>
+            <div class="trophy-name">${name}</div>
+            <div class="trophy-desc">${desc}</div>
+            <div class="trophy-date">${dateStr}</div>
+            ${storyHint}
+          </div>`;
+        }).join('');
+        return `<div class="profile-cat-header">${_('profileCat'+catNum)}</div>
+                <div class="trophy-grid">${cards}</div>`;
+      }
+
+      const fastestWinText = fastestWin !== null && fastestWin !== undefined
+        ? `${fastestWin} ${_('profileMoves')}`
+        : _('profileNone');
+      const highestEvalText = highestEval !== null && highestEval !== undefined
+        ? `+${Math.min(Math.round(highestEval), 2000)}cp`
+        : _('profileNone');
+
+      const totalTrophyCount = Object.keys(TROPHY_DEFS).length;
+      const unlockedCount    = p ? p.unlockedTrophies.length : 0;
+      const totalTrophyPct   = Math.round(unlockedCount / totalTrophyCount * 100);
+
+      const streakCurrent = p?.streak?.current || 0;
+      const streakBest    = p?.streak?.best    || 0;
+      const recentDots    = (p?.recentResults || [])
+        .map(r => `<span class="recent-dot dot-${r}" title="${r === 'w' ? '✔' : r === 'd' ? '–' : '✘'}"></span>`)
+        .join('');
+
+      box.innerHTML = `
+        <button class="profile-close" onclick="closeProfileModal()" title="${_('profileClose')}">✕</button>
+        <div class="profile-hero">
+          <div class="profile-avatar-wrap">${avatarEmoji}</div>
+          <div>
+            <input class="profile-name-input" id="profileNameInput"
+              value="${(p?.playerName || 'Player 1').replace(/"/g,'&quot;')}"
+              maxlength="24" spellcheck="false"
+              onblur="saveProfileName(this.value)"
+              onkeydown="if(event.key==='Enter'){this.blur();}">
+            <div class="profile-headline">${avatarTitle ? avatarTitle : '—'}</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="profile-section-title">${_('profileStatsTitle')}</div>
+          <div class="profile-stat-row">
+            <div class="profile-stat-chip"><strong>${totalGames}</strong>${_('profileGames')}</div>
+            <div class="profile-stat-chip"><strong>${winRate}%</strong>${_('profileWinRate')}</div>
+            <div class="profile-stat-chip"><strong>${p?.stats?.totalWins||0}</strong>🏆</div>
+          </div>
+          <div class="profile-streak-row">
+            <div class="profile-streak-chip"><strong>${streakCurrent}🔥</strong>${_('streakCurrent')}</div>
+            <div class="profile-streak-chip"><strong>${streakBest}⭐</strong>${_('streakBest')}</div>
+          </div>
+          ${recentDots ? `<div style="font-size:0.75rem;font-weight:700;opacity:0.6;margin-top:6px;">${_('recentGames')}</div>
+          <div class="recent-dots-row">${recentDots}</div>` : ''}
+          <div style="margin-top:10px;">
+            ${botBar('easy')}${botBar('medium')}${botBar('hard')}${botBar('grandmaster')}
+          </div>
+        </div>
+
+        <div>
+          <div class="profile-section-title">${_('profileRecords')}</div>
+          <div class="profile-records-row">
+            <div class="profile-record-chip"><span>${_('profileFastestWin')}</span>${fastestWinText}</div>
+            <div class="profile-record-chip"><span>${_('profileHighestEval')}</span>${highestEvalText}</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="profile-section-title">${_('profileTrophiesTitle')}</div>
+          <div class="trophy-progress-wrap">
+            <div class="trophy-progress-bar" style="width:${totalTrophyPct}%"></div>
+          </div>
+          <div class="trophy-progress-label">${unlockedCount} / ${totalTrophyCount}</div>
+          <div class="trophy-filter-row">
+            <button id="trophyFilter_all"     class="trophy-filter-btn active" onclick="filterTrophies('all')"    >${_('trophyFilterAll')}</button>
+            <button id="trophyFilter_unlocked" class="trophy-filter-btn"       onclick="filterTrophies('unlocked')">${_('trophyFilterEarned')}</button>
+            <button id="trophyFilter_pending"  class="trophy-filter-btn"       onclick="filterTrophies('pending')" >${_('trophyFilterPending')}</button>
+          </div>
+          ${trophySection(1,'profileCat1')}
+          ${trophySection(2,'profileCat2')}
+          ${trophySection(5,'profileCat5')}
+          ${trophySection(6,'profileCat6')}
+          ${trophySection(7,'profileCat7')}
+          ${trophySection(8,'profileCat8')}
+          ${trophySection(4,'profileCat4')}
+          ${trophySection(3,'profileCat3')}
+        </div>
+
+        <div class="profile-portability-row">
+          <button class="profile-port-btn" onclick="exportProfile()">${_('profileExport')}</button>
+          <label class="profile-port-btn profile-import-label">
+            ${_('profileImport')}
+            <input type="file" accept=".airin" style="display:none" onchange="importProfile(this)">
+          </label>
+        </div>
+        <button class="profile-close-btn" onclick="closeProfileModal()">${_('profileClose')}</button>
+      `;
+
+      document.getElementById('profileModal').classList.add('show');
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profileModal').classList.remove('show');
+    }
+
+    function showFirstRunModal() {
+      const modal = document.getElementById('firstRunModal');
+      if (!modal) return;
+      document.getElementById('firstRunTitle').textContent = t('firstRunTitle');
+      document.getElementById('firstRunBody').textContent  = t('firstRunBody');
+      document.getElementById('firstRunBtn').textContent   = t('firstRunBtn');
+      const input = document.getElementById('firstRunInput');
+      input.placeholder = t('firstRunPlaceholder');
+      input.value = '';
+      modal.classList.add('show');
+      setTimeout(() => input.focus(), 300);
+      input.onkeydown = (e) => { if (e.key === 'Enter') saveFirstRunName(); };
+    }
+
+    function saveFirstRunName() {
+      const input = document.getElementById('firstRunInput');
+      const name = (input?.value || '').trim();
+      if (name) {
+        saveProfileName(name);
+      }
+      document.getElementById('firstRunModal').classList.remove('show');
+    }
+
+    function openTrophyStory(id) {
+      const def = TROPHY_DEFS[id];
+      if (!def || !def.story) return;
+      document.getElementById('trophyStoryIcon').textContent = def.icon;
+      document.getElementById('trophyStoryName').textContent = def.name[currentLanguage] || def.name.es;
+      document.getElementById('trophyStoryBody').textContent = def.story[currentLanguage] || def.story.es;
+      document.getElementById('trophyStoryOverlay').classList.add('show');
+    }
+
+    function closeTrophyStory() {
+      document.getElementById('trophyStoryOverlay').classList.remove('show');
+    }
+
+    function filterTrophies(type) {
+      document.querySelectorAll('.trophy-card').forEach(card => {
+        const isUnlocked = card.classList.contains('unlocked');
+        const isPending  = card.classList.contains('locked') || card.classList.contains('mystery');
+        if (type === 'all')      card.style.display = '';
+        else if (type === 'unlocked') card.style.display = isUnlocked ? '' : 'none';
+        else                          card.style.display = isPending  ? '' : 'none';
+      });
+      // Also hide/show category headers when all cards in that section are hidden
+      document.querySelectorAll('.profile-cat-header').forEach(header => {
+        const grid = header.nextElementSibling;
+        if (!grid) return;
+        const visible = [...grid.querySelectorAll('.trophy-card')].some(c => c.style.display !== 'none');
+        header.style.display = visible ? '' : 'none';
+      });
+      document.querySelectorAll('.trophy-filter-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('trophyFilter_' + type);
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    function saveProfileName(value) {
+      if (!currentProfile) return;
+      const name = value.trim() || 'Player 1';
+      currentProfile.playerName = name;
+      saveProfile();
+      const input = document.getElementById('profileNameInput');
+      if (input) input.value = name;
+    }
+
+    function exportProfile() {
+      if (!currentProfile) return;
+      const json    = JSON.stringify(currentProfile);
+      const encoded = btoa(unescape(encodeURIComponent(json))); // base64, UTF-8 safe
+      const blob    = new Blob([encoded], { type: 'application/octet-stream' });
+      const url     = URL.createObjectURL(blob);
+      const a       = document.createElement('a');
+      a.href        = url;
+      const safeName = (currentProfile.playerName || 'airin')
+        .replace(/[^a-zA-Z0-9_\-áéíóúüñÁÉÍÓÚÜÑ ]/g, '')
+        .trim().replace(/\s+/g, '_') || 'airin';
+      const dateStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      a.download = `${safeName}_${dateStr}.airin`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importProfile(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const decoded = decodeURIComponent(escape(atob(e.target.result.trim())));
+          const data    = JSON.parse(decoded);
+          // Validate required keys before accepting
+          if (!data.id || !data.playerName || !data.stats || !data.bots || !Array.isArray(data.unlockedTrophies))
+            throw new Error('missing keys');
+          localStorage.setItem(PROFILE_KEY, JSON.stringify(data));
+          showToast(t('profileImportSuccess'), 3000);
+          setTimeout(() => location.reload(), 1200);
+        } catch (_) {
+          showToast(t('profileImportError'), 4000);
+        }
+      };
+      reader.readAsText(file);
+      input.value = ''; // reset so the same file can be re-imported
     }
 
     // Show a character reaction bubble after the game ends
@@ -5464,6 +6667,7 @@ limitations under the License.
     // ── Undo ─────────────────────────────────
     function undoMove() {
       if (aiThinking) return;
+      sessionUndos++;
 
       if (gameMode === 'ai' && currentDifficulty === 'hard') {
         playErrorSound();
@@ -5627,6 +6831,8 @@ limitations under the License.
       const toast = document.createElement('div');
       toast.className = 'toast';
       toast.textContent = msg;
+      const outDelay = Math.max(0, durationMs - 400);
+      toast.style.animation = `toastIn 0.4s ease, toastOut 0.4s ease ${outDelay}ms forwards`;
       container.appendChild(toast);
       setTimeout(() => toast.remove(), durationMs);
     }
@@ -7372,6 +8578,7 @@ limitations under the License.
     const HISTORICAL_MOVE_MOTIFS = [
       {
         id: 'marshall_qg3', move: 'Qg3', side: 'b', minPly: 12,
+        sq: [5, 6], minP: 6,          // rich middlegame — g3
         nameEs: 'Marshall vs Levitsky (1912)', nameEn: 'Marshall vs Levitsky (1912)',
         commentEs: 'evoca el célebre sacrificio de dama de Marshall en Breslavia 1912, una idea táctica de gran imaginación.',
         commentEn: 'echoes Marshall\'s famous queen sacrifice in Breslau 1912, a deeply imaginative tactical idea.',
@@ -7380,6 +8587,7 @@ limitations under the License.
       },
       {
         id: 'vladimirov_bh6', move: 'Bh6', side: 'w', minPly: 10,
+        sq: [2, 7], minP: 6,          // middlegame attack — h6
         nameEs: 'Vladimirov vs Epishin (1987)', nameEn: 'Vladimirov vs Epishin (1987)',
         commentEs: 'recuerda el “cañonazo” de Vladimirov: iniciativa y coordinación por encima del material inmediato.',
         commentEn: 'recalls Vladimirov\'s “cannon shot”: initiative and coordination over immediate material count.',
@@ -7388,6 +8596,7 @@ limitations under the License.
       },
       {
         id: 'sanz_rxb2', move: 'Rxb2', side: 'b', minPly: 20,
+        sq: [6, 1], minP: 2, maxP: 8, // endgame — b2
         nameEs: 'Sanz vs Ortueta (Madrid, 1933)', nameEn: 'Sanz vs Ortueta (Madrid, 1933)',
         commentEs: 'es un guiño al famoso sacrificio de torre de Sanz para activar peones pasados imparables.',
         commentEn: 'is a nod to Sanz\'s famous rook sacrifice to unleash unstoppable passed pawns.',
@@ -7396,6 +8605,7 @@ limitations under the License.
       },
       {
         id: 'shirov_bh3', move: 'Bh3', side: 'b', minPly: 24,
+        sq: [5, 7], maxP: 5,          // deep endgame R+B vs R — h3
         nameEs: 'Shirov vs Topalov (Linares, 1998)', nameEn: 'Shirov vs Topalov (Linares, 1998)',
         commentEs: 'recuerda la mítica entrega de alfil de Shirov, una idea de final tan precisa como estética.',
         commentEn: 'recalls Shirov\'s legendary bishop sacrifice, an endgame idea as precise as it is aesthetic.',
@@ -7413,11 +8623,38 @@ limitations under the License.
       return HISTORICAL_MOVE_MOTIFS.find(m => m.side === side && plyCount >= m.minPly && m.move === clean) || null;
     }
 
-    function detectHistoricalMotifFromHistory(currentHistory) {
+    // strict=true (default): full gates for trophy system (material + pawn structure + minPly).
+    // strict=false: commentary mode — only requires notation match + side + sacrifice check.
+    //   Commentary and trophies are designed to fire together: commentary uses the same
+    //   sacrifice gate (attacked square) but skips material/pawn/minPly so it always
+    //   echoes any historically-shaped sacrifice regardless of game phase.
+    // moverColor: pass the actual color that moved (avoids parity bug when FEN starts with Black).
+    function detectHistoricalMotifFromHistory(currentHistory, brd, strict = true, moverColor = null) {
       if (!currentHistory || !currentHistory.length) return null;
       const lastMove = currentHistory[currentHistory.length - 1];
-      const mover = currentHistory.length % 2 === 1 ? 'w' : 'b';
-      return detectHistoricalMotifByMoveNotation(lastMove, mover, currentHistory.length);
+      // If moverColor not provided, derive from parity (only correct for White-to-start games).
+      const mover = moverColor || (currentHistory.length % 2 === 1 ? 'w' : 'b');
+      const plyCount = currentHistory.length;
+      // In non-strict (commentary) mode skip the minPly gate so commentary always fires
+      // with the trophy — both just need: right piece, right square, square is attacked.
+      const motif = strict
+        ? detectHistoricalMotifByMoveNotation(lastMove, mover, plyCount)
+        : (HISTORICAL_MOVE_MOTIFS.find(m => m.side === mover && m.move === normalizeNotation(lastMove)) || null);
+      if (!motif || !brd) return motif;
+      // Sacrifice check: destination must be attacked by the opponent after the move
+      if (motif.sq && !isSquareAttacked(motif.sq[0], motif.sq[1], mover, brd)) return null;
+      if (!strict) return motif; // commentary only needs the sacrifice condition
+      // Strict: material gate + pawn structure (trophy system)
+      let nonPawnPieces = 0;
+      for (let r = 0; r < 8; r++)
+        for (let c = 0; c < 8; c++) {
+          const p = brd[r][c];
+          if (p !== ' ' && p.toUpperCase() !== 'P' && p.toUpperCase() !== 'K') nonPawnPieces++;
+        }
+      if (motif.minP !== undefined && nonPawnPieces < motif.minP) return null;
+      if (motif.maxP !== undefined && nonPawnPieces > motif.maxP) return null;
+      if (!motifPawnCheck(motif.id, brd, mover)) return null;
+      return motif;
     }
 
     function sqToRc(sq) {
@@ -12597,8 +13834,16 @@ limitations under the License.
       if (isOpening && openingMatch && shouldAnnounceOpening(currentHistory, openingMatch, board)) {
         openingName = perspectiveName(localizeOpeningName(openingMatch.name), colorWhoMoved);
         openingTechNote = localizeOpeningDescription(openingMatch.desc);
+        // 🗺️ opening_explorer: track distinct named openings in profile
+        if (currentProfile && openingMatch.name && gameMode === 'ai' && !sessionStartedFromFen) {
+          const key = openingMatch.name.toLowerCase().trim();
+          if (!currentProfile.namedOpeningsPlayed.includes(key)) {
+            currentProfile.namedOpeningsPlayed.push(key);
+            saveProfile();
+          }
+        }
       }
-      const historicalMotif = detectHistoricalMotifFromHistory(currentHistory);
+      const historicalMotif = detectHistoricalMotifFromHistory(currentHistory, board, false, colorWhoMoved);
 
       // 🧠 NORMAL DICTIONARIES (3rd Person Narrative)
       const frasesSerias = {
@@ -13127,7 +14372,12 @@ limitations under the License.
         comment = getRnd(bookPhrases, 'book_theory');
       }
       else if (historicalMotif) {
-        comment = lang === 'en' ? getRnd([`Historical echo: **${lastMove}** recalls **${historicalMotif.nameEn}**.`], 'historical_note') : getRnd([`Eco histórico: **${lastMove}** recuerda a **${historicalMotif.nameEs}**.`], 'historical_note');
+        toneUsed = 'serious';
+        const _hm = historicalMotif;
+        comment = lang === 'en'
+          ? `⚡ **${lastMove}** ${_hm.commentEn} *(${_hm.nameEn})*`
+          : `⚡ **${lastMove}** ${_hm.commentEs} *(${_hm.nameEs})*`;
+        moveQuality = 0; // historical echo is its own annotation; don't double-up with quality label
       }
       else if (isCheck && moveQuality === -3) {
         // Check given but a piece is left hanging — don't combine contradictory messages
@@ -13201,6 +14451,7 @@ limitations under the License.
     }
 
     function analyzePosition() {
+      sessionHints++;
       const pList = document.getElementById('professorList');
       if (!pList) return;
 
@@ -13315,7 +14566,7 @@ limitations under the License.
 
       // ── 1. OPENING THEORY ─────────────────────────────────────────────────
       if (history.length > 0) {
-        const motif = detectHistoricalMotifFromHistory(history);
+        const motif = detectHistoricalMotifFromHistory(history, board, true, turn === 'w' ? 'b' : 'w');
         if (motif) {
           notes.push({
             icon: '📚',
@@ -14370,6 +15621,7 @@ limitations under the License.
     }
 
     function requestBestMove() {
+      sessionHints++;
       lastProfessorAction = 'best';
 
       // Puzzle mode: reveal the expected next move as a hint
@@ -15487,6 +16739,7 @@ limitations under the License.
     }
 
     function analyzeLastMove() {
+      sessionHints++;
       lastProfessorAction = 'wasgood';
       const pList = document.getElementById('professorList');
 
@@ -16344,6 +17597,7 @@ limitations under the License.
 
     // ── Start ────────────────────────────────
     createBackground('magic');
+    loadProfile();
     init();
 
     // 💾 BOOT: auto-resume saved game if one exists, otherwise show menu
@@ -16617,6 +17871,40 @@ limitations under the License.
         descEn: "White to move. The a-pawn with wrong bishop can be a tricky draw.",
         fen: "k7/P7/K7/8/8/8/8/8 w - - 0 1"
       },
+
+      // ── LEYENDAS: PARTIDAS HISTÓRICAS ────────────────────────────────────────
+      {
+        cat: 'historical',
+        nameEs: "🪙 La Lluvia de Oro — Marshall 1912",
+        nameEn: "🪙 The Golden Rain — Marshall 1912",
+        descEs: "Juegan negras — posición exacta del juego (movimiento 23). Frank Marshall sacrificó su dama en g3 contra Levitsky en Breslavia 1912 — los espectadores lanzaron monedas de oro al tablero. Juega Dxg3!! Desbloquea el trofeo 🪙 La Lluvia de Oro.",
+        descEn: "Black to move — exact game position (move 23). Frank Marshall sacrificed his queen on g3 against Levitsky in Breslau 1912 — spectators threw gold coins at the board. Play Qg3!! Unlocks the 🪙 Golden Rain trophy.",
+        fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23"
+      },
+      {
+        cat: 'historical',
+        nameEs: "💥 El Cañonazo — Vladimirov 1987",
+        nameEn: "💥 The Cannon Shot — Vladimirov 1987",
+        descEs: "Juegan blancas. Vladimirov sorprendió al mundo sacrificando el alfil en h6 contra Epishin en 1987 — iniciativa y coordinación por encima del material. Juega Axh6!! Desbloquea el trofeo 💥 El Cañonazo.",
+        descEn: "White to move. Vladimirov stunned the world by sacrificing the bishop on h6 against Epishin in 1987 — initiative and coordination over material. Play Bh6!! Unlocks the 💥 Cannon Shot trophy.",
+        fen: "r4k1r/1b2bPR1/p4n2/3p4/4P2P/1q2B2B/PpP5/1K4R1 w - - 0 26"
+      },
+      {
+        cat: 'historical',
+        nameEs: "🚂 La Locomotora — Ortueta vs Sanz 1933",
+        nameEn: "🚂 The Locomotive — Ortueta vs Sanz 1933",
+        descEs: "Juegan negras — posición exacta (movimiento 31). En Madrid 1933, Sanz inmortaliza el sacrificio de torre en b2 para liberar peones pasados imparables. Juega Txb2!! Desbloquea el trofeo 🚂 La Locomotora.",
+        descEn: "Black to move — exact game position (move 31). In Madrid 1933, Sanz immortalized the rook sacrifice on b2 to unleash unstoppable passed pawns. Play Rxb2!! Unlocks the 🚂 Locomotive trophy.",
+        fen: "8/pR4pk/1b2p3/2p3p1/N1p5/7P/PP1r2P1/6K1 b - - 2 31"
+      },
+      {
+        cat: 'historical',
+        nameEs: "🔥 Fuego en el Tablero — Shirov vs Topalov 1998",
+        nameEn: "🔥 Fire on the Board — Shirov vs Topalov 1998",
+        descEs: "Juegan negras — posición exacta (movimiento 47). Alexei Shirov jugó Axh3!! en Linares 1998 — una entrega de alfil tan precisa como estética. El rey blanco está en g2 y el alfil irá a h3. Desbloquea el trofeo 🔥 Fuego en el Tablero.",
+        descEn: "Black to move — exact game position (move 47). Alexei Shirov played Bh3!! in Linares 1998 — a bishop sacrifice as precise as it is beautiful. The white king stands on g2 and the bishop heads to h3. Unlocks the 🔥 Fire on the Board trophy.",
+        fen: "8/8/4kpp1/3p1b2/p6P/2B5/6P1/6K1 b - - 2 47"
+      }
     ];
 
     // 🎲 BASE DE DATOS DE PUZZLES ALEATORIOS (100 posiciones curadas)
@@ -16791,25 +18079,6 @@ limitations under the License.
         descEs: "Mate en 3 para negras. La dama y la torre cooperan. Un brillante sacrificio de interferencia corta la torre blanca de la defensa del pasillo."
       },
 
-      // ── Famous game classics ──────────────────────────────────────────────
-      {
-        fen: "r3r1k1/ppq2ppp/1bpp1n2/8/2PP4/1P2PNP1/PBQ2PBP/R4RK1 b - - 0 1",
-        themes: ["tactic", "sacrifice", "initiative"], rating: 1700,
-        descEn: "Black to play. Inspired by Tal's style — a piece sacrifice opens the kingside with a 4-move forcing sequence.",
-        descEs: "Negras juegan. Inspirado en el estilo de Tal: un sacrificio de pieza abre el flanco de rey con una secuencia forzada de 4 movimientos."
-      },
-      {
-        fen: "r1b2rk1/2q1bppp/p2pp3/1p6/3BP3/1BN2Q2/PPP3PP/4RRK1 w - - 0 1",
-        themes: ["tactics", "discoveredAttack", "pin"], rating: 1750,
-        descEn: "White to play. A 4-move combination involving a discovered attack and a pin demolishes Black's position. Find it!",
-        descEs: "Blancas juegan. Una combinación de 4 movimientos con un ataque descubierto y una clavada destruye la posición negra. ¡Encuéntrala!"
-      },
-      {
-        fen: "2r3k1/1b3ppp/p3pn2/3p4/1p1P4/4BN1P/PP1QBPP1/4R1K1 b - - 0 1",
-        themes: ["sacrifice", "queenSacrifice", "tactics"], rating: 1800,
-        descEn: "Black to play. A queen sacrifice on g2 sets off a 4-move combination that wins material or forces checkmate.",
-        descEs: "Negras juegan. Un sacrificio de dama en g2 desencadena una combinación de 4 movimientos que gana material o fuerza el jaque mate."
-      }
     ];
 
 
@@ -16826,6 +18095,7 @@ limitations under the License.
       document.getElementById('tabFen-opening').textContent = en ? 'Openings' : 'Aperturas';
       document.getElementById('tabFen-tactic').textContent = en ? 'Tactics' : 'Táctica';
       document.getElementById('tabFen-endgame').textContent = en ? 'Endgames' : 'Finales';
+      document.getElementById('tabFen-historical').textContent = en ? '📜 Legends' : '📜 Leyendas';
       document.getElementById('fenModePvp').textContent = en ? '👫 2 Players' : '👫 2 Jugadores';
       document.getElementById('fenModeAi').textContent = en ? '🤖 vs AI' : '🤖 vs IA';
       document.getElementById('fenDiffEasy').textContent = en ? '🐣 Easy' : '🐣 Fácil';
@@ -17056,7 +18326,7 @@ limitations under the License.
       const en = currentLanguage === 'en';
       list.innerHTML = '';
 
-      ['all', 'opening', 'tactic', 'endgame'].forEach(cat => {
+      ['all', 'opening', 'tactic', 'endgame', 'historical'].forEach(cat => {
         const tab = document.getElementById(`tabFen-${cat}`);
         if (tab) {
           tab.classList.toggle('active', cat === category);
@@ -17187,6 +18457,7 @@ limitations under the License.
 
     window.hawkEyeTimer = null;
     function toggleHawksEye() {
+      sessionHints++;
       clearArrows(); // Limpia flechas previas
       if (window.hawkEyeTimer) { clearTimeout(window.hawkEyeTimer); window.hawkEyeTimer = null; }
       const enemyColor = turn === 'w' ? 'b' : 'w';
@@ -17324,7 +18595,8 @@ limitations under the License.
         window.snapshotAfterHumanMove = null;
         window.snapshotBeforeRules = null;
         puzzleMode = null;
-        fenPositionLoaded = true; // tell the Professor this isn't move-0 of a normal game
+        fenPositionLoaded = true;     // tell the Professor this isn't move-0 of a normal game
+        sessionStartedFromFen = true; // block end-of-game trophies for FEN-loaded games
 
         // ✨ FIX: Limpiar al Profesor al cargar nuevo FEN
         const pList = document.getElementById('professorList');
