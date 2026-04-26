@@ -1722,6 +1722,57 @@ limitations under the License.
       border-color: rgba(168,85,247,0.5);
     }
 
+    /* ── Trophy celebration overlay ──────────── */
+    .trophy-celebration {
+      position: fixed; inset: 0; z-index: 600;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .trophy-celebration.show { opacity: 1; pointer-events: all; }
+    .trophy-celebration-card {
+      background: linear-gradient(145deg, #fff 0%, #fdf4ff 100%);
+      border: 2px solid rgba(168,85,247,0.35);
+      border-radius: 28px; padding: 36px 48px;
+      text-align: center;
+      box-shadow: 0 16px 60px rgba(168,85,247,0.35);
+      transform: scale(0.7); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .trophy-celebration.show .trophy-celebration-card { transform: scale(1); }
+    .trophy-celebration-icon { font-size: 4rem; line-height: 1; margin-bottom: 10px; }
+    .trophy-celebration-label {
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(168,85,247,0.7); margin-bottom: 6px;
+    }
+    .trophy-celebration-name {
+      font-size: 1.4rem; font-weight: 800;
+      background: linear-gradient(135deg,#a855f7,#f472b6);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* ── Streak & recent results ─────────────── */
+    .profile-streak-row {
+      display: flex; gap: 10px; margin: 10px 0 4px;
+    }
+    .profile-streak-chip {
+      flex: 1; text-align: center; padding: 8px 6px;
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 12px; font-size: 0.82rem; font-weight: 700;
+    }
+    .profile-streak-chip strong { display: block; font-size: 1.3rem; }
+    .recent-dots-row {
+      display: flex; gap: 5px; align-items: center;
+      margin: 8px 0 2px; flex-wrap: wrap;
+    }
+    .recent-dot {
+      width: 13px; height: 13px; border-radius: 50%;
+    }
+    .dot-w { background: #4ade80; }
+    .dot-d { background: #facc15; }
+    .dot-l { background: #f87171; }
+
     /* ── Screen system ─────────────────────── */
     .screen-overlay {
       position: fixed;
@@ -2837,6 +2888,15 @@ limitations under the License.
     </div>
   </div>
 
+  <!-- Trophy celebration overlay -->
+  <div id="trophyCelebration" class="trophy-celebration" onclick="this.classList.remove('show')">
+    <div class="trophy-celebration-card">
+      <div class="trophy-celebration-icon" id="trophyCelebIcon"></div>
+      <div class="trophy-celebration-label" id="trophyCelebLabel"></div>
+      <div class="trophy-celebration-name" id="trophyCelebName"></div>
+    </div>
+  </div>
+
   <!-- Status overlay -->
   <div class="status-banner" id="statusBanner">
     <div class="status-box">
@@ -3545,7 +3605,9 @@ limitations under the License.
         hard:        { w: 0, d: 0, l: 0 },
         grandmaster: { w: 0, d: 0, l: 0 }
       },
-      unlockedTrophies: []       // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
+      streak: { current: 0, best: 0 },
+      recentResults: [],           // last 10 results: 'w' | 'd' | 'l'
+      unlockedTrophies: []         // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
     };
 
     let currentProfile = null;
@@ -3580,6 +3642,8 @@ limitations under the License.
               hard:        { ...defaultProfile.bots.hard,        ...((saved.bots || {}).hard        || {}) },
               grandmaster: { ...defaultProfile.bots.grandmaster, ...((saved.bots || {}).grandmaster || {}) }
             },
+            streak:          { ...defaultProfile.streak, ...(saved.streak || {}) },
+            recentResults:   Array.isArray(saved.recentResults) ? saved.recentResults : [],
             unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : []
           };
         } else {
@@ -3646,7 +3710,7 @@ limitations under the License.
       the_rebel:               { icon:'♞', cat:3, hidden:true, name:{es:'El Rebelde',           en:'The Rebel'},             desc:{es:'Coronas un peón con Caballo y ganas.',                                  en:'Promote a pawn to a Knight and win.'} },
       night_owl:               { icon:'🦉', cat:3, hidden:true, name:{es:'Noctámbulo',          en:'Night Owl'},             desc:{es:'Gana una partida entre medianoche y las 4 de la mañana.',              en:'Win a game between midnight and 4 AM.'} },
       // Category 4 — The Historians (real-time, sacrifice required)
-      secret_marshall_qg3:    { icon:'🌧️', cat:4, name:{es:'La Lluvia de Oro',      en:'Golden Rain'},         desc:{es:'Dama a g3 atacada — evoca el célebre sacrificio de Marshall vs Levitsky (Breslavia, 1912). ¿Fue buena en tu posición?',  en:'Queen to g3 under attack — echoes Marshall\'s famous queen sacrifice vs Levitsky (Breslau, 1912). Was it good in yours?'} },
+      secret_marshall_qg3:    { icon:'🪙', cat:4, name:{es:'La Lluvia de Oro',      en:'Golden Rain'},         desc:{es:'Dama a g3 atacada — evoca el célebre sacrificio de Marshall vs Levitsky (Breslavia, 1912). ¿Fue buena en tu posición?',  en:'Queen to g3 under attack — echoes Marshall\'s famous queen sacrifice vs Levitsky (Breslau, 1912). Was it good in yours?'} },
       secret_vladimirov_bh6:  { icon:'💥', cat:4, name:{es:'El Cañonazo',           en:'The Cannon Shot'},     desc:{es:'Alfil a h6 atacado — recuerda el "cañonazo" de Vladimirov vs Epishin (1987). ¿Fue buena en tu posición?',           en:'Bishop to h6 under attack — recalls Vladimirov\'s "cannon shot" vs Epishin (1987). Was it good in yours?'} },
       secret_sanz_rxb2:       { icon:'🚂', cat:4, name:{es:'La Locomotora',         en:'The Locomotive'},      desc:{es:'Torre a b2 atacada — guiño al sacrificio de Sanz vs Ortueta (Madrid, 1933). ¿Fue buena en tu posición?',            en:'Rook to b2 under attack — a nod to Sanz\'s rook sacrifice vs Ortueta (Madrid, 1933). Was it good in yours?'} },
       secret_shirov_bh3:      { icon:'🔥', cat:4, name:{es:'Fuego en el Tablero',   en:'Fire on Board'},       desc:{es:'Alfil a h3 atacado — recuerda la mítica entrega de Shirov vs Tópálov (Linares, 1998). ¿Fue buena en tu posición?',  en:'Bishop to h3 under attack — recalls Shirov\'s legendary sacrifice vs Topalov (Linares, 1998). Was it good in yours?'} },
@@ -3659,9 +3723,22 @@ limitations under the License.
       currentProfile.unlockedTrophies.push({ id, unlockedAt: new Date().toISOString() });
       saveProfile();
       const def = TROPHY_DEFS[id];
-      const name = def ? (def.name[currentLanguage] || def.name.es) : id;
-      showToast(`🏆 ${name}`, 4500);
+      showTrophyCelebration(def, id);
       console.log(`[Statistician] Trophy unlocked: ${id}`);
+    }
+
+    function showTrophyCelebration(def, id) {
+      const name  = def ? (def.name[currentLanguage] || def.name.es) : id;
+      const icon  = def ? def.icon : '🏆';
+      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜' };
+      const label = def ? (catLabels[def.cat] + ' ' + t('profileCat' + def.cat)) : '🏆';
+      document.getElementById('trophyCelebIcon').textContent  = icon;
+      document.getElementById('trophyCelebLabel').textContent = label;
+      document.getElementById('trophyCelebName').textContent  = name;
+      const el = document.getElementById('trophyCelebration');
+      el.classList.add('show');
+      clearTimeout(el._hideTimer);
+      el._hideTimer = setTimeout(() => el.classList.remove('show'), 2800);
     }
 
     function checkTrophyUnlocks(result, difficulty, movesCount) {
@@ -3735,6 +3812,20 @@ limitations under the License.
 
       p.stats.totalUndos    += sessionUndos;
       p.stats.hintsUsed     += sessionHints;
+
+      // Streak
+      if (result === 'win') {
+        p.streak.current++;
+        if (p.streak.current > p.streak.best) p.streak.best = p.streak.current;
+        if ([3, 5, 10].includes(p.streak.current))
+          setTimeout(() => showToast(`🔥 ${p.streak.current} ${t('streakMilestone')}`, 4000), 2800);
+      } else {
+        p.streak.current = 0;
+      }
+
+      // Recent results (last 10)
+      p.recentResults.push(result === 'win' ? 'w' : result === 'draw' ? 'd' : 'l');
+      if (p.recentResults.length > 10) p.recentResults.shift();
 
       const bot = p.bots[difficulty] || p.bots.easy;
       if (result === 'win')       bot.w++;
@@ -3972,7 +4063,11 @@ limitations under the License.
         profileImportError: '❌ Archivo inválido. Comprueba que sea un guardado de Airin.',
         trophyFilterAll: 'Todos',
         trophyFilterEarned: 'Conseguidos',
-        trophyFilterPending: 'Pendientes'
+        trophyFilterPending: 'Pendientes',
+        streakMilestone: '¡victorias seguidas!',
+        streakCurrent: 'Racha actual',
+        streakBest: 'Mejor racha',
+        recentGames: 'Últimas partidas'
 
       },
       en: {
@@ -4055,7 +4150,11 @@ limitations under the License.
         profileImportError: '❌ Invalid file. Make sure it\'s an Airin save.',
         trophyFilterAll: 'All',
         trophyFilterEarned: 'Earned',
-        trophyFilterPending: 'Pending'
+        trophyFilterPending: 'Pending',
+        streakMilestone: 'wins in a row!',
+        streakCurrent: 'Current streak',
+        streakBest: 'Best streak',
+        recentGames: 'Recent games'
       }
     };
 
@@ -6061,6 +6160,12 @@ limitations under the License.
       const unlockedCount    = p ? p.unlockedTrophies.length : 0;
       const totalTrophyPct   = Math.round(unlockedCount / totalTrophyCount * 100);
 
+      const streakCurrent = p?.streak?.current || 0;
+      const streakBest    = p?.streak?.best    || 0;
+      const recentDots    = (p?.recentResults || [])
+        .map(r => `<span class="recent-dot dot-${r}" title="${r === 'w' ? '✔' : r === 'd' ? '–' : '✘'}"></span>`)
+        .join('');
+
       box.innerHTML = `
         <button class="profile-close" onclick="closeProfileModal()" title="${_('profileClose')}">✕</button>
         <div class="profile-hero">
@@ -6082,6 +6187,12 @@ limitations under the License.
             <div class="profile-stat-chip"><strong>${winRate}%</strong>${_('profileWinRate')}</div>
             <div class="profile-stat-chip"><strong>${p?.stats?.totalWins||0}</strong>🏆</div>
           </div>
+          <div class="profile-streak-row">
+            <div class="profile-streak-chip"><strong>${streakCurrent}🔥</strong>${_('streakCurrent')}</div>
+            <div class="profile-streak-chip"><strong>${streakBest}⭐</strong>${_('streakBest')}</div>
+          </div>
+          ${recentDots ? `<div style="font-size:0.75rem;font-weight:700;opacity:0.6;margin-top:6px;">${_('recentGames')}</div>
+          <div class="recent-dots-row">${recentDots}</div>` : ''}
           <div style="margin-top:10px;">
             ${botBar('easy')}${botBar('medium')}${botBar('hard')}${botBar('grandmaster')}
           </div>
