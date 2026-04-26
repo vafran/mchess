@@ -4113,6 +4113,7 @@ limitations under the License.
           currentDifficulty,
           playerColor,
           boardFlipped: !!boardFlipped,
+          sessionGameRecorded: !!sessionGameRecorded,
           ts: Date.now()
         };
         localStorage.setItem(GAME_SAVE_KEY, JSON.stringify(state));
@@ -4159,6 +4160,7 @@ limitations under the License.
         currentDifficulty = s.currentDifficulty || 'easy';
         playerColor = s.playerColor || 'w';
         boardFlipped = !!s.boardFlipped;
+        sessionGameRecorded = !!s.sessionGameRecorded;
         const diffCfg = DIFF_SETTINGS[currentDifficulty];
         if (diffCfg) { aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit; }
         undoStack = []; selected = null; legalMoves = []; animating = false;
