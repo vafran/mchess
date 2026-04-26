@@ -1,7 +1,7 @@
 # 🏆 Airin Chess — Trophy Guide
 
 > **42 trophies total** | Hidden Easter Eggs marked with 🔒  
-> Version: v2.23.0+
+> Version: v2.24.0+
 
 ---
 
