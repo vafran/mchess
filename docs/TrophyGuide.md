@@ -1,6 +1,6 @@
 # 🏆 Airin Chess — Trophy Guide
 
-> **60 trophies total** | Hidden Easter Eggs marked with 🔒  
+> **64 trophies total** | Hidden Easter Eggs marked with 🔒  
 > Version: v2.24.0+
 
 ---
@@ -43,6 +43,7 @@
 | ⏳ | **Royal Endurance** | Survive more than 60 moves in a single game against the Wise King (Master). |
 | 💎 | **The Immortal** | Defeat the Wise King without ever pressing Undo. |
 | ♟️ | **The Usurper** | Deliver checkmate to the Wise King using a **pawn** as the mating piece. |
+| 👑 | **King's Support** | Deliver checkmate with your King on the **6th rank** (or 3rd as Black), within 2 squares of the enemy king. |
 
 ### No-Undo Ladder
 *Play without a safety net. Each level of the ladder must be earned separately.*
@@ -58,6 +59,7 @@
 > - **Iron Castle**: castle early and play a positional game. Avoid king walks!
 > - **David vs Goliath**: survive a massive blunder against the hardest bots, then mount a comeback. Watch the eval bar go deep red and then come back.
 > - **The Usurper**: advance a passed pawn to the 7th rank and use it for checkmate. Works best in endgames with a back-rank setup.
+> - **King's Support**: march your king to the 6th rank before delivering mate. Steer into a K+R or K+Q endgame, centralize your king aggressively, and use it to cut off the enemy king's escapes.
 > - **No-Undo Ladder**: each trophy requires winning the full game without a single Undo — start with Easy to build the habit, then climb the ladder.
 
 ---
@@ -117,10 +119,12 @@
 |------|-----------------|---------------|
 | 🐛 | **Ant Army** | Move **5 different pawns** off their starting squares in a single game. |
 | 🐝 | **Queen Bee** | Win a game where the **queen delivers the final capture** that sets up checkmate. |
+| 🌊 | **Pawn Storm** | Have **4 of your pawns** simultaneously on the **6th rank or further** advanced at the same time. |
 
 > **Tips:**
 > - **Ant Army**: push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.
 > - **Queen Bee**: you need the queen to be the piece that makes the last capture before mate. Set up a position where your queen captures the defending piece and then checkmate follows.
+> - **Pawn Storm**: push pawns aggressively on both flanks. Four pawns reaching rank 6 simultaneously creates an almost unstoppable wave — it fires the moment the 4th one arrives.
 
 ---
 
@@ -136,6 +140,7 @@
 | 🎁 | **Discovered Attack!** | Deliver a **discovered check** — move one piece and reveal a check from another. |
 | 🐉 | **The Dragon** | Develop a Bishop to a **fianchetto square** (b2, g2, b7, or g7) in the first 10 moves. |
 | 🔫 | **The Battery** | Stack **two of your Rooks** on the same column with no pieces between them. |
+| 🌪️ | **Chaos Theory** | Have **4 consecutive half-moves** all be captures — both sides trading piece for piece without stopping. |
 
 > **Tips:**
 > - **The Invader**: once you get a rook to the 7th rank, keep it there by defending it or making threats. Count 3 of *your* turns with the rook still on that rank.
@@ -145,6 +150,7 @@
 > - **Discovered Attack!**: move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.
 > - **The Dragon**: fianchetto your bishop to b2 or g2 (as White) or b7 or g7 (as Black) early in the game. A classic setup in the King's Indian, Pirc, or Dragon Sicilian.
 > - **The Battery**: double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file in open positions.
+> - **Chaos Theory**: happens naturally in sharp, open positions (Sicilian, King's Gambit, Italian). When both players start trading, keep capturing — 4 consecutive half-moves means 2 of yours and 2 of the AI's, or any combination of 4 in a row.
 
 ---
 
@@ -250,6 +256,7 @@ Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive
 | 🙈 | **Knights? Who Needs Them?** | 🔒 Win a game while your knights stay home on b1 and g1 the whole time. |
 | 🐱 | **Mirror Moves** | 🔒 Imitation is the sincerest form of flattery — for the first three moves, at least. |
 | 🥲 | **The Survivor** | 🔒 Sometimes one little pawn is all you need. |
+| 🐴 | **Philidor's Ghost** | 🔒 The most elegant finish in chess. The king cannot escape its own guard. |
 
 ---
 
@@ -258,13 +265,13 @@ Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive
 | Category | Count |
 |---|---|
 | 🏅 Progression | 11 |
-| 🧠 Technical | 11 |
+| 🧠 Technical | 12 |
 | ⚡ Speed & Challenge | 3 |
 | 🔥 Streaks & Loyalty | 4 |
 | 📚 Learning | 2 |
-| 🎭 Fun & Silly | 2 |
-| ⚔️ Tactics | 7 |
+| 🎭 Fun & Silly | 3 |
+| ⚔️ Tactics | 8 |
 | 🥊 Two-Player | 7 |
 | 📜 The Historians | 5 |
-| 🥚 Easter Eggs (hidden) | 8 |
-| **Total** | **60** |
+| 🥚 Easter Eggs (hidden) | 9 |
+| **Total** | **64** |
