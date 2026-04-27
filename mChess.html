@@ -4416,7 +4416,7 @@ limitations under the License.
         hudPvp: '👫 2 Jugadores', hudVsAi: '🤖 vs IA',
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
-        mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?',
+        mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?', mainSubtitleHello: '¡Hola, {name}! ¿Con quién juegas hoy?',
         btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento', btnProfile: '🏆 Mi Perfil',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
@@ -4523,7 +4523,7 @@ limitations under the License.
         hudPvp: '👫 2 Players', hudVsAi: '🤖 vs AI',
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
-        mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?',
+        mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?', mainSubtitleHello: 'Hello, {name}! Who are you playing with today?',
         btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training', btnProfile: '🏆 My Profile',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
@@ -4759,6 +4759,15 @@ limitations under the License.
         const el = document.getElementById(id);
         if (el) el.textContent = t(key);
       });
+
+      // Personalized greeting: "Hello, <name>! Who are you playing with today?"
+      const subtitleEl = document.getElementById('menuSubtitleMain');
+      if (subtitleEl) {
+        const name = currentProfile && currentProfile.playerName ? currentProfile.playerName.trim() : '';
+        subtitleEl.textContent = name
+          ? t('mainSubtitleHello').replace('{name}', name)
+          : t('mainSubtitle');
+      }
 
       const trainingBtn = document.getElementById('trainingToggleBtn');
       if (trainingBtn) trainingBtn.textContent = trainingModeEnabled ? t('trainingOn') : t('trainingOff');
