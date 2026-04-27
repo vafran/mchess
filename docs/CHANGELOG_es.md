@@ -17,8 +17,19 @@ Formato: versión · tamaño · qué cambió.
 - **Portabilidad:** Nueva función para exportar e importar datos de perfil y estados de juego mediante archivos de guardado.
 
 ### La Vitrina de Trofeos
-- **42 Logros Desbloqueables:** Un sistema de logros completamente nuevo con 42 trofeos únicos repartidos en 8 categorías (Progresión, Técnica, Velocidad y Reto, Rachas y Lealtad, Aprendizaje, Diversión, Los Historiadores y Huevos de Pascua ocultos).
-- **Celebraciones en el Juego:** Al desbloquear trofeos, aparecerán notificaciones emergentes en tiempo real durante tu partida.
+- **64 Logros Desbloqueables:** Un sistema de logros completamente nuevo con 64 trofeos únicos — uno por cada casilla del tablero — repartidos en 9 categorías.
+  - **🏅 Progresión (12):** Primera victoria, primer jaque, primer enroque, primera coronación, primera captura al paso, derrotar a cada nivel de dificultad y más.
+  - **🧠 Técnica (10):** Juego de calidad — remontadas, enroque sin mover el rey, sobrevivir 60 jugadas al Rey Sabio, dar jaque mate con el Rey activo en la 6ª fila.
+  - **⚡ Velocidad y Reto (5):** Ganar en 15 jugadas, derrotar al Mago sin pistas, forzar tablas contra el Mago.
+  - **🔥 Rachas y Lealtad (4):** Ganar 3 seguidas, jugar en 5 días distintos, ganar 50 partidas con cada color (*Blanco y Negro*).
+  - **📚 Aprendizaje (3):** Usar al Profesor 10 veces, explorar 5 aperturas con nombre, montar un fianchetto (*El Dragón*).
+  - **⚔️ Táctica (9):** Patrones clásicos — torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, tormenta de peones y más.
+  - **🥊 Dos Jugadores (7):** Trofeos exclusivos del modo PvP.
+  - **📜 Los Historiadores (5):** Recrea sacrificios legendarios de la historia del ajedrez en tiempo real.
+  - **🥚 Huevos de Pascua (9):** Nueve trofeos ocultos. Nombres escondidos hasta desbloquearlos — incluyendo uno que recompensa el patrón de jaque mate más elegante del ajedrez.
+- **Escalera Sin-Deshacer:** Cuatro trofeos por ganar a cada dificultad sin pulsar Deshacer ni una vez — *Sin Ruedines* (Fácil), *Escrito a Tinta* (Medio), *Hechizo Irreversible* (Difícil), *El Inmortal* (Rey Sabio).
+- **Estadísticas por Color:** El perfil ahora registra victorias, tablas y derrotas por separado según el color con el que jugaste.
+- **Celebraciones en el Juego:** Una notificación emergente aparece en la esquina inferior derecha al desbloquear un trofeo — visible pero no intrusiva, sin cubrir el tablero.
 - **Detección de Motivos Históricos:** El motor ahora reconoce y recompensa famosos sacrificios históricos (ej. "La Lluvia de Oro" de Marshall) si se juegan en la partida.
 
 ---

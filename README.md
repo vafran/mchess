@@ -108,6 +108,7 @@ Airin remembers you. Every game you play is tracked, and your progress is reward
 Upon starting for the first time, Airin asks for your name. From that point on, it tracks your full history.
 
 - **Lifetime stats** — total games, wins, draws, losses, undos used, hints requested
+- **Stats by color** — separate win/draw/loss record for games played as White and as Black
 - **Hall of Records** — fastest win (fewest moves) and highest evaluation advantage ever achieved
 - **Per-bot W/D/L bars** — colour-coded record against each difficulty level
 - **Editable name** — tap your name in the profile to rename yourself at any time
@@ -116,15 +117,25 @@ Upon starting for the first time, Airin asks for your name. From that point on, 
 
 ### 🏆 The Trophy Cabinet
 
-42 unlockable achievements across four categories.
+**64 unlockable achievements across 9 categories** — one trophy for every square on the board.
 
-**Progression & Milestones** — defeat each difficulty level, win in under 20 moves, pull off your first en passant.
+**🏅 Progression** — defeat each difficulty level, pull off your first en passant, make your first check, castle for the first time.
 
-**Technical Challenges** — win with zero hints and zero undos, survive 60 moves against Wise King, checkmate with a pawn, force a draw from a losing position.
+**🧠 Technical** — win after a comeback, castle and never move your king again, deliver checkmate with your King marching to rank 6, climb the No-Undo Ladder from Easy all the way to the Wise King.
 
-**Easter Eggs (hidden)** — 8 secret trophies. Their names are hidden until you unlock them. You'll figure them out.
+**⚡ Speed & Challenge** — win in 15 moves, beat the Hard bot without any hints, force a draw against the Magician.
 
-**The Historians** — recreate legendary sacrifices from chess history. If you play the exact piece to the exact square under the right conditions, Airin recognises the moment and awards the trophy in real time.
+**🔥 Streaks & Loyalty** — win 3 in a row, play on 5 different days, win 50 games on each side of the board.
+
+**📚 Learning** — use the Coach, explore named openings, set up the fianchetto.
+
+**⚔️ Tactics** — rook on the 7th rank, double rooks, battery, pawn fork, discovered check, pawn storm, and more.
+
+**🥊 Two-Player** — 7 trophies exclusive to local 2-player mode.
+
+**📜 The Historians** — recreate legendary sacrifices from chess history in real time.
+
+**🥚 Easter Eggs (hidden)** — 9 secret trophies. Names hidden until unlocked. You'll figure them out.
 
 <img src="screenshots/EN/trophy_cabinet.png" alt="Trophy Cabinet" width="500" />
 
@@ -232,12 +243,13 @@ Welcome to Airin v2.24.0! This massive update introduces **The Statistician**, g
 * **Save & Load:** You can now export your entire profile and game progress to a file and load it later on any device.
 
 ### 🏆 The Trophy Cabinet
-* **42 Unlockable Achievements:** We've added a massive Trophy Cabinet! Earn rewards for everything from your first check and pawn promotion, to winning in under 15 moves, to pulling off crazy comebacks.
-* **Hidden Easter Eggs:** There are 8 secret trophies tucked away. You won't know what they are until you accidentally (or intentionally) trigger them.
-* **The Historians:** Recreate legendary moments from chess history! If you manage to find the same brilliant sacrifices played by masters like Marshall or Vladimirov, Airin will recognize it and reward you.
+* **64 Unlockable Achievements:** A massive Trophy Cabinet with 64 trophies across 9 categories — one for every square on the board. Earn rewards for milestones, tactical patterns, historical recreations, comebacks, streaks, and more.
+* **No-Undo Ladder:** Four trophies for winning each difficulty level without ever pressing Undo — *No Training Wheels*, *Written in Ink*, *Irreversible Spell*, *The Immortal*.
+* **Hidden Easter Eggs:** 9 secret trophies tucked away. You won't know what they are until you find them.
+* **The Historians:** Recreate legendary moments from chess history! If you manage to find the same brilliant sacrifices played by masters like Marshall or Vladimirov, Airin will recognise it and reward you.
 
 ### 🎉 In-Game Celebrations
-* When you unlock an achievement, a celebration popup will appear in real-time during your game. Airin now remembers your victories. Let's see how many trophies you can collect!
+* When you unlock an achievement, a small banner slides in from the corner — real-time, non-intrusive, never covering the board. Airin now remembers your victories. Let's see how many trophies you can collect!
 
 *(For the complete engine updates from v2.23.0 and prior, see the full Changelog).*
 

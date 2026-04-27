@@ -16,8 +16,19 @@ Format: version · size · what changed.
 - **Portability:** Added functionality to export and import profile data and game states via save files.
 
 ### The Trophy Cabinet
-- **42 Unlockable Achievements:** A brand new achievement system featuring 42 unique unlockable trophies across 8 categories (Progression, Technical, Speed & Challenge, Streaks & Loyalty, Learning, Fun & Silly, The Historians, and hidden Easter Eggs).
-- **In-Game Celebrations:** Trophies trigger real-time, non-intrusive popup celebrations during gameplay when conditions are met.
+- **64 Unlockable Achievements:** A brand new achievement system featuring 64 unique unlockable trophies across 9 categories — one trophy for every square on the board.
+  - **🏅 Progression (12):** First win, first check, first castle, first promotion, first en passant, defeat each bot level, and more.
+  - **🧠 Technical (10):** High-quality, disciplined play — win after a comeback, castle without moving your king, survive 60 moves vs the Wise King, deliver checkmate with your King active on rank 6.
+  - **⚡ Speed & Challenge (5):** Win in 15 moves, beat the Hard bot without hints, force a draw against the Magician.
+  - **🔥 Streaks & Loyalty (4):** Win 3 in a row, play on 5 different days, earn *Black and White* by winning 50 games on each side.
+  - **📚 Learning (3):** Use the Coach 10 times, explore 5 named openings, set up a fianchetto bishop (*The Dragon*).
+  - **⚔️ Tactics (9):** Classic positional patterns — rook on the 7th rank, double rooks, battery, pawn fork, discovered check, pawn storm, and more.
+  - **🥊 Two-Player (7):** Exclusive trophies for PvP mode.
+  - **📜 The Historians (5):** Recreate legendary sacrifices from chess history in real time.
+  - **🥚 Easter Eggs (9):** Nine hidden trophies. Names concealed until unlocked — including one that rewards the most elegant checkmate pattern in chess.
+- **No-Undo Ladder:** Four trophies for winning each difficulty level without ever pressing Undo — *No Training Wheels* (Easy), *Written in Ink* (Medium), *Irreversible Spell* (Hard), *The Immortal* (Wise King).
+- **Stats by Color:** Profile now tracks wins, draws, and losses separately for games played as White and as Black.
+- **In-Game Celebrations:** A corner slide-in banner appears when a trophy unlocks — visible but non-intrusive, never covering the board.
 - **Historical Motifs Detection:** The engine now recognizes and rewards famous historical sacrifices (e.g., Marshall's "Golden Rain") if played in-game.
 
 ---
