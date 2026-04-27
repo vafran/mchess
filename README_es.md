@@ -48,7 +48,7 @@ El resultado es un juego que pone la pedagogía primero. El Profesor es más imp
 
 **En línea**
 
-1. **Ve a** el sitio de GitHub Pages: [https://airinchess.com](https://airinchess.com)  
+1. **Ve a** el sitio de GitHub Pages: [https://vafran.github.io/](https://vafran.github.io/)  
 2. **Juega directamente** en el navegador. No se necesita descargar nada.
 
 ---

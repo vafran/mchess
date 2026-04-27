@@ -46,7 +46,7 @@ The result is a game that puts pedagogy first. The Coach is more important than 
 
 **Online**
 
-1. **Go to** GitHub Pages site: [https://airinchess.com](https://airinchess.com)  
+1. **Go to** GitHub Pages site: [https://vafran.github.io/](https://vafran.github.io/)  
 2. **Play directly** in the browser. No download needed.
 
 ---
