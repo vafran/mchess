@@ -3768,6 +3768,12 @@ limitations under the License.
     let sessionStartedFromFen     = false;    // true if the game started from a loaded FEN (blocks end-of-game trophies)
     let sessionGameRecorded       = false;    // true once updateMatchStats has fired for this game
     let sessionPendingResult      = null;     // {result, difficulty, movesCount} — held for reviewGame path
+    // 🥊 PvP session trackers
+    let sessionPvpGamesCompleted  = 0;        // number of full PvP games completed this session
+    let sessionPvpBothUndoFree    = true;     // both players never pressed Undo this PvP game
+    let sessionPvpWhiteCheckCount = 0;        // times White gave check in current PvP game
+    let sessionPvpBlackCheckCount = 0;        // times Black gave check in current PvP game
+    let sessionPvpQueenPromoted   = false;    // a pawn was promoted (any piece) in this PvP game
     // 🎒 Child-friendly session trackers
     let sessionPawnsMovedFromStart = 0;       // distinct pawns moved from their starting rank
     let sessionKnightEverMoved    = false;    // did the player move a knight this game?
@@ -3951,6 +3957,14 @@ limitations under the License.
       la_sorpresa:             { icon:'🎁', cat:9, name:{es:'¡Sorpresa!',             en:'Discovered Attack!'},  desc:{es:'Realiza un jaque a la descubierta.',                                 en:'Deliver a discovered check.'} },
       el_dragon:               { icon:'🐉', cat:9, name:{es:'El Dragón',              en:'The Dragon'},          desc:{es:'Desarrolla un Alfil en fianchetto (b2, g2, b7 o g7) en los primeros 10 movimientos.', en:'Develop a Bishop to a fianchetto square (b2, g2, b7 or g7) in the first 10 moves.'} },
       artilleria_pesada:       { icon:'🔫', cat:9, name:{es:'Artillería Pesada',      en:'The Battery'},         desc:{es:'Apila dos Torres tuyas en la misma columna.',                        en:'Stack two of your Rooks on the same column.'} },
+      // Category 10 — PvP (Two-Player)
+      pvp_face_to_face:        { icon:'🆚', cat:10, name:{es:'Cara a Cara',            en:'Face to Face'},        desc:{es:'Completa tu primera partida entera en modo 2 Jugadores.',            en:'Complete your first full game in 2-Player mode.'} },
+      pvp_no_takebacks:        { icon:'🛑', cat:10, name:{es:'¡Sin Trampas!',           en:'No Takebacks!'},       desc:{es:'Terminad una partida PvP sin que ninguno pulse Deshacer.',           en:'Complete a PvP game where neither player presses Undo.'} },
+      pvp_peace_treaty:        { icon:'⚖️', cat:10, name:{es:'Tratado de Paz',         en:'Peace Treaty'},        desc:{es:'Llegad a un empate en una partida PvP.',                             en:'Reach a draw (stalemate, insufficient material, or threefold) in a PvP game.'} },
+      pvp_coffeehouse:         { icon:'⏱️', cat:10, name:{es:'Ajedrez Relámpago',      en:'Coffeehouse Chess'},   desc:{es:'Ganad una partida PvP en menos de 25 movimientos completos.',        en:'Win a PvP game in under 25 full moves.'} },
+      pvp_regular_rivals:      { icon:'🏙️', cat:10, name:{es:'Rivales de Siempre',    en:'Regular Rivals'},      desc:{es:'Juega 5 partidas PvP en total.',                                     en:'Play 5 PvP games in total.'} },
+      pvp_passed_crown:        { icon:'💎', cat:10, name:{es:'La Corona Coronada',    en:'The Passed Crown'},    desc:{es:'Corona un peón en una partida PvP.',                                 en:'Promote a pawn in a PvP game.'} },
+      pvp_the_handshake:       { icon:'🤝', cat:10, name:{es:'El Apretón de Manos',    en:'The Handshake'},       desc:{es:'Terminad una partida PvP en la que ambos jugadores hayan dado al menos un jaque.', en:'Finish a PvP game where both players delivered at least one check.'} },
     };
 
     function unlockTrophy(id) {
@@ -3966,7 +3980,7 @@ limitations under the License.
     function showTrophyCelebration(def, id) {
       const name  = def ? (def.name[currentLanguage] || def.name.es) : id;
       const icon  = def ? def.icon : '🏆';
-      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '🔥', 7: '📚', 8: '🎭', 9: '⚔️' };
+      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '🔥', 7: '📚', 8: '🎭', 9: '⚔️', 10: '🥊' };
       const label = def ? (catLabels[def.cat] + ' ' + t('profileCat' + def.cat)) : '🏆';
       document.getElementById('trophyCelebIcon').textContent  = icon;
       document.getElementById('trophyCelebLabel').textContent = label;
@@ -4044,6 +4058,17 @@ limitations under the License.
       // ♟️ blanco_y_negro: 50 wins as White AND 50 wins as Black
       if (p.colorStats && (p.colorStats.w?.w || 0) >= 50 && (p.colorStats.b?.w || 0) >= 50)
         unlockTrophy('blanco_y_negro');
+      // 🥊 PvP trophies (ai-mode guard is off; these fire in pvp games)
+      if (gameMode === 'pvp') {
+        sessionPvpGamesCompleted++;
+        if (sessionPvpGamesCompleted === 1)         unlockTrophy('pvp_face_to_face');
+        if (sessionPvpGamesCompleted >= 5)          unlockTrophy('pvp_regular_rivals');
+        if (sessionPvpBothUndoFree && result !== 'draw') unlockTrophy('pvp_no_takebacks');
+        if (result === 'draw')                      unlockTrophy('pvp_peace_treaty');
+        if ((result === 'win' || result === 'loss') && movesCount <= 50) unlockTrophy('pvp_coffeehouse');
+        if (sessionPvpQueenPromoted)                unlockTrophy('pvp_passed_crown');
+        if (sessionPvpWhiteCheckCount >= 1 && sessionPvpBlackCheckCount >= 1) unlockTrophy('pvp_the_handshake');
+      }
     }
 
     // Extra pawn-structure gates for motifs where piece count alone is not enough
@@ -4391,7 +4416,7 @@ limitations under the License.
         hudPvp: '👫 2 Jugadores', hudVsAi: '🤖 vs IA',
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
-        mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?',
+        mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?', mainSubtitleHello: '¡Hola, {name}! ¿Con quién juegas hoy?',
         btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento', btnProfile: '🏆 Mi Perfil',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
@@ -4461,6 +4486,7 @@ limitations under the License.
         profileCat7: '📚 Aprendizaje',
         profileCat8: '🎭 Divertidos',
         profileCat9: '⚔️ Tácticas',
+        profileCat10: '🥊 2 Jugadores',
         profileLocked: 'Bloqueado',
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
@@ -4497,7 +4523,7 @@ limitations under the License.
         hudPvp: '👫 2 Players', hudVsAi: '🤖 vs AI',
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
-        mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?',
+        mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?', mainSubtitleHello: 'Hello, {name}! Who are you playing with today?',
         btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training', btnProfile: '🏆 My Profile',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
@@ -4567,6 +4593,7 @@ limitations under the License.
         profileCat7: '📚 Learning',
         profileCat8: '🎭 Fun & Silly',
         profileCat9: '⚔️ Tactics',
+        profileCat10: '🥊 Two-Player',
         profileLocked: 'Locked',
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
@@ -4732,6 +4759,15 @@ limitations under the License.
         const el = document.getElementById(id);
         if (el) el.textContent = t(key);
       });
+
+      // Personalized greeting: "Hello, <name>! Who are you playing with today?"
+      const subtitleEl = document.getElementById('menuSubtitleMain');
+      if (subtitleEl) {
+        const name = currentProfile && currentProfile.playerName ? currentProfile.playerName.trim() : '';
+        subtitleEl.textContent = name
+          ? t('mainSubtitleHello').replace('{name}', name)
+          : t('mainSubtitle');
+      }
 
       const trainingBtn = document.getElementById('trainingToggleBtn');
       if (trainingBtn) trainingBtn.textContent = trainingModeEnabled ? t('trainingOn') : t('trainingOff');
@@ -5180,6 +5216,11 @@ limitations under the License.
       sessionFirstCastle       = false;
       sessionLastCapturePiece  = null;
       sessionRookOn7thStreak   = 0;
+      // 🥊 PvP session resets
+      sessionPvpBothUndoFree    = true;
+      sessionPvpWhiteCheckCount = 0;
+      sessionPvpBlackCheckCount = 0;
+      sessionPvpQueenPromoted   = false;
 
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
@@ -6298,11 +6339,13 @@ limitations under the License.
           if (makeMoveGeneration !== _promoGen) { animating = false; return; }
           board[tr][tc] = promoPiece;
           if (promoPiece.toUpperCase() === 'N') sessionPromotedToKnight = true;
-          // 👑 first_promotion — once in a lifetime
+          // 👑 first_promotion — once in a lifetime (AI mode)
           if (!sessionFirstPromotion && gameMode === 'ai' && color === playerColor) {
             sessionFirstPromotion = true;
             unlockTrophy('first_promotion');
           }
+          // 🥊 pvp_passed_crown — pawn promoted in a PvP game
+          if (gameMode === 'pvp') sessionPvpQueenPromoted = true;
           animating = false; // ✨ Liberar DESPUÉS del modal
         }
       } else {
@@ -6357,6 +6400,11 @@ limitations under the License.
       if (isCheckOnNext && gameMode === 'ai' && color === playerColor && !sessionFirstCheckGiven) {
         sessionFirstCheckGiven = true;
         unlockTrophy('first_check');
+      }
+      // 🥊 PvP check tracking — for The Handshake trophy
+      if (isCheckOnNext && gameMode === 'pvp') {
+        if (color === 'w') sessionPvpWhiteCheckCount++;
+        else sessionPvpBlackCheckCount++;
       }
       // 🎁 la_sorpresa: discovered check — opponent is in check but moved piece doesn't give it
       if (isCheckOnNext && gameMode === 'ai' && color === playerColor && !isCastle && type !== 'K') {
@@ -6758,6 +6806,7 @@ limitations under the License.
           ${trophySection(1,'profileCat1')}
           ${trophySection(2,'profileCat2')}
           ${trophySection(9,'profileCat9')}
+          ${trophySection(10,'profileCat10')}
           ${trophySection(5,'profileCat5')}
           ${trophySection(6,'profileCat6')}
           ${trophySection(7,'profileCat7')}
@@ -6927,6 +6976,7 @@ limitations under the License.
     function undoMove() {
       if (aiThinking) return;
       sessionUndos++;
+      if (gameMode === 'pvp') sessionPvpBothUndoFree = false; // 🥊 No Takebacks! guard
 
       if (gameMode === 'ai' && currentDifficulty === 'hard') {
         playErrorSound();
