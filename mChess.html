@@ -3738,6 +3738,7 @@ limitations under the License.
         grandmaster: { w: 0, d: 0, l: 0 }
       },
       streak: { current: 0, best: 0 },
+      colorStats: { w: {w:0,d:0,l:0}, b: {w:0,d:0,l:0} }, // wins/draws/losses by color played
       recentResults: [],           // last 10 results: 'w' | 'd' | 'l'
       unlockedTrophies: [],        // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
       playDates: [],               // ISO date strings 'YYYY-MM-DD' when player played
@@ -3788,6 +3789,10 @@ limitations under the License.
               grandmaster: { ...defaultProfile.bots.grandmaster, ...((saved.bots || {}).grandmaster || {}) }
             },
             streak:          { ...defaultProfile.streak, ...(saved.streak || {}) },
+            colorStats:      {
+              w: { ...defaultProfile.colorStats.w, ...((saved.colorStats || {}).w || {}) },
+              b: { ...defaultProfile.colorStats.b, ...((saved.colorStats || {}).b || {}) }
+            },
             recentResults:   Array.isArray(saved.recentResults) ? saved.recentResults : [],
             unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : [],
             playDates:        Array.isArray(saved.playDates) ? saved.playDates : [],
@@ -3919,6 +3924,7 @@ limitations under the License.
       comeback_kid:            { icon:'💪', cat:5, name:{es:'El Gran Regreso',        en:'Comeback Kid'},        desc:{es:'Gana tras estar 400 puntos por debajo.',                             en:'Win after being down 400 centipawns or more.'} },
       perfect_endgame:         { icon:'♟️', cat:5, name:{es:'Clínica de Ajedrez',     en:'Chess Clinic'},        desc:{es:'Gana sin perder ni una sola pieza.',                                 en:'Win without losing a single piece.'} },
       // Cat 6 — Streaks & Loyalty
+      blanco_y_negro:          { icon:'♟️', cat:6, name:{es:'Blanco y Negro',         en:'Black and White'},     desc:{es:'Gana 50 partidas con blancas Y 50 partidas con negras.',             en:'Win 50 games as White AND 50 games as Black.'} },
       three_in_a_row:          { icon:'🔥', cat:6, name:{es:'Tripleta',               en:'Hat Trick'},           desc:{es:'Gana 3 partidas seguidas.',                                          en:'Win 3 games in a row.'} },
       daily_player:            { icon:'📅', cat:6, name:{es:'¡Cada Día!',             en:'Every Day!'},          desc:{es:'Juega en 5 días de calendario distintos.',                           en:'Play on 5 different calendar days.'} },
       weekend_warrior:         { icon:'🛋️', cat:6, name:{es:'Guerrero del Fin de Semana', en:'Weekend Warrior'}, desc:{es:'Juega en sábado Y en domingo.',                                      en:'Play on both Saturday and Sunday.'} },
@@ -4027,6 +4033,9 @@ limitations under the License.
       if (p.stats.hintsUsed >= 10) unlockTrophy('professor_fan');
       // 🗺️ opening_explorer — tracked in profile.namedOpeningsPlayed
       if ((p.namedOpeningsPlayed || []).length >= 5) unlockTrophy('opening_explorer');
+      // ♟️ blanco_y_negro: 50 wins as White AND 50 wins as Black
+      if (p.colorStats && (p.colorStats.w?.w || 0) >= 50 && (p.colorStats.b?.w || 0) >= 50)
+        unlockTrophy('blanco_y_negro');
     }
 
     // Extra pawn-structure gates for motifs where piece count alone is not enough
@@ -4149,6 +4158,13 @@ limitations under the License.
       if (result === 'win')       p.stats.totalWins++;
       else if (result === 'draw') p.stats.totalDraws++;
       else                        p.stats.totalLosses++;
+
+      // Color stats
+      if (!p.colorStats) p.colorStats = { w:{w:0,d:0,l:0}, b:{w:0,d:0,l:0} };
+      const cs = p.colorStats[playerColor] || (p.colorStats[playerColor] = {w:0,d:0,l:0});
+      if (result === 'win')       cs.w++;
+      else if (result === 'draw') cs.d++;
+      else                        cs.l++;
 
       p.stats.totalUndos    += sessionUndos;
       p.stats.hintsUsed     += sessionHints;
@@ -4459,6 +4475,9 @@ limitations under the License.
         streakCurrent: 'Racha actual',
         streakBest: 'Mejor racha',
         recentGames: 'Últimas partidas',
+        profileColorStats: 'Por color',
+        profileAsWhite: '⬜ Blancas',
+        profileAsBlack: '⬛ Negras',
         firstRunTitle: '¡Bienvenido a Airin Chess!',
         firstRunBody: 'Aquí iremos guardando tus victorias, derrotas, rachas y trofeos especiales. ¿Cómo te llamamos?',
         firstRunPlaceholder: 'Tu nombre',
@@ -4562,6 +4581,9 @@ limitations under the License.
         streakCurrent: 'Current streak',
         streakBest: 'Best streak',
         recentGames: 'Recent games',
+        profileColorStats: 'By color',
+        profileAsWhite: '⬜ White',
+        profileAsBlack: '⬛ Black',
         firstRunTitle: 'Welcome to Airin Chess!',
         firstRunBody: 'We\'ll keep track of your wins, losses, streaks and special trophies. What should we call you?',
         firstRunPlaceholder: 'Your name',
@@ -6680,6 +6702,29 @@ limitations under the License.
           <div class="recent-dots-row">${recentDots}</div>` : ''}
           <div style="margin-top:10px;">
             ${botBar('easy')}${botBar('medium')}${botBar('hard')}${botBar('grandmaster')}
+          </div>
+          <div style="margin-top:10px;">
+            <div style="font-size:0.75rem;font-weight:700;opacity:0.6;margin-bottom:4px;">${_('profileColorStats')}</div>
+            ${(() => {
+              const cw = p?.colorStats?.w || {w:0,d:0,l:0};
+              const cb = p?.colorStats?.b || {w:0,d:0,l:0};
+              const row = (label, cs) => {
+                const tot = cs.w + cs.d + cs.l;
+                const wPct = tot ? Math.round(cs.w/tot*100) : 0;
+                const dPct = tot ? Math.round(cs.d/tot*100) : 0;
+                const lPct = tot ? 100 - wPct - dPct : 0;
+                return `<div class="profile-bot-row">
+                  <span class="profile-bot-label">${label}</span>
+                  <div class="profile-bot-bar">
+                    <div class="profile-bot-bar-w" style="width:${wPct}%"></div>
+                    <div class="profile-bot-bar-d" style="width:${dPct}%"></div>
+                    <div class="profile-bot-bar-l" style="width:${lPct}%"></div>
+                  </div>
+                  <span class="profile-bot-tally">${cs.w}${_('profileWins')} ${cs.d}${_('profileDraws')} ${cs.l}${_('profileLosses')}</span>
+                </div>`;
+              };
+              return row(_('profileAsWhite'), cw) + row(_('profileAsBlack'), cb);
+            })()}
           </div>
         </div>
 
