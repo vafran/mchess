@@ -1,6 +1,6 @@
 # 🏆 Airin Chess — Trophy Guide
 
-> **53 trophies total** | Hidden Easter Eggs marked with 🔒  
+> **60 trophies total** | Hidden Easter Eggs marked with 🔒  
 > Version: v2.24.0+
 
 ---
@@ -148,6 +148,27 @@
 
 ---
 
+## 🥊 Two-Player
+*Special trophies earned only in 2-Player (PvP) mode — share the board with a friend!*
+
+| Icon | Trophy | How to unlock |
+|------|--------|---------------|
+| 🆚 | **Face to Face** | Complete your **first full game** in 2-Player mode (any result counts). |
+| 🛑 | **No Takebacks!** | Complete a PvP game where **neither player** presses Undo even once. The golden rule of park chess. |
+| ⚖️ | **Peace Treaty** | Reach a **draw** (stalemate, insufficient material, or threefold repetition) in a PvP game. |
+| ⏱️ | **Coffeehouse Chess** | Win a PvP game in **under 25 full moves**. Someone walked into a Scholar's Mate. |
+| 🏙️ | **Regular Rivals** | Play **5 PvP games** in total. |
+| 💎 | **The Passed Crown** | **Promote a pawn** in a PvP game. |
+| 🤝 | **The Handshake** | Finish a PvP game where **both players delivered at least one check**. A truly balanced battle. |
+
+> **Tips:**
+> - **No Takebacks!**: agree on the rules before you start — once you press Undo, the trophy window closes for the whole game.
+> - **Coffeehouse Chess**: fires for either side winning quickly, not just for a Scholar's Mate. Push fast and attack early.
+> - **The Handshake**: both sides just need to give check at least once. Even a quick discovered check counts.
+> - **Regular Rivals**: the counter persists across sessions — you don't need to play 5 games in one sitting.
+
+---
+
 ## 📜 The Historians
 *Recreate legendary moments from chess history — in your own games.*
 
@@ -241,6 +262,7 @@ Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive
 | 📚 Learning | 2 |
 | 🎭 Fun & Silly | 2 |
 | ⚔️ Tactics | 7 |
+| 🥊 Two-Player | 7 |
 | 📜 The Historians | 5 |
 | 🥚 Easter Eggs (hidden) | 8 |
-| **Total** | **53** |
+| **Total** | **60** |
