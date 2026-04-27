@@ -110,6 +110,7 @@ Airin te recuerda. Cada partida que juegas queda registrada, y tu progreso se re
 Al abrir Airin por primera vez te pedirá tu nombre. A partir de ahí registra tu historial completo.
 
 - **Estadísticas de por vida** — partidas totales, victorias, tablas, derrotas, deshacer usados, pistas pedidas
+- **Estadísticas por color** — registro de victorias, tablas y derrotas por separado para las partidas con blancas y con negras
 - **Salón de los Récords** — victoria más rápida (menos jugadas) y mayor ventaja de evaluación conseguida
 - **Barras W/D/L por bot** — registro desglosado por nivel de dificultad con colores
 - **Nombre editable** — pulsa sobre tu nombre en el perfil para cambiarlo en cualquier momento
@@ -119,15 +120,25 @@ Al abrir Airin por primera vez te pedirá tu nombre. A partir de ahí registra t
 
 ### 🏆 La Vitrina de Trofeos
 
-42 logros desbloqueables en cuatro categorías.
+**64 logros desbloqueables en 9 categorías** — un trofeo por cada casilla del tablero.
 
-**Progresión y Hitos** — derrota cada nivel de dificultad, gana en menos de 20 jugadas, realiza tu primera captura al paso.
+**🏅 Progresión** — derrota cada nivel de dificultad, realiza tu primera captura al paso, da tu primer jaque, enroca por primera vez.
 
-**Desafíos Técnicos** — gana sin pistas ni deshacer, sobrevive 60 jugadas contra el Rey Sabio, da jaque mate con un peón, fuerza tablas desde una posición perdida.
+**🧠 Técnica** — gana tras una remontada, enroca sin mover el rey, da jaque mate con el Rey activo en la 6ª fila, sube la Escalera Sin-Deshacer del Fácil al Rey Sabio.
 
-**Huevos de Pascua (ocultos)** — 8 trofeos secretos. Sus nombres están ocultos hasta que los desbloqueas. Ya los descubrirás.
+**⚡ Velocidad y Reto** — gana en 15 jugadas, derrota al Mago sin pistas, fuerza tablas contra el Mago.
 
-**Los Historiadores** — recrea sacrificios legendarios de la historia del ajedrez. Si mueves la pieza exacta a la casilla exacta en las condiciones adecuadas, Airin reconoce el momento y otorga el trofeo en tiempo real.
+**🔥 Rachas y Lealtad** — gana 3 seguidas, juega en 5 días distintos, gana 50 partidas con cada color.
+
+**📚 Aprendizaje** — usa al Profesor, explora aperturas con nombre, monta el fianchetto.
+
+**⚔️ Táctica** — torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, tormenta de peones y más.
+
+**🥊 Dos Jugadores** — 7 trofeos exclusivos del modo local 2 jugadores.
+
+**📜 Los Historiadores** — recrea sacrificios legendarios de la historia del ajedrez en tiempo real.
+
+**🥚 Huevos de Pascua (ocultos)** — 9 trofeos secretos. Nombres ocultos hasta desbloquearlos. Ya los descubrirás.
 
 <img src="screenshots/ES/trophy_cabinet.png" alt="Vitrina de Trofeos" width="500" />
 
@@ -240,12 +251,13 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 * **Guardar y Cargar:** Ahora puedes exportar todo tu perfil y progreso de juego a un archivo y cargarlo más tarde en cualquier dispositivo.
 
 ### 🏆 La Vitrina de Trofeos
-* **42 Logros Desbloqueables:** ¡Hemos añadido una enorme Vitrina de Trofeos! Gana recompensas por todo, desde tu primer jaque y coronación de peón, hasta ganar en menos de 15 movimientos o lograr remontadas increíbles.
-* **Huevos de Pascua Ocultos:** Hay 8 trofeos secretos escondidos. No sabrás cuáles son hasta que los actives accidentalmente (o intencionadamente).
-* **Los Historiadores:** ¡Recrea momentos legendarios de la historia del ajedrez! Si logras encontrar los mismos sacrificios brillantes jugados por maestros como Marshall o Vladimirov, Airin lo reconocerá y te recompensará.
+* **64 Logros Desbloqueables:** Una enorme Vitrina de Trofeos con 64 trofeos en 9 categorías — uno por cada casilla del tablero. Gana recompensas por hitos, patrones tácticos, recreaciones históricas, remontadas, rachas y mucho más.
+* **Escalera Sin-Deshacer:** Cuatro trofeos por ganar a cada dificultad sin pulsar Deshacer ni una vez — *Sin Ruedines*, *Escrito a Tinta*, *Hechizo Irreversible*, *El Inmortal*.
+* **Huevos de Pascua Ocultos:** 9 trofeos secretos escondidos. No sabrás cuáles son hasta que los encuentres.
+* **Los Historiadores:** ¡Recrea momentos legendarios de la historia del ajedrez! Si encuentras los mismos sacrificios brillantes jugados por maestros como Marshall o Vladimirov, Airin lo reconocerá y te recompensará.
 
 ### 🎉 Celebraciones en el Juego
-* Cuando desbloquees un logro, aparecerá una celebración emergente en tiempo real durante tu partida. Airin ahora recuerda tus victorias. ¡Veamos cuántos trofeos puedes coleccionar!
+* Al desbloquear un logro, una pequeña notificación se desliza desde la esquina — en tiempo real, discreta, sin cubrir el tablero. Airin ahora recuerda tus victorias. ¡Veamos cuántos trofeos puedes coleccionar!
 
 *(Para las actualizaciones completas del motor desde v2.23.0 y anteriores, consulta el Historial de versiones completo).*
 
