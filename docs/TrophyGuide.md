@@ -35,7 +35,7 @@
 
 | Icon | Trophy (ES / EN) | How to unlock |
 |------|-----------------|---------------|
-| 🛡️ | **Pure Pride** | Win a full game on Medium or harder **without** using Undo or asking the Coach for help. |
+| 🛡️ | **Pure Pride** | Win a full game on Hard or Master **without** using Undo, asking the Coach for help, or turning on Training Mode. |
 | 🏰 | **Iron Castle** | Castle during a game and then **never move your king again** — and win. |
 | 🗿 | **David vs Goliath** | Win against the Hard or Grandmaster bot after your position reached −500 centipawns (eval bar near the bottom) or worse. |
 | 🌀 | **Illusion Breaker** | Force a draw (stalemate or 3-fold repetition) against the Hard bot (Magician). |
@@ -174,6 +174,8 @@
 
 These trophies unlock when you play a **historically famous sacrifice** and the resulting square is **still under attack** — meaning your move carries the same spirit of the original. You don't need to be in the exact historical position. The engine recognises the pattern regardless.
 
+**Easiest way to unlock:** You can instantly unlock these trophies by loading their corresponding historical positions from the **(Legends)** section in the Load FEN menu and playing the famous move.
+
 ---
 
 ### 🪙 Golden Rain
@@ -185,7 +187,7 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 **How to unlock:** In any game as Black, move your queen to g3 while it can be captured by the opponent. The engine will detect the echo of Marshall's sacrifice.
 
-**Practice position:** Use the FEN Library in-game → "La Lluvia de Oro — Marshall 1912" — to set up the exact historical position and try the move.
+**Quick unlock:** Use the FEN Library in-game → "La Lluvia de Oro — Marshall 1912" — to set up the exact historical position and try the move.
 
 ---
 
@@ -198,7 +200,7 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 **How to unlock:** In any game as White, move your bishop to h6 while it is under attack by the opponent.
 
-**Practice position:** Use the FEN Library → "El Cañonazo — Vladimirov 1987".
+**Quick unlock:** Use the FEN Library → "El Cañonazo — Vladimirov 1987".
 
 ---
 
@@ -211,7 +213,7 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 **How to unlock:** In any game as Black, move your rook to b2 while it is under attack.
 
-**Practice position:** Use the FEN Library → "La Locomotora — Ortueta vs Sanz 1933".
+**Quick unlock:** Use the FEN Library → "La Locomotora — Ortueta vs Sanz 1933".
 
 ---
 
@@ -224,7 +226,7 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 **How to unlock:** In any game as Black, move your bishop to h3 while it is under attack.
 
-**Practice position:** Use the FEN Library → "Fuego en el Tablero — Shirov vs Topalov 1998".
+**Quick unlock:** Use the FEN Library → "Fuego en el Tablero — Shirov vs Topalov 1998".
 
 ---
 
