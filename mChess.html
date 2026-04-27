@@ -1803,31 +1803,37 @@ limitations under the License.
 
     /* ── Trophy celebration overlay ──────────── */
     .trophy-celebration {
-      position: fixed; inset: 0; z-index: 600;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.45);
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.25s ease;
+      position: fixed;
+      bottom: 24px;
+      right: 16px;
+      z-index: 600;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(calc(100% + 24px));
+      transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
     }
-    .trophy-celebration.show { opacity: 1; pointer-events: all; }
+    .trophy-celebration.show { opacity: 1; pointer-events: all; transform: translateX(0); }
     .trophy-celebration-card {
       background: linear-gradient(145deg, #fff 0%, #fdf4ff 100%);
       border: 2px solid rgba(168,85,247,0.35);
-      border-radius: 28px; padding: 36px 48px;
-      text-align: center;
-      box-shadow: 0 16px 60px rgba(168,85,247,0.35);
-      transform: scale(0.7); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 30px rgba(168,85,247,0.3);
+      min-width: 200px; max-width: 260px;
+      cursor: pointer;
     }
-    .trophy-celebration.show .trophy-celebration-card { transform: scale(1); }
-    .trophy-celebration-icon { font-size: 4rem; line-height: 1; margin-bottom: 10px; }
+    .trophy-celebration-icon { font-size: 2.2rem; line-height: 1; flex-shrink: 0; }
+    .trophy-celebration-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .trophy-celebration-label {
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-      color: rgba(168,85,247,0.7); margin-bottom: 6px;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(168,85,247,0.7);
     }
     .trophy-celebration-name {
-      font-size: 1.4rem; font-weight: 800;
+      font-size: 0.95rem; font-weight: 800; line-height: 1.2;
       background: linear-gradient(135deg,#a855f7,#f472b6);
       -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
     /* ── Streak & recent results ─────────────── */
@@ -3010,8 +3016,10 @@ limitations under the License.
   <div id="trophyCelebration" class="trophy-celebration" onclick="this.classList.remove('show')">
     <div class="trophy-celebration-card">
       <div class="trophy-celebration-icon" id="trophyCelebIcon"></div>
-      <div class="trophy-celebration-label" id="trophyCelebLabel"></div>
-      <div class="trophy-celebration-name" id="trophyCelebName"></div>
+      <div class="trophy-celebration-text">
+        <div class="trophy-celebration-label" id="trophyCelebLabel"></div>
+        <div class="trophy-celebration-name" id="trophyCelebName"></div>
+      </div>
     </div>
   </div>
 
@@ -3738,6 +3746,7 @@ limitations under the License.
         grandmaster: { w: 0, d: 0, l: 0 }
       },
       streak: { current: 0, best: 0 },
+      colorStats: { w: {w:0,d:0,l:0}, b: {w:0,d:0,l:0} }, // wins/draws/losses by color played
       recentResults: [],           // last 10 results: 'w' | 'd' | 'l'
       unlockedTrophies: [],        // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
       playDates: [],               // ISO date strings 'YYYY-MM-DD' when player played
@@ -3767,7 +3776,8 @@ limitations under the License.
     let sessionFirstCheckGiven    = false;    // player gave check for the first time
     let sessionFirstPromotion     = false;    // player promoted a pawn for the first time
     let sessionFirstCastle        = false;    // player castled for the first time (any game, ever)
-    let sessionLastCapturePiece   = null;     // last piece player captured ('Q','R','B','N','P')
+    let sessionLastCapturePiece   = null;
+    let sessionRookOn7thStreak    = 0;        // consecutive player turns with a rook on opp's 7th rank     // last piece player captured ('Q','R','B','N','P')
 
     function loadProfile() {
       try {
@@ -3787,6 +3797,10 @@ limitations under the License.
               grandmaster: { ...defaultProfile.bots.grandmaster, ...((saved.bots || {}).grandmaster || {}) }
             },
             streak:          { ...defaultProfile.streak, ...(saved.streak || {}) },
+            colorStats:      {
+              w: { ...defaultProfile.colorStats.w, ...((saved.colorStats || {}).w || {}) },
+              b: { ...defaultProfile.colorStats.b, ...((saved.colorStats || {}).b || {}) }
+            },
             recentResults:   Array.isArray(saved.recentResults) ? saved.recentResults : [],
             unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : [],
             playDates:        Array.isArray(saved.playDates) ? saved.playDates : [],
@@ -3918,12 +3932,25 @@ limitations under the License.
       comeback_kid:            { icon:'💪', cat:5, name:{es:'El Gran Regreso',        en:'Comeback Kid'},        desc:{es:'Gana tras estar 400 puntos por debajo.',                             en:'Win after being down 400 centipawns or more.'} },
       perfect_endgame:         { icon:'♟️', cat:5, name:{es:'Clínica de Ajedrez',     en:'Chess Clinic'},        desc:{es:'Gana sin perder ni una sola pieza.',                                 en:'Win without losing a single piece.'} },
       // Cat 6 — Streaks & Loyalty
+      blanco_y_negro:          { icon:'♟️', cat:6, name:{es:'Blanco y Negro',         en:'Black and White'},     desc:{es:'Gana 50 partidas con blancas Y 50 partidas con negras.',             en:'Win 50 games as White AND 50 games as Black.'} },
       three_in_a_row:          { icon:'🔥', cat:6, name:{es:'Tripleta',               en:'Hat Trick'},           desc:{es:'Gana 3 partidas seguidas.',                                          en:'Win 3 games in a row.'} },
       daily_player:            { icon:'📅', cat:6, name:{es:'¡Cada Día!',             en:'Every Day!'},          desc:{es:'Juega en 5 días de calendario distintos.',                           en:'Play on 5 different calendar days.'} },
       weekend_warrior:         { icon:'🛋️', cat:6, name:{es:'Guerrero del Fin de Semana', en:'Weekend Warrior'}, desc:{es:'Juega en sábado Y en domingo.',                                      en:'Play on both Saturday and Sunday.'} },
       // Cat 7 — Learning
       professor_fan:           { icon:'🦉', cat:7, name:{es:'El Estudiante',          en:'The Student'},         desc:{es:'Usa la ayuda del Profesor 10 veces en total.',                       en:'Use the Professor hint 10 times in total.'} },
       opening_explorer:        { icon:'🗺️', cat:7, name:{es:'El Explorador',          en:'The Explorer'},        desc:{es:'Juega 5 aperturas distintas con nombre.',                            en:'Play 5 different named openings across games.'} },
+      // Cat 2 — No-undo ladder (completes the_immortal series)
+      no_ruedines:             { icon:'🚲', cat:2, name:{es:'Sin Ruedines',           en:'No Training Wheels'},  desc:{es:'Derrota al Pollito sin usar Deshacer.',                              en:'Defeat the Easy bot without using Undo.'} },
+      escrito_tinta:           { icon:'🖋️', cat:2, name:{es:'Escrito a Tinta',        en:'Written in Ink'},      desc:{es:'Derrota al Estudiante sin usar Deshacer.',                           en:'Defeat the Student without using Undo.'} },
+      hechizo_irreversible:    { icon:'🪄', cat:2, name:{es:'Hechizo Irreversible',   en:'Irreversible Spell'},  desc:{es:'Derrota al Mago sin usar Deshacer.',                                 en:'Defeat the Magician without using Undo.'} },
+      // Cat 9 — Tactics & Board Motifs (real-time positional trophies)
+      el_invasor:              { icon:'🗼', cat:9, name:{es:'El Invasor',             en:'The Invader'},         desc:{es:'Mantén una Torre en la 7ª fila rival durante 3 turnos seguidos.',   en:'Keep a Rook on the opponent\'s 7th rank for 3 consecutive turns.'} },
+      cerdos_ciegos:           { icon:'🐖', cat:9, name:{es:'Cerdos Ciegos',          en:'Blind Swine'},         desc:{es:'Coloca tus dos Torres simultáneamente en la 7ª fila rival.',        en:'Place both Rooks on the opponent\'s 7th rank at the same time.'} },
+      el_pulpo:                { icon:'🐙', cat:9, name:{es:'El Pulpo',               en:'Octopus Knight'},      desc:{es:'Establece un Caballo en la 6ª fila defendido por un peón tuyo.',    en:'Post a Knight on the 6th rank defended by your own pawn.'} },
+      el_calzoncillo:          { icon:'👖', cat:9, name:{es:'El Calzoncillo',         en:'The Fork'},            desc:{es:'Ataca dos piezas enemigas de mayor valor con un solo peón.',        en:'Attack two higher-value enemy pieces with a single pawn.'} },
+      la_sorpresa:             { icon:'🎁', cat:9, name:{es:'¡Sorpresa!',             en:'Discovered Attack!'},  desc:{es:'Realiza un jaque a la descubierta.',                                 en:'Deliver a discovered check.'} },
+      el_dragon:               { icon:'🐉', cat:9, name:{es:'El Dragón',              en:'The Dragon'},          desc:{es:'Desarrolla un Alfil en fianchetto (b2, g2, b7 o g7) en los primeros 10 movimientos.', en:'Develop a Bishop to a fianchetto square (b2, g2, b7 or g7) in the first 10 moves.'} },
+      artilleria_pesada:       { icon:'🔫', cat:9, name:{es:'Artillería Pesada',      en:'The Battery'},         desc:{es:'Apila dos Torres tuyas en la misma columna.',                        en:'Stack two of your Rooks on the same column.'} },
     };
 
     function unlockTrophy(id) {
@@ -3939,7 +3966,7 @@ limitations under the License.
     function showTrophyCelebration(def, id) {
       const name  = def ? (def.name[currentLanguage] || def.name.es) : id;
       const icon  = def ? def.icon : '🏆';
-      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '🔥', 7: '📚', 8: '🎭' };
+      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '🔥', 7: '📚', 8: '🎭', 9: '⚔️' };
       const label = def ? (catLabels[def.cat] + ' ' + t('profileCat' + def.cat)) : '🏆';
       document.getElementById('trophyCelebIcon').textContent  = icon;
       document.getElementById('trophyCelebLabel').textContent = label;
@@ -3968,6 +3995,9 @@ limitations under the License.
         if (sessionCastled && !sessionKingMoved)                              unlockTrophy('iron_castle');
         if (['hard', 'grandmaster'].includes(difficulty) && sessionMinEval !== Infinity && sessionMinEval <= -500) unlockTrophy('david_goliath');
         if (difficulty === 'hard'        && sessionHints === 0)               unlockTrophy('no_tricks');
+        if (difficulty === 'easy'        && sessionUndos === 0)               unlockTrophy('no_ruedines');
+        if (difficulty === 'medium'      && sessionUndos === 0)               unlockTrophy('escrito_tinta');
+        if (difficulty === 'hard'        && sessionUndos === 0)               unlockTrophy('hechizo_irreversible');
         if (difficulty === 'grandmaster' && sessionUndos === 0)               unlockTrophy('the_immortal');
         if (difficulty === 'grandmaster' && history.length > 0) {
           const last = history[history.length - 1].replace(/[+#]/g, '');
@@ -4011,6 +4041,9 @@ limitations under the License.
       if (p.stats.hintsUsed >= 10) unlockTrophy('professor_fan');
       // 🗺️ opening_explorer — tracked in profile.namedOpeningsPlayed
       if ((p.namedOpeningsPlayed || []).length >= 5) unlockTrophy('opening_explorer');
+      // ♟️ blanco_y_negro: 50 wins as White AND 50 wins as Black
+      if (p.colorStats && (p.colorStats.w?.w || 0) >= 50 && (p.colorStats.b?.w || 0) >= 50)
+        unlockTrophy('blanco_y_negro');
     }
 
     // Extra pawn-structure gates for motifs where piece count alone is not enough
@@ -4057,6 +4090,70 @@ limitations under the License.
         unlockTrophy('grand_historian');
     }
 
+    function checkPositionalTrophies(type, tr, tc) {
+      if (!currentProfile || gameMode !== 'ai') return;
+      const rookChar  = (playerColor === 'w') ? 'R' : 'r';
+      const pawnChar  = (playerColor === 'w') ? 'P' : 'p';
+      const oppColor  = (playerColor === 'w') ? 'b' : 'w';
+      const rank7Row  = (playerColor === 'w') ? 1 : 6;   // opponent's 7th rank from player's view
+      const rank6Row  = (playerColor === 'w') ? 2 : 5;   // player's 6th rank
+
+      // 🗼 El Invasor — Rook on opponent's 7th rank for 3+ consecutive player turns
+      let rookOn7th = false;
+      for (let c = 0; c < 8; c++) { if (board[rank7Row][c] === rookChar) { rookOn7th = true; break; } }
+      if (rookOn7th) {
+        sessionRookOn7thStreak++;
+        if (sessionRookOn7thStreak >= 3) unlockTrophy('el_invasor');
+      } else {
+        sessionRookOn7thStreak = 0;
+      }
+
+      // 🐖 Cerdos Ciegos — Two rooks simultaneously on opponent's 7th rank
+      let rooksOn7th = 0;
+      for (let c = 0; c < 8; c++) { if (board[rank7Row][c] === rookChar) rooksOn7th++; }
+      if (rooksOn7th >= 2) unlockTrophy('cerdos_ciegos');
+
+      // 🐙 El Pulpo — Knight on 6th rank defended by own pawn
+      if (type === 'N' && tr === rank6Row) {
+        const pawnRow = (playerColor === 'w') ? tr + 1 : tr - 1;
+        if (pawnRow >= 0 && pawnRow < 8) {
+          const defLeft  = tc > 0 && board[pawnRow][tc - 1] === pawnChar;
+          const defRight = tc < 7 && board[pawnRow][tc + 1] === pawnChar;
+          if (defLeft || defRight) unlockTrophy('el_pulpo');
+        }
+      }
+
+      // 👖 El Calzoncillo — Pawn attacks two higher-value enemy pieces simultaneously
+      if (type === 'P') {
+        const dr = (playerColor === 'w') ? -1 : 1;
+        let forks = 0;
+        for (const dc of [-1, 1]) {
+          const ar = tr + dr, ac = tc + dc;
+          if (ar >= 0 && ar < 8 && ac >= 0 && ac < 8) {
+            const p = board[ar][ac];
+            if (p !== ' ' && colorOf(p) === oppColor && 'NBRQ'.includes(p.toUpperCase())) forks++;
+          }
+        }
+        if (forks >= 2) unlockTrophy('el_calzoncillo');
+      }
+
+      // 🐉 El Dragón — Bishop developed to a fianchetto square in first 10 moves
+      if (type === 'B' && history.length < 20 && (tr === 1 || tr === 6) && (tc === 1 || tc === 6))
+        unlockTrophy('el_dragon');
+
+      // 🔫 Artillería Pesada — Two own rooks on same column, path clear between them
+      if (type === 'R') {
+        for (let r = 0; r < 8; r++) {
+          if (r !== tr && board[r][tc] === rookChar) {
+            const minR = Math.min(tr, r), maxR = Math.max(tr, r);
+            let clear = true;
+            for (let mr = minR + 1; mr < maxR; mr++) { if (board[mr][tc] !== ' ') { clear = false; break; } }
+            if (clear) { unlockTrophy('artilleria_pesada'); break; }
+          }
+        }
+      }
+    }
+
     function updateMatchStats(result, difficulty, movesCount) {
       if (!currentProfile || gameMode !== 'ai') return;
       if (sessionStartedFromFen) return; // FEN-loaded positions don't count as real matches
@@ -4069,6 +4166,13 @@ limitations under the License.
       if (result === 'win')       p.stats.totalWins++;
       else if (result === 'draw') p.stats.totalDraws++;
       else                        p.stats.totalLosses++;
+
+      // Color stats
+      if (!p.colorStats) p.colorStats = { w:{w:0,d:0,l:0}, b:{w:0,d:0,l:0} };
+      const cs = p.colorStats[playerColor] || (p.colorStats[playerColor] = {w:0,d:0,l:0});
+      if (result === 'win')       cs.w++;
+      else if (result === 'draw') cs.d++;
+      else                        cs.l++;
 
       p.stats.totalUndos    += sessionUndos;
       p.stats.hintsUsed     += sessionHints;
@@ -4105,6 +4209,7 @@ limitations under the License.
 
       checkTrophyUnlocks(result, difficulty, movesCount);
       saveProfile();
+      saveGameState(); // persist sessionGameRecorded:true so a page reload can't double-count this result
       console.log(`[Statistician] Match saved — result:${result} diff:${difficulty} moves:${movesCount} undos:${sessionUndos} hints:${sessionHints}`);
     }
 
@@ -4138,6 +4243,14 @@ limitations under the License.
           sessionQueenBlundered: !!sessionQueenBlundered,
           sessionEnPassantCaptured: !!sessionEnPassantCaptured,
           sessionPromotedToKnight: !!sessionPromotedToKnight,
+          sessionKnightEverMoved: !!sessionKnightEverMoved,
+          sessionNoMaterialLost: !!sessionNoMaterialLost,
+          sessionLastCapturePiece: sessionLastCapturePiece,
+          sessionMirrorCount,
+          sessionPawnsMovedFromStart,
+          sessionEnPassantCount,
+          sessionFirstCastle: !!sessionFirstCastle,
+          sessionRookOn7thStreak,
           undoStack: undoStack ? [...undoStack] : [],
           ts: Date.now()
         };
@@ -4195,6 +4308,14 @@ limitations under the License.
         sessionQueenBlundered     = !!s.sessionQueenBlundered;
         sessionEnPassantCaptured  = !!s.sessionEnPassantCaptured;
         sessionPromotedToKnight   = !!s.sessionPromotedToKnight;
+        sessionKnightEverMoved    = !!s.sessionKnightEverMoved;
+        sessionNoMaterialLost     = s.sessionNoMaterialLost !== undefined ? !!s.sessionNoMaterialLost : true;
+        sessionLastCapturePiece   = s.sessionLastCapturePiece || null;
+        sessionMirrorCount        = s.sessionMirrorCount || 0;
+        sessionPawnsMovedFromStart = s.sessionPawnsMovedFromStart || 0;
+        sessionEnPassantCount     = s.sessionEnPassantCount || 0;
+        sessionFirstCastle        = !!s.sessionFirstCastle;
+        sessionRookOn7thStreak    = s.sessionRookOn7thStreak || 0;
         const diffCfg = DIFF_SETTINGS[currentDifficulty];
         if (diffCfg) { aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit; }
         undoStack = Array.isArray(s.undoStack) ? s.undoStack : [];
@@ -4339,6 +4460,7 @@ limitations under the License.
         profileCat6: '🔥 Rachas y Fidelidad',
         profileCat7: '📚 Aprendizaje',
         profileCat8: '🎭 Divertidos',
+        profileCat9: '⚔️ Tácticas',
         profileLocked: 'Bloqueado',
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
@@ -4361,6 +4483,9 @@ limitations under the License.
         streakCurrent: 'Racha actual',
         streakBest: 'Mejor racha',
         recentGames: 'Últimas partidas',
+        profileColorStats: 'Por color',
+        profileAsWhite: '⬜ Blancas',
+        profileAsBlack: '⬛ Negras',
         firstRunTitle: '¡Bienvenido a Airin Chess!',
         firstRunBody: 'Aquí iremos guardando tus victorias, derrotas, rachas y trofeos especiales. ¿Cómo te llamamos?',
         firstRunPlaceholder: 'Tu nombre',
@@ -4441,6 +4566,7 @@ limitations under the License.
         profileCat6: '🔥 Streaks & Loyalty',
         profileCat7: '📚 Learning',
         profileCat8: '🎭 Fun & Silly',
+        profileCat9: '⚔️ Tactics',
         profileLocked: 'Locked',
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
@@ -4463,6 +4589,9 @@ limitations under the License.
         streakCurrent: 'Current streak',
         streakBest: 'Best streak',
         recentGames: 'Recent games',
+        profileColorStats: 'By color',
+        profileAsWhite: '⬜ White',
+        profileAsBlack: '⬛ Black',
         firstRunTitle: 'Welcome to Airin Chess!',
         firstRunBody: 'We\'ll keep track of your wins, losses, streaks and special trophies. What should we call you?',
         firstRunPlaceholder: 'Your name',
@@ -5050,6 +5179,7 @@ limitations under the License.
       sessionFirstPromotion    = false;
       sessionFirstCastle       = false;
       sessionLastCapturePiece  = null;
+      sessionRookOn7thStreak   = 0;
 
       // ✨ FIX: Limpiar el panel del Profesor al reiniciar
       const pList = document.getElementById('professorList');
@@ -6001,9 +6131,22 @@ limitations under the License.
         capturedByWhite: [...capturedByWhite],
         capturedByBlack: [...capturedByBlack],
         lastFrom: lastFrom ? [...lastFrom] : null,
-        lastTo: lastTo ? [...lastTo] : null,
+        lastTo: lastTo ? [...lastTo ] : null,
         halfMoveClock,
-        positionHashes: [...positionHashes], // Restore on undo to prevent ghost repetition hashes
+        positionHashes: [...positionHashes],
+        // Session snapshot — restored on undo so flags/counts don't persist past the move they were set on
+        _sessionQueenBlundered:    sessionQueenBlundered,
+        _sessionCastled:           sessionCastled,
+        _sessionKingMoved:         sessionKingMoved,
+        _sessionKnightEverMoved:   sessionKnightEverMoved,
+        _sessionEnPassantCaptured: sessionEnPassantCaptured,
+        _sessionPromotedToKnight:  sessionPromotedToKnight,
+        _sessionNoMaterialLost:    sessionNoMaterialLost,
+        _sessionLastCapturePiece:  sessionLastCapturePiece,
+        _sessionMirrorCount:       sessionMirrorCount,
+        _sessionPawnsMovedFromStart: sessionPawnsMovedFromStart,
+        _sessionEnPassantCount:    sessionEnPassantCount,
+        _sessionRookOn7thStreak:   sessionRookOn7thStreak,
       });
       if (undoStack.length > MAX_UNDO_STATES) undoStack.shift();
 
@@ -6103,6 +6246,9 @@ limitations under the License.
       // Statistician: historian trophy check (uses post-move board to detect attacks)
       if (gameMode === 'ai' && color === playerColor && !isCastle)
         checkHistorianTrophies(type, tr, tc);
+      // Statistician: positional/tactical trophy check
+      if (gameMode === 'ai' && color === playerColor)
+        checkPositionalTrophies(type, tr, tc);
 
       // Tell render which pieces are "flying"
       window.currentAnimList = animList;
@@ -6211,6 +6357,12 @@ limitations under the License.
       if (isCheckOnNext && gameMode === 'ai' && color === playerColor && !sessionFirstCheckGiven) {
         sessionFirstCheckGiven = true;
         unlockTrophy('first_check');
+      }
+      // 🎁 la_sorpresa: discovered check — opponent is in check but moved piece doesn't give it
+      if (isCheckOnNext && gameMode === 'ai' && color === playerColor && !isCastle && type !== 'K') {
+        const testBrd = board.map(r => [...r]);
+        testBrd[tr][tc] = ' ';
+        if (inCheck(nextColor, testBrd)) unlockTrophy('la_sorpresa');
       }
       history.push(notation);
       if (fenPositionLoaded) fenPositionLoaded = false; // first move played, now treat as normal game
@@ -6559,6 +6711,29 @@ limitations under the License.
           <div style="margin-top:10px;">
             ${botBar('easy')}${botBar('medium')}${botBar('hard')}${botBar('grandmaster')}
           </div>
+          <div style="margin-top:10px;">
+            <div style="font-size:0.75rem;font-weight:700;opacity:0.6;margin-bottom:4px;">${_('profileColorStats')}</div>
+            ${(() => {
+              const cw = p?.colorStats?.w || {w:0,d:0,l:0};
+              const cb = p?.colorStats?.b || {w:0,d:0,l:0};
+              const row = (label, cs) => {
+                const tot = cs.w + cs.d + cs.l;
+                const wPct = tot ? Math.round(cs.w/tot*100) : 0;
+                const dPct = tot ? Math.round(cs.d/tot*100) : 0;
+                const lPct = tot ? 100 - wPct - dPct : 0;
+                return `<div class="profile-bot-row">
+                  <span class="profile-bot-label">${label}</span>
+                  <div class="profile-bot-bar">
+                    <div class="profile-bot-bar-w" style="width:${wPct}%"></div>
+                    <div class="profile-bot-bar-d" style="width:${dPct}%"></div>
+                    <div class="profile-bot-bar-l" style="width:${lPct}%"></div>
+                  </div>
+                  <span class="profile-bot-tally">${cs.w}${_('profileWins')} ${cs.d}${_('profileDraws')} ${cs.l}${_('profileLosses')}</span>
+                </div>`;
+              };
+              return row(_('profileAsWhite'), cw) + row(_('profileAsBlack'), cb);
+            })()}
+          </div>
         </div>
 
         <div>
@@ -6582,6 +6757,7 @@ limitations under the License.
           </div>
           ${trophySection(1,'profileCat1')}
           ${trophySection(2,'profileCat2')}
+          ${trophySection(9,'profileCat9')}
           ${trophySection(5,'profileCat5')}
           ${trophySection(6,'profileCat6')}
           ${trophySection(7,'profileCat7')}
@@ -6778,6 +6954,21 @@ limitations under the License.
       lastFrom = s.lastFrom; lastTo = s.lastTo;
       halfMoveClock = s.halfMoveClock || 0;
       positionHashes = s.positionHashes ? [...s.positionHashes] : [];
+      // Restore session booleans to pre-move state (prevents flags set by undone moves from persisting)
+      if ('_sessionQueenBlundered' in s) {
+        sessionQueenBlundered      = s._sessionQueenBlundered;
+        sessionCastled             = s._sessionCastled;
+        sessionKingMoved           = s._sessionKingMoved;
+        sessionKnightEverMoved     = s._sessionKnightEverMoved;
+        sessionEnPassantCaptured   = s._sessionEnPassantCaptured;
+        sessionPromotedToKnight    = s._sessionPromotedToKnight;
+        sessionNoMaterialLost      = s._sessionNoMaterialLost;
+        sessionLastCapturePiece    = s._sessionLastCapturePiece;
+        sessionMirrorCount         = s._sessionMirrorCount;
+        sessionPawnsMovedFromStart = s._sessionPawnsMovedFromStart;
+        sessionEnPassantCount      = s._sessionEnPassantCount;
+        if ('_sessionRookOn7thStreak' in s) sessionRookOn7thStreak = s._sessionRookOn7thStreak;
+      }
       selected = null; legalMoves = [];
       document.getElementById('statusBanner').classList.remove('show');
       playMoveSound();
