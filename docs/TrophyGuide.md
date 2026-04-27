@@ -1,6 +1,6 @@
 # 🏆 Airin Chess — Trophy Guide
 
-> **42 trophies total** | Hidden Easter Eggs marked with 🔒  
+> **53 trophies total** | Hidden Easter Eggs marked with 🔒  
 > Version: v2.24.0+
 
 ---
@@ -44,10 +44,21 @@
 | 💎 | **The Immortal** | Defeat the Wise King without ever pressing Undo. |
 | ♟️ | **The Usurper** | Deliver checkmate to the Wise King using a **pawn** as the mating piece. |
 
+### No-Undo Ladder
+*Play without a safety net. Each level of the ladder must be earned separately.*
+
+| Icon | Trophy | How to unlock |
+|------|--------|---------------|
+| 🚲 | **No Training Wheels** | Defeat the Easy bot (Pollito) without pressing Undo even once. |
+| 🖋️ | **Written in Ink** | Defeat the Student (Medium) without pressing Undo even once. |
+| 🪄 | **Irreversible Spell** | Defeat the Magician (Hard) without pressing Undo even once. |
+| 💎 | **The Immortal** | Defeat the Wise King (Master) without pressing Undo even once. *(listed above)* |
+
 > **Tips:**
 > - **Iron Castle**: castle early and play a positional game. Avoid king walks!
 > - **David vs Goliath**: survive a massive blunder against the hardest bots, then mount a comeback. Watch the eval bar go deep red and then come back.
 > - **The Usurper**: advance a passed pawn to the 7th rank and use it for checkmate. Works best in endgames with a back-rank setup.
+> - **No-Undo Ladder**: each trophy requires winning the full game without a single Undo — start with Easy to build the habit, then climb the ladder.
 
 ---
 
@@ -72,11 +83,13 @@
 
 | Icon | Trophy (ES / EN) | How to unlock |
 |------|-----------------|---------------|
+| ♟️ | **Black and White** | Win **50 games as White** AND **50 games as Black**. |
 | 🔥 | **Hat Trick** | Win **3 games in a row** in the same session or across sessions. |
 | 📅 | **Every Day!** | Play at least one game on **5 different calendar days** total. |
 | 🛋️ | **Weekend Warrior** | Play at least one game on a **Saturday** AND at least one on a **Sunday** (can be different weeks). |
 
 > **Tips:**
+> - **Black and White**: your profile tracks wins by color — you can check your progress in the Profile screen. Play both sides regularly.
 > - **Hat Trick**: losses reset the streak counter. Win 3 in a row — doesn't need to be in the same sitting.
 > - **Every Day!**: just play at least one game whenever you open the app. Unlocks after 5 separate days.
 > - **Weekend Warrior**: play any game on Saturday, any game on Sunday. They don't need to be the same weekend.
@@ -108,6 +121,30 @@
 > **Tips:**
 > - **Ant Army**: push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.
 > - **Queen Bee**: you need the queen to be the piece that makes the last capture before mate. Set up a position where your queen captures the defending piece and then checkmate follows.
+
+---
+
+## ⚔️ Tactics
+*Trophies for recognising and executing classic tactical and positional patterns.*
+
+| Icon | Trophy | How to unlock |
+|------|--------|---------------|
+| 🗼 | **The Invader** | Keep one of your Rooks on the opponent's 7th rank for **3 consecutive turns**. |
+| 🐖 | **Blind Swine** | Place **both your Rooks** on the opponent's 7th rank at the same time. |
+| 🐙 | **Octopus Knight** | Land a Knight on the **6th rank** defended by one of your own pawns. |
+| 👖 | **The Fork** | Attack **two or more higher-value enemy pieces** simultaneously with a single pawn. |
+| 🎁 | **Discovered Attack!** | Deliver a **discovered check** — move one piece and reveal a check from another. |
+| 🐉 | **The Dragon** | Develop a Bishop to a **fianchetto square** (b2, g2, b7, or g7) in the first 10 moves. |
+| 🔫 | **The Battery** | Stack **two of your Rooks** on the same column with no pieces between them. |
+
+> **Tips:**
+> - **The Invader**: once you get a rook to the 7th rank, keep it there by defending it or making threats. Count 3 of *your* turns with the rook still on that rank.
+> - **Blind Swine**: the classic "two pigs on the seventh" position. Double your rooks to the 7th rank — devastating in the endgame.
+> - **Octopus Knight**: a knight on e6/d6 (or e3/d3 as Black) defended by a pawn is one of the strongest positional assets in chess. Park it there!
+> - **The Fork**: set up a pawn push to a square where it attacks two knights, bishops, rooks, or queens at once. A pawn fork against rooks/queens is especially powerful.
+> - **Discovered Attack!**: move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.
+> - **The Dragon**: fianchetto your bishop to b2 or g2 (as White) or b7 or g7 (as Black) early in the game. A classic setup in the King's Indian, Pirc, or Dragon Sicilian.
+> - **The Battery**: double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file in open positions.
 
 ---
 
@@ -198,11 +235,12 @@ Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive
 | Category | Count |
 |---|---|
 | 🏅 Progression | 11 |
-| 🧠 Technical | 8 |
+| 🧠 Technical | 11 |
 | ⚡ Speed & Challenge | 3 |
-| 🔥 Streaks & Loyalty | 3 |
+| 🔥 Streaks & Loyalty | 4 |
 | 📚 Learning | 2 |
 | 🎭 Fun & Silly | 2 |
+| ⚔️ Tactics | 7 |
 | 📜 The Historians | 5 |
 | 🥚 Easter Eggs (hidden) | 8 |
-| **Total** | **42** |
+| **Total** | **53** |
