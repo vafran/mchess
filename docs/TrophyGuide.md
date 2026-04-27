@@ -1,6 +1,6 @@
 # 🏆 Airin Chess — Trophy Guide
 
-> **60 trophies total** | Hidden Easter Eggs marked with 🔒  
+> **64 trophies total** | Hidden Easter Eggs marked with 🔒  
 > Version: v2.24.0+
 
 ---
@@ -21,12 +21,14 @@
 | 👑 | **I Am Queen!** | Promote a pawn to any piece for the first time. |
 | 🏰 | **My Castle!** | Castle (kingside or queenside) for the first time ever. |
 | 👻 | **Ghost Capture!** | Capture en passant for the very first time ever. |
+| 🐛 | **Ant Army** | Move **5 different pawns** off their starting squares in a single game. |
 
 > **Tips:**
 > - The first five are earned by just playing regularly. Start on Easy and work your way up.
 > - **Check!** fires on your very first check delivery — even on move 1 if you find a Scholar's Mate setup.
 > - **I Am Queen!** fires regardless of what piece you promote to.
 > - **Ghost Hunter** and **Ghost Capture!** are different trophies — the first one tracks per-game (do it twice), the second is a lifetime first.
+> - **Ant Army**: push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.
 
 ---
 
@@ -38,11 +40,10 @@
 | 🛡️ | **Pure Pride** | Win a full game on Hard or Master **without** using Undo, asking the Coach for help, or turning on Training Mode. |
 | 🏰 | **Iron Castle** | Castle during a game and then **never move your king again** — and win. |
 | 🗿 | **David vs Goliath** | Win against the Hard or Grandmaster bot after your position reached −500 centipawns (eval bar near the bottom) or worse. |
-| 🌀 | **Illusion Breaker** | Force a draw (stalemate or 3-fold repetition) against the Hard bot (Magician). |
-| 🧩 | **No Tricks Allowed** | Defeat the Hard bot (Magician) without using any Coach hints. |
 | ⏳ | **Royal Endurance** | Survive more than 60 moves in a single game against the Wise King (Master). |
 | 💎 | **The Immortal** | Defeat the Wise King without ever pressing Undo. |
 | ♟️ | **The Usurper** | Deliver checkmate to the Wise King using a **pawn** as the mating piece. |
+| 👑 | **King's Support** | Deliver checkmate with your King on the **6th rank** (or 3rd as Black), within 2 squares of the enemy king. |
 
 ### No-Undo Ladder
 *Play without a safety net. Each level of the ladder must be earned separately.*
@@ -58,6 +59,7 @@
 > - **Iron Castle**: castle early and play a positional game. Avoid king walks!
 > - **David vs Goliath**: survive a massive blunder against the hardest bots, then mount a comeback. Watch the eval bar go deep red and then come back.
 > - **The Usurper**: advance a passed pawn to the 7th rank and use it for checkmate. Works best in endgames with a back-rank setup.
+> - **King's Support**: march your king to the 6th rank before delivering mate. Steer into a K+R or K+Q endgame, centralize your king aggressively, and use it to cut off the enemy king's escapes.
 > - **No-Undo Ladder**: each trophy requires winning the full game without a single Undo — start with Easy to build the habit, then climb the ladder.
 
 ---
@@ -70,11 +72,15 @@
 | ⚡ | **Lightning!** | Win in **15 moves or fewer** on Medium difficulty or harder. |
 | 💪 | **Comeback Kid** | Win a game after being down **400 centipawns** or more at any point. |
 | ♟️ | **Chess Clinic** | Win a game **without losing a single piece** (pawns included). |
+| 🌀 | **Illusion Breaker** | Force a draw (stalemate or 3-fold repetition) against the Hard bot (Magician). |
+| 🧩 | **No Tricks Allowed** | Defeat the Hard bot (Magician) without using any Coach hints. |
 
 > **Tips:**
 > - **Lightning!**: Scholar's Mate or Italian Game traps can work on Easy/Medium. The 4-move Scholar's Mate is 4 moves — well under 15.
 > - **Comeback Kid**: you need to be at −400 or worse *and* win. Let the situation get bad, then fight back.
 > - **Chess Clinic**: very hard to achieve. Play defensively, avoid trading, and steer into a won endgame safely.
+> - **Illusion Breaker**: if you can't win, a draw is a valid result against a hard opponent. Look for stalemate traps or repeat the position three times.
+> - **No Tricks Allowed**: trust your own reading. No Coach analysis, no "What should I do?" — just you vs the Magician.
 
 ---
 
@@ -103,24 +109,12 @@
 |------|-----------------|---------------|
 | 🦉 | **The Student** | Use any Coach feature (Analysis, What should I do?, or Was it good?) a total of **10 times** across all games. |
 | 🗺️ | **The Explorer** | Play through **5 different named openings** across any games (the Commentator must announce the opening name). |
+| 🐉 | **The Dragon** | Develop a Bishop to a **fianchetto square** (b2, g2, b7, or g7) in the **first 10 moves**. |
 
 > **Tips:**
 > - **The Student**: open the Coach tab and press any of the three buttons — each press counts. Available on Easy, Medium, and Hard.
 > - **The Explorer**: play e4 e5 (Italian/Ruy Lopez area), d4 d5 (Queen's Gambit), c4 (English), Nf3 (Réti), etc. Each named line the Commentator announces counts as one discovery.
-
----
-
-## 🎭 Fun & Silly
-*Quirky challenges for creative players.*
-
-| Icon | Trophy (ES / EN) | How to unlock |
-|------|-----------------|---------------|
-| 🐛 | **Ant Army** | Move **5 different pawns** off their starting squares in a single game. |
-| 🐝 | **Queen Bee** | Win a game where the **queen delivers the final capture** that sets up checkmate. |
-
-> **Tips:**
-> - **Ant Army**: push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.
-> - **Queen Bee**: you need the queen to be the piece that makes the last capture before mate. Set up a position where your queen captures the defending piece and then checkmate follows.
+> - **The Dragon**: play g3 followed by Bg2 (as White) or g6 followed by Bg7 (as Black) early. The fianchetto is used in the King's Indian, the Dragon Sicilian, and many modern setups.
 
 ---
 
@@ -134,8 +128,10 @@
 | 🐙 | **Octopus Knight** | Land a Knight on the **6th rank** defended by one of your own pawns. |
 | 👖 | **The Fork** | Attack **two or more higher-value enemy pieces** simultaneously with a single pawn. |
 | 🎁 | **Discovered Attack!** | Deliver a **discovered check** — move one piece and reveal a check from another. |
-| 🐉 | **The Dragon** | Develop a Bishop to a **fianchetto square** (b2, g2, b7, or g7) in the first 10 moves. |
 | 🔫 | **The Battery** | Stack **two of your Rooks** on the same column with no pieces between them. |
+| 🌪️ | **Chaos Theory** | Have **4 consecutive half-moves** all be captures — both sides trading piece for piece without stopping. |
+| 🌊 | **Pawn Storm** | Have **4 of your pawns** simultaneously on the **6th rank or further** advanced at the same time. |
+| 🐝 | **Queen Bee** | Win a game where the **queen delivers the final capture** that sets up checkmate. |
 
 > **Tips:**
 > - **The Invader**: once you get a rook to the 7th rank, keep it there by defending it or making threats. Count 3 of *your* turns with the rook still on that rank.
@@ -143,8 +139,10 @@
 > - **Octopus Knight**: a knight on e6/d6 (or e3/d3 as Black) defended by a pawn is one of the strongest positional assets in chess. Park it there!
 > - **The Fork**: set up a pawn push to a square where it attacks two knights, bishops, rooks, or queens at once. A pawn fork against rooks/queens is especially powerful.
 > - **Discovered Attack!**: move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.
-> - **The Dragon**: fianchetto your bishop to b2 or g2 (as White) or b7 or g7 (as Black) early in the game. A classic setup in the King's Indian, Pirc, or Dragon Sicilian.
 > - **The Battery**: double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file in open positions.
+> - **Chaos Theory**: happens naturally in sharp, open positions (Sicilian, King's Gambit, Italian). When both players start trading, keep capturing — 4 consecutive half-moves means 2 of yours and 2 of the AI's, or any combination of 4 in a row.
+> - **Pawn Storm**: push pawns aggressively on both flanks. Four pawns reaching rank 6 simultaneously is a rare and powerful moment — it fires the instant the 4th one arrives.
+> - **Queen Bee**: set up a position where your queen captures the last defending piece and checkmate follows immediately.
 
 ---
 
@@ -250,6 +248,7 @@ Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive
 | 🙈 | **Knights? Who Needs Them?** | 🔒 Win a game while your knights stay home on b1 and g1 the whole time. |
 | 🐱 | **Mirror Moves** | 🔒 Imitation is the sincerest form of flattery — for the first three moves, at least. |
 | 🥲 | **The Survivor** | 🔒 Sometimes one little pawn is all you need. |
+| 🐴 | **Philidor's Ghost** | 🔒 The most elegant finish in chess. The king cannot escape its own guard. |
 
 ---
 
@@ -257,14 +256,13 @@ Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive
 
 | Category | Count |
 |---|---|
-| 🏅 Progression | 11 |
-| 🧠 Technical | 11 |
-| ⚡ Speed & Challenge | 3 |
+| 🏅 Progression | 12 |
+| 🧠 Technical | 10 |
+| ⚡ Speed & Challenge | 5 |
 | 🔥 Streaks & Loyalty | 4 |
-| 📚 Learning | 2 |
-| 🎭 Fun & Silly | 2 |
-| ⚔️ Tactics | 7 |
+| 📚 Learning | 3 |
+| ⚔️ Tactics | 9 |
 | 🥊 Two-Player | 7 |
 | 📜 The Historians | 5 |
-| 🥚 Easter Eggs (hidden) | 8 |
-| **Total** | **60** |
+| 🥚 Easter Eggs (hidden) | 9 |
+| **Total** | **64** |
