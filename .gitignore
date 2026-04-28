@@ -40,4 +40,4 @@ partidas_guardadas/
 pr_*.md
 
 # === Tournament screenshot analysis folders ===
-stockfish_tests/Tournament_*/
+stockfish_tests/Tournament_*/test_profile.airin
