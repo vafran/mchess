@@ -6936,8 +6936,8 @@ limitations under the License.
           const dateEntry = (p?.unlockedMedals || []).find(m => m.cat === Number(catNum));
           const dateStr = dateEntry ? new Date(dateEntry.unlockedAt).toLocaleDateString() : '';
           return `<div class="medal-slot ${earned ? 'medal-earned' : 'medal-locked'}" title="${name}${dateStr ? ' · ' + dateStr : ''}">
-            <div class="medal-icon">${earned ? mDef.icon : '🔒'}</div>
-            <div class="medal-name">${earned ? name : '???'}</div>
+            <div class="medal-icon">${mDef.icon}</div>
+            <div class="medal-name">${name}</div>
           </div>`;
         }).join('');
         return `<div class="medals-shelf">${slots}</div>`;
