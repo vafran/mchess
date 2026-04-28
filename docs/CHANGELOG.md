@@ -16,19 +16,20 @@ Format: version · size · what changed.
 - **Portability:** Added functionality to export and import profile data and game states via save files.
 
 ### The Trophy Cabinet
-- **64 Unlockable Achievements:** A brand new achievement system featuring 64 unique unlockable trophies across 9 categories — one trophy for every square on the board.
+- **64 Trophies across 8 categories** — one trophy for every square on the board, one category for every row (8×8=64).
   - **🏅 Progression (12):** First win, first check, first castle, first promotion, first en passant, defeat each bot level, and more.
-  - **🧠 Technical (10):** High-quality, disciplined play — win after a comeback, castle without moving your king, survive 60 moves vs the Wise King, deliver checkmate with your King active on rank 6.
-  - **⚡ Speed & Challenge (5):** Win in 15 moves, beat the Hard bot without hints, force a draw against the Magician.
-  - **🔥 Streaks & Loyalty (4):** Win 3 in a row, play on 5 different days, earn *Black and White* by winning 50 games on each side.
-  - **📚 Learning (3):** Use the Coach 10 times, explore 5 named openings, set up a fianchetto bishop (*The Dragon*).
+  - **🧠 Technical (10):** High-quality, disciplined play — castle without moving your king, survive 60 moves vs the Wise King, deliver checkmate with your King active on rank 6.
+  - **⚡ Relentless (9):** Win in 15 moves, beat the Hard bot without hints, force a draw against the Magician, build a 3-game streak, win 50 games on each side of the board.
+  - **📚 Learning (4):** Use the Coach 10 times, explore 5 named openings, set up a fianchetto bishop (*The Dragon*), review your play with "Was it good?" 5 times (*The Analyst*).
   - **⚔️ Tactics (9):** Classic positional patterns — rook on the 7th rank, double rooks, battery, pawn fork, discovered check, pawn storm, and more.
   - **🥊 Two-Player (7):** Exclusive trophies for PvP mode.
-  - **📜 The Historians (5):** Recreate legendary sacrifices from chess history in real time.
-  - **🥚 Easter Eggs (9):** Nine hidden trophies. Names concealed until unlocked — including one that rewards the most elegant checkmate pattern in chess.
+  - **📜 The Historians (4):** Recreate legendary sacrifices from chess history in real time (Marshall, Vladimirov, Ortueta, Shirov).
+  - **🥚 Easter Eggs (9):** Nine hidden trophies. Names concealed until unlocked.
+- **8 Category Medals:** Complete every trophy in a category to earn its medal. Tap any medal in the profile shelf to see its description and progress.
+- **Final Title:** Collect all 64 trophies and all 8 medals to unlock a final title rooted in chess history. A story card in the trophy cabinet is visible from the start — click it to read the legend.
 - **No-Undo Ladder:** Four trophies for winning each difficulty level without ever pressing Undo — *No Training Wheels* (Easy), *Written in Ink* (Medium), *Irreversible Spell* (Hard), *The Immortal* (Wise King).
 - **Stats by Color:** Profile now tracks wins, draws, and losses separately for games played as White and as Black.
-- **In-Game Celebrations:** A corner slide-in banner appears when a trophy unlocks — visible but non-intrusive, never covering the board.
+- **In-Game Celebrations:** A corner slide-in banner appears when a trophy or medal unlocks — visible but non-intrusive, never covering the board.
 - **Historical Motifs Detection:** The engine now recognizes and rewards famous historical sacrifices (e.g., Marshall's "Golden Rain") if played in-game.
 
 ---

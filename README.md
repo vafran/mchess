@@ -117,17 +117,15 @@ Upon starting for the first time, Airin asks for your name. From that point on, 
 
 ### 🏆 The Trophy Cabinet
 
-**64 unlockable achievements across 9 categories** — one trophy for every square on the board.
+**64 trophies across 8 categories** — one for every square, one category for every row.
 
 **🏅 Progression** — defeat each difficulty level, pull off your first en passant, make your first check, castle for the first time.
 
-**🧠 Technical** — win after a comeback, castle and never move your king again, deliver checkmate with your King marching to rank 6, climb the No-Undo Ladder from Easy all the way to the Wise King.
+**🧠 Technical** — castle and never move your king again, deliver checkmate with your King marching to rank 6, climb the No-Undo Ladder from Easy all the way to the Wise King.
 
-**⚡ Speed & Challenge** — win in 15 moves, beat the Hard bot without any hints, force a draw against the Magician.
+**⚡ Relentless** — win in 15 moves, beat Hard without any hints, force a draw against the Magician, build a win streak, win 50 games on each side of the board.
 
-**🔥 Streaks & Loyalty** — win 3 in a row, play on 5 different days, win 50 games on each side of the board.
-
-**📚 Learning** — use the Coach, explore named openings, set up the fianchetto.
+**📚 Learning** — use the Coach, explore named openings, set up the fianchetto, review your moves with "Was it good?".
 
 **⚔️ Tactics** — rook on the 7th rank, double rooks, battery, pawn fork, discovered check, pawn storm, and more.
 
@@ -136,6 +134,8 @@ Upon starting for the first time, Airin asks for your name. From that point on, 
 **📜 The Historians** — recreate legendary sacrifices from chess history in real time.
 
 **🥚 Easter Eggs (hidden)** — 9 secret trophies. Names hidden until unlocked. You'll figure them out.
+
+Complete every trophy in a category to earn its **medal**. Collect all 64 trophies and all 8 medals to discover what lies beyond the 64th square.
 
 <img src="screenshots/EN/trophy_cabinet.png" alt="Trophy Cabinet" width="500" />
 
@@ -151,7 +151,7 @@ Four historical moments are hidden in the game. Each requires a specific sacrifi
 | 🚂 The Locomotive | Sanz vs Ortueta, 1933 | Rook to b2, attacked, endgame |
 | 🔥 Fire on the Board | Shirov vs Topalov, 1998 | Bishop to h3, attacked, deep endgame |
 
-Unlock all four to earn the Platinum trophy: **The Great Historian**.
+Unlock all four to earn the **📜 Grand Historian** medal.
 
 The Training Library's **Legends** tab lets you load the exact positions from these games to study and practice the sacrifices.
 
@@ -243,13 +243,14 @@ Welcome to Airin v2.24.0! This massive update introduces **The Statistician**, g
 * **Save & Load:** You can now export your entire profile and game progress to a file and load it later on any device.
 
 ### 🏆 The Trophy Cabinet
-* **64 Unlockable Achievements:** A massive Trophy Cabinet with 64 trophies across 9 categories — one for every square on the board. Earn rewards for milestones, tactical patterns, historical recreations, comebacks, streaks, and more.
+* **64 Trophies, 8 Medals:** A Trophy Cabinet with 64 trophies across 8 categories — one trophy for every square, one category for every row. Complete an entire category to earn its medal.
 * **No-Undo Ladder:** Four trophies for winning each difficulty level without ever pressing Undo — *No Training Wheels*, *Written in Ink*, *Irreversible Spell*, *The Immortal*.
 * **Hidden Easter Eggs:** 9 secret trophies tucked away. You won't know what they are until you find them.
-* **The Historians:** Recreate legendary moments from chess history! If you manage to find the same brilliant sacrifices played by masters like Marshall or Vladimirov, Airin will recognise it and reward you.
+* **The Historians:** Recreate legendary moments from chess history! If you find the same brilliant sacrifices played by masters like Marshall or Vladimirov, Airin will recognise it and reward you.
+* **Something beyond the 64th square:** Collect all 64 trophies and all 8 medals to uncover a final title rooted in chess history.
 
 ### 🎉 In-Game Celebrations
-* When you unlock an achievement, a small banner slides in from the corner — real-time, non-intrusive, never covering the board. Airin now remembers your victories. Let's see how many trophies you can collect!
+* When you unlock a trophy or medal, a banner slides in from the corner — real-time, non-intrusive, never covering the board.
 
 *(For the complete engine updates from v2.23.0 and prior, see the full Changelog).*
 
