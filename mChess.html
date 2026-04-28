@@ -1718,6 +1718,36 @@ limitations under the License.
       color: rgba(168,85,247,0.8); font-weight: 700;
       margin-bottom: 10px;
     }
+    .medals-shelf {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 8px; margin-bottom: 14px;
+    }
+    .medal-slot {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 3px; padding: 8px 4px;
+      background: rgba(168,85,247,0.06);
+      border: 1px solid rgba(168,85,247,0.15);
+      border-radius: 12px; cursor: default;
+      transition: transform 0.15s;
+    }
+    .medal-slot:hover { transform: translateY(-2px); }
+    .medal-slot.medal-earned {
+      background: rgba(168,85,247,0.15);
+      border-color: rgba(168,85,247,0.4);
+      box-shadow: 0 0 8px rgba(168,85,247,0.2);
+    }
+    .medal-slot.medal-locked { opacity: 0.45; filter: grayscale(0.6); }
+    .medal-icon { font-size: 1.5rem; }
+    .medal-name {
+      font-size: 0.6rem; font-weight: 700;
+      text-align: center; line-height: 1.2;
+      color: var(--text); opacity: 0.8;
+    }
+    .wheat-chessboard-badge {
+      margin-top: 4px; font-size: 0.72rem; font-weight: 700;
+      color: #fbbf24; letter-spacing: 0.02em;
+      text-shadow: 0 0 8px rgba(251,191,36,0.5);
+    }
     .trophy-filter-row {
       display: flex; gap: 8px; margin-bottom: 14px;
     }
@@ -3733,7 +3763,8 @@ limitations under the License.
         totalLosses: 0,
         totalUndos: 0,
         hintsUsed: 0,
-        piecesCaptured: 0
+        piecesCaptured: 0,
+        wasItGoodUsed: 0
       },
       records: {
         fastestWin: null,        // fewest moves to win (number or null)
@@ -3749,6 +3780,8 @@ limitations under the License.
       colorStats: { w: {w:0,d:0,l:0}, b: {w:0,d:0,l:0} }, // wins/draws/losses by color played
       recentResults: [],           // last 10 results: 'w' | 'd' | 'l'
       unlockedTrophies: [],        // [{ id: 'first_blood', unlockedAt: '2026-...' }, ...]
+      unlockedMedals:  [],         // [{ cat: 1, unlockedAt: '2026-...' }, ...]
+      wheatAndChessboard: false,   // true when all 64 trophies and all 8 medals are earned
       playDates: [],               // ISO date strings 'YYYY-MM-DD' when player played
       namedOpeningsPlayed: []      // distinct named opening keys seen across games
     };
@@ -3810,6 +3843,8 @@ limitations under the License.
             },
             recentResults:   Array.isArray(saved.recentResults) ? saved.recentResults : [],
             unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : [],
+            unlockedMedals:   Array.isArray(saved.unlockedMedals)  ? saved.unlockedMedals  : [],
+            wheatAndChessboard: saved.wheatAndChessboard || false,
             playDates:        Array.isArray(saved.playDates) ? saved.playDates : [],
             namedOpeningsPlayed: Array.isArray(saved.namedOpeningsPlayed) ? saved.namedOpeningsPlayed : []
           };
@@ -3922,7 +3957,6 @@ limitations under the License.
           en:'Linares, 1998. In what looked like a drawn endgame, Alexei Shirov played Bh3!! — a bishop sacrifice that even the world\'s best computers couldn\'t understand at the time. The move won through a pawn race calculated with pinpoint precision. Kasparov called it "the most beautiful move I have ever seen." Shirov\'s book is named "Fire on Board."'
         }
       },
-      grand_historian:        { icon:'📜', cat:4, name:{es:'El Gran Historiador',   en:'The Grand Historian'}, desc:{es:'Desbloquea los 4 motivos históricos.',                                                             en:'Unlock all 4 historical motifs.'}, story:{es:'Desbloquea los trofeos Lluvia de Oro, El Cañonazo, La Locomotora y Fuego en el Tablero.', en:'Unlock the Golden Rain, The Cannon Shot, The Locomotive, and Fire on Board trophies.'} },
       // Merged into Cat 1 (Progression) — beginner mechanic milestones
       first_check:             { icon:'🔔', cat:1, name:{es:'¡Jaque!',                en:'Check!'},              desc:{es:'Da jaque por primera vez.',                                          en:'Give check for the very first time.'}, story:{es:'¡Ataca al rey enemigo! Este es el primer paso hacia el mate.', en:'Attack the enemy king! This is the first step towards checkmate.'} },
       first_promotion:         { icon:'👑', cat:1, name:{es:'¡Soy Reina!',            en:'I Am Queen!'},         desc:{es:'Corona un peón por primera vez.',                                    en:'Promote a pawn for the very first time.'}, story:{es:'Avanza un peón hasta el otro lado del tablero para convertirlo en Dama.', en:'March a pawn all the way to the other side of the board to turn it into a Queen.'} },
@@ -3930,7 +3964,7 @@ limitations under the License.
       first_enp_ever:          { icon:'👻', cat:1, name:{es:'¡Al Paso Fantasma!',     en:'Ghost Capture!'},      desc:{es:'Captura al paso por primera vez en tu vida.',                        en:'Capture en passant for the very first time ever.'}, story:{es:'Cuando un peón enemigo avance dos casillas y quede junto al tuyo, captúralo en diagonal como si hubiera movido una.', en:'When an enemy pawn moves two squares forward and lands next to your pawn, capture it diagonally as if it only moved one square.'} },
       // Cat 3 (Easter Eggs) — hidden Fun & Silly trophies moved here
       pawn_army:               { icon:'🐛', cat:1, name:{es:'Ejército de Hormigas',   en:'Ant Army'},            desc:{es:'Mueve 5 peones distintos en una partida.',                           en:'Move 5 different pawns in one game.'}, story:{es:'Avanza los peones de ambos lados al principio (e, d, c, f, g). Muy fácil de conseguir de forma natural.', en:'Push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.'} },
-      queen_bee:               { icon:'🐝', cat:9, name:{es:'La Abeja Reina',         en:'Queen Bee'},           desc:{es:'Gana capturando con la dama en el último movimiento.',                en:'Win with the queen as the final capture.'}, story:{es:'Tu dama debe hacer la última captura antes del mate. Prepara la posición para que la dama tome a la pieza defensora.', en:'You need the queen to be the piece that makes the last capture before mate. Set up a position where your queen captures the defending piece and then checkmate follows.'} },
+      queen_bee:               { icon:'🐝', cat:7, name:{es:'La Abeja Reina',         en:'Queen Bee'},           desc:{es:'Gana capturando con la dama en el último movimiento.',                en:'Win with the queen as the final capture.'}, story:{es:'Tu dama debe hacer la última captura antes del mate. Prepara la posición para que la dama tome a la pieza defensora.', en:'You need the queen to be the piece that makes the last capture before mate. Set up a position where your queen captures the defending piece and then checkmate follows.'} },
       no_knights:              { icon:'🙈', cat:3, hidden:true, name:{es:'¿Caballos? ¿Para qué?', en:'Knights? Who Needs Them?'}, desc:{es:'Gana sin mover ningún caballo.',          en:'Win a game without ever moving a knight.'}, story:{es:'Deja tus caballos en sus casillas iniciales (b1/g1 o b8/g8) toda la partida y gana.', en:'Leave your knights on their starting squares (b1/g1 or b8/g8) for the entire game and win.'} },
       copy_cat:                { icon:'🐱', cat:3, hidden:true, name:{es:'El Espejo',              en:'Copycat'},                  desc:{es:'Imita los 3 primeros movimientos del rival exactamente.', en:"Mirror the opponent's first 3 moves exactly."}, story:{es:'Haz exactamente los mismos movimientos que tu rival durante los primeros 3 turnos completos.', en:'Play exactly the same moves as your opponent for the first 3 full turns.'} },
       last_pawn:               { icon:'🥲', cat:3, hidden:true, name:{es:'El Superviviente',       en:'The Survivor'},             desc:{es:'Gana con solo 1 peón propio en el tablero.',              en:'Win with only 1 pawn remaining.'}, story:{es:'Gana la partida teniendo exactamente un solo peón tuyo en el tablero.', en:'Win the game while you only have exactly one pawn left on the board.'} },
@@ -3939,37 +3973,51 @@ limitations under the License.
       comeback_kid:            { icon:'💪', cat:5, name:{es:'El Gran Regreso',        en:'Comeback Kid'},        desc:{es:'Gana tras estar 400 puntos por debajo.',                             en:'Win after being down 400 centipawns or more.'}, story:{es:'¡No te rindas tras perder una pieza! Sigue jugando y espera a que la IA se equivoque.', en:'Don\'t give up after blundering a piece! Keep playing and wait for the AI to make a mistake.'} },
       perfect_endgame:         { icon:'♟️', cat:5, name:{es:'Clínica de Ajedrez',     en:'Chess Clinic'},        desc:{es:'Gana sin perder ni una sola pieza.',                                 en:'Win without losing a single piece.'}, story:{es:'Gana una partida sin que el rival te capture ni una sola pieza.', en:'Win a game without your opponent capturing a single one of your pieces.'} },
       // Cat 6 — Streaks & Loyalty
-      blanco_y_negro:          { icon:'♟️', cat:6, name:{es:'Blanco y Negro',         en:'Black and White'},     desc:{es:'Gana 50 partidas con blancas Y 50 partidas con negras.',             en:'Win 50 games as White AND 50 games as Black.'}, story:{es:'Tu perfil registra las victorias por color. Juega con ambos bandos de forma regular.', en:'Your profile tracks wins by color — you can check your progress in the Profile screen. Play both sides regularly.'} },
-      three_in_a_row:          { icon:'🔥', cat:6, name:{es:'Tripleta',               en:'Hat Trick'},           desc:{es:'Gana 3 partidas seguidas.',                                          en:'Win 3 games in a row.'}, story:{es:'Las derrotas reinician la racha. Gana 3 seguidas (no tiene que ser en la misma sesión).', en:'Losses reset the streak counter. Win 3 in a row — doesn\'t need to be in the same sitting.'} },
-      daily_player:            { icon:'📅', cat:6, name:{es:'¡Cada Día!',             en:'Every Day!'},          desc:{es:'Juega en 5 días de calendario distintos.',                           en:'Play on 5 different calendar days.'}, story:{es:'Juega al menos una partida cada vez que abras la app. Se desbloquea tras 5 días distintos.', en:'Just play at least one game whenever you open the app. Unlocks after 5 separate days.'} },
-      weekend_warrior:         { icon:'🛋️', cat:6, name:{es:'Guerrero del Fin de Semana', en:'Weekend Warrior'}, desc:{es:'Juega en sábado Y en domingo.',                                      en:'Play on both Saturday and Sunday.'}, story:{es:'Juega una partida en Sábado y otra en Domingo. No tienen que ser del mismo fin de semana.', en:'Play any game on Saturday, any game on Sunday. They don\'t need to be the same weekend.'} },
+      blanco_y_negro:          { icon:'♟️', cat:5, name:{es:'Blanco y Negro',         en:'Black and White'},     desc:{es:'Gana 50 partidas con blancas Y 50 partidas con negras.',             en:'Win 50 games as White AND 50 games as Black.'}, story:{es:'Tu perfil registra las victorias por color. Juega con ambos bandos de forma regular.', en:'Your profile tracks wins by color — you can check your progress in the Profile screen. Play both sides regularly.'} },
+      three_in_a_row:          { icon:'🔥', cat:5, name:{es:'Tripleta',               en:'Hat Trick'},           desc:{es:'Gana 3 partidas seguidas.',                                          en:'Win 3 games in a row.'}, story:{es:'Las derrotas reinician la racha. Gana 3 seguidas (no tiene que ser en la misma sesión).', en:'Losses reset the streak counter. Win 3 in a row — doesn\'t need to be in the same sitting.'} },
+      daily_player:            { icon:'📅', cat:5, name:{es:'¡Cada Día!',             en:'Every Day!'},          desc:{es:'Juega en 5 días de calendario distintos.',                           en:'Play on 5 different calendar days.'}, story:{es:'Juega al menos una partida cada vez que abras la app. Se desbloquea tras 5 días distintos.', en:'Just play at least one game whenever you open the app. Unlocks after 5 separate days.'} },
+      weekend_warrior:         { icon:'🛋️', cat:5, name:{es:'Guerrero del Fin de Semana', en:'Weekend Warrior'}, desc:{es:'Juega en sábado Y en domingo.',                                      en:'Play on both Saturday and Sunday.'}, story:{es:'Juega una partida en Sábado y otra en Domingo. No tienen que ser del mismo fin de semana.', en:'Play any game on Saturday, any game on Sunday. They don\'t need to be the same weekend.'} },
       // Cat 7 — Learning
-      professor_fan:           { icon:'🦉', cat:7, name:{es:'El Estudiante',          en:'The Student'},         desc:{es:'Usa la ayuda del Profesor 10 veces en total.',                       en:'Use the Professor hint 10 times in total.'}, story:{es:'Usa la pestaña del Profesor para pedir consejo o análisis 10 veces en total.', en:'Use the Coach tab to ask for hints or analysis 10 times in total across all your games.'} },
-      opening_explorer:        { icon:'🗺️', cat:7, name:{es:'El Explorador',          en:'The Explorer'},        desc:{es:'Juega 5 aperturas distintas con nombre.',                            en:'Play 5 different named openings across games.'}, story:{es:'Prueba a empezar con distintos peones (e4, d4, c4) o caballos (Cf3) para ver diferentes aperturas.', en:'Try starting with different pawns (e4, d4, c4) or knights (Nf3) to trigger different named openings.'} },
+      professor_fan:           { icon:'🦉', cat:6, name:{es:'El Estudiante',          en:'The Student'},         desc:{es:'Usa la ayuda del Profesor 10 veces en total.',                       en:'Use the Professor hint 10 times in total.'}, story:{es:'Usa la pestaña del Profesor para pedir consejo o análisis 10 veces en total.', en:'Use the Coach tab to ask for hints or analysis 10 times in total across all your games.'} },
+      opening_explorer:        { icon:'🗺️', cat:6, name:{es:'El Explorador',          en:'The Explorer'},        desc:{es:'Juega 5 aperturas distintas con nombre.',                            en:'Play 5 different named openings across games.'}, story:{es:'Prueba a empezar con distintos peones (e4, d4, c4) o caballos (Cf3) para ver diferentes aperturas.', en:'Try starting with different pawns (e4, d4, c4) or knights (Nf3) to trigger different named openings.'} },
       // Cat 2 — No-undo ladder (completes the_immortal series)
       no_ruedines:             { icon:'🚲', cat:2, name:{es:'Sin Ruedines',           en:'No Training Wheels'},  desc:{es:'Derrota al Pollito sin usar Deshacer.',                              en:'Defeat the Easy bot without using Undo.'}, story:{es:'Gana al Pollito sin usar el botón de Deshacer ni una sola vez.', en:'Beat the Easy bot without using the Undo button even once.'} },
       escrito_tinta:           { icon:'🖋️', cat:2, name:{es:'Escrito a Tinta',        en:'Written in Ink'},      desc:{es:'Derrota al Estudiante sin usar Deshacer.',                           en:'Defeat the Student without using Undo.'}, story:{es:'Gana al Estudiante sin usar el botón de Deshacer ni una sola vez.', en:'Beat the Medium bot without using the Undo button even once.'} },
       hechizo_irreversible:    { icon:'🪄', cat:2, name:{es:'Hechizo Irreversible',   en:'Irreversible Spell'},  desc:{es:'Derrota al Mago sin usar Deshacer.',                                 en:'Defeat the Magician without using Undo.'}, story:{es:'Gana al Mago sin usar el botón de Deshacer ni una sola vez.', en:'Beat the Hard bot without using the Undo button even once.'} },
       // Cat 9 — Tactics & Board Motifs (real-time positional trophies)
-      el_invasor:              { icon:'🗼', cat:9, name:{es:'El Invasor',             en:'The Invader'},         desc:{es:'Mantén una Torre en la 7ª fila rival durante 3 turnos seguidos.',   en:'Keep a Rook on the opponent\'s 7th rank for 3 consecutive turns.'}, story:{es:'Cuando lleves una torre a la 7ª fila, mantenla ahí defendiéndola o creando amenazas durante 3 de tus turnos.', en:'Once you get a rook to the 7th rank, keep it there by defending it or making threats. Count 3 of your turns with the rook still on that rank.'} },
-      cerdos_ciegos:           { icon:'🐖', cat:9, name:{es:'Cerdos Ciegos',          en:'Blind Swine'},         desc:{es:'Coloca tus dos Torres simultáneamente en la 7ª fila rival.',        en:'Place both Rooks on the opponent\'s 7th rank at the same time.'}, story:{es:'La clásica posición de \'dos cerdos ciegos en la séptima\'. Dobla tus torres en la 7ª fila — devastador en el final.', en:'The classic \'two pigs on the seventh\' position. Double your rooks to the 7th rank — devastating in the endgame.'} },
-      el_pulpo:                { icon:'🐙', cat:9, name:{es:'El Pulpo',               en:'Octopus Knight'},      desc:{es:'Establece un Caballo en la 6ª fila defendido por un peón tuyo.',    en:'Post a Knight on the 6th rank defended by your own pawn.'}, story:{es:'Un caballo en e6/d6 defendido por un peón es uno de los mayores recursos posicionales. ¡Cólalo ahí!', en:'A knight on e6/d6 (or e3/d3 as Black) defended by a pawn is one of the strongest positional assets in chess. Park it there!'} },
-      el_calzoncillo:          { icon:'👖', cat:9, name:{es:'El Calzoncillo',         en:'The Fork'},            desc:{es:'Ataca dos piezas enemigas de mayor valor con un solo peón.',        en:'Attack two higher-value enemy pieces with a single pawn.'}, story:{es:'Avanza un peón hasta una casilla donde ataque a dos caballos, alfiles, torres o damas a la vez.', en:'Set up a pawn push to a square where it attacks two knights, bishops, rooks, or queens at once.'} },
-      la_sorpresa:             { icon:'🎁', cat:9, name:{es:'¡Sorpresa!',             en:'Discovered Attack!'},  desc:{es:'Realiza un jaque a la descubierta.',                                 en:'Deliver a discovered check.'}, story:{es:'Mueve una pieza que bloqueaba a un alfil, torre o dama, de forma que la pieza descubierta dé jaque.', en:'Move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.'} },
-      el_dragon:               { icon:'🐉', cat:7, name:{es:'El Dragón',              en:'The Dragon'},          desc:{es:'Desarrolla un Alfil en fianchetto (b2, g2, b7 o g7) en los primeros 10 movimientos.', en:'Develop a Bishop to a fianchetto square (b2, g2, b7 or g7) in the first 10 moves.'}, story:{es:'Fianchetta tu alfil a b2 o g2 (con blancas) o b7 o g7 (con negras) al principio de la partida.', en:'Fianchetto your bishop to b2 or g2 (as White) or b7 or g7 (as Black) early in the game. A classic setup.'} },
-      artilleria_pesada:       { icon:'🔫', cat:9, name:{es:'Artillería Pesada',      en:'The Battery'},         desc:{es:'Apila dos Torres tuyas en la misma columna.',                        en:'Stack two of your Rooks on the same column.'}, story:{es:'Dobla las torres en una columna abierta sin piezas de por medio. Muy común en las columnas d o e.', en:'Double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file.'} },
-      great_trade:             { icon:'🌪️', cat:9, name:{es:'Teoría del Caos',       en:'Chaos Theory'},        desc:{es:'4 capturas en 4 medias jugadas consecutivas.',                              en:'4 consecutive half-moves are all captures — a full fireworks sequence.'}, story:{es:'Cuando el centro estalla y ambos bandos intercambian pieza por pieza sin parar — eso es la Teoría del Caos.', en:'When the center explodes and both sides trade piece for piece without stopping — that\'s Chaos Theory.'} },
+      el_invasor:              { icon:'🗼', cat:7, name:{es:'El Invasor',             en:'The Invader'},         desc:{es:'Mantén una Torre en la 7ª fila rival durante 3 turnos seguidos.',   en:'Keep a Rook on the opponent\'s 7th rank for 3 consecutive turns.'}, story:{es:'Cuando lleves una torre a la 7ª fila, mantenla ahí defendiéndola o creando amenazas durante 3 de tus turnos.', en:'Once you get a rook to the 7th rank, keep it there by defending it or making threats. Count 3 of your turns with the rook still on that rank.'} },
+      cerdos_ciegos:           { icon:'🐖', cat:7, name:{es:'Cerdos Ciegos',          en:'Blind Swine'},         desc:{es:'Coloca tus dos Torres simultáneamente en la 7ª fila rival.',        en:'Place both Rooks on the opponent\'s 7th rank at the same time.'}, story:{es:'La clásica posición de \'dos cerdos ciegos en la séptima\'. Dobla tus torres en la 7ª fila — devastador en el final.', en:'The classic \'two pigs on the seventh\' position. Double your rooks to the 7th rank — devastating in the endgame.'} },
+      el_pulpo:                { icon:'🐙', cat:7, name:{es:'El Pulpo',               en:'Octopus Knight'},      desc:{es:'Establece un Caballo en la 6ª fila defendido por un peón tuyo.',    en:'Post a Knight on the 6th rank defended by your own pawn.'}, story:{es:'Un caballo en e6/d6 defendido por un peón es uno de los mayores recursos posicionales. ¡Cólalo ahí!', en:'A knight on e6/d6 (or e3/d3 as Black) defended by a pawn is one of the strongest positional assets in chess. Park it there!'} },
+      el_calzoncillo:          { icon:'👖', cat:7, name:{es:'El Calzoncillo',         en:'The Fork'},            desc:{es:'Ataca dos piezas enemigas de mayor valor con un solo peón.',        en:'Attack two higher-value enemy pieces with a single pawn.'}, story:{es:'Avanza un peón hasta una casilla donde ataque a dos caballos, alfiles, torres o damas a la vez.', en:'Set up a pawn push to a square where it attacks two knights, bishops, rooks, or queens at once.'} },
+      la_sorpresa:             { icon:'🎁', cat:7, name:{es:'¡Sorpresa!',             en:'Discovered Attack!'},  desc:{es:'Realiza un jaque a la descubierta.',                                 en:'Deliver a discovered check.'}, story:{es:'Mueve una pieza que bloqueaba a un alfil, torre o dama, de forma que la pieza descubierta dé jaque.', en:'Move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.'} },
+      el_dragon:               { icon:'🐉', cat:6, name:{es:'El Dragón',              en:'The Dragon'},          desc:{es:'Desarrolla un Alfil en fianchetto (b2, g2, b7 o g7) en los primeros 10 movimientos.', en:'Develop a Bishop to a fianchetto square (b2, g2, b7 or g7) in the first 10 moves.'}, story:{es:'Fianchetta tu alfil a b2 o g2 (con blancas) o b7 o g7 (con negras) al principio de la partida.', en:'Fianchetto your bishop to b2 or g2 (as White) or b7 or g7 (as Black) early in the game. A classic setup.'} },
+      the_analyst:             { icon:'🔍', cat:6, name:{es:'El Analista',            en:'The Analyst'},         desc:{es:'Usa ¿Fue buena? 5 veces.',                                           en:'Use "Was it good?" 5 times.'}, story:{es:'Los grandes jugadores no solo juegan — estudian sus propias jugadas después. Usa el botón ¿Fue buena? cinco veces para reflexionar sobre tus movimientos.', en:'Great players don\'t just play — they study their own moves afterwards. Use the "Was it good?" button five times to reflect on your play.'} },
+      artilleria_pesada:       { icon:'🔫', cat:7, name:{es:'Artillería Pesada',      en:'The Battery'},         desc:{es:'Apila dos Torres tuyas en la misma columna.',                        en:'Stack two of your Rooks on the same column.'}, story:{es:'Dobla las torres en una columna abierta sin piezas de por medio. Muy común en las columnas d o e.', en:'Double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file.'} },
+      great_trade:             { icon:'🌪️', cat:7, name:{es:'Teoría del Caos',       en:'Chaos Theory'},        desc:{es:'4 capturas en 4 medias jugadas consecutivas.',                              en:'4 consecutive half-moves are all captures — a full fireworks sequence.'}, story:{es:'Cuando el centro estalla y ambos bandos intercambian pieza por pieza sin parar — eso es la Teoría del Caos.', en:'When the center explodes and both sides trade piece for piece without stopping — that\'s Chaos Theory.'} },
       kings_support:           { icon:'👑', cat:2, name:{es:'El Rey Guerrero',        en:"King's Support"},      desc:{es:'Da jaque mate con tu Rey activo en la 6ª fila (3ª con negras) cerca del rey rival.', en:'Deliver checkmate with your King on the 6th rank (3rd as Black), within 2 squares of the enemy king.'}, story:{es:'Lleva tu Rey hasta la 6ª fila y úsalo para apoyar el jaque mate — igual que los profesionales en los finales.', en:'March your King up to rank 6 and use it to support the mating attack — just like the pros do in endgames.'} },
-      pawn_storm:              { icon:'🌊', cat:9, name:{es:'Tormenta de Peones',     en:'Pawn Storm'},          desc:{es:'Ten 4 peones tuyos simultáneamente en la 6ª fila o más avanzados.',         en:'Have 4 of your pawns on the 6th rank or further advanced at the same time.'}, story:{es:'Empuja peones por ambos flancos para crear una ola imparable que abrume al rival.', en:'Push pawns on both sides of the board to create an unstoppable wave that overwhelms your opponent.'} },
+      pawn_storm:              { icon:'🌊', cat:7, name:{es:'Tormenta de Peones',     en:'Pawn Storm'},          desc:{es:'Ten 4 peones tuyos simultáneamente en la 6ª fila o más avanzados.',         en:'Have 4 of your pawns on the 6th rank or further advanced at the same time.'}, story:{es:'Empuja peones por ambos flancos para crear una ola imparable que abrume al rival.', en:'Push pawns on both sides of the board to create an unstoppable wave that overwhelms your opponent.'} },
       smothered_mate:          { icon:'🐴', cat:3, hidden:true, name:{es:'El Fantasma de Filidor', en:"Philidor's Ghost"},    desc:{es:'Da jaque mate con un Caballo cuando el rey enemigo está completamente ahogado por sus propias piezas.', en:'Deliver checkmate with a Knight while the enemy King is smothered by its own pieces.'}, story:{es:'El patrón más elegante del ajedrez. El caballo salta sobre la guardia del rey que no puede escapar de sus propios piezas.', en:'The most elegant pattern in chess. The knight leaps over the king\'s own pieces — and the king cannot escape its own bodyguard.'} },
       // Category 10 — PvP (Two-Player)
-      pvp_face_to_face:        { icon:'🆚', cat:10, name:{es:'Cara a Cara',            en:'Face to Face'},        desc:{es:'Completa tu primera partida entera en modo 2 Jugadores.',            en:'Complete your first full game in 2-Player mode.'}, story:{es:'Llama a un amigo y jugad una partida completa en el modo 2 Jugadores.', en:'Grab a friend and play a full game in 2-Player mode on the same device.'} },
-      pvp_no_takebacks:        { icon:'🛑', cat:10, name:{es:'¡Sin Trampas!',           en:'No Takebacks!'},       desc:{es:'Terminad una partida PvP sin que ninguno pulse Deshacer.',           en:'Complete a PvP game where neither player presses Undo.'}, story:{es:'Acordad las reglas antes de empezar — si cualquiera pulsa Deshacer, el trofeo se pierde para esa partida.', en:'Agree on the rules before you start — once either player presses Undo, the trophy is lost for that game.'} },
-      pvp_peace_treaty:        { icon:'⚖️', cat:10, name:{es:'Tratado de Paz',         en:'Peace Treaty'},        desc:{es:'Llegad a un empate en una partida PvP.',                             en:'Reach a draw (stalemate, insufficient material, or threefold) in a PvP game.'}, story:{es:'Unas buenas tablas. Intentad llegar a un ahogado o repetid movimientos 3 veces.', en:'A hard-fought draw is better than a loss. Try to orchestrate a stalemate or agree to repeat moves 3 times.'} },
-      pvp_coffeehouse:         { icon:'⏱️', cat:10, name:{es:'Ajedrez Relámpago',      en:'Coffeehouse Chess'},   desc:{es:'Ganad una partida PvP en menos de 25 movimientos completos.',        en:'Win a PvP game in under 25 full moves.'}, story:{es:'Se consigue si cualquiera gana rápido. ¡Jugad agresivo!', en:'Fires for either side winning quickly. Push fast and attack early!'} },
-      pvp_regular_rivals:      { icon:'🏙️', cat:10, name:{es:'Rivales de Siempre',    en:'Regular Rivals'},      desc:{es:'Juega 5 partidas PvP en total.',                                     en:'Play 5 PvP games in total.'}, story:{es:'El contador se mantiene entre sesiones, no hace falta jugar las 5 seguidas.', en:'The counter persists across sessions — you don\'t need to play 5 games in one sitting.'} },
-      pvp_passed_crown:        { icon:'💎', cat:10, name:{es:'La Corona Coronada',    en:'The Passed Crown'},    desc:{es:'Corona un peón en una partida PvP.',                                 en:'Promote a pawn in a PvP game.'}, story:{es:'Lleva un peón hasta el final en el modo 2 Jugadores y corónalo.', en:'Push a pawn all the way to the end in a 2-Player game and promote it.'} },
-      pvp_the_handshake:       { icon:'🤝', cat:10, name:{es:'El Apretón de Manos',    en:'The Handshake'},       desc:{es:'Terminad una partida PvP en la que ambos jugadores hayan dado al menos un jaque.', en:'Finish a PvP game where both players delivered at least one check.'}, story:{es:'Ambos bandos deben dar jaque al menos una vez. Vale cualquier jaque.', en:'Both sides just need to give check at least once. Even a quick discovered check counts.'} },
+      pvp_face_to_face:        { icon:'🆚', cat:8, name:{es:'Cara a Cara',            en:'Face to Face'},        desc:{es:'Completa tu primera partida entera en modo 2 Jugadores.',            en:'Complete your first full game in 2-Player mode.'}, story:{es:'Llama a un amigo y jugad una partida completa en el modo 2 Jugadores.', en:'Grab a friend and play a full game in 2-Player mode on the same device.'} },
+      pvp_no_takebacks:        { icon:'🛑', cat:8, name:{es:'¡Sin Trampas!',           en:'No Takebacks!'},       desc:{es:'Terminad una partida PvP sin que ninguno pulse Deshacer.',           en:'Complete a PvP game where neither player presses Undo.'}, story:{es:'Acordad las reglas antes de empezar — si cualquiera pulsa Deshacer, el trofeo se pierde para esa partida.', en:'Agree on the rules before you start — once either player presses Undo, the trophy is lost for that game.'} },
+      pvp_peace_treaty:        { icon:'⚖️', cat:8, name:{es:'Tratado de Paz',         en:'Peace Treaty'},        desc:{es:'Llegad a un empate en una partida PvP.',                             en:'Reach a draw (stalemate, insufficient material, or threefold) in a PvP game.'}, story:{es:'Unas buenas tablas. Intentad llegar a un ahogado o repetid movimientos 3 veces.', en:'A hard-fought draw is better than a loss. Try to orchestrate a stalemate or agree to repeat moves 3 times.'} },
+      pvp_coffeehouse:         { icon:'⏱️', cat:8, name:{es:'Ajedrez Relámpago',      en:'Coffeehouse Chess'},   desc:{es:'Ganad una partida PvP en menos de 25 movimientos completos.',        en:'Win a PvP game in under 25 full moves.'}, story:{es:'Se consigue si cualquiera gana rápido. ¡Jugad agresivo!', en:'Fires for either side winning quickly. Push fast and attack early!'} },
+      pvp_regular_rivals:      { icon:'🏙️', cat:8, name:{es:'Rivales de Siempre',    en:'Regular Rivals'},      desc:{es:'Juega 5 partidas PvP en total.',                                     en:'Play 5 PvP games in total.'}, story:{es:'El contador se mantiene entre sesiones, no hace falta jugar las 5 seguidas.', en:'The counter persists across sessions — you don\'t need to play 5 games in one sitting.'} },
+      pvp_passed_crown:        { icon:'💎', cat:8, name:{es:'La Corona Coronada',    en:'The Passed Crown'},    desc:{es:'Corona un peón en una partida PvP.',                                 en:'Promote a pawn in a PvP game.'}, story:{es:'Lleva un peón hasta el final en el modo 2 Jugadores y corónalo.', en:'Push a pawn all the way to the end in a 2-Player game and promote it.'} },
+      pvp_the_handshake:       { icon:'🤝', cat:8, name:{es:'El Apretón de Manos',    en:'The Handshake'},       desc:{es:'Terminad una partida PvP en la que ambos jugadores hayan dado al menos un jaque.', en:'Finish a PvP game where both players delivered at least one check.'}, story:{es:'Ambos bandos deben dar jaque al menos una vez. Vale cualquier jaque.', en:'Both sides just need to give check at least once. Even a quick discovered check counts.'} },
+    };
+
+    // One medal per category — earned by completing ALL trophies in that category.
+    // cat:4 medal is "The Grand Historian" — the former grand_historian trophy, now elevated.
+    const MEDAL_DEFS = {
+      1: { icon:'🥇', name:{es:'Maestro de la Progresión',  en:'Progression Master'},    desc:{es:'Completa los 12 trofeos de Progresión.',       en:'Complete all 12 Progression trophies.'} },
+      2: { icon:'🧠', name:{es:'Maestro Técnico',            en:'Technical Master'},      desc:{es:'Completa los 10 trofeos Técnicos.',            en:'Complete all 10 Technical trophies.'} },
+      3: { icon:'🥚', name:{es:'Maestro de los Secretos',   en:'Master of Secrets'},     desc:{es:'Descubre los 9 Easter Eggs.',                  en:'Discover all 9 Easter Eggs.'} },
+      4: { icon:'📜', name:{es:'El Gran Historiador',        en:'The Grand Historian'},   desc:{es:'Recrea los 4 motivos históricos legendarios.', en:'Recreate all 4 legendary historical motifs.'} },
+      5: { icon:'⚡', name:{es:'Maestro Implacable',         en:'Relentless Master'},     desc:{es:'Completa los 9 trofeos Implacables.',          en:'Complete all 9 Relentless trophies.'} },
+      6: { icon:'📚', name:{es:'Maestro del Aprendizaje',   en:'Learning Master'},       desc:{es:'Completa los 4 trofeos de Aprendizaje.',       en:'Complete all 4 Learning trophies.'} },
+      7: { icon:'⚔️', name:{es:'Maestro Táctico',            en:'Tactical Master'},       desc:{es:'Completa los 9 trofeos Tácticos.',             en:'Complete all 9 Tactical trophies.'} },
+      8: { icon:'🥊', name:{es:'Campeón Cara a Cara',        en:'Head-to-Head Champion'}, desc:{es:'Completa los 7 trofeos de 2 Jugadores.',       en:'Complete all 7 Two-Player trophies.'} },
     };
 
     function unlockTrophy(id) {
@@ -3980,12 +4028,64 @@ limitations under the License.
       const def = TROPHY_DEFS[id];
       showTrophyCelebration(def, id);
       console.log(`[Statistician] Trophy unlocked: ${id}`);
+      if (def) checkMedalForCategory(def.cat);
+    }
+
+    function checkMedalForCategory(catNum) {
+      const p = currentProfile;
+      if (!p || !MEDAL_DEFS[catNum]) return;
+      if (p.unlockedMedals.some(m => m.cat === catNum)) return; // already have it
+      const catIds = Object.entries(TROPHY_DEFS)
+        .filter(([, d]) => d.cat === catNum)
+        .map(([id]) => id);
+      const unlockedSet = new Set(p.unlockedTrophies.map(t => t.id));
+      if (catIds.every(id => unlockedSet.has(id))) {
+        p.unlockedMedals.push({ cat: catNum, unlockedAt: new Date().toISOString() });
+        saveProfile();
+        const mDef = MEDAL_DEFS[catNum];
+        showMedalCelebration(mDef, catNum);
+        console.log(`[Statistician] Medal unlocked: cat ${catNum}`);
+        checkFinalTitle();
+      }
+    }
+
+    function checkFinalTitle() {
+      const p = currentProfile;
+      if (!p || p.wheatAndChessboard) return;
+      if (p.unlockedMedals.length === Object.keys(MEDAL_DEFS).length &&
+          p.unlockedTrophies.length === Object.keys(TROPHY_DEFS).length) {
+        p.wheatAndChessboard = true;
+        saveProfile();
+        showWheatChessboardCelebration();
+        console.log('[Statistician] Wheat & Chessboard unlocked — 2⁶⁴ − 1');
+      }
+    }
+
+    function showMedalCelebration(mDef, catNum) {
+      const name = mDef.name[currentLanguage] || mDef.name.es;
+      document.getElementById('trophyCelebIcon').textContent  = mDef.icon;
+      document.getElementById('trophyCelebLabel').textContent = '🏆 ' + (currentLanguage === 'en' ? 'Category Medal' : 'Medalla de Categoría');
+      document.getElementById('trophyCelebName').textContent  = name;
+      const el = document.getElementById('trophyCelebration');
+      el.classList.add('show');
+      clearTimeout(el._hideTimer);
+      el._hideTimer = setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    function showWheatChessboardCelebration() {
+      document.getElementById('trophyCelebIcon').textContent  = '♟️';
+      document.getElementById('trophyCelebLabel').textContent = '2⁶⁴ − 1';
+      document.getElementById('trophyCelebName').textContent  = currentLanguage === 'en' ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero';
+      const el = document.getElementById('trophyCelebration');
+      el.classList.add('show');
+      clearTimeout(el._hideTimer);
+      el._hideTimer = setTimeout(() => el.classList.remove('show'), 5000);
     }
 
     function showTrophyCelebration(def, id) {
       const name  = def ? (def.name[currentLanguage] || def.name.es) : id;
       const icon  = def ? def.icon : '🏆';
-      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '🔥', 7: '📚', 8: '🎭', 9: '⚔️', 10: '🥊' };
+      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '📚', 7: '⚔️', 8: '🥊' };
       const label = def ? (catLabels[def.cat] + ' ' + t('profileCat' + def.cat)) : '🏆';
       document.getElementById('trophyCelebIcon').textContent  = icon;
       document.getElementById('trophyCelebLabel').textContent = label;
@@ -4116,8 +4216,7 @@ limitations under the License.
       if (type === 'B' && tr === 2 && tc === 7 && nonPawnPieces >= 6) unlockTrophy('secret_vladimirov_bh6');  // h6  — middlegame attack
       if (type === 'R' && tr === 6 && tc === 1 && nonPawnPieces >= 2 && nonPawnPieces <= 8 && motifPawnCheck('secret_sanz_rxb2', board, playerColor)) unlockTrophy('secret_sanz_rxb2');
       if (type === 'B' && tr === 5 && tc === 7 && nonPawnPieces <= 5 && motifPawnCheck('secret_shirov_bh3', board, playerColor)) unlockTrophy('secret_shirov_bh3');
-      if (all4.every(id => currentProfile.unlockedTrophies.some(t => t.id === id)))
-        unlockTrophy('grand_historian');
+      // Medal for Historians category is awarded automatically via checkMedalForCategory
     }
 
     function checkPositionalTrophies(type, tr, tc) {
@@ -4500,12 +4599,10 @@ limitations under the License.
         profileCat2: '🧠 Técnico',
         profileCat3: '🥚 Easter Eggs',
         profileCat4: '📜 Los Historiadores',
-        profileCat5: '⚡ Velocidad y Reto',
-        profileCat6: '🔥 Rachas y Fidelidad',
-        profileCat7: '📚 Aprendizaje',
-        profileCat8: '🎭 Divertidos',
-        profileCat9: '⚔️ Tácticas',
-        profileCat10: '🥊 2 Jugadores',
+        profileCat5: '⚡ Implacable',
+        profileCat6: '📚 Aprendizaje',
+        profileCat7: '⚔️ Tácticas',
+        profileCat8: '🥊 2 Jugadores',
         profileLocked: 'Bloqueado',
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
@@ -4607,12 +4704,10 @@ limitations under the License.
         profileCat2: '🧠 Technical',
         profileCat3: '🥚 Easter Eggs',
         profileCat4: '📜 The Historians',
-        profileCat5: '⚡ Speed & Challenge',
-        profileCat6: '🔥 Streaks & Loyalty',
-        profileCat7: '📚 Learning',
-        profileCat8: '🎭 Fun & Silly',
-        profileCat9: '⚔️ Tactics',
-        profileCat10: '🥊 Two-Player',
+        profileCat5: '⚡ Relentless',
+        profileCat6: '📚 Learning',
+        profileCat7: '⚔️ Tactics',
+        profileCat8: '🥊 Two-Player',
         profileLocked: 'Locked',
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
@@ -6795,6 +6890,24 @@ limitations under the License.
       const unlockedCount    = p ? p.unlockedTrophies.length : 0;
       const totalTrophyPct   = Math.round(unlockedCount / totalTrophyCount * 100);
 
+      const unlockedMedalSet = new Set((p?.unlockedMedals || []).map(m => m.cat));
+      const totalMedals      = Object.keys(MEDAL_DEFS).length;
+      const unlockedMedalCount = unlockedMedalSet.size;
+
+      function medalsShelf() {
+        const slots = Object.entries(MEDAL_DEFS).map(([catNum, mDef]) => {
+          const earned = unlockedMedalSet.has(Number(catNum));
+          const name = mDef.name[L] || mDef.name.es;
+          const dateEntry = (p?.unlockedMedals || []).find(m => m.cat === Number(catNum));
+          const dateStr = dateEntry ? new Date(dateEntry.unlockedAt).toLocaleDateString() : '';
+          return `<div class="medal-slot ${earned ? 'medal-earned' : 'medal-locked'}" title="${name}${dateStr ? ' · ' + dateStr : ''}">
+            <div class="medal-icon">${earned ? mDef.icon : '🔒'}</div>
+            <div class="medal-name">${earned ? name : '???'}</div>
+          </div>`;
+        }).join('');
+        return `<div class="medals-shelf">${slots}</div>`;
+      }
+
       const streakCurrent = p?.streak?.current || 0;
       const streakBest    = p?.streak?.best    || 0;
       const recentDots    = (p?.recentResults || [])
@@ -6812,6 +6925,7 @@ limitations under the License.
               onblur="saveProfileName(this.value)"
               onkeydown="if(event.key==='Enter'){this.blur();}">
             <div class="profile-headline">${avatarTitle ? avatarTitle : '—'}</div>
+            ${p?.wheatAndChessboard ? `<div class="wheat-chessboard-badge">♟️ 2⁶⁴ − 1 · ${L === 'en' ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero'}</div>` : ''}
           </div>
         </div>
 
@@ -6869,7 +6983,8 @@ limitations under the License.
           <div class="trophy-progress-wrap">
             <div class="trophy-progress-bar" style="width:${totalTrophyPct}%"></div>
           </div>
-          <div class="trophy-progress-label">${unlockedCount} / ${totalTrophyCount}</div>
+          <div class="trophy-progress-label">${unlockedCount} / ${totalTrophyCount} · ${L === 'en' ? 'Medals' : 'Medallas'}: ${unlockedMedalCount} / ${totalMedals}</div>
+          ${medalsShelf()}
           <div class="trophy-filter-row">
             <button id="trophyFilter_all"     class="trophy-filter-btn active" onclick="filterTrophies('all')"    >${_('trophyFilterAll')}</button>
             <button id="trophyFilter_unlocked" class="trophy-filter-btn"       onclick="filterTrophies('unlocked')">${_('trophyFilterEarned')}</button>
@@ -6877,12 +6992,10 @@ limitations under the License.
           </div>
           ${trophySection(1,'profileCat1')}
           ${trophySection(2,'profileCat2')}
-          ${trophySection(9,'profileCat9')}
-          ${trophySection(10,'profileCat10')}
+          ${trophySection(7,'profileCat7')}
+          ${trophySection(8,'profileCat8')}
           ${trophySection(5,'profileCat5')}
           ${trophySection(6,'profileCat6')}
-          ${trophySection(7,'profileCat7')}
-
           ${trophySection(4,'profileCat4')}
           ${trophySection(3,'profileCat3')}
         </div>
@@ -17138,6 +17251,11 @@ limitations under the License.
 
     function analyzeLastMove() {
       sessionHints++;
+      if (currentProfile) {
+        currentProfile.stats.wasItGoodUsed = (currentProfile.stats.wasItGoodUsed || 0) + 1;
+        if (currentProfile.stats.wasItGoodUsed >= 5) unlockTrophy('the_analyst');
+        saveProfile();
+      }
       lastProfessorAction = 'wasgood';
       const pList = document.getElementById('professorList');
 

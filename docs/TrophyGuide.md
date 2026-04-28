@@ -1,11 +1,19 @@
 # 🏆 Airin Chess — Trophy Guide
 
-> **64 trophies total** | Hidden Easter Eggs marked with 🔒  
+> **64 trophies · 8 medals · 1 legend** | Hidden Easter Eggs marked with 🔒  
 > Version: v2.24.0+
 
 ---
 
-## 🏅 Progression
+## How it Works
+
+**Trophies** (64 total) are unlocked by achieving specific in-game feats.  
+**Medals** (8 total) are earned by completing **every trophy** in a category — one medal per category.  
+**2⁶⁴ − 1: The Wheat and Chessboard** is the final title, unlocked when you hold all 64 trophies and all 8 medals. A king once promised a wise man 1 grain of wheat on the first square, doubling on each square after. The total — 2⁶⁴ − 1 — was more wheat than the world has ever grown. You have claimed every square.
+
+---
+
+## 🏅 Progression — Medal: 🥇
 *Milestones you'll unlock naturally as you play and improve.*
 
 | Icon | Trophy (ES / EN) | How to unlock |
@@ -32,14 +40,14 @@
 
 ---
 
-## 🧠 Technical
+## 🧠 Technical — Medal: 🧠
 *Achievements for high-quality, disciplined play.*
 
 | Icon | Trophy (ES / EN) | How to unlock |
 |------|-----------------|---------------|
 | 🛡️ | **Pure Pride** | Win a full game on Hard or Master **without** using Undo, asking the Coach for help, or turning on Training Mode. |
 | 🏰 | **Iron Castle** | Castle during a game and then **never move your king again** — and win. |
-| 🗿 | **David vs Goliath** | Win against the Hard or Grandmaster bot after your position reached −500 centipawns (eval bar near the bottom) or worse. |
+| 🗿 | **David vs Goliath** | Win against the Hard or Grandmaster bot after your position reached −500 centipawns or worse. |
 | ⏳ | **Royal Endurance** | Survive more than 60 moves in a single game against the Wise King (Master). |
 | 💎 | **The Immortal** | Defeat the Wise King without ever pressing Undo. |
 | ♟️ | **The Usurper** | Deliver checkmate to the Wise King using a **pawn** as the mating piece. |
@@ -64,8 +72,8 @@
 
 ---
 
-## ⚡ Speed & Challenge
-*For players who like to play fast or push through adversity.*
+## ⚡ Relentless — Medal: ⚡
+*For players who play fast, push through adversity, and keep coming back for more.*
 
 | Icon | Trophy (ES / EN) | How to unlock |
 |------|-----------------|---------------|
@@ -74,35 +82,25 @@
 | ♟️ | **Chess Clinic** | Win a game **without losing a single piece** (pawns included). |
 | 🌀 | **Illusion Breaker** | Force a draw (stalemate or 3-fold repetition) against the Hard bot (Magician). |
 | 🧩 | **No Tricks Allowed** | Defeat the Hard bot (Magician) without using any Coach hints. |
-
-> **Tips:**
-> - **Lightning!**: Scholar's Mate or Italian Game traps can work on Easy/Medium. The 4-move Scholar's Mate is 4 moves — well under 15.
-> - **Comeback Kid**: you need to be at −400 or worse *and* win. Let the situation get bad, then fight back.
-> - **Chess Clinic**: very hard to achieve. Play defensively, avoid trading, and steer into a won endgame safely.
-> - **Illusion Breaker**: if you can't win, a draw is a valid result against a hard opponent. Look for stalemate traps or repeat the position three times.
-> - **No Tricks Allowed**: trust your own reading. No Coach analysis, no "What should I do?" — just you vs the Magician.
-
----
-
-## 🔥 Streaks & Loyalty
-*For dedicated players who keep coming back.*
-
-| Icon | Trophy (ES / EN) | How to unlock |
-|------|-----------------|---------------|
 | ♟️ | **Black and White** | Win **50 games as White** AND **50 games as Black**. |
 | 🔥 | **Hat Trick** | Win **3 games in a row** in the same session or across sessions. |
 | 📅 | **Every Day!** | Play at least one game on **5 different calendar days** total. |
 | 🛋️ | **Weekend Warrior** | Play at least one game on a **Saturday** AND at least one on a **Sunday** (can be different weeks). |
 
 > **Tips:**
-> - **Black and White**: your profile tracks wins by color — you can check your progress in the Profile screen. Play both sides regularly.
+> - **Lightning!**: Scholar's Mate or Italian Game traps can work on Easy/Medium. The 4-move Scholar's Mate is well under 15 moves.
+> - **Comeback Kid**: you need to be at −400 or worse *and* win. Let the situation get bad, then fight back.
+> - **Chess Clinic**: play defensively, avoid trading, and steer into a won endgame safely.
+> - **Illusion Breaker**: look for stalemate traps or repeat the position three times.
+> - **No Tricks Allowed**: trust your own reading. No Coach analysis, no "What should I do?" — just you vs the Magician.
+> - **Black and White**: your profile tracks wins by color — check your progress in the Profile screen. Play both sides regularly.
 > - **Hat Trick**: losses reset the streak counter. Win 3 in a row — doesn't need to be in the same sitting.
 > - **Every Day!**: just play at least one game whenever you open the app. Unlocks after 5 separate days.
 > - **Weekend Warrior**: play any game on Saturday, any game on Sunday. They don't need to be the same weekend.
 
 ---
 
-## 📚 Learning
+## 📚 Learning — Medal: 📚
 *For curious players who use the tools Airin provides.*
 
 | Icon | Trophy (ES / EN) | How to unlock |
@@ -110,15 +108,17 @@
 | 🦉 | **The Student** | Use any Coach feature (Analysis, What should I do?, or Was it good?) a total of **10 times** across all games. |
 | 🗺️ | **The Explorer** | Play through **5 different named openings** across any games (the Commentator must announce the opening name). |
 | 🐉 | **The Dragon** | Develop a Bishop to a **fianchetto square** (b2, g2, b7, or g7) in the **first 10 moves**. |
+| 🔍 | **The Analyst** | Use the **"Was it good?"** Coach button **5 times** across any games. |
 
 > **Tips:**
 > - **The Student**: open the Coach tab and press any of the three buttons — each press counts. Available on Easy, Medium, and Hard.
 > - **The Explorer**: play e4 e5 (Italian/Ruy Lopez area), d4 d5 (Queen's Gambit), c4 (English), Nf3 (Réti), etc. Each named line the Commentator announces counts as one discovery.
 > - **The Dragon**: play g3 followed by Bg2 (as White) or g6 followed by Bg7 (as Black) early. The fianchetto is used in the King's Indian, the Dragon Sicilian, and many modern setups.
+> - **The Analyst**: after each move you make, click the Coach tab and press "Was it good?" — it reviews your last move for blunders and missed wins. Five reflections unlock the trophy.
 
 ---
 
-## ⚔️ Tactics
+## ⚔️ Tactics — Medal: ⚔️
 *Trophies for recognising and executing classic tactical and positional patterns.*
 
 | Icon | Trophy | How to unlock |
@@ -146,18 +146,18 @@
 
 ---
 
-## 🥊 Two-Player
+## 🥊 Two-Player — Medal: 🥊
 *Special trophies earned only in 2-Player (PvP) mode — share the board with a friend!*
 
 | Icon | Trophy | How to unlock |
 |------|--------|---------------|
 | 🆚 | **Face to Face** | Complete your **first full game** in 2-Player mode (any result counts). |
-| 🛑 | **No Takebacks!** | Complete a PvP game where **neither player** presses Undo even once. The golden rule of park chess. |
+| 🛑 | **No Takebacks!** | Complete a PvP game where **neither player** presses Undo even once. |
 | ⚖️ | **Peace Treaty** | Reach a **draw** (stalemate, insufficient material, or threefold repetition) in a PvP game. |
-| ⏱️ | **Coffeehouse Chess** | Win a PvP game in **under 25 full moves**. Someone walked into a Scholar's Mate. |
+| ⏱️ | **Coffeehouse Chess** | Win a PvP game in **under 25 full moves**. |
 | 🏙️ | **Regular Rivals** | Play **5 PvP games** in total. |
 | 💎 | **The Passed Crown** | **Promote a pawn** in a PvP game. |
-| 🤝 | **The Handshake** | Finish a PvP game where **both players delivered at least one check**. A truly balanced battle. |
+| 🤝 | **The Handshake** | Finish a PvP game where **both players delivered at least one check**. |
 
 > **Tips:**
 > - **No Takebacks!**: agree on the rules before you start — once you press Undo, the trophy window closes for the whole game.
@@ -167,12 +167,12 @@
 
 ---
 
-## 📜 The Historians
+## 📜 The Historians — Medal: 📜
 *Recreate legendary moments from chess history — in your own games.*
 
 These trophies unlock when you play a **historically famous sacrifice** and the resulting square is **still under attack** — meaning your move carries the same spirit of the original. You don't need to be in the exact historical position. The engine recognises the pattern regardless.
 
-**Easiest way to unlock:** You can instantly unlock these trophies by loading their corresponding historical positions from the **(Legends)** section in the Load FEN menu and playing the famous move.
+**Easiest way to unlock:** Load their corresponding positions from the **(Legends)** section in the Load FEN menu and play the famous move.
 
 ---
 
@@ -183,9 +183,7 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 > Frank Marshall sacrificed his queen on g3 — a piece that could be captured in three different ways. Instead of being taken, it threatened unstoppable checkmate. The room fell silent, then the audience threw gold coins onto the board to celebrate the most brilliant move they had ever seen.
 
-**How to unlock:** In any game as Black, move your queen to g3 while it can be captured by the opponent. The engine will detect the echo of Marshall's sacrifice.
-
-**Quick unlock:** Use the FEN Library in-game → "La Lluvia de Oro — Marshall 1912" — to set up the exact historical position and try the move.
+**How to unlock:** In any game as Black, move your queen to g3 while it can be captured by the opponent.
 
 ---
 
@@ -198,8 +196,6 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 **How to unlock:** In any game as White, move your bishop to h6 while it is under attack by the opponent.
 
-**Quick unlock:** Use the FEN Library → "El Cañonazo — Vladimirov 1987".
-
 ---
 
 ### 🚂 The Locomotive
@@ -207,11 +203,9 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 **The move:** Play **Rxb2** (rook to b2) with the rook under attack.
 
-> Ortueta played Rxb2, sacrificing the rook. It looked like a blunder, but it hid an unstoppable chain of advancing pawns — rolling forward like a locomotive. Many call it "the immortal combination." A small pawn can be more dangerous than a rook if nothing can stop it.
+> Ortueta played Rxb2, sacrificing the rook. It looked like a blunder, but it hid an unstoppable chain of advancing pawns — rolling forward like a locomotive. Many call it "the immortal combination."
 
 **How to unlock:** In any game as Black, move your rook to b2 while it is under attack.
-
-**Quick unlock:** Use the FEN Library → "La Locomotora — Ortueta vs Sanz 1933".
 
 ---
 
@@ -220,20 +214,17 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 **The move:** Play **Bh3** (bishop to h3) with the bishop under attack.
 
-> In what looked like a drawn endgame, Alexei Shirov played Bh3!! — a bishop sacrifice that even the world's best computers couldn't understand at the time. The move won through a pawn race calculated with pinpoint precision. Kasparov called it "the most beautiful move I have ever seen."
+> In what looked like a drawn endgame, Alexei Shirov played Bh3!! — a bishop sacrifice that even the world's best computers couldn't understand at the time. Kasparov called it "the most beautiful move I have ever seen."
 
 **How to unlock:** In any game as Black, move your bishop to h3 while it is under attack.
 
-**Quick unlock:** Use the FEN Library → "Fuego en el Tablero — Shirov vs Topalov 1998".
+---
+
+> Complete all 4 Historians trophies to earn the **📜 Grand Historian Medal**.
 
 ---
 
-### 📜 The Grand Historian
-Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive, Fire on Board).
-
----
-
-## 🥚 Easter Eggs
+## 🥚 Easter Eggs — Medal: 🥚
 *Hidden trophies — you won't see them until you find them. Hints only!*
 
 > These trophies are intentionally obscure. If you want the full challenge, stop reading here!
@@ -254,15 +245,16 @@ Unlock **all 4** historical motif trophies (Golden Rain, Cannon Shot, Locomotive
 
 ## Totals at a Glance
 
-| Category | Count |
-|---|---|
-| 🏅 Progression | 12 |
-| 🧠 Technical | 10 |
-| ⚡ Speed & Challenge | 5 |
-| 🔥 Streaks & Loyalty | 4 |
-| 📚 Learning | 3 |
-| ⚔️ Tactics | 9 |
-| 🥊 Two-Player | 7 |
-| 📜 The Historians | 5 |
-| 🥚 Easter Eggs (hidden) | 9 |
-| **Total** | **64** |
+| Category | Trophies | Medal |
+|---|---|---|
+| 🏅 Progression | 12 | 🥇 |
+| 🧠 Technical | 10 | 🧠 |
+| ⚡ Relentless | 9 | ⚡ |
+| 📚 Learning | 4 | 📚 |
+| ⚔️ Tactics | 9 | ⚔️ |
+| 🥊 Two-Player | 7 | 🥊 |
+| 📜 The Historians | 4 | 📜 |
+| 🥚 Easter Eggs | 9 | 🥚 |
+| **Total** | **64** | **8** |
+
+Collect all 64 trophies and all 8 medals to earn the final title: **♟️ 2⁶⁴ − 1: The Wheat and Chessboard**.
