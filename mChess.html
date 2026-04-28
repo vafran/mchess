@@ -1744,9 +1744,44 @@ limitations under the License.
       color: var(--text); opacity: 0.8;
     }
     .wheat-chessboard-badge {
-      margin-top: 4px; font-size: 0.72rem; font-weight: 700;
-      color: #fbbf24; letter-spacing: 0.02em;
-      text-shadow: 0 0 8px rgba(251,191,36,0.5);
+      font-size: 0.9rem; font-weight: 800;
+      color: #fbbf24; letter-spacing: 0.03em;
+      text-shadow: 0 0 10px rgba(251,191,36,0.7);
+    }
+    .legend-card {
+      margin-top: 18px; padding: 16px;
+      border-radius: 14px; text-align: center;
+    }
+    .legend-card.legend-locked {
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed rgba(168,85,247,0.25);
+    }
+    .legend-card.legend-earned {
+      background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(168,85,247,0.12));
+      border: 1px solid rgba(251,191,36,0.4);
+      box-shadow: 0 0 20px rgba(251,191,36,0.15);
+    }
+    .legend-icon { font-size: 2rem; margin-bottom: 6px; }
+    .legend-card.legend-locked .legend-icon { filter: grayscale(1); opacity: 0.4; }
+    .legend-title {
+      font-size: 1.3rem; font-weight: 900; letter-spacing: 0.04em;
+    }
+    .legend-card.legend-locked .legend-title { opacity: 0.5; }
+    .legend-card.legend-earned .legend-title {
+      color: #fbbf24; text-shadow: 0 0 12px rgba(251,191,36,0.5);
+    }
+    .legend-subtitle {
+      font-size: 0.82rem; font-weight: 700; opacity: 0.7; margin-bottom: 8px;
+    }
+    .legend-card.legend-earned .legend-subtitle {
+      color: #fbbf24; opacity: 0.9;
+    }
+    .legend-desc {
+      font-size: 0.78rem; line-height: 1.5; opacity: 0.7;
+    }
+    .legend-progress {
+      margin-top: 8px; font-size: 0.75rem; font-weight: 700;
+      color: rgba(168,85,247,0.7);
     }
     .trophy-filter-row {
       display: flex; gap: 8px; margin-bottom: 14px;
@@ -6924,8 +6959,7 @@ limitations under the License.
               maxlength="24" spellcheck="false"
               onblur="saveProfileName(this.value)"
               onkeydown="if(event.key==='Enter'){this.blur();}">
-            <div class="profile-headline">${avatarTitle ? avatarTitle : '—'}</div>
-            ${p?.wheatAndChessboard ? `<div class="wheat-chessboard-badge">♟️ 2⁶⁴ − 1 · ${L === 'en' ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero'}</div>` : ''}
+            <div class="profile-headline">${p?.wheatAndChessboard ? `<span class="wheat-chessboard-badge">♟️ 2⁶⁴ − 1</span>` : (avatarTitle ? avatarTitle : '—')}</div>
           </div>
         </div>
 
@@ -6998,6 +7032,30 @@ limitations under the License.
           ${trophySection(6,'profileCat6')}
           ${trophySection(4,'profileCat4')}
           ${trophySection(3,'profileCat3')}
+          ${(() => {
+            const earned = p?.wheatAndChessboard;
+            if (earned) {
+              return `<div class="legend-card legend-earned">
+                <div class="legend-icon">♟️</div>
+                <div class="legend-title">2⁶⁴ − 1</div>
+                <div class="legend-subtitle">${L === 'en' ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero'}</div>
+                <div class="legend-desc">${L === 'en'
+                  ? 'A king promised one grain of wheat on the first square, doubling on each. The total — 2⁶⁴ − 1 — was more wheat than the world has ever grown. You have claimed every square. You are the king who finally understood.'
+                  : 'Un rey prometió un grano de trigo en la primera casilla, doblando en cada una. El total — 2⁶⁴ − 1 — era más trigo del que ha existido en el mundo. Has reclamado cada casilla. Eres el rey que por fin lo comprendió.'}</div>
+              </div>`;
+            } else {
+              const needed = `${unlockedCount}/64 · ${L === 'en' ? 'Medals' : 'Medallas'}: ${unlockedMedalCount}/8`;
+              return `<div class="legend-card legend-locked">
+                <div class="legend-icon">♟️</div>
+                <div class="legend-title">???</div>
+                <div class="legend-subtitle">${L === 'en' ? 'A legend awaits...' : 'Una leyenda te espera...'}</div>
+                <div class="legend-desc">${L === 'en'
+                  ? `Earn all 64 trophies and all 8 medals to reveal what lies beyond the 64th square.`
+                  : `Consigue los 64 trofeos y las 8 medallas para descubrir lo que hay más allá de la casilla 64.`}</div>
+                <div class="legend-progress">${needed}</div>
+              </div>`;
+            }
+          })()}
         </div>
 
         <div class="profile-portability-row">
