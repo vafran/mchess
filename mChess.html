@@ -1783,6 +1783,67 @@ limitations under the License.
       margin-top: 8px; font-size: 0.75rem; font-weight: 700;
       color: rgba(168,85,247,0.7);
     }
+    .legend-card { cursor: pointer; }
+    .legend-card:hover { opacity: 0.9; }
+    .legend-overlay {
+      position: fixed; inset: 0; z-index: 9100;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .legend-overlay.show { opacity: 1; pointer-events: all; }
+    .legend-modal-card {
+      position: relative; width: min(92vw, 420px);
+      max-height: 88vh; overflow-y: auto;
+      background: var(--card); border-radius: 20px;
+      padding: 28px 24px 24px;
+      border: 1px solid rgba(251,191,36,0.3);
+      box-shadow: 0 0 40px rgba(251,191,36,0.12), 0 8px 32px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+    .legend-modal-card.locked-state {
+      border-color: rgba(168,85,247,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .legend-modal-icon { font-size: 2.8rem; margin-bottom: 8px; }
+    .legend-modal-card.locked-state .legend-modal-icon { filter: grayscale(1); opacity: 0.4; }
+    .legend-modal-number {
+      font-size: 2.2rem; font-weight: 900; letter-spacing: 0.04em;
+      color: #fbbf24; text-shadow: 0 0 16px rgba(251,191,36,0.5);
+      margin-bottom: 4px;
+    }
+    .legend-modal-card.locked-state .legend-modal-number { color: var(--text); opacity: 0.35; text-shadow: none; }
+    .legend-modal-title {
+      font-size: 0.95rem; font-weight: 800; letter-spacing: 0.02em;
+      color: #fbbf24; margin-bottom: 10px;
+    }
+    .legend-modal-card.locked-state .legend-modal-title { color: var(--text); opacity: 0.5; }
+    .legend-modal-number-full {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em;
+      color: rgba(251,191,36,0.6); margin-bottom: 16px;
+      word-break: break-all;
+    }
+    .legend-modal-card.locked-state .legend-modal-number-full { opacity: 0.25; }
+    .legend-modal-body {
+      font-size: 0.82rem; line-height: 1.65; text-align: left;
+      color: var(--text); opacity: 0.8;
+    }
+    .legend-modal-body p { margin: 0 0 10px; }
+    .legend-modal-body p:last-child { margin-bottom: 0; }
+    .legend-modal-status {
+      margin-top: 16px; padding: 10px 14px;
+      border-radius: 10px; font-size: 0.78rem; font-weight: 700;
+    }
+    .legend-modal-status.status-earned {
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      color: #fbbf24;
+    }
+    .legend-modal-status.status-locked {
+      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168,85,247,0.2);
+      color: rgba(168,85,247,0.8);
+    }
     .trophy-filter-row {
       display: flex; gap: 8px; margin-bottom: 14px;
     }
@@ -3071,6 +3132,19 @@ limitations under the License.
       <div class="trophy-story-icon" id="trophyStoryIcon"></div>
       <div class="trophy-story-name" id="trophyStoryName"></div>
       <div class="trophy-story-body" id="trophyStoryBody"></div>
+    </div>
+  </div>
+
+  <!-- Legend modal — Wheat and Chessboard -->
+  <div id="legendOverlay" class="legend-overlay" onclick="if(event.target===this)closeLegendModal()">
+    <div class="legend-modal-card" id="legendModalCard">
+      <button class="trophy-story-close" onclick="closeLegendModal()">✕</button>
+      <div class="legend-modal-icon">♟️</div>
+      <div class="legend-modal-number">2⁶⁴ − 1</div>
+      <div class="legend-modal-title" id="legendModalTitle"></div>
+      <div class="legend-modal-number-full">18,446,744,073,709,551,615</div>
+      <div class="legend-modal-body" id="legendModalBody"></div>
+      <div class="legend-modal-status" id="legendModalStatus"></div>
     </div>
   </div>
 
@@ -7035,7 +7109,7 @@ limitations under the License.
           ${(() => {
             const earned = p?.wheatAndChessboard;
             if (earned) {
-              return `<div class="legend-card legend-earned">
+              return `<div class="legend-card legend-earned" onclick="openLegendModal()">
                 <div class="legend-icon">♟️</div>
                 <div class="legend-title">2⁶⁴ − 1</div>
                 <div class="legend-subtitle">${L === 'en' ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero'}</div>
@@ -7045,7 +7119,7 @@ limitations under the License.
               </div>`;
             } else {
               const needed = `${unlockedCount}/64 · ${L === 'en' ? 'Medals' : 'Medallas'}: ${unlockedMedalCount}/8`;
-              return `<div class="legend-card legend-locked">
+              return `<div class="legend-card legend-locked" onclick="openLegendModal()">
                 <div class="legend-icon">♟️</div>
                 <div class="legend-title">???</div>
                 <div class="legend-subtitle">${L === 'en' ? 'A legend awaits...' : 'Una leyenda te espera...'}</div>
@@ -7110,6 +7184,51 @@ limitations under the License.
 
     function closeTrophyStory() {
       document.getElementById('trophyStoryOverlay').classList.remove('show');
+    }
+
+    function openLegendModal() {
+      const p = currentProfile;
+      const L = currentLanguage;
+      const earned = p?.wheatAndChessboard;
+      const en = L === 'en';
+
+      document.getElementById('legendModalTitle').textContent =
+        en ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero';
+
+      const bodyEl = document.getElementById('legendModalBody');
+      if (en) {
+        bodyEl.innerHTML = `
+          <p>According to legend, the inventor of chess presented his creation to a great king. Delighted, the king offered any reward. The wise man's request seemed modest: one grain of wheat on the first square, doubling on each of the 64 squares.</p>
+          <p>The king laughed at the humble request and ordered his treasury to count. Days passed. His mathematicians returned pale-faced: to fulfill the promise, they would need <strong>18,446,744,073,709,551,615 grains</strong> — more wheat than has ever existed in all of human history.</p>
+          <p>The king had made a promise he could not keep. Some say he had the wise man executed. Others say he made him the most powerful advisor in the realm. But the lesson endured across centuries: <em>exponential growth on a chessboard is beyond the comprehension of kings.</em></p>
+          ${earned ? `<p>You have placed a trophy on every square. You have earned every medal. You are the first to truly understand what the king could not.</p>` : `<p>Earn all 64 trophies and all 8 medals to claim what lies beyond the 64th square.</p>`}`;
+      } else {
+        bodyEl.innerHTML = `
+          <p>Según la leyenda, el inventor del ajedrez presentó su creación a un gran rey. Encantado, el rey ofreció cualquier recompensa. La petición del sabio parecía modesta: un grano de trigo en la primera casilla, duplicando en cada una de las 64 casillas.</p>
+          <p>El rey se rió de la humilde petición y ordenó a su tesoro que contara. Pasaron días. Sus matemáticos regresaron pálidos: para cumplir la promesa, necesitarían <strong>18.446.744.073.709.551.615 granos</strong> — más trigo del que ha existido en toda la historia de la humanidad.</p>
+          <p>El rey había hecho una promesa que no podía cumplir. Algunos dicen que mandó ejecutar al sabio. Otros dicen que lo convirtió en el consejero más poderoso del reino. Pero la lección perduró durante siglos: <em>el crecimiento exponencial en un tablero está más allá de la comprensión de los reyes.</em></p>
+          ${earned ? `<p>Has colocado un trofeo en cada casilla. Has ganado cada medalla. Eres el primero en comprender de verdad lo que el rey no pudo.</p>` : `<p>Consigue los 64 trofeos y las 8 medallas para reclamar lo que hay más allá de la casilla 64.</p>`}`;
+      }
+
+      const statusEl = document.getElementById('legendModalStatus');
+      if (earned) {
+        const dateEntry = p.unlockedMedals.find(m => m.cat === 8);
+        statusEl.textContent = en ? '♟️ Title earned — Legend of the Chessboard' : '♟️ Título conseguido — Leyenda del Tablero';
+        statusEl.className = 'legend-modal-status status-earned';
+      } else {
+        const unlockedCount = p?.unlockedTrophies?.length || 0;
+        const medalCount    = p?.unlockedMedals?.length  || 0;
+        statusEl.textContent = `🔒 ${unlockedCount}/64 ${en ? 'trophies' : 'trofeos'} · ${medalCount}/8 ${en ? 'medals' : 'medallas'}`;
+        statusEl.className = 'legend-modal-status status-locked';
+      }
+
+      const card = document.getElementById('legendModalCard');
+      card.classList.toggle('locked-state', !earned);
+      document.getElementById('legendOverlay').classList.add('show');
+    }
+
+    function closeLegendModal() {
+      document.getElementById('legendOverlay').classList.remove('show');
     }
 
     function openMedalInfo(catNum) {
