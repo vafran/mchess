@@ -3992,7 +3992,26 @@ limitations under the License.
       if (p.bots.hard.w >= 1)      grant('magic_trick');
       if (p.bots.grandmaster.w >= 1) grant('king_slayer');
       changed = p.unlockedTrophies.length > before;
-      if (changed) { saveProfile(); console.log(`[Statistician] Migration granted ${p.unlockedTrophies.length - before} retroactive trophy/trophies`); }
+      // Backfill medals for any categories already completed (covers profiles saved before medal system)
+      const unlockedSet = new Set(p.unlockedTrophies.map(t => t.id));
+      for (let catNum = 1; catNum <= 8; catNum++) {
+        if (p.unlockedMedals.some(m => m.cat === catNum)) continue;
+        if (!MEDAL_DEFS[catNum]) continue;
+        const catIds = Object.entries(TROPHY_DEFS).filter(([,d]) => d.cat === catNum).map(([id]) => id);
+        if (catIds.length > 0 && catIds.every(id => unlockedSet.has(id))) {
+          p.unlockedMedals.push({ cat: catNum, unlockedAt: new Date().toISOString() });
+          changed = true;
+          console.log(`[Statistician] Migration: backfilled medal for cat ${catNum}`);
+        }
+      }
+      if (!p.wheatAndChessboard &&
+          p.unlockedMedals.length === Object.keys(MEDAL_DEFS).length &&
+          p.unlockedTrophies.length === Object.keys(TROPHY_DEFS).length) {
+        p.wheatAndChessboard = true;
+        changed = true;
+        console.log('[Statistician] Migration: backfilled wheatAndChessboard title');
+      }
+      if (changed) { saveProfile(); console.log(`[Statistician] Migration saved — trophies: ${p.unlockedTrophies.length}, medals: ${p.unlockedMedals.length}`); }
     }
 
     function saveProfile() {

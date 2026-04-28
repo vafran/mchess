@@ -11,26 +11,42 @@ Formato: versión · tamaño · qué cambió.
 **~16.500 líneas · ~860 KB**
 
 ### Perfil del Jugador y Estadísticas
-- **Perfiles Persistentes:** Al empezar, Airin ahora te pedirá tu nombre. El perfil guarda tus partidas totales, tasas de victorias y récords personales.
-- **Rastreo de Partidas:** Seguimiento en tiempo real de rachas de victorias y derrotas (actual y mejor), e historial de la partida.
-- **Salón de los Récords:** Airin registra tus victorias más rápidas y tus mayores ventajas de evaluación en la partida.
-- **Portabilidad:** Nueva función para exportar e importar datos de perfil y estados de juego mediante archivos de guardado.
+- **Perfiles Persistentes:** Airin ahora te recuerda. Escribe tu nombre en el perfil y sigue tus estadísticas de por vida — partidas totales, victorias, tablas, derrotas, deshacer usados, pistas pedidas y piezas capturadas.
+- **Salón de los Récords:** Airin registra tus victorias más rápidas (en menos jugadas) y tus mayores ventajas de evaluación en la partida.
+- **Estadísticas por Color:** El perfil registra victorias, tablas y derrotas por separado para las partidas con blancas y con negras.
+- **Record por Bot:** Historial completo W/D/L contra cada nivel de dificultad, mostrado como barras de colores.
+- **Portabilidad:** Exporta tu perfil completo a un archivo `.airin` e impórtalo en cualquier dispositivo.
 
-### La Vitrina de Trofeos
-- **64 Logros Desbloqueables:** Un sistema de logros completamente nuevo con 64 trofeos únicos — uno por cada casilla del tablero — repartidos en 9 categorías.
-  - **🏅 Progresión (12):** Primera victoria, primer jaque, primer enroque, primera coronación, primera captura al paso, derrotar a cada nivel de dificultad y más.
-  - **🧠 Técnica (10):** Juego de calidad — remontadas, enroque sin mover el rey, sobrevivir 60 jugadas al Rey Sabio, dar jaque mate con el Rey activo en la 6ª fila.
-  - **⚡ Velocidad y Reto (5):** Ganar en 15 jugadas, derrotar al Mago sin pistas, forzar tablas contra el Mago.
-  - **🔥 Rachas y Lealtad (4):** Ganar 3 seguidas, jugar en 5 días distintos, ganar 50 partidas con cada color (*Blanco y Negro*).
-  - **📚 Aprendizaje (3):** Usar al Profesor 10 veces, explorar 5 aperturas con nombre, montar un fianchetto (*El Dragón*).
-  - **⚔️ Táctica (9):** Patrones clásicos — torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, tormenta de peones y más.
-  - **🥊 Dos Jugadores (7):** Trofeos exclusivos del modo PvP.
-  - **📜 Los Historiadores (5):** Recrea sacrificios legendarios de la historia del ajedrez en tiempo real.
-  - **🥚 Huevos de Pascua (9):** Nueve trofeos ocultos. Nombres escondidos hasta desbloquearlos — incluyendo uno que recompensa el patrón de jaque mate más elegante del ajedrez.
-- **Escalera Sin-Deshacer:** Cuatro trofeos por ganar a cada dificultad sin pulsar Deshacer ni una vez — *Sin Ruedines* (Fácil), *Escrito a Tinta* (Medio), *Hechizo Irreversible* (Difícil), *El Inmortal* (Rey Sabio).
-- **Estadísticas por Color:** El perfil ahora registra victorias, tablas y derrotas por separado según el color con el que jugaste.
-- **Celebraciones en el Juego:** Una notificación emergente aparece en la esquina inferior derecha al desbloquear un trofeo — visible pero no intrusiva, sin cubrir el tablero.
-- **Detección de Motivos Históricos:** El motor ahora reconoce y recompensa famosos sacrificios históricos (ej. "La Lluvia de Oro" de Marshall) si se juegan en la partida.
+### La Vitrina de Trofeos — 64 Trofeos · 8 Medallas · 1 Leyenda
+La Vitrina de Trofeos está construida sobre el propio tablero: **64 trofeos** en **8 categorías** (una por cada fila).
+
+- **🏅 Progresión (12):** Primera victoria, primer jaque, primer enroque, primera coronación, primera captura al paso, derrotar a cada nivel de dificultad y más.
+- **🧠 Técnica (10):** Juego de calidad — remontadas, enroque sin mover el rey, sobrevivir 60 jugadas al Rey Sabio, dar jaque mate con el Rey activo en la 6ª fila, subir la **Escalera Sin-Deshacer** completa.
+- **⚡ Implacable (9):** Para los que llevan los límites. Ganar en 15 jugadas, derrotar al Mago sin pistas, forzar tablas contra el Mago, ganar 50 partidas con cada color, construir una racha de 3 victorias, jugar en 5 días distintos.
+- **📚 Aprendizaje (4):** Usar al Profesor 10 veces, explorar 5 aperturas con nombre, montar un fianchetto (*El Dragón*), o usar *¿Fue buena?* 5 veces (*El Analista*).
+- **⚔️ Táctica (9):** Patrones clásicos — torre en la 7ª fila (*El Invasor*), dobles torres en la 7ª (*Cerdos Ciegos*), jaque a la descubierta, batería, horquilla de peón, o desencadenar 4 capturas consecutivas (*Teoría del Caos*).
+- **🥊 Dos Jugadores (7):** Trofeos exclusivos del modo PvP local. Termina tu primera partida con un amigo, consigue una coronación, o gana *El Apretón de Manos* asegurando que ambos jugadores den al menos un jaque.
+- **📜 Los Historiadores (4):** Recrea los 4 sacrificios legendarios de la historia del ajedrez (Marshall, Vladimirov, Ortueta, Shirov) — si la casilla sigue bajo ataque cuando juegas el movimiento, Airin lo reconoce.
+- **🥚 Huevos de Pascua (9):** Nueve trofeos secretos. Los nombres permanecen ocultos hasta desbloquearlos.
+
+### 8 Medallas de Categoría
+- Completa **todos los trofeos** de una categoría para ganar su medalla — una por fila del tablero.
+- Las medallas aparecen como un estante en tu perfil sobre la cuadrícula de trofeos. Toca cualquier medalla para ver su descripción y cuántos trofeos te faltan.
+- Las medallas activan una notificación emergente ligeramente más larga que los trofeos normales.
+
+### Algo Más Allá de la Casilla 64
+- Consigue los 64 trofeos y las 8 medallas para desbloquear un título final arraigado en la historia del ajedrez.
+- Una tarjeta de historia vive permanentemente en la parte inferior de la vitrina — visible desde el principio, mostrando tu progreso actual. Haz clic para leer la leyenda.
+- El título final activa una celebración especial de 5 segundos.
+
+### Celebraciones en el Juego
+- Al desbloquear un trofeo, una pequeña pancarta se desliza desde la esquina inferior derecha — visible pero sin cubrir el tablero.
+- Las medallas activan una pancarta ligeramente más larga.
+- El título final activa una celebración especial de 5 segundos.
+
+### Bienvenida Personalizada
+- El menú principal saluda al jugador por su nombre una vez configurado el perfil.
+- El nombre es editable en cualquier momento directamente en la pantalla de perfil.
 
 ---
 

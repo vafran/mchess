@@ -118,27 +118,29 @@ Al abrir Airin por primera vez te pedirá tu nombre. A partir de ahí registra t
 <img src="screenshots/ES/profile_stats.png" alt="Perfil de Jugador" width="500" />
 
 
-### 🏆 La Vitrina de Trofeos
+### 🏆 La Vitrina de Trofeos — 64 Trofeos · 8 Medallas · 1 Leyenda
 
-**64 logros desbloqueables en 9 categorías** — un trofeo por cada casilla del tablero.
+La Vitrina de Trofeos está construida sobre el propio tablero: **64 trofeos** (uno por cada casilla) en **8 categorías** (una por cada fila).
 
-**🏅 Progresión** — derrota cada nivel de dificultad, realiza tu primera captura al paso, da tu primer jaque, enroca por primera vez.
+**🏅 Progresión (12)** — derrota cada nivel de dificultad, realiza tu primera captura al paso, da tu primer jaque, enroca por primera vez y más hitos del camino.
 
-**🧠 Técnica** — gana tras una remontada, enroca sin mover el rey, da jaque mate con el Rey activo en la 6ª fila, sube la Escalera Sin-Deshacer del Fácil al Rey Sabio.
+**🧠 Técnica (10)** — gana tras una remontada, enroca sin mover el rey, da jaque mate con el Rey activo en la 6ª fila, sube la Escalera Sin-Deshacer del Fácil al Rey Sabio.
 
-**⚡ Velocidad y Reto** — gana en 15 jugadas, derrota al Mago sin pistas, fuerza tablas contra el Mago.
+**⚡ Implacable (9)** — para los que llevan los límites y no se rinden. Gana en 15 jugadas, derrota al Mago sin pistas, fuerza tablas contra el Mago, construye una racha de 3 victorias, gana 50 partidas con cada color, juega en 5 días distintos.
 
-**🔥 Rachas y Lealtad** — gana 3 seguidas, juega en 5 días distintos, gana 50 partidas con cada color.
+**📚 Aprendizaje (4)** — usa al Profesor 10 veces, explora 5 aperturas con nombre, monta un fianchetto, o usa el botón *¿Fue buena?* 5 veces para ganar el título de **El Analista**.
 
-**📚 Aprendizaje** — usa al Profesor, explora aperturas con nombre, monta el fianchetto.
+**⚔️ Táctica (9)** — patrones clásicos: torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, tormenta de capturas y más.
 
-**⚔️ Táctica** — torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, tormenta de peones y más.
+**🥊 Dos Jugadores (7)** — 7 trofeos exclusivos del modo local 2 jugadores.
 
-**🥊 Dos Jugadores** — 7 trofeos exclusivos del modo local 2 jugadores.
+**📜 Los Historiadores (4)** — recrea sacrificios legendarios de la historia del ajedrez en tiempo real.
 
-**📜 Los Historiadores** — recrea sacrificios legendarios de la historia del ajedrez en tiempo real.
+**🥚 Huevos de Pascua (9)** — nueve trofeos secretos. Nombres ocultos hasta desbloquearlos. Ya los descubrirás.
 
-**🥚 Huevos de Pascua (ocultos)** — 9 trofeos secretos. Nombres ocultos hasta desbloquearlos. Ya los descubrirás.
+#### 8 Medallas de Categoría
+
+Completa **todos los trofeos** de una categoría para ganar su medalla — una por fila del tablero. Las medallas aparecen como un estante en tu perfil por encima de la cuadrícula de trofeos. Toca cualquier medalla para ver su descripción y cuántos trofeos te faltan.
 
 <img src="screenshots/ES/trophy_cabinet.png" alt="Vitrina de Trofeos" width="500" />
 
@@ -153,7 +155,7 @@ Cuatro momentos históricos están escondidos en el juego. Cada uno requiere un 
 | 🚂 La Locomotora | Sanz vs Ortueta, 1933 | Torre a b2, atacada, final |
 | 🔥 Fuego en el Tablero | Shirov vs Topalov, 1998 | Alfil a h3, atacado, final profundo |
 
-Desbloquea los cuatro para obtener el trofeo Platino: **El Gran Historiador**.
+Desbloquea los cuatro para ganar la medalla **El Gran Historiador** 📜.
 
 La pestaña **Leyendas** de la Librería de Entrenamiento te permite cargar las posiciones exactas de estas partidas para estudiarlas y practicar los sacrificios.
 
@@ -243,23 +245,40 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ## Lo nuevo en v2.24.0 — *El Estadístico*
 
-¡Bienvenido a Airin v2.24.0! Esta enorme actualización introduce **El Estadístico**, dándole a Airin memoria y dando vida a tu viaje en el ajedrez.
+¡Bienvenido a Airin v2.24.0! Esta enorme actualización introduce **El Estadístico** — dándole memoria a Airin y dando vida a tu viaje en el ajedrez con perfiles, trofeos, medallas y una leyenda final construida alrededor del tablero.
 
 ### 📊 Perfiles de Jugador y Seguimiento
-* **Tu Perfil:** Al empezar, Airin ahora te pedirá tu nombre. Puedes ver tus estadísticas de por vida, incluyendo el total de partidas jugadas, tasas de victorias/derrotas/tablas, y tus rachas de victorias mejores y actuales.
-* **Salón de los Récords:** Airin ahora rastrea tus victorias más rápidas y tus mayores ventajas de evaluación.
-* **Guardar y Cargar:** Ahora puedes exportar todo tu perfil y progreso de juego a un archivo y cargarlo más tarde en cualquier dispositivo.
+* **Tu Perfil:** Airin ahora te recuerda. Escribe tu nombre en el perfil y sigue tus estadísticas de por vida — partidas totales, victorias, tablas, derrotas, deshacer usados, pistas pedidas y piezas capturadas.
+* **Salón de los Récords:** Airin rastrea tus victorias más rápidas (en menos jugadas) y tus mayores ventajas de evaluación.
+* **Estadísticas por Color:** El perfil registra victorias, tablas y derrotas por separado para las partidas con blancas y con negras.
+* **Record por Bot:** Consulta tu historial completo W/D/L contra cada nivel de dificultad, mostrado como barras de colores.
+* **Guardar y Cargar:** Exporta todo tu perfil a un archivo `.airin` e impórtalo en cualquier dispositivo para llevarte tu progreso.
 
-### 🏆 La Vitrina de Trofeos
-* **64 Logros Desbloqueables:** Una enorme Vitrina de Trofeos con 64 trofeos en 9 categorías — uno por cada casilla del tablero. Gana recompensas por hitos, patrones tácticos, recreaciones históricas, remontadas, rachas y mucho más.
-* **Escalera Sin-Deshacer:** Cuatro trofeos por ganar a cada dificultad sin pulsar Deshacer ni una vez — *Sin Ruedines*, *Escrito a Tinta*, *Hechizo Irreversible*, *El Inmortal*.
-* **Huevos de Pascua Ocultos:** 9 trofeos secretos escondidos. No sabrás cuáles son hasta que los encuentres.
-* **Los Historiadores:** ¡Recrea momentos legendarios de la historia del ajedrez! Si encuentras los mismos sacrificios brillantes jugados por maestros como Marshall o Vladimirov, Airin lo reconocerá y te recompensará.
+### 🏆 La Vitrina de Trofeos — 64 Trofeos · 8 Medallas · 1 Leyenda
+La Vitrina de Trofeos está construida sobre el propio tablero: **64 trofeos** en **8 categorías** (una por cada fila del tablero).
+
+* **🏅 Progresión (12):** Hitos que se ganan de forma natural al progresar — primera victoria, primer jaque, primer enroque, primera coronación, primera captura al paso y más.
+* **🧠 Técnica (10):** Recompensas por juego disciplinado: enroca sin mover el rey, sobrevive 60 jugadas al Rey Sabio, da jaque mate con el Rey en la 6ª fila, o sube la **Escalera Sin-Deshacer** completa.
+* **⚡ Implacable (9):** Para los que llevan los límites. Gana en 15 jugadas, derrota al Mago sin pistas, fuerza tablas contra el Mago, gana 50 partidas con cada color, construye una racha de 3 victorias, juega en 5 días distintos.
+* **📚 Aprendizaje (4):** Usa al Profesor 10 veces, explora 5 aperturas con nombre, monta un fianchetto, o gana **El Analista** usando el botón *¿Fue buena?* 5 veces.
+* **⚔️ Táctica (9):** Patrones clásicos — torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, o desencadena una tormenta de 4 capturas consecutivas.
+* **🥊 Dos Jugadores (7):** Trofeos exclusivos del modo 2 jugadores locales.
+* **📜 Los Historiadores (4):** Recrea sacrificios legendarios. Si juegas el mismo movimiento brillante que Marshall, Vladimirov, Ortueta o Shirov — y la casilla sigue bajo ataque — Airin lo reconocerá.
+* **🥚 Huevos de Pascua (9):** Nueve trofeos secretos. No sabrás cuáles son hasta que los encuentres.
+
+#### 8 Medallas de Categoría
+Completa **todos los trofeos** de una categoría para ganar su medalla. Las medallas aparecen como un estante en tu perfil sobre la cuadrícula de trofeos.
+
+### 🌾 Algo Más Allá de la Casilla 64
+Consigue los 64 trofeos y las 8 medallas para desbloquear un título final. Una tarjeta vive en la parte inferior de tu vitrina desde el principio — visible siempre, mostrando tu progreso. Haz clic para leer la leyenda.
 
 ### 🎉 Celebraciones en el Juego
-* Al desbloquear un logro, una pequeña notificación se desliza desde la esquina — en tiempo real, discreta, sin cubrir el tablero. Airin ahora recuerda tus victorias. ¡Veamos cuántos trofeos puedes coleccionar!
+Al desbloquear un trofeo, una pancarta se desliza desde la esquina inferior derecha — visible pero sin cubrir el tablero. Las medallas activan una pancarta ligeramente más larga. El título final activa una celebración especial de 5 segundos.
 
-*(Para las actualizaciones completas del motor desde v2.23.0 y anteriores, consulta el Historial de versiones completo).*
+### 👋 Bienvenida Personalizada
+El menú principal te saluda por tu nombre una vez configurado el perfil. Puedes editar tu nombre en cualquier momento en la pantalla de perfil.
+
+*(Para las actualizaciones completas del motor desde v2.23.0 y anteriores, consulta el Historial de versiones completo)*.
 
 ---
 
