@@ -4642,8 +4642,8 @@ limitations under the License.
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
         profileNone: '—',
-        profileExport: '💾 Guardar partida',
-        profileImport: '📂 Cargar partida',
+        profileExport: '💾 Guardar perfil',
+        profileImport: '📂 Cargar perfil',
         profileReset: '❌ Borrar Perfil',
         profileResetTitle: '⚠️ ¿Borrar Perfil?',
         profileResetDesc: '¿Estás seguro de que quieres borrar todos tus trofeos y estadísticas? ¡Se recomienda guardar tu perfil actual (Exportar) antes de hacer esto!',
@@ -4651,7 +4651,7 @@ limitations under the License.
         profileResetOk: 'Sí, borrar perfil',
         btnSaveShort: '💾 Guardar',
         btnLoadShort: '📂 Cargar',
-        profileImportSuccess: '✅ Partida cargada. Recargando…',
+        profileImportSuccess: '✅ Perfil cargado. Recargando…',
         profileImportError: '❌ Archivo inválido. Comprueba que sea un guardado de Airin.',
         trophyFilterAll: 'Todos',
         trophyFilterEarned: 'Conseguidos',
@@ -4747,8 +4747,8 @@ limitations under the License.
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
         profileNone: '—',
-        profileExport: '💾 Save game',
-        profileImport: '📂 Load game',
+        profileExport: '💾 Save profile',
+        profileImport: '📂 Load profile',
         profileReset: '❌ Reset Profile',
         profileResetTitle: '⚠️ Reset Profile?',
         profileResetDesc: 'Are you sure you want to delete all your trophies and statistics? It is highly recommended to save your current profile (Export) before doing this!',
@@ -4756,7 +4756,7 @@ limitations under the License.
         profileResetOk: 'Yes, reset profile',
         btnSaveShort: '💾 Save',
         btnLoadShort: '📂 Load',
-        profileImportSuccess: '✅ Game loaded. Reloading…',
+        profileImportSuccess: '✅ Profile loaded. Reloading…',
         profileImportError: '❌ Invalid file. Make sure it\'s an Airin save.',
         trophyFilterAll: 'All',
         trophyFilterEarned: 'Earned',
@@ -6935,7 +6935,7 @@ limitations under the License.
           const name = mDef.name[L] || mDef.name.es;
           const dateEntry = (p?.unlockedMedals || []).find(m => m.cat === Number(catNum));
           const dateStr = dateEntry ? new Date(dateEntry.unlockedAt).toLocaleDateString() : '';
-          return `<div class="medal-slot ${earned ? 'medal-earned' : 'medal-locked'}" title="${name}${dateStr ? ' · ' + dateStr : ''}">
+          return `<div class="medal-slot ${earned ? 'medal-earned' : 'medal-locked'}" title="${name}" onclick="openMedalInfo(${catNum})" style="cursor:pointer">
             <div class="medal-icon">${mDef.icon}</div>
             <div class="medal-name">${name}</div>
           </div>`;
@@ -7110,6 +7110,28 @@ limitations under the License.
 
     function closeTrophyStory() {
       document.getElementById('trophyStoryOverlay').classList.remove('show');
+    }
+
+    function openMedalInfo(catNum) {
+      const mDef = MEDAL_DEFS[catNum];
+      if (!mDef) return;
+      const L = currentLanguage;
+      const p = currentProfile;
+      const name = mDef.name[L] || mDef.name.es;
+      const desc = mDef.desc[L] || mDef.desc.es;
+      const earned = p && p.unlockedMedals.some(m => m.cat === catNum);
+      const dateEntry = p && p.unlockedMedals.find(m => m.cat === catNum);
+      const dateStr = dateEntry ? new Date(dateEntry.unlockedAt).toLocaleDateString() : '';
+      const catIds = Object.entries(TROPHY_DEFS).filter(([,d]) => d.cat === catNum).map(([id]) => id);
+      const unlockedSet = new Set((p?.unlockedTrophies || []).map(t => t.id));
+      const doneCount = catIds.filter(id => unlockedSet.has(id)).length;
+      const status = earned
+        ? (L === 'en' ? `✅ Earned · ${dateStr}` : `✅ Conseguida · ${dateStr}`)
+        : `🔒 ${doneCount} / ${catIds.length} ${L === 'en' ? 'trophies' : 'trofeos'}`;
+      document.getElementById('trophyStoryIcon').textContent = mDef.icon;
+      document.getElementById('trophyStoryName').textContent = name;
+      document.getElementById('trophyStoryBody').textContent = desc + '\n\n' + status;
+      document.getElementById('trophyStoryOverlay').classList.add('show');
     }
 
     function filterTrophies(type) {
