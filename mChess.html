@@ -7133,8 +7133,8 @@ limitations under the License.
                 <div class="legend-title">2⁶⁴ − 1</div>
                 <div class="legend-subtitle">${L === 'en' ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero'}</div>
                 <div class="legend-desc">${L === 'en'
-                  ? 'A king promised one grain of wheat on the first square, doubling on each. The total — 2⁶⁴ − 1 — was more wheat than the world has ever grown. You have claimed every square. You are the king who finally understood.'
-                  : 'Un rey prometió un grano de trigo en la primera casilla, doblando en cada una. El total — 2⁶⁴ − 1 — era más trigo del que ha existido en el mundo. Has reclamado cada casilla. Eres el rey que por fin lo comprendió.'}</div>
+                  ? 'You have claimed every square. You are not the king who could not keep his promise — you are the wise man who knew its value from the very first.'
+                  : 'Has reclamado cada casilla. No eres el rey que no pudo cumplir su promesa — eres el sabio que conocía su valor desde la primera.'}</div>
               </div>`;
             } else {
               const needed = `${unlockedCount}/64 · ${L === 'en' ? 'Medals' : 'Medallas'}: ${unlockedMedalCount}/8`;
@@ -7215,18 +7215,22 @@ limitations under the License.
         en ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero';
 
       const bodyEl = document.getElementById('legendModalBody');
-      if (en) {
+      if (!earned) {
+        bodyEl.innerHTML = en
+          ? `<p>A legend awaits beyond the 64th square — but its story is only revealed to those who have claimed every trophy and every medal.</p><p>Earn all 64 trophies and all 8 medals to unlock what lies beyond.</p>`
+          : `<p>Una leyenda aguarda más allá de la casilla 64 — pero su historia solo se revela a quienes han conseguido cada trofeo y cada medalla.</p><p>Consigue los 64 trofeos y las 8 medallas para descubrir lo que hay más allá.</p>`;
+      } else if (en) {
         bodyEl.innerHTML = `
           <p>According to legend, the inventor of chess presented his creation to a great king. Delighted, the king offered any reward. The wise man's request seemed modest: one grain of wheat on the first square, doubling on each of the 64 squares.</p>
           <p>The king laughed at the humble request and ordered his treasury to count. Days passed. His mathematicians returned pale-faced: to fulfill the promise, they would need <strong>18,446,744,073,709,551,615 grains</strong> — more wheat than has ever existed in all of human history.</p>
           <p>The king had made a promise he could not keep. Some say he had the wise man executed. Others say he made him the most powerful advisor in the realm. But the lesson endured across centuries: <em>exponential growth on a chessboard is beyond the comprehension of kings.</em></p>
-          ${earned ? `<p>You have placed a trophy on every square. You have earned every medal. You are the first to truly understand what the king could not.</p>` : `<p>Earn all 64 trophies and all 8 medals to claim what lies beyond the 64th square.</p>`}`;
+          <p>You have placed a trophy on every square. You have earned every medal. The king could not fathom what lay on the 64th square. But you are not the king — you are the wise man who knew, from the very first square, exactly what this would become.</p>`;
       } else {
         bodyEl.innerHTML = `
           <p>Según la leyenda, el inventor del ajedrez presentó su creación a un gran rey. Encantado, el rey ofreció cualquier recompensa. La petición del sabio parecía modesta: un grano de trigo en la primera casilla, duplicando en cada una de las 64 casillas.</p>
           <p>El rey se rió de la humilde petición y ordenó a su tesoro que contara. Pasaron días. Sus matemáticos regresaron pálidos: para cumplir la promesa, necesitarían <strong>18.446.744.073.709.551.615 granos</strong> — más trigo del que ha existido en toda la historia de la humanidad.</p>
           <p>El rey había hecho una promesa que no podía cumplir. Algunos dicen que mandó ejecutar al sabio. Otros dicen que lo convirtió en el consejero más poderoso del reino. Pero la lección perduró durante siglos: <em>el crecimiento exponencial en un tablero está más allá de la comprensión de los reyes.</em></p>
-          ${earned ? `<p>Has colocado un trofeo en cada casilla. Has ganado cada medalla. Eres el primero en comprender de verdad lo que el rey no pudo.</p>` : `<p>Consigue los 64 trofeos y las 8 medallas para reclamar lo que hay más allá de la casilla 64.</p>`}`;
+          <p>Has colocado un trofeo en cada casilla. Has ganado cada medalla. El rey no podía imaginar lo que había en la casilla 64. Pero tú no eres el rey — eres el sabio que supo, desde la primera casilla, exactamente en qué se convertiría esto.</p>`;
       }
 
       const statusEl = document.getElementById('legendModalStatus');
