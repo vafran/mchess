@@ -62,10 +62,15 @@ function eloFromScore(p, opponentElo) {
     return Math.round(opponentElo - 400 * Math.log10((1 - p) / p));
 }
 
-async function setupPage(browser, htmlPath, timeLimitMs, level) {
+async function setupPage(browser, htmlPath, timeLimitMs, level, verboseStream, pageLabel) {
     const page = await browser.newPage();
     page.on('console', msg => {
-        if (msg.type() === 'error') console.log(`  🌐 ERR: ${msg.text().slice(0, 80)}`);
+        const t = msg.text();
+        const ts = new Date().toISOString().slice(11, 23);
+        if (verboseStream) verboseStream.write(`[${ts}] [${pageLabel}] ${t}\n`);
+        if (msg.type() === 'error') console.log(`  🌐 ERR [${pageLabel}]: ${t.slice(0, 100)}`);
+        else if (t.includes('NPS:')) console.log(`   🧠 [${pageLabel}] ${t.replace(/.*?Real depth:/, 'depth:').trim()}`);
+        else if (t.startsWith('📊') && t.includes('FILTER→')) console.log(`   🚨 [${pageLabel}] ${t.trim()}`);
     });
     await page.goto('file://' + htmlPath);
     await new Promise(r => setTimeout(r, 1500));
@@ -218,6 +223,10 @@ async function run(cfg) {
     const ts = new Date().toISOString().replace('T','_').replace(/[:.]/g,'').slice(0,15);
     const outFile = path.join(__dirname,
         `selfplay_${candidateVer}_vs_${baselineVer}_${timeLimitMs/1000}s_${numGames}g_${ts}.json`);
+    const verboseFile = outFile.replace('.json', `_verbose_${ts}.log`);
+    const verboseStream = fs.createWriteStream(verboseFile, { encoding: 'utf8' });
+    verboseStream.write(`# Self-play verbose log — ${new Date().toISOString()}\n`);
+    verboseStream.write(`# 🆕 ${candidateVer} vs 📦 ${baselineVer} | ${timeLimitMs}ms/move | ${numGames} games\n\n`);
 
     const allGames = [];
     let cWins = 0, bWins = 0, draws = 0;
@@ -277,23 +286,28 @@ async function run(cfg) {
         console.log('\n\n⚠️  Interrupted! Saving partial results...');
         saveResult(false);
         console.log(`💾 ${path.basename(outFile)}`);
+        try { verboseStream.end(); } catch (_) {}
         try { await browser.close(); } catch (_) {}
         process.exit(0);
     });
 
     try {
         console.log('🌐 Loading candidate page...');
-        const candidatePage = await setupPage(browser, candidateHtml, timeLimitMs, level);
+        const candidatePage = await setupPage(browser, candidateHtml, timeLimitMs, level, verboseStream, '🆕');
         console.log('   ✅ Candidate ready');
 
         console.log('🌐 Loading baseline page...');
-        const baselinePage = await setupPage(browser, baselineHtml, timeLimitMs, level);
+        const baselinePage = await setupPage(browser, baselineHtml, timeLimitMs, level, verboseStream, '📦');
         console.log('   ✅ Baseline ready');
         console.log('\n🚀 Starting self-play...\n');
 
         for (let i = 0; i < numGames; i++) {
             const candidateColor = i % 2 === 0 ? 'w' : 'b';
             const opening = OPENING_BOOK[i % OPENING_BOOK.length];
+
+            verboseStream.write(`\n${'='.repeat(60)}\n`);
+            verboseStream.write(`=== Game ${i+1}/${numGames} | 🆕=${candidateColor} | Opening:[${opening.join(' ') || 'start'}] ===\n`);
+            verboseStream.write(`${'='.repeat(60)}\n`);
 
             const gameResult = await playGame(
                 i + 1, numGames,
@@ -351,7 +365,9 @@ async function run(cfg) {
     else console.log(`\n  🤝 Candidate is statistically equal to baseline at ${timeLimitMs/1000}s`);
 
     saveResult(true);
+    verboseStream.end();
     console.log(`\n💾 ${path.basename(outFile)}`);
+    console.log(`📝 ${path.basename(verboseFile)}`);
 }
 
 // ── Entry point ──────────────────────────────────────────────
