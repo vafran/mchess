@@ -413,7 +413,7 @@ async function runCore(sfConfigs, n, selectedLevel, fenReplayMode = false, fenLi
     let airinVerStr = 'unknown';
     try {
         const htmlSrc = fs.readFileSync(CONFIG.htmlFile, 'utf8');
-        const m = htmlSrc.match(/<title>(?:Airin|Monolith Chess) (v[\d.]+)<\/title>/);
+        const m = htmlSrc.match(/<title>(?:Airin|Monolith Chess) (v[\d.]+[a-z]?)<\/title>/);
         if (m) { airinVer = '_' + m[1]; airinVerStr = m[1]; }
     } catch (_) {}
     const modeTag = (fenReplayMode && fenList.length > 0) ? '_fenreplay' : '';
