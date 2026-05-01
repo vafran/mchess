@@ -1,6 +1,6 @@
 # mChess Engine Roadmap
 
-> Last updated: 2026-04-28  
+> Last updated: 2026-05-01  
 > Active branch: `v2.24.x` | Production: `main` (v2.24.0) | Next release: `v2.25.0`  
 > Rule: **one patch per version, 20-game tournament after each, never combine.**
 
@@ -135,11 +135,27 @@ v2.24.1 Sicilian book → 20-game tournament → new ELO baseline
 
 ---
 
-## Phase 5 — Queued: White Side Improvement
+## Phase 5 — Queued: Search Correctness + White Side Improvement
 
-**Unblock after Phase 4 completes.** Primary goal: close the White/Black color gap (25% White vs 62.5% Black). Target: White score to 35%+ without degrading Black score.
+**Unblock after Phase 4 completes.**
+
+Two goals in priority order:
+1. **Search correctness patches** — engine bugs confirmed during Phase 4 investigation
+2. **White side improvement** — close the White/Black color gap (25% White vs 62.5% Black)
 
 Same one-patch-per-version discipline. Wizard tournaments: UCI_Elo 1750 @ 15s. Wise King tournaments: UCI_Elo 1750 @ whatever Phase 4 sets.
+
+### Search Correctness Patches (discovered 2026-05)
+
+| Patch | Description | Priority | Evidence |
+|-------|-------------|----------|----------|
+| TT in quiescence | Add transposition table lookup/store to `quiesce()`. Currently the TT is never consulted in quiescence — repeated positions in tactical sequences are re-evaluated from scratch. Expected: fewer qSearch nodes, faster search, effectively more depth in sharp positions. | High | Confirmed absent by code inspection (lines 12569–12660 have zero TT reads/writes) |
+| LMR re-search condition | Change `if (v > alpha && v < beta)` to `if (v > alpha)` in the LMR block (lines 12855, 12858). In fail-soft, a null-window LMR search can return v >> alpha+1. The current `v < beta` guard silently skips full-depth verification when the reduced search already exceeds real beta — propagating a potentially shallow result. Standard engines (Stockfish) always re-search at full depth on any fail-high from LMR. **Trade-off:** more re-searches = slower per iteration but more accurate. Net ELO impact unknown — may gain or lose. Needs tournament to confirm. | Medium | Mechanically confirmed by code inspection. Exists in all versions including baseline — cannot explain any version-to-version ELO difference. |
+
+**What is already implemented (do NOT re-add):**
+- IID (Internal Iterative Deepening): depth≥4, no hash move → search at depth-2 to seed TT. Already in engine since v2.23.0.
+
+### White Side Improvement Patches
 
 | Patch | Description | Priority | Evidence |
 |-------|-------------|----------|----------|
