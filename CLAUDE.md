@@ -475,7 +475,7 @@ Created by `createEngineWorker()`. The entire worker code is a JS string embedde
 | Aspiration windows | ±50cp, 3 retry attempts, full-window failsafe |
 | Root alpha-beta cutoff | `if (multiPV===1 && alpha>=beta) break` (**v2.25.30**) |
 | PVS | Correct null windows: `[alpha,alpha+1]` maximizing / `[beta-1,beta]` minimizing |
-| LMR | `R = 0.77 + ln(depth)·ln(moveCount+1)/2.36`, reduced for high-history moves |
+| LMR | `R = 0.77 + ln(depth)·ln(moveCount+1)/3.00`, reduced for high-history moves |
 | LMP | Depth≤3 quiet moves: limits 8/15/25; disabled in endgame (≤4 major/minor pieces) |
 | NMP | Adaptive R, zugzwang-guarded (requires ≥1 major/minor piece) |
 | RFP | Depth≤3, 120cp/ply margin |
