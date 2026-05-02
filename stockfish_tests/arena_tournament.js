@@ -293,7 +293,7 @@ async function playGame(gameNum, totalGames, AirinColor, opening, sfConfig, stat
                 aiDepth = s.depth;
                 aiMistakeChance = s.mistakes;
                 // Patch DIFF_SETTINGS directly — askWiseKing reads it, not aiTimeLimit
-                if (lvl === 'grandmaster') s.timeLimit = 15000;
+                if (lvl === 'grandmaster') s.timeLimit = 30000;
                 aiTimeLimit = s.timeLimit;
             }
         } catch (e) { }
