@@ -1,5 +1,5 @@
 <!--
-Airin v2.24.0
+Airin v2.25.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Airin v2.24.0</title>
+  <title>Airin v2.25.0</title>
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -2745,7 +2745,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Airin v2.24.0 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Airin v2.25.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -3040,7 +3040,7 @@ limitations under the License.
             <!-- Export button hidden by default; enable via console: localStorage.setItem('showProfessorExport','1'); location.reload(); -->
             <button class="hint-btn" id="trainingToggleBtn" onclick="toggleTrainingMode()"
               style="width:100%; padding: 10px 6px; font-size: 0.84rem; background: #ede9fe; color: var(--text);">🎓
-              Modo Entrenamiento: OFF</button>
+              Modo Asistido: OFF</button>
           </div>
         </div>
       </div>
@@ -3172,6 +3172,10 @@ limitations under the License.
           onclick="reviewGame()">🔍 Repasar partida</button>
         <button class="btn btn-primary" id="btnRestartStatus" style="padding:12px 20px; font-size:1rem;"
           onclick="confirmResetGame()">🔄 ¡Jugar de nuevo!</button>
+        <button class="btn btn-secondary" id="btnNextChallenge" style="padding:12px 20px; font-size:1rem; display:none;"
+          onclick="openFenLibrary()">🧩 Otro desafío</button>
+        <button class="btn btn-secondary" id="btnMainMenuStatus" style="padding:12px 20px; font-size:1rem;"
+          onclick="goToMainMenu()">🏠 Menú principal</button>
       </div>
     </div>
   </div>
@@ -3283,6 +3287,8 @@ limitations under the License.
         <button class="panel-tab-btn" onclick="renderFenList('endgame')" id="tabFen-endgame">Finales</button>
         <button class="panel-tab-btn" onclick="renderFenList('historical')" id="tabFen-historical"
           style="background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.10)); border-color:rgba(251,191,36,0.4); color:var(--text);">📜 Leyendas</button>
+        <button class="panel-tab-btn" onclick="renderFenList('mate')" id="tabFen-mate"
+          style="background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.10)); border-color:rgba(239,68,68,0.4); color:var(--text);">♟ Mates</button>
       </div>
 
       <div id="fenLibraryList" style="overflow-y: auto; flex: 1; text-align: left; padding-right: 5px;">
@@ -3619,6 +3625,8 @@ limitations under the License.
     let lastTrainingTipPly = -99;
     let lastTrainingTipText = '';
     let fenPositionLoaded = false; // true when position was loaded from FEN, not played from start
+    let lastLoadedFen = null;        // stores last loaded FEN string so restart returns to it
+    let lastLoadedPuzzleMode = null; // stores puzzleMode config so restart resets puzzle to step 0
     let playerColor = 'w';
     let boardFlipped = false;
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
@@ -4673,10 +4681,11 @@ limitations under the License.
         restartGame: '🔄 Reiniciar partida', mainMenu: '🏠 Menú principal',
         tabCommentary: '🎙️ Comentarista', tabProfessor: '🦉 Profesor',
         btnAnalysis: '🔍 Análisis', btnWhatDo: '🎯 ¿Qué hago?', btnWasGood: '💡 ¿Fue buena?', hawksEye: 'Ojo Halcón',
-        trainingOn: '🎓 Modo Entrenamiento: ON', trainingOff: '🎓 Modo Entrenamiento: OFF',
+        trainingOn: '🎓 Modo Asistido: ON', trainingOff: '🎓 Modo Asistido: OFF',
         historyTitle: '📜 Movimientos', capturedTitle: '⚔️ Piezas Capturadas',
         capturedWhite: '⬜ Ganadas por Blancas:', capturedBlack: '⬛ Ganadas por Negras:',
         undo: '↩️ Deshacer', restartBtn: '🔄 Reiniciar partida', reviewGame: '🔍 Repasar partida', sideMenuBtn: '☰ Menú',
+        playAgain: '🔄 ¡Jugar de nuevo!', nextChallenge: '🧩 Otro desafío', mainMenuBtn: '🏠 Menú principal',
         noProfessorGrand: 'El Profesor no te puede ayudar en nivel Maestro 🤫',
         profAnalyzing: 'El Profesor está analizando la mejor estrategia para ti...',
         noClearMove: 'No encontré una jugada clara en este momento.',
@@ -4688,8 +4697,8 @@ limitations under the License.
         partial: '⏱️ Análisis parcial por límite de tiempo (10s).', emergencyCoachLine: '🛟 Te doy una jugada simple y segura para este momento.',
         continueAnalysis: 'Continuar análisis (+10s)',
         noCompute: 'No pude calcular la recomendación del Profesor.',
-        trainingEnabled: 'Modo Entrenamiento activado 🎓',
-        trainingDisabled: 'Modo Entrenamiento desactivado',
+        trainingEnabled: 'Modo Asistido activado 🎓',
+        trainingDisabled: 'Modo Asistido desactivado',
         riskLow: 'Riesgo bajo', riskMedium: 'Riesgo medio', riskHigh: 'Riesgo alto',
         scrollUp: '▲ Subir', scrollDown: '▼ Bajar',
         commentatorWaiting: '🎙️ El Comentarista empezará a hablar en cuanto se realice el primer movimiento.',
@@ -4703,6 +4712,9 @@ limitations under the License.
         confirmRestartDesc: '¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.',
         confirmRestartCancel: 'Oops, cancelar',
         confirmRestartOk: 'Sí, reiniciar',
+        confirmRestartFenTitle: '🧩 ¿Volver al escenario?',
+        confirmRestartFenDesc: '¿Quieres reiniciar desde la posición original del escenario?',
+        confirmRestartFenOk: 'Sí, reiniciar escenario',
         confirmSettingsTitle: '⚠️ ¿Cambiar opciones?',
         confirmSettingsDesc: 'Cambiar esto en medio de una partida hará que el tablero se reinicie. ¿Estás seguro de que quieres continuar?',
         confirmSettingsCancel: 'Cancelar',
@@ -4735,8 +4747,8 @@ limitations under the License.
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
         profileNone: '—',
-        profileExport: '💾 Guardar perfil',
-        profileImport: '📂 Cargar perfil',
+        profileExport: '💾 Guardar',
+        profileImport: '📂 Cargar',
         profileReset: '❌ Borrar Perfil',
         profileResetTitle: '⚠️ ¿Borrar Perfil?',
         profileResetDesc: '¿Estás seguro de que quieres borrar todos tus trofeos y estadísticas? ¡Se recomienda guardar tu perfil actual (Exportar) antes de hacer esto!',
@@ -4778,10 +4790,11 @@ limitations under the License.
         restartGame: '🔄 Restart game', mainMenu: '🏠 Main menu',
         tabCommentary: '🎙️ Commentator', tabProfessor: '🦉 Coach',
         btnAnalysis: '🔍 Analysis', btnWhatDo: '🎯 What should I do?', btnWasGood: '💡 Was it good?', hawksEye: 'Hawk Eye',
-        trainingOn: '🎓 Training Mode: ON', trainingOff: '🎓 Training Mode: OFF',
+        trainingOn: '🎓 Assisted Mode: ON', trainingOff: '🎓 Assisted Mode: OFF',
         historyTitle: '📜 Moves', capturedTitle: '⚔️ Captured Pieces',
         capturedWhite: '⬜ Captured by White:', capturedBlack: '⬛ Captured by Black:',
         undo: '↩️ Undo', restartBtn: '🔄 Restart game', reviewGame: '🔍 Review game', sideMenuBtn: '☰ Menu',
+        playAgain: '🔄 Play again!', nextChallenge: '🧩 Next challenge', mainMenuBtn: '🏠 Main menu',
         noProfessorGrand: 'Coach is not available at Master level 🤫',
         profAnalyzing: 'Coach is analyzing the best strategy for you...',
         noClearMove: 'I could not find a clear move right now.',
@@ -4793,8 +4806,8 @@ limitations under the License.
         partial: '⏱️ Partial analysis due to time limit (10s).', emergencyCoachLine: '🛟 I’ll give you a clear, safe move right now.',
         continueAnalysis: 'Continue analysis (+10s)',
         noCompute: 'I could not compute the Coach recommendation.',
-        trainingEnabled: 'Training Mode enabled 🎓',
-        trainingDisabled: 'Training Mode disabled',
+        trainingEnabled: 'Assisted Mode enabled 🎓',
+        trainingDisabled: 'Assisted Mode disabled',
         riskLow: 'Low risk', riskMedium: 'Medium risk', riskHigh: 'High risk',
         scrollUp: '▲ Up', scrollDown: '▼ Down',
         commentatorWaiting: '🎙️ The Commentator will start speaking after the first move.',
@@ -4808,6 +4821,9 @@ limitations under the License.
         confirmRestartDesc: 'Are you sure you want to start over? You will lose all your current progress on this board.',
         confirmRestartCancel: 'Oops, cancel',
         confirmRestartOk: 'Yes, restart',
+        confirmRestartFenTitle: '🧩 Return to scenario?',
+        confirmRestartFenDesc: 'Do you want to restart from the original scenario position?',
+        confirmRestartFenOk: 'Yes, restart scenario',
         confirmSettingsTitle: '⚠️ Change settings?',
         confirmSettingsDesc: 'Changing this mid-game will reset the board. Are you sure you want to continue?',
         confirmSettingsCancel: 'Cancel',
@@ -4840,8 +4856,8 @@ limitations under the License.
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
         profileNone: '—',
-        profileExport: '💾 Save profile',
-        profileImport: '📂 Load profile',
+        profileExport: '💾 Save',
+        profileImport: '📂 Load',
         profileReset: '❌ Reset Profile',
         profileResetTitle: '⚠️ Reset Profile?',
         profileResetDesc: 'Are you sure you want to delete all your trophies and statistics? It is highly recommended to save your current profile (Export) before doing this!',
@@ -4994,7 +5010,8 @@ limitations under the License.
         btnCommentaryUp: 'scrollUp', btnCommentaryDown: 'scrollDown', btnProfessorUp: 'scrollUp', btnProfessorDown: 'scrollDown',
         btnProfessorAnalysis: 'btnAnalysis', btnProfessorBest: 'btnWhatDo', btnProfessorWasGood: 'btnWasGood',
         capturedTitle: 'capturedTitle', capturedWhiteTitle: 'capturedWhite', capturedBlackTitle: 'capturedBlack',
-        btnRestart: 'restartBtn', btnSideMenu: 'sideMenuBtn', btnReviewGame: 'reviewGame', thinkingText: 'thinking', hawksEyeLabel: 'hawksEye'
+        btnRestart: 'restartBtn', btnSideMenu: 'sideMenuBtn', btnReviewGame: 'reviewGame', thinkingText: 'thinking', hawksEyeLabel: 'hawksEye',
+        btnRestartStatus: 'playAgain', btnMainMenuStatus: 'mainMenuBtn'
       };
 
       Object.entries(map).forEach(([id, key]) => {
@@ -5366,10 +5383,12 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Airin v2.24.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Airin v2.25.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
+      lastLoadedFen = null;
+      lastLoadedPuzzleMode = null;
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
       aiSearchGeneration++;
@@ -5403,6 +5422,12 @@ limitations under the License.
         if (savedCommentaryStyle !== null) commentaryStyleLevel = Math.max(0, Math.min(2, parseInt(savedCommentaryStyle, 10) || 1));
         const savedTheme = localStorage.getItem('mchess_theme');
         if (savedTheme) { setTheme(savedTheme); highlightOptionTheme(savedTheme); }
+        const savedDifficulty = localStorage.getItem('mchess_difficulty');
+        if (savedDifficulty && DIFF_SETTINGS[savedDifficulty]) {
+          currentDifficulty = savedDifficulty;
+          const s = DIFF_SETTINGS[savedDifficulty];
+          aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit;
+        }
       } catch (_) { }
 
       board = deepCopy(INITIAL);
@@ -5494,10 +5519,17 @@ limitations under the License.
         resetGame();
         return;
       }
-      document.getElementById('confirmModalTitle').textContent  = t('confirmRestartTitle');
-      document.getElementById('confirmModalDesc').textContent   = t('confirmRestartDesc');
-      document.getElementById('confirmModalCancel').textContent = t('confirmRestartCancel');
-      document.getElementById('confirmModalOk').textContent     = t('confirmRestartOk');
+      if (lastLoadedFen) {
+        document.getElementById('confirmModalTitle').textContent  = t('confirmRestartFenTitle');
+        document.getElementById('confirmModalDesc').textContent   = t('confirmRestartFenDesc');
+        document.getElementById('confirmModalCancel').textContent = t('confirmRestartCancel');
+        document.getElementById('confirmModalOk').textContent     = t('confirmRestartFenOk');
+      } else {
+        document.getElementById('confirmModalTitle').textContent  = t('confirmRestartTitle');
+        document.getElementById('confirmModalDesc').textContent   = t('confirmRestartDesc');
+        document.getElementById('confirmModalCancel').textContent = t('confirmRestartCancel');
+        document.getElementById('confirmModalOk').textContent     = t('confirmRestartOk');
+      }
       document.getElementById('confirmModal').classList.add('show');
     }
 
@@ -5507,7 +5539,7 @@ limitations under the License.
 
     function confirmResetGame(forceBypassPrompt = false) {
       hideConfirmDialog();
-      if (forceBypassPrompt !== true && gameMode === 'ai') {
+      if (forceBypassPrompt !== true && gameMode === 'ai' && !lastLoadedFen) {
         document.getElementById('statusBanner').classList.remove('show');
         promptColorForAI(currentDifficulty);
         return;
@@ -6706,39 +6738,9 @@ limitations under the License.
       if (pList) pList.innerHTML = `<div class="hint-empty" id="professorEmptyMsg">${t('professorPrompt')}</div>`;
       lastProfessorAction = null;
 
-      // 12. TRAINING SCANNER (PHASE 3)
-      if (trainingModeEnabled && (gameMode === 'pvp' || lastMovedColor === playerColor)) {
-        const quickTip = getTrainingTipMessage();
-        if (quickTip) showToast(quickTip, 5200);
-
-        let worstHanging = null;
-        let maxVal = -1;
-        for (let r = 0; r < 8; r++) {
-          for (let c = 0; c < 8; c++) {
-            const p = board[r][c];
-            // In PvP: warn the side that just moved (they need to see threats now).
-            // In AI mode: always warn the human player regardless of color chosen.
-            const scanColor = (gameMode === 'pvp') ? lastMovedColor : playerColor;
-            if (p !== ' ' && colorOf(p) === scanColor) {
-              const enemyColor = scanColor === 'w' ? 'b' : 'w';
-              const safety = evaluateSquareSafety(r, c, scanColor, board, enemyColor);
-              if (!safety.isSafe) {
-                const val = PIECE_VALUES[p.toUpperCase()] || 0;
-                if (val > maxVal) {
-                  maxVal = val;
-                  worstHanging = { r, c, piece: p, attacker: safety.attackers[0].piece, reason: safety.reason };
-                }
-              }
-            }
-          }
-        }
-        if (worstHanging) {
-          const pName = getLocalizedPieceName(worstHanging.piece);
-          const sq = sqName(worstHanging.r, worstHanging.c);
-          const en = currentLanguage === 'en';
-          let warningText = en ? `⚠️ Watch out! Your ${pName} on ${sq} is under attack.` : `⚠️ ¡Ojo! Tu ${pName} en ${sq} está bajo ataque.`;
-          setTimeout(() => showToast(warningText, 4000), 800);
-        }
+      // 12. ASSISTED MODE SCANNER — PvP only here; AI mode fires after AI move in triggerAI
+      if (trainingModeEnabled && gameMode === 'pvp') {
+        runAssistedModeScan(lastMovedColor);
       }
 
       // 13. FIN DE PARTIDA O IA
@@ -6920,6 +6922,11 @@ limitations under the License.
     function showStatus(title, msg) {
       document.getElementById('statusTitle').textContent = title;
       document.getElementById('statusMsg').textContent = msg;
+      const btnNext = document.getElementById('btnNextChallenge');
+      if (btnNext) {
+        btnNext.style.display = lastLoadedFen ? '' : 'none';
+        btnNext.textContent = t('nextChallenge');
+      }
       document.getElementById('statusBanner').classList.add('show');
     }
 
@@ -7443,7 +7450,20 @@ limitations under the License.
       rebuildCommentaryForLanguage();
     }
 
-    function resetGame() { clearSavedGame(); init(); playMoveSound(); if (playerColor === 'b' && gameMode === 'ai') setTimeout(triggerAI, 500); }
+    function resetGame() {
+      clearSavedGame();
+      document.getElementById('statusBanner').classList.remove('show');
+      if (lastLoadedFen) {
+        document.getElementById('fenInput').value = lastLoadedFen;
+        loadPositionFromFEN();
+        if (lastLoadedPuzzleMode) puzzleMode = deepCopy(lastLoadedPuzzleMode);
+        playMoveSound();
+      } else {
+        init();
+        playMoveSound();
+        if (playerColor === 'b' && gameMode === 'ai') setTimeout(triggerAI, 500);
+      }
+    }
 
     function resumeSavedGame() {
       try { document.getElementById('resumeCard')?.remove(); } catch (_) { }
@@ -7533,6 +7553,7 @@ limitations under the License.
     // ── Difficulty Selector ──────────────────
     function setDifficulty(level) {
       currentDifficulty = level;
+      try { localStorage.setItem('mchess_difficulty', level); } catch (_) {}
       const s = DIFF_SETTINGS[level];
       aiDepth = s.depth;
       aiMistakeChance = s.mistakes;
@@ -7623,6 +7644,40 @@ limitations under the License.
       }
 
       return out;
+    }
+
+    function runAssistedModeScan(scanColor) {
+      const en = currentLanguage === 'en';
+      const enemyColor = scanColor === 'w' ? 'b' : 'w';
+      let worstHanging = null, maxVal = -1;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = board[r][c];
+          if (p !== ' ' && colorOf(p) === scanColor) {
+            const safety = evaluateSquareSafety(r, c, scanColor, board, enemyColor);
+            if (!safety.isSafe) {
+              const val = PIECE_VALUES[p.toUpperCase()] || 0;
+              if (val > maxVal) { maxVal = val; worstHanging = { r, c, piece: p, attacker: safety.attackers[0].piece }; }
+            }
+          }
+        }
+      }
+      const quickTip = getTrainingTipMessage();
+      let assistedHtml;
+      if (worstHanging) {
+        const pName = getLocalizedPieceName(worstHanging.piece);
+        const sq = sqName(worstHanging.r, worstHanging.c);
+        const attackerName = getLocalizedPieceName(worstHanging.attacker);
+        assistedHtml = en
+          ? `⚠️ Your <strong>${pName}</strong> on <strong>${sq}</strong> is under attack by the ${attackerName}. Consider defending it or moving it to safety.`
+          : `⚠️ Tu <strong>${pName}</strong> en <strong>${sq}</strong> está bajo ataque del ${attackerName}. Considera defenderl${['Dama','Torre'].includes(pName)?'a':'o'} o moverla a un lugar seguro.`;
+      } else if (quickTip) {
+        assistedHtml = `💡 ${quickTip}`;
+      } else {
+        assistedHtml = en ? '✅ Position looks safe. No immediate threats detected.' : '✅ Posición segura. No se detectan amenazas inmediatas.';
+      }
+      const pList = document.getElementById('professorList');
+      if (pList) pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--warning,#f59e0b); background:rgba(245,158,11,0.06); padding:12px; margin-bottom:10px; border-radius:0 8px 8px 0; font-size:0.9rem;">${assistedHtml}</div>`;
     }
 
     function toggleTrainingMode() {
@@ -13625,6 +13680,10 @@ limitations under the License.
           else if (capType === 'N') showToast(bigMsgs[3]);
           else showToast(smallMsgs[Math.floor(Math.random() * smallMsgs.length)]);
         }
+
+        // ASSISTED MODE: scan after AI move so message is visible while player thinks
+        if (trainingModeEnabled) runAssistedModeScan(playerColor);
+
       } finally {
         // Ensure cleanup in case of error
         document.getElementById('thinkingBar').classList.remove('show');
@@ -17983,6 +18042,8 @@ limitations under the License.
     }
 
     function startNewGame(mode) {
+      lastLoadedFen = null;
+      lastLoadedPuzzleMode = null;
       setMode(mode);
       showScreen(null); // Hide menu overlays
       document.querySelector('h1').style.display = 'block';
@@ -17996,6 +18057,9 @@ limitations under the License.
 
     function goToMainMenu() {
       closeIngameMenu();
+      document.getElementById('statusBanner').classList.remove('show');
+      lastLoadedFen = null;
+      lastLoadedPuzzleMode = null;
       document.querySelector('h1').style.display = 'none';
       document.getElementById('topBar').classList.add('hidden');
       document.getElementById('gameMenuBtn').classList.add('hidden');
@@ -18642,6 +18706,288 @@ limitations under the License.
         descEs: "Juegan negras — posición exacta (movimiento 47). Alexei Shirov jugó Axh3!! en Linares 1998 — una entrega de alfil tan precisa como estética. El rey blanco está en g2 y el alfil irá a h3. Desbloquea el trofeo 🔥 Fuego en el Tablero.",
         descEn: "Black to move — exact game position (move 47). Alexei Shirov played Bh3!! in Linares 1998 — a bishop sacrifice as precise as it is beautiful. The white king stands on g2 and the bishop heads to h3. Unlocks the 🔥 Fire on the Board trophy.",
         fen: "8/8/4kpp1/3p1b2/p6P/2B5/6P1/6K1 b - - 2 47"
+      },
+
+      // ── MATES ────────────────────────────────────────────────────────────────
+      // Mate in 1
+      {
+        cat: 'mate', mateIn: 1,
+        nameEs: "Mate en 1 — Jaque de pasillo", nameEn: "Mate in 1 — Back Rank",
+        descEs: "Juegan blancas. El rey negro está atrapado en el pasillo. Mate en 1.",
+        descEn: "White to move. The black king is trapped on the back rank. Mate in 1.",
+        fen: "3r2k1/ppp2ppp/8/8/8/8/PPP2PPP/3R2K1 w - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 1,
+        nameEs: "Mate en 1 — La Dama", nameEn: "Mate in 1 — Queen Delivers",
+        descEs: "Juegan blancas. La dama da jaque mate al rey atrapado en la esquina. Una sola jugada.",
+        descEn: "White to move. The queen delivers checkmate to the king trapped in the corner. One move.",
+        fen: "k7/2Q5/1K6/8/8/8/8/8 w - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 1,
+        nameEs: "Mate en 1 — Torre al Pasillo", nameEn: "Mate in 1 — Back Rank Rook",
+        descEs: "Juegan blancas. La torre da jaque mate al rey atrapado en la última fila. El rey blanco controla las escapes.",
+        descEn: "White to move. The rook delivers back rank checkmate. The white king cuts off all escapes.",
+        fen: "4k3/8/4K3/8/8/8/8/R7 w - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 1,
+        nameEs: "Mate en 1 — Patrón de Anastasia", nameEn: "Mate in 1 — Anastasia's Pattern",
+        descEs: "Juegan blancas. La torre cruza por la tercera fila hasta la columna 'h' para dar el golpe de gracia, aprovechando que el caballo corta los escapes del rey.",
+        descEn: "White to move. The rook swings across the 3rd rank to the 'h' file for the final blow, while the knight covers the king's escape squares.",
+        fen: "8/4N1pk/8/8/8/R7/8/6K1 w - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 1,
+        nameEs: "Mate en 1 — Mate de Boden", nameEn: "Mate in 1 — Boden's Mate",
+        descEs: "Juegan blancas. Los dos alfiles se cruzan como espadas para atrapar al rey negro. Un alfil corta los escapes, el otro da el golpe final.",
+        descEn: "White to move. Two criss-crossing bishops slice through the defense to trap the black king. One cuts escapes, the other delivers the final blow.",
+        fen: "2kr4/p2p4/8/8/5B2/3B4/8/6K1 w - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 1,
+        nameEs: "Mate en 1 — El Salto del Caballo", nameEn: "Mate in 1 — Knight's Leap",
+        descEs: "Juegan blancas. El caballo da un salto decisivo. El rey negro no tiene escapatoria.",
+        descEn: "White to move. The knight makes a decisive leap. The black king has no escape.",
+        fen: "8/8/8/6p1/6N1/8/7p/5K1k w - - 0 1"
+      },
+
+      // Mate in 2
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Desviación y Peón", nameEn: "Mate in 2 — Deflection and Pawn",
+        descEs: "Juegan blancas . Sacrifica el alfil para apartar la defensa y un peón silencioso da mate.",
+        descEn: "White to move. Sacrifice the bishop to deflect the defender, then a quiet pawn delivers mate.",
+        fen: "8/8/p3p3/3b1pR1/1B3P1k/8/4r1PK/8 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Peón y Alfil", nameEn: "Mate in 2 — Pawn and Bishop",
+        descEs: "Juegan blancas. El peón da jaque y empuja al rey a una casilla donde el alfil da mate.",
+        descEn: "White to move. Pawn check drives the king to f6, where the bishop delivers a clean diagonal mate.",
+        fen: "3n4/1R6/p5k1/2B5/1P3PK1/r7/8/8 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Alfil y Torre", nameEn: "Mate in 2 — Bishop and Rook",
+        descEs: "Juegan blancas. El alfil captura con jaque, el rey huye a b8, y la torre da mate en d7.",
+        descEn: "White to move. Bishop captures with check, king flees to b8, then the rook mates on d7.",
+        fen: "k2r4/ppRn2p1/6p1/1P3p2/3p1B2/6P1/P4PBP/4n1K1 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Cebo de Torre", nameEn: "Mate in 2 — Rook Lure",
+        descEs: "Juegan blancas. Sacrifica la torre para atraer al rey a h8, luego la segunda torre da mate.",
+        descEn: "White to move. Sacrifice a rook to lure the king to h8, then the second rook mates on f8.",
+        fen: "6k1/p2p2p1/8/3np1N1/1P5R/3q2P1/5RKP/8 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Sacrificio Desviador", nameEn: "Mate in 2 — Deflecting Sacrifice",
+        descEs: "Juegan negras. Se sacrifica la torre para eliminar al caballo defensor y permitir que la dama dé un mate frontal.",
+        descEn: "Black to move. Sacrifice the rook to eliminate the defending knight, allowing a frontal queen mate.",
+        fen: "1k1r4/pp5R/2p5/P5p1/7b/4Pq2/1PQ2P2/3NK3 b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Caballo y Peón", nameEn: "Mate in 2 — Knight and Pawn",
+        descEs: "Juegan blancas. Un jaque de peón obliga al rey negro a retroceder, preparando un mate de caballo letal apoyado por la torre.",
+        descEn: "White to move. A pawn check forces the black king back, setting up a lethal knight mate supported by the rook.",
+        fen: "1r3k2/4R3/1p4Pp/p1pN1p2/2Pn1K2/1P6/1P6/8 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Caza del Rey", nameEn: "Mate in 2 — King Hunt",
+        descEs: "Juegan negras. La dama persigue al rey blanco expuesto en el centro hasta acorralarlo.",
+        descEn: "Black to move. The queen chases the exposed white king in the center until it is cornered.",
+        fen: "5bk1/R4p1p/6p1/8/3p2K1/1Q4P1/1P3P1q/2r5 b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Clavada Mortal", nameEn: "Mate in 2 — Deadly Pin",
+        descEs: "Juegan blancas. Se aprovecha la clavada del alfil negro en g7 para penetrar con la dama y dar mate, gracias al apoyo del alfil de d4.",
+        descEn: "White to move. Take advantage of the pinned black bishop on g7 to penetrate with the queen and deliver mate, supported by the d4 bishop.",
+        fen: "3rr2k/pp1b2b1/4q1pp/2Pp1p2/3B4/1P2QNP1/P6P/R4RK1 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Rodillo de Torres", nameEn: "Mate in 2 — Rook Roller",
+        descEs: "Juegan blancas. Las dos torres coordinan a la perfección para empujar al rey negro fuera de su escondite y darle mate en campo abierto.",
+        descEn: "White to move. The two rooks coordinate perfectly to push the black king out of hiding and mate him in the open.",
+        fen: "3r2k1/6pp/1nQ1R3/3r4/3N2q1/6N1/n4PPP/4R1K1 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 2,
+        nameEs: "Mate en 2 — Apertura de Líneas", nameEn: "Mate in 2 — Opening Lines",
+        descEs: "Juegan blancas. El avance del peón en f7 da jaque y abre la columna 'h' para que la dama remate la partida sin piedad.",
+        descEn: "White to move. The f7 pawn advance gives check and opens the 'h' file for the queen to finish the game mercilessly.",
+        fen: "5bk1/6p1/5PQ1/pp4Pp/2p4P/P2r4/1PK5/8 w - - 1 0"
+      },
+
+      // Mate in 3
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Rey al Descubierto", nameEn: "Mate in 3 — Exposed King",
+        descEs: "Juegan negras. El rey blanco está expuesto en el centro. El alfil, la dama y el jaque final atrapan al rey.",
+        descEn: "Black to move. The white king is exposed in the center. Bishop, queen and a final check trap the king.",
+        fen: "r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Sacrificio de Dama y Torre", nameEn: "Mate in 3 — Queen Sac and Back Rank",
+        descEs: "Juegan blancas. Sacrificio de dama atrae al rey, el alfil da jaque, y la torre da mate de pasillo.",
+        descEn: "White to move. Queen sacrifice pulls the king out, bishop gives check, rook delivers back-rank mate.",
+        fen: "r1b3kr/ppp1Bp1p/1b6/n2P4/2p3q1/2Q2N2/P4PPP/RN2R1K1 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Dama Sacrificada", nameEn: "Mate in 3 — Queen Sacrifice",
+        descEs: "Juegan negras. Sacrificio de dama fuerza al rey al descubierto, el alfil da jaque, y la torre da mate.",
+        descEn: "Black to move. Queen sacrifice forces the king into the open, bishop gives check, rook mates.",
+        fen: "rn3rk1/p5pp/2p5/3Ppb2/2q5/1Q6/PPPB2PP/R3K1NR b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Torre, Dama y Caballo", nameEn: "Mate in 3 — Rook, Queen and Knight",
+        descEs: "Juegan blancas. Sacrificio de torre atrae al rey, la dama lo persigue, y el caballo da mate final.",
+        descEn: "White to move. Rook sacrifice pulls the king out, queen chases it, then the knight delivers the final checkmate.",
+        fen: "r1bq1r1k/pp2n1pp/8/3N1p2/2B4R/8/PPP2QPP/7K w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Red de Mate Central", nameEn: "Mate in 3 — Central Mating Net",
+        descEs: "Juegan blancas. Una penetración de dama seguida de un jaque a la descubierta con peón teje una red ineludible que remata el caballo.",
+        descEn: "White to move. A queen penetration followed by a discovered pawn check weaves an inescapable net finished off by the knight.",
+        fen: "rnb1qr2/ppp1Nkp1/3p4/4P1B1/7Q/5N2/PPP3PP/R3K2n w Q - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Sacrificio Destructor", nameEn: "Mate in 3 — Destructive Sacrifice",
+        descEs: "Juegan negras. Se sacrifica la torre en g3 para destrozar el escudo de peones del rey blanco, permitiendo a la dama entrar a matar.",
+        descEn: "Black to move. The rook is sacrificed on g3 to shatter the white king's pawn shield, allowing the queen to deliver the final blow.",
+        fen: "5rk1/1bR2pbp/4p1p1/8/1p1P1PPq/1B2P2r/P2NQ2P/5RK1 b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Extracción del Rey", nameEn: "Mate in 3 — King Extraction",
+        descEs: "Juegan blancas. Fuerza el cambio de torres para atraer al rey negro a una casilla vulnerable donde el caballo da el jaque mate.",
+        descEn: "White to move. Force the rook trade to attract the black king to a vulnerable square where the knight delivers checkmate.",
+        fen: "3R4/r6p/Pkp1N1p1/3p1n2/1P3P2/2P2K2/7P/8 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Mate de Peón Silencioso", nameEn: "Mate in 3 — Quiet Pawn Mate",
+        descEs: "Juegan negras. Una jugada tranquila de rey prepara una red de mate inevitable que culmina con un letal avance de peón.",
+        descEn: "Black to move. A quiet king move sets up an unavoidable mating net that culminates in a lethal pawn advance.",
+        fen: "6k1/p2p3p/2p1p1p1/2Pn2K1/4B1P1/1N3P2/P6r/R4b2 b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Desviación Magistral", nameEn: "Mate in 3 — Masterful Deflection",
+        descEs: "Juegan negras. El alfil se inmola para atraer a la dama blanca, permitiendo al caballo desviar a la defensa con un doblete y coronar el mate.",
+        descEn: "Black to move. The bishop sacrifices itself to attract the white queen, allowing the knight to deflect the defense with a fork and deliver mate.",
+        fen: "4k1r1/5p2/p1q5/1p2p2p/6n1/P4bQ1/1P4RP/3NR1BK b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Trampa Ineludible", nameEn: "Mate in 3 — Inescapable Trap",
+        descEs: "Juegan negras. Una espera letal seguida de un sacrificio de torre rompe la estructura blanca para que el caballo dé mate.",
+        descEn: "Black to move. A lethal waiting move followed by a rook sacrifice breaks the white structure for the knight to mate.",
+        fen: "6k1/2P2p2/6p1/4p1Kp/p1R1Pn1P/5P1r/P4P2/8 b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Caballo Kamikaze", nameEn: "Mate in 3 — Kamikaze Knight",
+        descEs: "Juegan negras. El caballo se sacrifica valientemente en g3 para abrir la columna 'h', despejando el camino para la dama negra.",
+        descEn: "Black to move. The knight bravely sacrifices itself on g3 to open the 'h' file, clearing the path for the black queen.",
+        fen: "6k1/4R3/p5q1/2pP1Q2/3bn1r1/P7/6PP/5R1K b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Infiltración Real", nameEn: "Mate in 3 — Royal Infiltration",
+        descEs: "Juegan negras. La dama se infiltra en la última fila y se coordina con el caballo para acorralar al rey blanco en su propio campamento.",
+        descEn: "Black to move. The queen infiltrates the back rank and coordinates with the knight to corner the white king in his own camp.",
+        fen: "3r3k/1b2b1pp/3pp3/p3n1P1/1pPqP2P/1P2N2R/P1QB1r2/2KR3B b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 3,
+        nameEs: "Mate en 3 — Demolición del Enroque", nameEn: "Mate in 3 — Castle Demolition",
+        descEs: "Juegan negras. El caballo destruye la defensa en c3, atrayendo al rey blanco a un asalto mortal liderado por la dama.",
+        descEn: "Black to move. The knight destroys the defense on c3, drawing the white king into a deadly assault led by the queen.",
+        fen: "r1b1k2r/p5pp/2n1p3/q2pP1B1/n2P1N2/1p1R3Q/PpP1B1PP/1K5R b kq - 0 1"
+      },
+
+      // Mate in 4
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Cacería con Jaques", nameEn: "Mate in 4 — King Hunt",
+        descEs: "Juegan blancas. Persigue al rey con jaques consecutivos usando dama y dos alfiles.",
+        descEn: "White to move. Hunt the king with consecutive checks using queen and two bishops.",
+        fen: "r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Destrucción del Escudo", nameEn: "Mate in 4 — Shelter Demolition",
+        descEs: "Juegan negras. Sacrificio de torre destruye el escudo del rey, la dama lo persigue hasta el mate.",
+        descEn: "Black to move. Rook sacrifice destroys the king's shelter, then the queen hunts it down to mate.",
+        fen: "8/6pk/3pp2p/4p1nP/1P2P3/3P1rP1/4qPK1/2QN3R b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Arrinconando al Rey", nameEn: "Mate in 4 — Cornered King",
+        descEs: "Juegan blancas. La dama y el alfil arrinconan al rey con cuatro jaques consecutivos.",
+        descEn: "White to move. Queen and bishop herd the king into the corner with four consecutive checks.",
+        fen: "r6k/pppb1B2/6Q1/8/3P4/2P1q3/PKP3PP/7R w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Sacrificio Doble", nameEn: "Mate in 4 — Double Sacrifice",
+        descEs: "Juegan blancas. Sacrificio de caballo y dama abren líneas, el alfil bloquea y la torre da mate de pasillo.",
+        descEn: "White to move. Knight and queen sacrifices open lines, bishop cuts off the king, rook delivers back-rank mate.",
+        fen: "rnb3kr/ppp2ppp/1b6/3q4/3pN4/Q4N2/PPP2KPP/R1B1R3 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Atracción Fatal", nameEn: "Mate in 4 — Fatal Attraction",
+        descEs: "Juegan blancas. Espectacular sacrificio de dama en g7 para arrastrar al rey negro a una red de mate letal tejida por el alfil y la torre.",
+        descEn: "White to move. Spectacular queen sacrifice on g7 to drag the black king into a lethal mating net woven by the bishop and rook.",
+        fen: "r3r1k1/pp3pb1/3pb1p1/q5B1/1n2N3/3B1N2/PPP2PPQ/2K4R w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Danza de las Torres", nameEn: "Mate in 4 — Dance of the Rooks",
+        descEs: "Juegan negras. Una brillante secuencia de sacrificios continuos con las torres fuerza al rey blanco a un rincón sin salida.",
+        descEn: "Black to move. A brilliant sequence of continuous rook sacrifices forces the white king into a corner with no escape.",
+        fen: "4r1rk/pQ2P2p/P7/2pqb3/3p1p2/8/3B2PP/4RRK1 b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Caza en el Centro", nameEn: "Mate in 4 — Center Hunt",
+        descEs: "Juegan blancas. Un sacrificio de torre en e7 destruye la cobertura del rey negro, iniciando una persecución que culmina con un mate de caballo.",
+        descEn: "White to move. A rook sacrifice on e7 destroys the black king's cover, initiating a pursuit that culminates in a knight mate.",
+        fen: "r6r/pp2pk1p/1n3b2/5Q1N/8/3B4/q4PPP/3RR1K1 w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Demolición Real", nameEn: "Mate in 4 — Royal Demolition",
+        descEs: "Juegan negras. La torre se inmola en g2 para romper el enroque, permitiendo a la dama y al caballo ejecutar al rey blanco.",
+        descEn: "Black to move. The rook sacrifices itself on g2 to shatter the castled position, allowing the queen and knight to execute the white king.",
+        fen: "3k4/1pp3b1/4b2p/1p3qp1/3Pn3/2P1RN2/r5P1/1Q2R1K1 b - - 0 1"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Red de Peón y Torre", nameEn: "Mate in 4 — Pawn and Rook Net",
+        descEs: "Juegan blancas. Tras forzar el cambio de damas, un preciso avance de peón apoya a la torre para dar el jaque mate definitivo.",
+        descEn: "White to move. After forcing the queen exchange, a precise pawn advance supports the rook to deliver the final checkmate.",
+        fen: "r4k2/1pp3q1/3p1NnQ/p3P3/2P3p1/8/PP6/2K4R w - - 1 0"
+      },
+      {
+        cat: 'mate', mateIn: 4,
+        nameEs: "Mate en 4 — Geometría Perfecta", nameEn: "Mate in 4 — Perfect Geometry",
+        descEs: "Juegan blancas. Un sacrificio de caballo abre la posición para que las piezas menores y la torre acorralen al rey negro en el borde del tablero.",
+        descEn: "White to move. A knight sacrifice opens the position so the minor pieces and rook can corner the black king on the edge of the board.",
+        fen: "8/6R1/1p1p4/1P1Np2k/2P1N2p/3P1p1q/1B2PP2/6K1 w - - 1 0"
       }
     ];
 
@@ -18833,7 +19179,8 @@ limitations under the License.
       document.getElementById('tabFen-opening').textContent = en ? 'Openings' : 'Aperturas';
       document.getElementById('tabFen-tactic').textContent = en ? 'Tactics' : 'Táctica';
       document.getElementById('tabFen-endgame').textContent = en ? 'Endgames' : 'Finales';
-      document.getElementById('tabFen-historical').textContent = en ? '📜 Legends' : '📜 Leyendas';
+      document.getElementById('tabFen-historical').textContent = en ? 'Legends' : 'Leyendas';
+      document.getElementById('tabFen-mate').textContent = en ? '♟ Mates' : '♟ Mates';
       document.getElementById('fenModePvp').textContent = en ? '👫 2 Players' : '👫 2 Jugadores';
       document.getElementById('fenModeAi').textContent = en ? '🤖 vs AI' : '🤖 vs IA';
       document.getElementById('fenDiffEasy').textContent = en ? '🐣 Easy' : '🐣 Fácil';
@@ -18846,6 +19193,11 @@ limitations under the License.
         ? '♟️ Your color is assigned automatically from the position.'
         : '♟️ Tu color se asigna automáticamente según la posición.';
 
+      // Always default to AI mode in the FEN library — scenarios are meant to be played vs AI
+      // Set gameMode directly (no reset) so the UI reflects AI mode without disrupting the current game
+      if (gameMode !== 'ai') {
+        gameMode = 'ai';
+      }
       // Sync mode buttons
       _syncFenModeButtons(gameMode);
       // Sync difficulty and show/hide rows
@@ -18856,6 +19208,7 @@ limitations under the License.
       if (colorNote) colorNote.style.display = gameMode === 'ai' ? 'block' : 'none';
 
       renderFenList('all');
+      document.getElementById('statusBanner').classList.remove('show');
       modal.classList.add('show');
     }
 
@@ -19057,6 +19410,7 @@ limitations under the License.
       if (item && item.solution && item.solution.length > 0) {
         puzzleMode = { solution: item.solution, step: 0 };
       }
+      lastLoadedPuzzleMode = puzzleMode ? deepCopy(puzzleMode) : null;
     }
 
     function renderFenList(category) {
@@ -19064,7 +19418,7 @@ limitations under the License.
       const en = currentLanguage === 'en';
       list.innerHTML = '';
 
-      ['all', 'opening', 'tactic', 'endgame', 'historical'].forEach(cat => {
+      ['all', 'opening', 'tactic', 'endgame', 'historical', 'mate'].forEach(cat => {
         const tab = document.getElementById(`tabFen-${cat}`);
         if (tab) {
           tab.classList.toggle('active', cat === category);
@@ -19089,7 +19443,8 @@ limitations under the License.
         };
         const name = en ? item.nameEn : item.nameEs;
         const desc = en ? item.descEn : item.descEs;
-        btn.innerHTML = `<strong>${name}</strong><span>${desc}</span>`;
+        const mateBadge = item.mateIn ? `<span style="float:right;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.15);color:#dc2626;border:1px solid rgba(239,68,68,0.4);border-radius:4px;padding:1px 6px;margin-left:6px;">M${item.mateIn}</span>` : '';
+        btn.innerHTML = `<strong>${name}${mateBadge}</strong><span>${desc}</span>`;
         list.appendChild(btn);
       });
 
@@ -19335,6 +19690,7 @@ limitations under the License.
         puzzleMode = null;
         fenPositionLoaded = true;     // tell the Professor this isn't move-0 of a normal game
         sessionStartedFromFen = true; // block end-of-game trophies for FEN-loaded games
+        lastLoadedFen = fen;          // remember for restart
 
         // ✨ FIX: Limpiar al Profesor al cargar nuevo FEN
         const pList = document.getElementById('professorList');
