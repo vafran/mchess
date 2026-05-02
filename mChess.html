@@ -7451,6 +7451,10 @@ limitations under the License.
         if ('_sessionConsecutiveCaptures' in s) sessionConsecutiveCaptures = s._sessionConsecutiveCaptures;
       }
       selected = null; legalMoves = [];
+      // Sync puzzle step to match the restored history length
+      if (lastLoadedPuzzleMode) {
+        puzzleMode = { solution: [...lastLoadedPuzzleMode.solution], step: history.length };
+      }
       document.getElementById('statusBanner').classList.remove('show');
       playMoveSound();
       render(); updateTurnUI(); updateHistory(); updateCaptured();
@@ -7472,7 +7476,7 @@ limitations under the License.
       if (lastLoadedFen) {
         document.getElementById('fenInput').value = lastLoadedFen;
         loadPositionFromFEN();
-        if (lastLoadedPuzzleMode) puzzleMode = deepCopy(lastLoadedPuzzleMode);
+        if (lastLoadedPuzzleMode) puzzleMode = { solution: [...lastLoadedPuzzleMode.solution], step: 0 };
         playMoveSound();
       } else {
         init();
@@ -19474,7 +19478,7 @@ limitations under the License.
       if (item && item.solution && item.solution.length > 0) {
         puzzleMode = { solution: item.solution, step: 0 };
       }
-      lastLoadedPuzzleMode = puzzleMode ? deepCopy(puzzleMode) : null;
+      lastLoadedPuzzleMode = puzzleMode ? { solution: [...puzzleMode.solution], step: 0 } : null;
     }
 
     function renderFenList(category) {
