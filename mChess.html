@@ -4740,8 +4740,8 @@ limitations under the License.
         profileUnlockedOn: 'Desbloqueado:',
         profileClose: 'Cerrar',
         profileNone: '—',
-        profileExport: '💾 Guardar perfil',
-        profileImport: '📂 Cargar perfil',
+        profileExport: '💾 Guardar',
+        profileImport: '📂 Cargar',
         profileReset: '❌ Borrar Perfil',
         profileResetTitle: '⚠️ ¿Borrar Perfil?',
         profileResetDesc: '¿Estás seguro de que quieres borrar todos tus trofeos y estadísticas? ¡Se recomienda guardar tu perfil actual (Exportar) antes de hacer esto!',
@@ -4848,8 +4848,8 @@ limitations under the License.
         profileUnlockedOn: 'Unlocked:',
         profileClose: 'Close',
         profileNone: '—',
-        profileExport: '💾 Save profile',
-        profileImport: '📂 Load profile',
+        profileExport: '💾 Save',
+        profileImport: '📂 Load',
         profileReset: '❌ Reset Profile',
         profileResetTitle: '⚠️ Reset Profile?',
         profileResetDesc: 'Are you sure you want to delete all your trophies and statistics? It is highly recommended to save your current profile (Export) before doing this!',
@@ -5413,6 +5413,12 @@ limitations under the License.
         if (savedCommentaryStyle !== null) commentaryStyleLevel = Math.max(0, Math.min(2, parseInt(savedCommentaryStyle, 10) || 1));
         const savedTheme = localStorage.getItem('mchess_theme');
         if (savedTheme) { setTheme(savedTheme); highlightOptionTheme(savedTheme); }
+        const savedDifficulty = localStorage.getItem('mchess_difficulty');
+        if (savedDifficulty && DIFF_SETTINGS[savedDifficulty]) {
+          currentDifficulty = savedDifficulty;
+          const s = DIFF_SETTINGS[savedDifficulty];
+          aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit;
+        }
       } catch (_) { }
 
       board = deepCopy(INITIAL);
@@ -7562,6 +7568,7 @@ limitations under the License.
     // ── Difficulty Selector ──────────────────
     function setDifficulty(level) {
       currentDifficulty = level;
+      try { localStorage.setItem('mchess_difficulty', level); } catch (_) {}
       const s = DIFF_SETTINGS[level];
       aiDepth = s.depth;
       aiMistakeChance = s.mistakes;
