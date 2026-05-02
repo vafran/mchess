@@ -3167,15 +3167,19 @@ limitations under the License.
     <div class="status-box">
       <h2 id="statusTitle">🎉</h2>
       <p id="statusMsg"></p>
-      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap;">
-        <button class="btn btn-secondary" id="btnReviewGame" style="padding:12px 20px; font-size:1rem;"
-          onclick="reviewGame()">🔍 Repasar partida</button>
-        <button class="btn btn-primary" id="btnRestartStatus" style="padding:12px 20px; font-size:1rem;"
-          onclick="confirmResetGame()">🔄 ¡Jugar de nuevo!</button>
-        <button class="btn btn-secondary" id="btnNextChallenge" style="padding:12px 20px; font-size:1rem; display:none;"
-          onclick="openFenLibrary()">🧩 Otro desafío</button>
-        <button class="btn btn-secondary" id="btnMainMenuStatus" style="padding:12px 20px; font-size:1rem;"
-          onclick="goToMainMenu()">🏠 Menú principal</button>
+      <div style="display: flex; flex-direction: column; gap: 8px; align-items: center; margin-top: 15px; width: 100%;">
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; width: 100%;">
+          <button class="btn btn-primary" id="btnRestartStatus" style="padding:12px 20px; font-size:1rem; flex: 1; min-width: 140px; max-width: 200px;"
+            onclick="confirmResetGame()">🔄 ¡Jugar de nuevo!</button>
+          <button class="btn btn-secondary" id="btnNextChallenge" style="padding:12px 20px; font-size:1rem; display:none; flex: 1; min-width: 140px; max-width: 200px;"
+            onclick="openFenLibrary()">🧩 Otro desafío</button>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; width: 100%;">
+          <button class="btn btn-secondary" id="btnReviewGame" style="padding:10px 16px; font-size:0.9rem; flex: 1; min-width: 120px; max-width: 180px;"
+            onclick="reviewGame()">🔍 Repasar</button>
+          <button class="btn btn-secondary" id="btnMainMenuStatus" style="padding:10px 16px; font-size:0.9rem; flex: 1; min-width: 120px; max-width: 180px;"
+            onclick="goToMainMenu()">🏠 Menú</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3480,7 +3484,7 @@ limitations under the License.
             }
           };
           worker.onerror = function (ev) {
-            // Catches uncaught worker exceptions that don’t go through onmessage
+            // Catches uncaught worker exceptions that don't go through onmessage
             console.log('⚠️ Uncaught worker error:', ev.message);
             clearTimeout(t);
             if (!settled) { settled = true; worker.terminate(); chessEngineWorker = null; resolve({ moves: [], completedDepth: 0, maxDepth: _depth, isPartial: true }); }
@@ -3627,6 +3631,7 @@ limitations under the License.
     let fenPositionLoaded = false; // true when position was loaded from FEN, not played from start
     let lastLoadedFen = null;        // stores last loaded FEN string so restart returns to it
     let lastLoadedPuzzleMode = null; // stores puzzleMode config so restart resets puzzle to step 0
+    let lastLoadedChallengeItem = null; // stores the FEN_LIBRARY item for commentary intro
     let playerColor = 'w';
     let boardFlipped = false;
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
@@ -4059,7 +4064,7 @@ limitations under the License.
       the_immortal:            { icon:'💎', cat:2, name:{es:'El Inmortal',         en:'The Immortal'},        desc:{es:'Derrota al Rey Sabio sin deshacer ningún movimiento.',               en:'Defeat the Wise King without undoing any move.'}, story:{es:'Ganar al Rey Sabio sin deshacer ni un solo movimiento es la prueba definitiva. Piensa dos veces.', en:'Winning against the Master without a single Undo is the ultimate test. Think twice before every move.'} },
       usurper:                 { icon:'♟️', cat:2, name:{es:'El Usurpador',        en:'The Usurper'},         desc:{es:'Da jaque mate al Rey Sabio con un peón.',                            en:'Checkmate the Wise King with a pawn.'}, story:{es:'En el final, corona un peón o usa un peón para dar el golpe de gracia.', en:'In the endgame, promote a pawn or use a pawn to deliver the final checkmate blow.'} },
       // Category 3 — Easter Eggs (hidden until unlocked)
-      dumb_dumber:             { icon:'🤦', cat:3, hidden:true, name:{es:'Tonto y Más Tonto',  en:'Dumb and Dumber'},       desc:{es:'Empata contra el Pollito.',                                             en:'Draw against the Easy bot.'}, story:{es:'¡Empatar contra el Pollito es más difícil de lo que parece! Intenta provocar un ahogado a propósito.', en:'Drawing against the Easy bot is harder than it looks! Try to set up a stalemate on purpose.'} },
+      dumb_dumber:             { icon:'🪺', cat:3, hidden:true, name:{es:'Pollos Hermanos',  en:'Chicken Brothers'},       desc:{es:'Empata contra el Pollito.',                                             en:'Draw against the Chick.'}, story:{es:'¡Empatar contra el Pollito es más difícil de lo que parece! Intenta provocar un ahogado a propósito.', en:'Drawing against the Chick is harder than it looks! Try to set up a stalemate on purpose.'} },
       oops_queen:              { icon:'😬', cat:3, hidden:true, name:{es:'¿Mi Dama?',           en:'Oops, My Queen?'},       desc:{es:'Gana tras perder tu dama sin compensación.',                            en:'Win after losing your queen without compensation.'}, story:{es:'¡No te rindas! Incluso sin dama, puedes encontrar el mate si tu rival se descuida.', en:'Don\'t resign! Even without your queen, you can still find a checkmate if your opponent gets careless.'} },
       ancient_law:             { icon:'👻', cat:3, hidden:true, name:{es:'La Ley Antigua',      en:'The Ancient Law'},       desc:{es:'Gana una partida en la que capturaste al paso.',                        en:'Win a game where you captured en passant.'}, story:{es:'Captura al paso. Es la regla más antigua y misteriosa del ajedrez.', en:'Capture en passant. It\'s the most ancient and mysterious rule of chess.'} },
       the_rebel:               { icon:'♞', cat:3, hidden:true, name:{es:'El Rebelde',           en:'The Rebel'},             desc:{es:'Coronas un peón con Caballo y ganas.',                                  en:'Promote a pawn to a Knight and win.'}, story:{es:'Cuando un peón llegue al final, corónalo como Caballo en vez de Dama, y gana la partida.', en:'When a pawn reaches the last rank, promote it to a Knight instead of a Queen, and win the game.'} },
@@ -4803,7 +4808,7 @@ limitations under the License.
         bookOne: 'In this theoretical position you have one recommended line:',
         suggestMove: 'I suggest moving your',
         professorSays: 'Coach says:',
-        partial: '⏱️ Partial analysis due to time limit (10s).', emergencyCoachLine: '🛟 I’ll give you a clear, safe move right now.',
+        partial: '⏱️ Partial analysis due to time limit (10s).', emergencyCoachLine: '🛟 I will give you a clear, safe move right now.',
         continueAnalysis: 'Continue analysis (+10s)',
         noCompute: 'I could not compute the Coach recommendation.',
         trainingEnabled: 'Assisted Mode enabled 🎓',
@@ -5389,6 +5394,7 @@ limitations under the License.
       fenPositionLoaded = false; // normal game start
       lastLoadedFen = null;
       lastLoadedPuzzleMode = null;
+      lastLoadedChallengeItem = null;
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
       aiSearchGeneration++;
@@ -13080,7 +13086,7 @@ limitations under the License.
             let prevBestScore = 0; // For aspiration windows
 
             // ✨ Improvement 1: Soft time limit.
-            // Don’t START a new depth iteration if we have used more than 60% of our budget.
+            // Don't START a new depth iteration if we have used more than 60% of our budget.
             // This ensures we always return the last *completed* depth result, which is
             // significantly better than an aborted partial result from a deeper iteration.
             // Immediate exit if there is only one legal move — no quality cost.
@@ -14514,18 +14520,37 @@ limitations under the License.
       if (currentHistory.length === 0) {
         commentaryLog = [];
         resetCommentaryStyleMemory();
+
+        // FEN challenge intro — describe the scenario, not the solution
+        if (sessionStartedFromFen && lastLoadedChallengeItem) {
+          const item = lastLoadedChallengeItem;
+          const name = lang === 'en' ? (item.nameEn || item.nameEs) : (item.nameEs || item.nameEn);
+          const desc = lang === 'en' ? (item.descEn || item.descEs) : (item.descEs || item.descEn);
+          const catLabels = {
+            en: { opening: 'Opening trap', tactic: 'Tactical puzzle', endgame: 'Endgame study', historical: 'Historical position', mate: 'Checkmate challenge' },
+            es: { opening: 'Trampa de apertura', tactic: 'Puzzle táctico', endgame: 'Estudio de final', historical: 'Posición histórica', mate: 'Desafío de mate' }
+          };
+          const catLabel = (catLabels[lang][item.cat] || (lang === 'en' ? 'Challenge' : 'Desafío'));
+          const mateTag = item.mateIn ? (lang === 'en' ? ` — Mate in ${item.mateIn}` : ` — Mate en ${item.mateIn}`) : '';
+          const intro = lang === 'en'
+            ? `🧩 <strong>${catLabel}${mateTag}:</strong> ${name}. ${desc} Think carefully before moving!`
+            : `🧩 <strong>${catLabel}${mateTag}:</strong> ${name}. ${desc} ¡Piensa bien antes de mover!`;
+          list.innerHTML = `<div class="commentary-entry" style="border-left: 4px solid var(--accent); padding: 8px 10px; background: rgba(168,85,247,0.05);"><span class="hint-text"><em>${intro}</em></span></div>`;
+          return;
+        }
+
         const intros = {
           en: [
-            '🎙️ "Board ready! Let’s play calm and smart."',
-            '🎙️ "Great! Start by developing your pieces."',
-            '🎙️ "New game! Check safety before each move."',
-            '🎙️ "Take your time. Good moves are better than fast moves."',
-            '🎙️ "Fresh start! Let’s fight for the center."',
-            '🎙️ "Pieces are set. Time for good ideas, not rush moves."',
-            '🎙️ "Eyes on the board: defend first, then attack."',
-            '🎙️ "New battle! Knights and bishops want to get out early."',
-            '🎙️ "Let’s build a strong position one move at a time."',
-            '🎙️ "Show me your best chess today. Smart and steady!"'
+            "🎙️ \"Board ready! Let's play calm and smart.\"",
+            "🎙️ \"Great! Start by developing your pieces.\"",
+            "🎙️ \"New game! Check safety before each move.\"",
+            "🎙️ \"Take your time. Good moves are better than fast moves.\"",
+            "🎙️ \"Fresh start! Let's fight for the center.\"",
+            "🎙️ \"Pieces are set. Time for good ideas, not rush moves.\"",
+            "🎙️ \"Eyes on the board: defend first, then attack.\"",
+            "🎙️ \"New battle! Knights and bishops want to get out early.\"",
+            "🎙️ \"Let's build a strong position one move at a time.\"",
+            "🎙️ \"Show me your best chess today. Smart and steady!\""
           ],
           es: [
             '🎙️ "¡Tablero listo! Juguemos con calma y cabeza."',
@@ -18044,6 +18069,7 @@ limitations under the License.
     function startNewGame(mode) {
       lastLoadedFen = null;
       lastLoadedPuzzleMode = null;
+      lastLoadedChallengeItem = null;
       setMode(mode);
       showScreen(null); // Hide menu overlays
       document.querySelector('h1').style.display = 'block';
@@ -18060,6 +18086,7 @@ limitations under the License.
       document.getElementById('statusBanner').classList.remove('show');
       lastLoadedFen = null;
       lastLoadedPuzzleMode = null;
+      lastLoadedChallengeItem = null;
       document.querySelector('h1').style.display = 'none';
       document.getElementById('topBar').classList.add('hidden');
       document.getElementById('gameMenuBtn').classList.add('hidden');
@@ -18455,14 +18482,14 @@ limitations under the License.
       // ── TRAMPAS DE APERTURA ──────────────────────────────────────────────────
       {
         cat: 'opening', nameEs: "Trampa: Mate del Pastor", nameEn: "Trap: Scholar's Mate",
-        descEs: "Juegan blancas. Ataca f7 con dama y alfil. ¿Puedes dar mate?",
-        descEn: "White to move. Attack f7 with queen and bishop. Can you deliver mate?",
+        descEs: "Juegan blancas. El rey negro está muy expuesto. ¿Puedes dar mate rápido?",
+        descEn: "White to move. The black king is very exposed. Can you deliver checkmate quickly?",
         fen: "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1"
       },
       {
         cat: 'opening', nameEs: "Trampa: Mate de Legal", nameEn: "Trap: Légal's Mate",
-        descEs: "Juegan blancas. Sacrifica la dama para dar mate en 3.",
-        descEn: "White to move. Sacrifice the queen for a beautiful mate in 3.",
+        descEs: "Juegan blancas. Las piezas negras están mal coordinadas. ¡Busca la combinación ganadora!",
+        descEn: "White to move. Black's pieces are poorly coordinated. Find the winning combination!",
         fen: "r1bqkb1r/ppp2ppp/2np1n2/4p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 0 1"
       },
       {
@@ -18473,8 +18500,8 @@ limitations under the License.
       },
       {
         cat: 'opening', nameEs: "Trampa: Fried Liver", nameEn: "Trap: Fried Liver Attack",
-        descEs: "Juegan blancas. Sacrifica el caballo en f7 para atacar al rey.",
-        descEn: "White to move. Sacrifice the knight on f7 to expose the king.",
+        descEs: "Juegan blancas. El rey negro no ha enrocado todavía. ¿Puedes lanzar un ataque decisivo?",
+        descEn: "White to move. The black king hasn't castled yet. Can you launch a decisive attack?",
         fen: "r1bqkb1r/ppp2ppp/2n2n2/3pp3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R w KQkq - 0 6"
       },
       {
@@ -18517,8 +18544,8 @@ limitations under the License.
       },
       {
         cat: 'tactic', nameEs: "Táctica: Ataque a la Descubierta", nameEn: "Tactic: Discovered Attack",
-        descEs: "Juegan blancas. Mueve el alfil para destapar la torre y atacar.",
-        descEn: "White to move. Move the bishop to reveal the rook's deadly attack.",
+        descEs: "Juegan blancas. Una pieza está bloqueando una línea de ataque decisiva. ¿La ves?",
+        descEn: "White to move. One piece is blocking a deadly line of attack. Can you spot it?",
         fen: "3r2k1/5ppp/8/8/8/3B4/3R4/6K1 w - - 0 1"
       },
       {
@@ -18577,14 +18604,14 @@ limitations under the License.
       },
       {
         cat: 'tactic', nameEs: "Táctica: Sacrificio de Alfil en h6", nameEn: "Tactic: Bishop Sacrifice on h6",
-        descEs: "Juegan blancas. El sacrificio en h6 abre al rey negro.",
-        descEn: "White to move. The bishop sacrifice on h6 tears open the king's shelter.",
+        descEs: "Juegan blancas. El rey negro parece bien protegido, pero hay una debilidad oculta. ¡Encuéntrala!",
+        descEn: "White to move. The black king looks safe, but there is a hidden weakness. Find it!",
         fen: "r1bq1rk1/ppp2ppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 8"
       },
       {
         cat: 'tactic', nameEs: "Táctica: Ataque a la Batería", nameEn: "Tactic: Battery Attack",
-        descEs: "Juegan blancas. Organiza dama y torre en la columna abierta.",
-        descEn: "White to move. Stack your queen and rook on the open file to win.",
+        descEs: "Juegan blancas. Hay una columna abierta que puede ser muy poderosa. ¿Cómo la aprovechas?",
+        descEn: "White to move. There is an open file that could be very powerful. How do you use it?",
         fen: "r4rk1/ppp2ppp/8/3q4/3P4/8/PPP2PPP/R2QR1K1 w - - 0 1"
       },
 
@@ -18679,32 +18706,32 @@ limitations under the License.
         cat: 'historical',
         nameEs: "🪙 La Lluvia de Oro — Marshall 1912",
         nameEn: "🪙 The Golden Rain — Marshall 1912",
-        descEs: "Juegan negras — posición exacta del juego (movimiento 23). Frank Marshall sacrificó su dama en g3 contra Levitsky en Breslavia 1912 — los espectadores lanzaron monedas de oro al tablero. Juega Dxg3!! Desbloquea el trofeo 🪙 La Lluvia de Oro.",
-        descEn: "Black to move — exact game position (move 23). Frank Marshall sacrificed his queen on g3 against Levitsky in Breslau 1912 — spectators threw gold coins at the board. Play Qg3!! Unlocks the 🪙 Golden Rain trophy.",
+        descEs: "Juegan negras — posición exacta (movimiento 23). Marshall jugó aquí la jugada más famosa de la historia. Los espectadores lanzaron monedas de oro al tablero. ¿Puedes descubrir qué hizo? Desbloquea el trofeo 🪙 La Lluvia de Oro.",
+        descEn: "Black to move — exact game position (move 23). Marshall played here what many call the most famous move in history. Spectators threw gold coins onto the board. Can you find what he did? Unlocks the 🪙 Golden Rain trophy.",
         fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23"
       },
       {
         cat: 'historical',
         nameEs: "💥 El Cañonazo — Vladimirov 1987",
         nameEn: "💥 The Cannon Shot — Vladimirov 1987",
-        descEs: "Juegan blancas. Vladimirov sorprendió al mundo sacrificando el alfil en h6 contra Epishin en 1987 — iniciativa y coordinación por encima del material. Juega Axh6!! Desbloquea el trofeo 💥 El Cañonazo.",
-        descEn: "White to move. Vladimirov stunned the world by sacrificing the bishop on h6 against Epishin in 1987 — initiative and coordination over material. Play Bh6!! Unlocks the 💥 Cannon Shot trophy.",
+        descEs: "Juegan blancas. Vladimirov sorprendió al mundo en 1987 con un sacrificio de pieza explosivo — iniciativa y coordinación por encima del material. ¿Puedes encontrar la misma jugada genial? Desbloquea el trofeo 💥 El Cañonazo.",
+        descEn: "White to move. Vladimirov stunned the world in 1987 with an explosive piece sacrifice — initiative and coordination over material. Can you find the same brilliant move? Unlocks the 💥 Cannon Shot trophy.",
         fen: "r4k1r/1b2bPR1/p4n2/3p4/4P2P/1q2B2B/PpP5/1K4R1 w - - 0 26"
       },
       {
         cat: 'historical',
         nameEs: "🚂 La Locomotora — Ortueta vs Sanz 1933",
         nameEn: "🚂 The Locomotive — Ortueta vs Sanz 1933",
-        descEs: "Juegan negras — posición exacta (movimiento 31). En Madrid 1933, Sanz inmortaliza el sacrificio de torre en b2 para liberar peones pasados imparables. Juega Txb2!! Desbloquea el trofeo 🚂 La Locomotora.",
-        descEn: "Black to move — exact game position (move 31). In Madrid 1933, Sanz immortalized the rook sacrifice on b2 to unleash unstoppable passed pawns. Play Rxb2!! Unlocks the 🚂 Locomotive trophy.",
+        descEs: "Juegan negras — posición exacta (movimiento 31). En Madrid 1933, Sanz jugó una combinación que muchos llaman inmortal. Los peones pueden ser más poderosos que las torres. ¿Ves cómo? Desbloquea el trofeo 🚂 La Locomotora.",
+        descEn: "Black to move — exact game position (move 31). In Madrid 1933, Sanz played a combination many call immortal. Pawns can be more powerful than rooks. Can you see how? Unlocks the 🚂 Locomotive trophy.",
         fen: "8/pR4pk/1b2p3/2p3p1/N1p5/7P/PP1r2P1/6K1 b - - 2 31"
       },
       {
         cat: 'historical',
         nameEs: "🔥 Fuego en el Tablero — Shirov vs Topalov 1998",
         nameEn: "🔥 Fire on the Board — Shirov vs Topalov 1998",
-        descEs: "Juegan negras — posición exacta (movimiento 47). Alexei Shirov jugó Axh3!! en Linares 1998 — una entrega de alfil tan precisa como estética. El rey blanco está en g2 y el alfil irá a h3. Desbloquea el trofeo 🔥 Fuego en el Tablero.",
-        descEn: "Black to move — exact game position (move 47). Alexei Shirov played Bh3!! in Linares 1998 — a bishop sacrifice as precise as it is beautiful. The white king stands on g2 and the bishop heads to h3. Unlocks the 🔥 Fire on the Board trophy.",
+        descEs: "Juegan negras — posición exacta (movimiento 47). Shirov jugó en Linares 1998 una de las jugadas más bellas de la historia — un sacrificio de pieza tan preciso como estético. ¿Puedes encontrarla? Desbloquea el trofeo 🔥 Fuego en el Tablero.",
+        descEn: "Black to move — exact game position (move 47). Shirov played in Linares 1998 one of the most beautiful moves in history — a piece sacrifice as precise as it is elegant. Can you find it? Unlocks the 🔥 Fire on the Board trophy.",
         fen: "8/8/4kpp1/3p1b2/p6P/2B5/6P1/6K1 b - - 2 47"
       },
 
@@ -18713,22 +18740,22 @@ limitations under the License.
       {
         cat: 'mate', mateIn: 1,
         nameEs: "Mate en 1 — Jaque de pasillo", nameEn: "Mate in 1 — Back Rank",
-        descEs: "Juegan blancas. El rey negro está atrapado en el pasillo. Mate en 1.",
-        descEn: "White to move. The black king is trapped on the back rank. Mate in 1.",
+        descEs: "Juegan blancas. El rey negro no tiene escapatoria. ¿Cuál es la jugada ganadora?",
+        descEn: "White to move. The black king has no escape. What is the winning move?",
         fen: "3r2k1/ppp2ppp/8/8/8/8/PPP2PPP/3R2K1 w - - 0 1"
       },
       {
         cat: 'mate', mateIn: 1,
         nameEs: "Mate en 1 — La Dama", nameEn: "Mate in 1 — Queen Delivers",
-        descEs: "Juegan blancas. La dama da jaque mate al rey atrapado en la esquina. Una sola jugada.",
-        descEn: "White to move. The queen delivers checkmate to the king trapped in the corner. One move.",
+        descEs: "Juegan blancas. El rey negro está acorralado. Una sola jugada es mate.",
+        descEn: "White to move. The black king is cornered. One move is checkmate.",
         fen: "k7/2Q5/1K6/8/8/8/8/8 w - - 0 1"
       },
       {
         cat: 'mate', mateIn: 1,
         nameEs: "Mate en 1 — Torre al Pasillo", nameEn: "Mate in 1 — Back Rank Rook",
-        descEs: "Juegan blancas. La torre da jaque mate al rey atrapado en la última fila. El rey blanco controla las escapes.",
-        descEn: "White to move. The rook delivers back rank checkmate. The white king cuts off all escapes.",
+        descEs: "Juegan blancas. El rey negro está atrapado en la última fila. ¿Puedes dar mate?",
+        descEn: "White to move. The black king is trapped on the back rank. Can you deliver checkmate?",
         fen: "4k3/8/4K3/8/8/8/8/R7 w - - 0 1"
       },
       {
@@ -18748,8 +18775,8 @@ limitations under the License.
       {
         cat: 'mate', mateIn: 1,
         nameEs: "Mate en 1 — El Salto del Caballo", nameEn: "Mate in 1 — Knight's Leap",
-        descEs: "Juegan blancas. El caballo da un salto decisivo. El rey negro no tiene escapatoria.",
-        descEn: "White to move. The knight makes a decisive leap. The black king has no escape.",
+        descEs: "Juegan blancas. El rey negro está en la esquina sin escapatoria. ¿Encuentras el mate?",
+        descEn: "White to move. The black king is in the corner with no way out. Can you find checkmate?",
         fen: "8/8/8/6p1/6N1/8/7p/5K1k w - - 0 1"
       },
 
@@ -18757,71 +18784,71 @@ limitations under the License.
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Desviación y Peón", nameEn: "Mate in 2 — Deflection and Pawn",
-        descEs: "Juegan blancas . Sacrifica el alfil para apartar la defensa y un peón silencioso da mate.",
-        descEn: "White to move. Sacrifice the bishop to deflect the defender, then a quiet pawn delivers mate.",
+        descEs: "Juegan blancas. El rey negro está en apuros. ¿Puedes dar mate en dos jugadas?",
+        descEn: "White to move. The black king is in trouble. Can you deliver checkmate in two moves?",
         fen: "8/8/p3p3/3b1pR1/1B3P1k/8/4r1PK/8 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Peón y Alfil", nameEn: "Mate in 2 — Pawn and Bishop",
-        descEs: "Juegan blancas. El peón da jaque y empuja al rey a una casilla donde el alfil da mate.",
-        descEn: "White to move. Pawn check drives the king to f6, where the bishop delivers a clean diagonal mate.",
+        descEs: "Juegan blancas. El rey negro tiene pocas casillas. ¿Puedes forzar el mate en dos?",
+        descEn: "White to move. The black king has few squares. Can you force checkmate in two?",
         fen: "3n4/1R6/p5k1/2B5/1P3PK1/r7/8/8 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Alfil y Torre", nameEn: "Mate in 2 — Bishop and Rook",
-        descEs: "Juegan blancas. El alfil captura con jaque, el rey huye a b8, y la torre da mate en d7.",
-        descEn: "White to move. Bishop captures with check, king flees to b8, then the rook mates on d7.",
+        descEs: "Juegan blancas. El rey negro está acorralado. Encuentra la combinación de mate en dos.",
+        descEn: "White to move. The black king is cornered. Find the two-move mating combination.",
         fen: "k2r4/ppRn2p1/6p1/1P3p2/3p1B2/6P1/P4PBP/4n1K1 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Cebo de Torre", nameEn: "Mate in 2 — Rook Lure",
-        descEs: "Juegan blancas. Sacrifica la torre para atraer al rey a h8, luego la segunda torre da mate.",
-        descEn: "White to move. Sacrifice a rook to lure the king to h8, then the second rook mates on f8.",
+        descEs: "Juegan blancas. El rey negro parece a salvo en su esquina. ¿Puedes atraparlo en dos jugadas?",
+        descEn: "White to move. The black king seems safe in its corner. Can you trap it in two moves?",
         fen: "6k1/p2p2p1/8/3np1N1/1P5R/3q2P1/5RKP/8 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Sacrificio Desviador", nameEn: "Mate in 2 — Deflecting Sacrifice",
-        descEs: "Juegan negras. Se sacrifica la torre para eliminar al caballo defensor y permitir que la dama dé un mate frontal.",
-        descEn: "Black to move. Sacrifice the rook to eliminate the defending knight, allowing a frontal queen mate.",
+        descEs: "Juegan negras. El rey blanco tiene un defensor clave. ¿Puedes eliminarlo y dar mate en dos?",
+        descEn: "Black to move. The white king has a key defender. Can you remove it and deliver mate in two?",
         fen: "1k1r4/pp5R/2p5/P5p1/7b/4Pq2/1PQ2P2/3NK3 b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Caballo y Peón", nameEn: "Mate in 2 — Knight and Pawn",
-        descEs: "Juegan blancas. Un jaque de peón obliga al rey negro a retroceder, preparando un mate de caballo letal apoyado por la torre.",
-        descEn: "White to move. A pawn check forces the black king back, setting up a lethal knight mate supported by the rook.",
+        descEs: "Juegan blancas. El rey negro está en una posición débil. Encuentra la secuencia de mate en dos.",
+        descEn: "White to move. The black king is in a weak position. Find the two-move mating sequence.",
         fen: "1r3k2/4R3/1p4Pp/p1pN1p2/2Pn1K2/1P6/1P6/8 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Caza del Rey", nameEn: "Mate in 2 — King Hunt",
-        descEs: "Juegan negras. La dama persigue al rey blanco expuesto en el centro hasta acorralarlo.",
-        descEn: "Black to move. The queen chases the exposed white king in the center until it is cornered.",
+        descEs: "Juegan negras. El rey blanco está expuesto en el centro. ¡Es tu oportunidad de atacar!",
+        descEn: "Black to move. The white king is exposed in the center. This is your chance to attack!",
         fen: "5bk1/R4p1p/6p1/8/3p2K1/1Q4P1/1P3P1q/2r5 b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Clavada Mortal", nameEn: "Mate in 2 — Deadly Pin",
-        descEs: "Juegan blancas. Se aprovecha la clavada del alfil negro en g7 para penetrar con la dama y dar mate, gracias al apoyo del alfil de d4.",
-        descEn: "White to move. Take advantage of the pinned black bishop on g7 to penetrate with the queen and deliver mate, supported by the d4 bishop.",
+        descEs: "Juegan blancas. Una pieza negra está clavada y no puede defender al rey. ¿Puedes aprovecharla?",
+        descEn: "White to move. One black piece is pinned and cannot defend its king. Can you exploit it?",
         fen: "3rr2k/pp1b2b1/4q1pp/2Pp1p2/3B4/1P2QNP1/P6P/R4RK1 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Rodillo de Torres", nameEn: "Mate in 2 — Rook Roller",
-        descEs: "Juegan blancas. Las dos torres coordinan a la perfección para empujar al rey negro fuera de su escondite y darle mate en campo abierto.",
-        descEn: "White to move. The two rooks coordinate perfectly to push the black king out of hiding and mate him in the open.",
+        descEs: "Juegan blancas. El rey negro está intentando escapar. ¿Puedes atrapar con tus piezas coordinadas?",
+        descEn: "White to move. The black king is trying to escape. Can you trap it with your coordinated pieces?",
         fen: "3r2k1/6pp/1nQ1R3/3r4/3N2q1/6N1/n4PPP/4R1K1 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 2,
         nameEs: "Mate en 2 — Apertura de Líneas", nameEn: "Mate in 2 — Opening Lines",
-        descEs: "Juegan blancas. El avance del peón en f7 da jaque y abre la columna 'h' para que la dama remate la partida sin piedad.",
-        descEn: "White to move. The f7 pawn advance gives check and opens the 'h' file for the queen to finish the game mercilessly.",
+        descEs: "Juegan blancas. El rey negro tiene pocas defensas. Busca la jugada que abre todas las líneas.",
+        descEn: "White to move. The black king has little defense. Find the move that opens all the lines.",
         fen: "5bk1/6p1/5PQ1/pp4Pp/2p4P/P2r4/1PK5/8 w - - 1 0"
       },
 
@@ -18829,92 +18856,92 @@ limitations under the License.
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Rey al Descubierto", nameEn: "Mate in 3 — Exposed King",
-        descEs: "Juegan negras. El rey blanco está expuesto en el centro. El alfil, la dama y el jaque final atrapan al rey.",
-        descEn: "Black to move. The white king is exposed in the center. Bishop, queen and a final check trap the king.",
+        descEs: "Juegan negras. El rey blanco ha salido demasiado pronto. ¿Puedes castigarlo con mate en tres?",
+        descEn: "Black to move. The white king came out too early. Can you punish it with checkmate in three?",
         fen: "r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Sacrificio de Dama y Torre", nameEn: "Mate in 3 — Queen Sac and Back Rank",
-        descEs: "Juegan blancas. Sacrificio de dama atrae al rey, el alfil da jaque, y la torre da mate de pasillo.",
-        descEn: "White to move. Queen sacrifice pulls the king out, bishop gives check, rook delivers back-rank mate.",
+        descEs: "Juegan blancas. El rey negro está débilmente protegido. ¿Puedes encontrar el mate en tres jugadas?",
+        descEn: "White to move. The black king is weakly protected. Can you find checkmate in three moves?",
         fen: "r1b3kr/ppp1Bp1p/1b6/n2P4/2p3q1/2Q2N2/P4PPP/RN2R1K1 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Dama Sacrificada", nameEn: "Mate in 3 — Queen Sacrifice",
-        descEs: "Juegan negras. Sacrificio de dama fuerza al rey al descubierto, el alfil da jaque, y la torre da mate.",
-        descEn: "Black to move. Queen sacrifice forces the king into the open, bishop gives check, rook mates.",
+        descEs: "Juegan negras. El rey blanco está expuesto. Hay una combinación brillante que fuerza mate en tres.",
+        descEn: "Black to move. The white king is exposed. There is a brilliant combination that forces checkmate in three.",
         fen: "rn3rk1/p5pp/2p5/3Ppb2/2q5/1Q6/PPPB2PP/R3K1NR b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Torre, Dama y Caballo", nameEn: "Mate in 3 — Rook, Queen and Knight",
-        descEs: "Juegan blancas. Sacrificio de torre atrae al rey, la dama lo persigue, y el caballo da mate final.",
-        descEn: "White to move. Rook sacrifice pulls the king out, queen chases it, then the knight delivers the final checkmate.",
+        descEs: "Juegan blancas. El rey negro está encerrado en la esquina. ¿Puedes tejer la red de mate en tres?",
+        descEn: "White to move. The black king is locked in the corner. Can you weave the mating net in three?",
         fen: "r1bq1r1k/pp2n1pp/8/3N1p2/2B4R/8/PPP2QPP/7K w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Red de Mate Central", nameEn: "Mate in 3 — Central Mating Net",
-        descEs: "Juegan blancas. Una penetración de dama seguida de un jaque a la descubierta con peón teje una red ineludible que remata el caballo.",
-        descEn: "White to move. A queen penetration followed by a discovered pawn check weaves an inescapable net finished off by the knight.",
+        descEs: "Juegan blancas. El rey negro está en el centro sin refugio. Encuentra la secuencia de mate en tres.",
+        descEn: "White to move. The black king is in the center with no shelter. Find the three-move mating sequence.",
         fen: "rnb1qr2/ppp1Nkp1/3p4/4P1B1/7Q/5N2/PPP3PP/R3K2n w Q - 1 0"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Sacrificio Destructor", nameEn: "Mate in 3 — Destructive Sacrifice",
-        descEs: "Juegan negras. Se sacrifica la torre en g3 para destrozar el escudo de peones del rey blanco, permitiendo a la dama entrar a matar.",
-        descEn: "Black to move. The rook is sacrificed on g3 to shatter the white king's pawn shield, allowing the queen to deliver the final blow.",
+        descEs: "Juegan negras. El rey blanco parece protegido, pero sus peones son su talón de Aquiles. ¿Lo ves?",
+        descEn: "Black to move. The white king looks protected, but its pawns are its weakness. Can you see it?",
         fen: "5rk1/1bR2pbp/4p1p1/8/1p1P1PPq/1B2P2r/P2NQ2P/5RK1 b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Extracción del Rey", nameEn: "Mate in 3 — King Extraction",
-        descEs: "Juegan blancas. Fuerza el cambio de torres para atraer al rey negro a una casilla vulnerable donde el caballo da el jaque mate.",
-        descEn: "White to move. Force the rook trade to attract the black king to a vulnerable square where the knight delivers checkmate.",
+        descEs: "Juegan blancas. El rey negro puede ser arrastrado a una trampa. ¿Puedes forzar el mate en tres?",
+        descEn: "White to move. The black king can be lured into a trap. Can you force checkmate in three?",
         fen: "3R4/r6p/Pkp1N1p1/3p1n2/1P3P2/2P2K2/7P/8 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Mate de Peón Silencioso", nameEn: "Mate in 3 — Quiet Pawn Mate",
-        descEs: "Juegan negras. Una jugada tranquila de rey prepara una red de mate inevitable que culmina con un letal avance de peón.",
-        descEn: "Black to move. A quiet king move sets up an unavoidable mating net that culminates in a lethal pawn advance.",
+        descEs: "Juegan negras. El rey blanco está atrapado. Hay una combinación de tres jugadas que lo mata.",
+        descEn: "Black to move. The white king is trapped. There is a three-move combination that delivers checkmate.",
         fen: "6k1/p2p3p/2p1p1p1/2Pn2K1/4B1P1/1N3P2/P6r/R4b2 b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Desviación Magistral", nameEn: "Mate in 3 — Masterful Deflection",
-        descEs: "Juegan negras. El alfil se inmola para atraer a la dama blanca, permitiendo al caballo desviar a la defensa con un doblete y coronar el mate.",
-        descEn: "Black to move. The bishop sacrifices itself to attract the white queen, allowing the knight to deflect the defense with a fork and deliver mate.",
+        descEs: "Juegan negras. El rey blanco tiene defensores, pero hay una manera de eliminarlos. ¿La encuentras?",
+        descEn: "Black to move. The white king has defenders, but there is a way to remove them. Can you find it?",
         fen: "4k1r1/5p2/p1q5/1p2p2p/6n1/P4bQ1/1P4RP/3NR1BK b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Trampa Ineludible", nameEn: "Mate in 3 — Inescapable Trap",
-        descEs: "Juegan negras. Una espera letal seguida de un sacrificio de torre rompe la estructura blanca para que el caballo dé mate.",
-        descEn: "Black to move. A lethal waiting move followed by a rook sacrifice breaks the white structure for the knight to mate.",
+        descEs: "Juegan negras. La posición parece igualada, pero hay una secuencia forzada de mate en tres. ¡Búscala!",
+        descEn: "Black to move. The position looks balanced, but there is a forced three-move mating sequence. Find it!",
         fen: "6k1/2P2p2/6p1/4p1Kp/p1R1Pn1P/5P1r/P4P2/8 b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Caballo Kamikaze", nameEn: "Mate in 3 — Kamikaze Knight",
-        descEs: "Juegan negras. El caballo se sacrifica valientemente en g3 para abrir la columna 'h', despejando el camino para la dama negra.",
-        descEn: "Black to move. The knight bravely sacrifices itself on g3 to open the 'h' file, clearing the path for the black queen.",
+        descEs: "Juegan negras. El rey blanco está encerrado en la esquina. ¿Puedes encontrar el mate en tres?",
+        descEn: "Black to move. The white king is locked in the corner. Can you find checkmate in three?",
         fen: "6k1/4R3/p5q1/2pP1Q2/3bn1r1/P7/6PP/5R1K b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Infiltración Real", nameEn: "Mate in 3 — Royal Infiltration",
-        descEs: "Juegan negras. La dama se infiltra en la última fila y se coordina con el caballo para acorralar al rey blanco en su propio campamento.",
-        descEn: "Black to move. The queen infiltrates the back rank and coordinates with the knight to corner the white king in his own camp.",
+        descEs: "Juegan negras. El rey blanco está inseguro en su propio campo. Busca el ataque decisivo en tres jugadas.",
+        descEn: "Black to move. The white king is unsafe in its own camp. Find the decisive attack in three moves.",
         fen: "3r3k/1b2b1pp/3pp3/p3n1P1/1pPqP2P/1P2N2R/P1QB1r2/2KR3B b - - 0 1"
       },
       {
         cat: 'mate', mateIn: 3,
         nameEs: "Mate en 3 — Demolición del Enroque", nameEn: "Mate in 3 — Castle Demolition",
-        descEs: "Juegan negras. El caballo destruye la defensa en c3, atrayendo al rey blanco a un asalto mortal liderado por la dama.",
-        descEn: "Black to move. The knight destroys the defense on c3, drawing the white king into a deadly assault led by the queen.",
+        descEs: "Juegan negras. El rey blanco tiene defensas débiles. Hay una combinación forzada de mate en tres.",
+        descEn: "Black to move. The white king has weak defenses. There is a forced checkmate in three.",
         fen: "r1b1k2r/p5pp/2n1p3/q2pP1B1/n2P1N2/1p1R3Q/PpP1B1PP/1K5R b kq - 0 1"
       },
 
@@ -18922,8 +18949,8 @@ limitations under the License.
       {
         cat: 'mate', mateIn: 4,
         nameEs: "Mate en 4 — Cacería con Jaques", nameEn: "Mate in 4 — King Hunt",
-        descEs: "Juegan blancas. Persigue al rey con jaques consecutivos usando dama y dos alfiles.",
-        descEn: "White to move. Hunt the king with consecutive checks using queen and two bishops.",
+        descEs: "Juegan blancas. El rey negro está expuesto en el flanco. ¿Puedes forzar el mate en cuatro jugadas?",
+        descEn: "White to move. The black king is exposed on the flank. Can you force checkmate in four moves?",
         fen: "r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0"
       },
       {
@@ -18950,8 +18977,8 @@ limitations under the License.
       {
         cat: 'mate', mateIn: 4,
         nameEs: "Mate en 4 — Atracción Fatal", nameEn: "Mate in 4 — Fatal Attraction",
-        descEs: "Juegan blancas. Espectacular sacrificio de dama en g7 para arrastrar al rey negro a una red de mate letal tejida por el alfil y la torre.",
-        descEn: "White to move. Spectacular queen sacrifice on g7 to drag the black king into a lethal mating net woven by the bishop and rook.",
+        descEs: "Juegan blancas. Espectacular sacrificio de dama para arrastrar al rey negro a una red de mate letal tejida por el alfil y la torre.",
+        descEn: "White to move. Spectacular queen sacrifice to drag the black king into a lethal mating net woven by the bishop and rook.",
         fen: "r3r1k1/pp3pb1/3pb1p1/q5B1/1n2N3/3B1N2/PPP2PPQ/2K4R w - - 1 0"
       },
       {
@@ -18964,15 +18991,15 @@ limitations under the License.
       {
         cat: 'mate', mateIn: 4,
         nameEs: "Mate en 4 — Caza en el Centro", nameEn: "Mate in 4 — Center Hunt",
-        descEs: "Juegan blancas. Un sacrificio de torre en e7 destruye la cobertura del rey negro, iniciando una persecución que culmina con un mate de caballo.",
-        descEn: "White to move. A rook sacrifice on e7 destroys the black king's cover, initiating a pursuit that culminates in a knight mate.",
+        descEs: "Juegan blancas. Un sacrificio de torre destruye la cobertura del rey negro, iniciando una persecución que culmina con un mate de caballo.",
+        descEn: "White to move. A rook sacrifice destroys the black king's cover, initiating a pursuit that culminates in a knight mate.",
         fen: "r6r/pp2pk1p/1n3b2/5Q1N/8/3B4/q4PPP/3RR1K1 w - - 1 0"
       },
       {
         cat: 'mate', mateIn: 4,
         nameEs: "Mate en 4 — Demolición Real", nameEn: "Mate in 4 — Royal Demolition",
-        descEs: "Juegan negras. La torre se inmola en g2 para romper el enroque, permitiendo a la dama y al caballo ejecutar al rey blanco.",
-        descEn: "Black to move. The rook sacrifices itself on g2 to shatter the castled position, allowing the queen and knight to execute the white king.",
+        descEs: "Juegan negras. La torre se inmola para romper el enroque, permitiendo a la dama y al caballo ejecutar al rey blanco.",
+        descEn: "Black to move. The rook sacrifices itself to shatter the castled position, allowing the queen and knight to execute the white king.",
         fen: "3k4/1pp3b1/4b2p/1p3qp1/3Pn3/2P1RN2/r5P1/1Q2R1K1 b - - 0 1"
       },
       {
@@ -19180,7 +19207,7 @@ limitations under the License.
       document.getElementById('tabFen-tactic').textContent = en ? 'Tactics' : 'Táctica';
       document.getElementById('tabFen-endgame').textContent = en ? 'Endgames' : 'Finales';
       document.getElementById('tabFen-historical').textContent = en ? 'Legends' : 'Leyendas';
-      document.getElementById('tabFen-mate').textContent = en ? '♟ Mates' : '♟ Mates';
+      document.getElementById('tabFen-mate').textContent = en ? 'Mates' : 'Mates';
       document.getElementById('fenModePvp').textContent = en ? '👫 2 Players' : '👫 2 Jugadores';
       document.getElementById('fenModeAi').textContent = en ? '🤖 vs AI' : '🤖 vs IA';
       document.getElementById('fenDiffEasy').textContent = en ? '🐣 Easy' : '🐣 Fácil';
@@ -19294,45 +19321,51 @@ limitations under the License.
       const fen = isPuzzleObj ? puzzleItem.fen : puzzleItem;
       _pendingChallengeFen = fen;
       _pendingChallengeIsRandom = !!isRandom;
-      _pendingChallengeItem = (isPuzzleObj && puzzleItem.solution) ? puzzleItem : null;
+      _pendingChallengeItem = isPuzzleObj ? puzzleItem : null;
 
       // Use puzzle object's own description if available
       if (isPuzzleObj && !nameOverride && !descOverride) {
-        const firstTheme = (puzzleItem.themes || [])[0] || '';
-        const themeLabels = {
-          mateIn1:'Mate in 1', mateIn2:'Mate in 2', mateIn3:'Mate in 3', mateIn4:'Mate in 4',
-          fork:'Fork', knightFork:'Knight Fork', pin:'Pin', skewer:'Skewer',
-          discoveredAttack:'Discovered Attack', discoveredCheck:'Discovered Check',
-          promotion:'Promotion', sacrifice:'Sacrifice', queenSacrifice:'Queen Sacrifice',
-          knightSacrifice:'Knight Sacrifice', greekGift:'Greek Gift',
-          backRankMate:'Back Rank Mate', smotheredMate:'Smothered Mate',
-          endgame:'Endgame', middlegame:'Middlegame', opening:'Opening',
-          kingsideAttack:'Kingside Attack', trappedPiece:'Trapped Piece',
-          knightEndgame:'Knight Endgame', rookEndgame:'Rook Endgame', queenEndgame:'Queen Endgame',
-          pawnEndgame:'Pawn Endgame', lucena:'Lucena Position', philidor:'Philidor Defense',
-          breakthrough:'Pawn Breakthrough', opposition:'King Opposition', zugzwang:'Zugzwang',
-          technique:'Endgame Technique', decoy:'Decoy', interference:'Interference',
-          desperado:'Desperado', doubleAttack:'Double Attack', initiative:'Initiative',
-          tactic:'Tactic', tactics:'Tactics', bishop:'Bishop Play'
-        };
-        const themeLabelsEs = {
-          mateIn1:'Mate en 1', mateIn2:'Mate en 2', mateIn3:'Mate en 3', mateIn4:'Mate en 4',
-          fork:'Salto de Caballo', knightFork:'Horquilla de Caballo', pin:'Clavada', skewer:'Ensarte',
-          discoveredAttack:'Ataque Descubierto', discoveredCheck:'Jaque Descubierto',
-          promotion:'Coronación', sacrifice:'Sacrificio', queenSacrifice:'Sacrificio de Dama',
-          knightSacrifice:'Sacrificio de Caballo', greekGift:'Regalo Griego',
-          backRankMate:'Mate de Pasillo', smotheredMate:'Mate Ahogado',
-          endgame:'Final', middlegame:'Mediojuego', opening:'Apertura',
-          kingsideAttack:'Ataque al Flanco Rey', trappedPiece:'Pieza Atrapada',
-          knightEndgame:'Final de Caballo', rookEndgame:'Final de Torre', queenEndgame:'Final de Dama',
-          pawnEndgame:'Final de Peones', lucena:'Posición Lucena', philidor:'Defensa Philidor',
-          breakthrough:'Irrupción de Peones', opposition:'Oposición de Reyes', zugzwang:'Zugzwang',
-          technique:'Técnica de Final', decoy:'Señuelo', interference:'Interferencia',
-          desperado:'Desesperado', doubleAttack:'Doble Ataque', initiative:'Iniciativa',
-          tactic:'Táctica', tactics:'Táctica', bishop:'Juego de Alfil'
-        };
-        nameOverride = en ? (themeLabels[firstTheme] || firstTheme) : (themeLabelsEs[firstTheme] || firstTheme);
-        descOverride = en ? puzzleItem.descEn : puzzleItem.descEs;
+        // FEN_LIBRARY items have nameEn/nameEs — use them directly
+        if (puzzleItem.nameEn || puzzleItem.nameEs) {
+          nameOverride = en ? (puzzleItem.nameEn || puzzleItem.nameEs) : (puzzleItem.nameEs || puzzleItem.nameEn);
+          descOverride = en ? (puzzleItem.descEn || puzzleItem.descEs) : (puzzleItem.descEs || puzzleItem.descEn);
+        } else {
+          const firstTheme = (puzzleItem.themes || [])[0] || '';
+          const themeLabels = {
+            mateIn1:'Mate in 1', mateIn2:'Mate in 2', mateIn3:'Mate in 3', mateIn4:'Mate in 4',
+            fork:'Fork', knightFork:'Knight Fork', pin:'Pin', skewer:'Skewer',
+            discoveredAttack:'Discovered Attack', discoveredCheck:'Discovered Check',
+            promotion:'Promotion', sacrifice:'Sacrifice', queenSacrifice:'Queen Sacrifice',
+            knightSacrifice:'Knight Sacrifice', greekGift:'Greek Gift',
+            backRankMate:'Back Rank Mate', smotheredMate:'Smothered Mate',
+            endgame:'Endgame', middlegame:'Middlegame', opening:'Opening',
+            kingsideAttack:'Kingside Attack', trappedPiece:'Trapped Piece',
+            knightEndgame:'Knight Endgame', rookEndgame:'Rook Endgame', queenEndgame:'Queen Endgame',
+            pawnEndgame:'Pawn Endgame', lucena:'Lucena Position', philidor:'Philidor Defense',
+            breakthrough:'Pawn Breakthrough', opposition:'King Opposition', zugzwang:'Zugzwang',
+            technique:'Endgame Technique', decoy:'Decoy', interference:'Interference',
+            desperado:'Desperado', doubleAttack:'Double Attack', initiative:'Initiative',
+            tactic:'Tactic', tactics:'Tactics', bishop:'Bishop Play'
+          };
+          const themeLabelsEs = {
+            mateIn1:'Mate en 1', mateIn2:'Mate en 2', mateIn3:'Mate en 3', mateIn4:'Mate en 4',
+            fork:'Salto de Caballo', knightFork:'Horquilla de Caballo', pin:'Clavada', skewer:'Ensarte',
+            discoveredAttack:'Ataque Descubierto', discoveredCheck:'Jaque Descubierto',
+            promotion:'Coronación', sacrifice:'Sacrificio', queenSacrifice:'Sacrificio de Dama',
+            knightSacrifice:'Sacrificio de Caballo', greekGift:'Regalo Griego',
+            backRankMate:'Mate de Pasillo', smotheredMate:'Mate Ahogado',
+            endgame:'Final', middlegame:'Mediojuego', opening:'Apertura',
+            kingsideAttack:'Ataque al Flanco Rey', trappedPiece:'Pieza Atrapada',
+            knightEndgame:'Final de Caballo', rookEndgame:'Final de Torre', queenEndgame:'Final de Dama',
+            pawnEndgame:'Final de Peones', lucena:'Posición Lucena', philidor:'Defensa Philidor',
+            breakthrough:'Irrupción de Peones', opposition:'Oposición de Reyes', zugzwang:'Zugzwang',
+            technique:'Técnica de Final', decoy:'Señuelo', interference:'Interferencia',
+            desperado:'Desesperado', doubleAttack:'Doble Ataque', initiative:'Iniciativa',
+            tactic:'Táctica', tactics:'Táctica', bishop:'Juego de Alfil'
+          };
+          nameOverride = en ? (themeLabels[firstTheme] || firstTheme) : (themeLabelsEs[firstTheme] || firstTheme);
+          descOverride = en ? puzzleItem.descEn : puzzleItem.descEs;
+        }
       }
 
       const parts = (fen || '').split(/\s+/);
@@ -19406,6 +19439,11 @@ limitations under the License.
       const item = _pendingChallengeItem;
       _pendingChallengeFen = null;
       _pendingChallengeItem = null;
+      lastLoadedChallengeItem = item || null; // set before loadPositionFromFEN so commentary intro sees it
+      // Always play FEN challenges vs AI — gameMode may still be 'pvp' if user never changed it
+      gameMode = 'ai';
+      const diffCfg = DIFF_SETTINGS[currentDifficulty];
+      if (diffCfg) { aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit; }
       loadPositionFromFEN();
       if (item && item.solution && item.solution.length > 0) {
         puzzleMode = { solution: item.solution, step: 0 };
@@ -19433,13 +19471,7 @@ limitations under the License.
         btn.className = 'fen-item';
         btn.onclick = () => {
           closeFenLibrary();
-          // Pass as plain FEN string with name/desc overrides (FEN_LIBRARY has detailed descriptions)
-          showFenChallengeModal(
-            item.fen,
-            en ? item.nameEn : item.nameEs,
-            en ? item.descEn : item.descEs,
-            false
-          );
+          showFenChallengeModal(item, null, null, false);
         };
         const name = en ? item.nameEn : item.nameEs;
         const desc = en ? item.descEn : item.descEs;
@@ -19705,7 +19737,7 @@ limitations under the License.
         showScreen(null); closeIngameOptions(); closeIngameMenu();
 
         render();
-        updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar();
+        updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar(); updateStatusHUD();
         showToast(currentLanguage === 'en' ? "Position loaded! 🧪" : "¡Posición cargada! 🧪");
 
         // ✨ AUTO-AI: If it is the AI's turn, let it move!
