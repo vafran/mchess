@@ -3619,6 +3619,8 @@ limitations under the License.
     let lastTrainingTipPly = -99;
     let lastTrainingTipText = '';
     let fenPositionLoaded = false; // true when position was loaded from FEN, not played from start
+    let lastLoadedFen = null;        // stores last loaded FEN string so restart returns to it
+    let lastLoadedPuzzleMode = null; // stores puzzleMode config so restart resets puzzle to step 0
     let playerColor = 'w';
     let boardFlipped = false;
     let aiSearchGeneration = 0; // 🔴 RACE FIX: incremented on every game reset so stale worker results are discarded
@@ -4703,6 +4705,9 @@ limitations under the License.
         confirmRestartDesc: '¿Estás seguro de que quieres empezar de cero? Perderás todo tu progreso actual en este tablero.',
         confirmRestartCancel: 'Oops, cancelar',
         confirmRestartOk: 'Sí, reiniciar',
+        confirmRestartFenTitle: '🧩 ¿Volver al escenario?',
+        confirmRestartFenDesc: '¿Quieres reiniciar desde la posición original del escenario?',
+        confirmRestartFenOk: 'Sí, reiniciar escenario',
         confirmSettingsTitle: '⚠️ ¿Cambiar opciones?',
         confirmSettingsDesc: 'Cambiar esto en medio de una partida hará que el tablero se reinicie. ¿Estás seguro de que quieres continuar?',
         confirmSettingsCancel: 'Cancelar',
@@ -4808,6 +4813,9 @@ limitations under the License.
         confirmRestartDesc: 'Are you sure you want to start over? You will lose all your current progress on this board.',
         confirmRestartCancel: 'Oops, cancel',
         confirmRestartOk: 'Yes, restart',
+        confirmRestartFenTitle: '🧩 Return to scenario?',
+        confirmRestartFenDesc: 'Do you want to restart from the original scenario position?',
+        confirmRestartFenOk: 'Yes, restart scenario',
         confirmSettingsTitle: '⚠️ Change settings?',
         confirmSettingsDesc: 'Changing this mid-game will reset the board. Are you sure you want to continue?',
         confirmSettingsCancel: 'Cancel',
@@ -5370,6 +5378,8 @@ limitations under the License.
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
+      lastLoadedFen = null;
+      lastLoadedPuzzleMode = null;
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
       aiSearchGeneration++;
@@ -5494,10 +5504,17 @@ limitations under the License.
         resetGame();
         return;
       }
-      document.getElementById('confirmModalTitle').textContent  = t('confirmRestartTitle');
-      document.getElementById('confirmModalDesc').textContent   = t('confirmRestartDesc');
-      document.getElementById('confirmModalCancel').textContent = t('confirmRestartCancel');
-      document.getElementById('confirmModalOk').textContent     = t('confirmRestartOk');
+      if (lastLoadedFen) {
+        document.getElementById('confirmModalTitle').textContent  = t('confirmRestartFenTitle');
+        document.getElementById('confirmModalDesc').textContent   = t('confirmRestartFenDesc');
+        document.getElementById('confirmModalCancel').textContent = t('confirmRestartCancel');
+        document.getElementById('confirmModalOk').textContent     = t('confirmRestartFenOk');
+      } else {
+        document.getElementById('confirmModalTitle').textContent  = t('confirmRestartTitle');
+        document.getElementById('confirmModalDesc').textContent   = t('confirmRestartDesc');
+        document.getElementById('confirmModalCancel').textContent = t('confirmRestartCancel');
+        document.getElementById('confirmModalOk').textContent     = t('confirmRestartOk');
+      }
       document.getElementById('confirmModal').classList.add('show');
     }
 
@@ -5507,7 +5524,7 @@ limitations under the License.
 
     function confirmResetGame(forceBypassPrompt = false) {
       hideConfirmDialog();
-      if (forceBypassPrompt !== true && gameMode === 'ai') {
+      if (forceBypassPrompt !== true && gameMode === 'ai' && !lastLoadedFen) {
         document.getElementById('statusBanner').classList.remove('show');
         promptColorForAI(currentDifficulty);
         return;
@@ -7443,7 +7460,19 @@ limitations under the License.
       rebuildCommentaryForLanguage();
     }
 
-    function resetGame() { clearSavedGame(); init(); playMoveSound(); if (playerColor === 'b' && gameMode === 'ai') setTimeout(triggerAI, 500); }
+    function resetGame() {
+      clearSavedGame();
+      if (lastLoadedFen) {
+        document.getElementById('fenInput').value = lastLoadedFen;
+        loadPositionFromFEN();
+        if (lastLoadedPuzzleMode) puzzleMode = deepCopy(lastLoadedPuzzleMode);
+        playMoveSound();
+      } else {
+        init();
+        playMoveSound();
+        if (playerColor === 'b' && gameMode === 'ai') setTimeout(triggerAI, 500);
+      }
+    }
 
     function resumeSavedGame() {
       try { document.getElementById('resumeCard')?.remove(); } catch (_) { }
@@ -19057,6 +19086,7 @@ limitations under the License.
       if (item && item.solution && item.solution.length > 0) {
         puzzleMode = { solution: item.solution, step: 0 };
       }
+      lastLoadedPuzzleMode = puzzleMode ? deepCopy(puzzleMode) : null;
     }
 
     function renderFenList(category) {
@@ -19335,6 +19365,7 @@ limitations under the License.
         puzzleMode = null;
         fenPositionLoaded = true;     // tell the Professor this isn't move-0 of a normal game
         sessionStartedFromFen = true; // block end-of-game trophies for FEN-loaded games
+        lastLoadedFen = fen;          // remember for restart
 
         // ✨ FIX: Limpiar al Profesor al cargar nuevo FEN
         const pList = document.getElementById('professorList');
