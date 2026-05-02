@@ -4497,10 +4497,12 @@ limitations under the License.
 
     // ── Game Autosave ─────────────────────────────────────────────────────────
     const GAME_SAVE_KEY = 'mchess_saved_game';
+    const FEN_SAVE_KEY  = 'mchess_saved_fen_session';
 
     function saveGameState() {
       try {
-        if (!history || history.length === 0) { localStorage.removeItem(GAME_SAVE_KEY); return; }
+        const saveKey = sessionStartedFromFen ? FEN_SAVE_KEY : GAME_SAVE_KEY;
+        if (!history || history.length === 0) { localStorage.removeItem(saveKey); return; }
         const fen = boardToFEN(board);
         if (!fen) return;
         const state = {
@@ -4517,6 +4519,7 @@ limitations under the License.
           boardFlipped: !!boardFlipped,
           sessionGameRecorded: !!sessionGameRecorded,
           sessionStartedFromFen: !!sessionStartedFromFen,
+          lastLoadedFen: lastLoadedFen || null,
           sessionUndos,
           sessionHints,
           sessionMinEval,
@@ -4537,17 +4540,23 @@ limitations under the License.
           undoStack: undoStack ? [...undoStack] : [],
           ts: Date.now()
         };
-        localStorage.setItem(GAME_SAVE_KEY, JSON.stringify(state));
+        localStorage.setItem(saveKey, JSON.stringify(state));
       } catch (_) { }
     }
 
     function clearSavedGame() {
       try { localStorage.removeItem(GAME_SAVE_KEY); } catch (_) { }
+      try { localStorage.removeItem(FEN_SAVE_KEY); } catch (_) { }
     }
 
     function loadSavedGame() {
       try {
-        const raw = localStorage.getItem(GAME_SAVE_KEY);
+        // Prefer FEN session save if it exists and is recent
+        const fenRaw = localStorage.getItem(FEN_SAVE_KEY);
+        const fenS = fenRaw ? JSON.parse(fenRaw) : null;
+        const useFen = fenS && fenS.v === 1 && fenS.sessionStartedFromFen
+                       && (!fenS.ts || Date.now() - fenS.ts < 86400000);
+        const raw = useFen ? fenRaw : localStorage.getItem(GAME_SAVE_KEY);
         if (!raw) return false;
         const s = JSON.parse(raw);
         if (!s || s.v !== 1 || !s.fen || !Array.isArray(s.history) || s.history.length === 0) return false;
@@ -4583,6 +4592,7 @@ limitations under the License.
         boardFlipped = !!s.boardFlipped;
         sessionGameRecorded       = !!s.sessionGameRecorded;
         sessionStartedFromFen     = !!s.sessionStartedFromFen;
+        lastLoadedFen             = s.lastLoadedFen || null;
         sessionUndos              = s.sessionUndos || 0;
         sessionHints              = s.sessionHints || 0;
         sessionMinEval            = s.sessionMinEval !== undefined ? s.sessionMinEval : Infinity;
@@ -18431,10 +18441,15 @@ limitations under the License.
 
     // 💾 BOOT: auto-resume saved game if one exists, otherwise show menu
     try {
-      const _raw = localStorage.getItem(GAME_SAVE_KEY);
-      const _s = _raw ? JSON.parse(_raw) : null;
-      const _valid = _s && _s.v === 1 && Array.isArray(_s.history) && _s.history.length > 0
-                     && (!_s.ts || Date.now() - _s.ts < 86400000);
+      const _fenRaw = localStorage.getItem(FEN_SAVE_KEY);
+      const _fenS = _fenRaw ? JSON.parse(_fenRaw) : null;
+      const _fenValid = _fenS && _fenS.v === 1 && _fenS.sessionStartedFromFen
+                        && (!_fenS.ts || Date.now() - _fenS.ts < 86400000);
+      const _regRaw = localStorage.getItem(GAME_SAVE_KEY);
+      const _regS = _regRaw ? JSON.parse(_regRaw) : null;
+      const _valid = (_fenValid && _fenS.history && _fenS.history.length > 0)
+                     || (_regS && _regS.v === 1 && Array.isArray(_regS.history) && _regS.history.length > 0
+                         && (!_regS.ts || Date.now() - _regS.ts < 86400000));
       if (_valid && loadSavedGame()) {
         showScreen(null);
         document.querySelector('h1').style.display = 'block';
@@ -18455,10 +18470,18 @@ limitations under the License.
         window.dispatchEvent(new Event('resize'));
         setTimeout(() => {
           window.dispatchEvent(new Event('resize')); // second dispatch in case first was too early
+          // Rebuild lastLoadedChallengeItem from FEN_LIBRARY so FEN intro shows after F5
+          if (lastLoadedFen && sessionStartedFromFen && typeof FEN_LIBRARY !== 'undefined') {
+            lastLoadedChallengeItem = FEN_LIBRARY.find(it => it.fen === lastLoadedFen) || null;
+          }
           render(); updateTurnUI(); updateHistory(); updateCaptured(); updateAdvantageBar();
           commentaryLog = []; resetCommentaryStyleMemory();
-          const _cs = Math.max(0, history.length - 5);
-          for (let _ci = _cs; _ci < history.length; _ci++) addCommentaryEntry(history[_ci], history.slice(0, _ci + 1));
+          if (history.length === 0) {
+            addCommentaryEntry(); // show FEN intro if applicable, or generic intro
+          } else {
+            const _cs = Math.max(0, history.length - 5);
+            for (let _ci = _cs; _ci < history.length; _ci++) addCommentaryEntry(history[_ci], history.slice(0, _ci + 1));
+          }
           switchTab('commentary');
           showToast(currentLanguage === 'en' ? '♟️ Game restored' : '♟️ Partida restaurada', 2000);
           if (gameMode === 'ai' && turn !== playerColor && !aiThinking) setTimeout(triggerAI, 400);
@@ -19435,6 +19458,7 @@ limitations under the License.
     function startFenChallenge() {
       document.getElementById('fenChallengeModal').classList.remove('show');
       if (!_pendingChallengeFen) return;
+      clearSavedGame(); // don't let a stale regular game restore on F5 during a FEN session
       document.getElementById('fenInput').value = _pendingChallengeFen;
       const item = _pendingChallengeItem;
       _pendingChallengeFen = null;
