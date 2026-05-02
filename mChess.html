@@ -18875,6 +18875,11 @@ limitations under the License.
         ? '♟️ Your color is assigned automatically from the position.'
         : '♟️ Tu color se asigna automáticamente según la posición.';
 
+      // Always default to AI mode in the FEN library — scenarios are meant to be played vs AI
+      // Set gameMode directly (no reset) so the UI reflects AI mode without disrupting the current game
+      if (gameMode !== 'ai') {
+        gameMode = 'ai';
+      }
       // Sync mode buttons
       _syncFenModeButtons(gameMode);
       // Sync difficulty and show/hide rows
