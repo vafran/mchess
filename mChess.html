@@ -3040,7 +3040,7 @@ limitations under the License.
             <!-- Export button hidden by default; enable via console: localStorage.setItem('showProfessorExport','1'); location.reload(); -->
             <button class="hint-btn" id="trainingToggleBtn" onclick="toggleTrainingMode()"
               style="width:100%; padding: 10px 6px; font-size: 0.84rem; background: #ede9fe; color: var(--text);">🎓
-              Modo Entrenamiento: OFF</button>
+              Modo Asistido: OFF</button>
           </div>
         </div>
       </div>
@@ -4675,7 +4675,7 @@ limitations under the License.
         restartGame: '🔄 Reiniciar partida', mainMenu: '🏠 Menú principal',
         tabCommentary: '🎙️ Comentarista', tabProfessor: '🦉 Profesor',
         btnAnalysis: '🔍 Análisis', btnWhatDo: '🎯 ¿Qué hago?', btnWasGood: '💡 ¿Fue buena?', hawksEye: 'Ojo Halcón',
-        trainingOn: '🎓 Modo Entrenamiento: ON', trainingOff: '🎓 Modo Entrenamiento: OFF',
+        trainingOn: '🎓 Modo Asistido: ON', trainingOff: '🎓 Modo Asistido: OFF',
         historyTitle: '📜 Movimientos', capturedTitle: '⚔️ Piezas Capturadas',
         capturedWhite: '⬜ Ganadas por Blancas:', capturedBlack: '⬛ Ganadas por Negras:',
         undo: '↩️ Deshacer', restartBtn: '🔄 Reiniciar partida', reviewGame: '🔍 Repasar partida', sideMenuBtn: '☰ Menú',
@@ -4690,8 +4690,8 @@ limitations under the License.
         partial: '⏱️ Análisis parcial por límite de tiempo (10s).', emergencyCoachLine: '🛟 Te doy una jugada simple y segura para este momento.',
         continueAnalysis: 'Continuar análisis (+10s)',
         noCompute: 'No pude calcular la recomendación del Profesor.',
-        trainingEnabled: 'Modo Entrenamiento activado 🎓',
-        trainingDisabled: 'Modo Entrenamiento desactivado',
+        trainingEnabled: 'Modo Asistido activado 🎓',
+        trainingDisabled: 'Modo Asistido desactivado',
         riskLow: 'Riesgo bajo', riskMedium: 'Riesgo medio', riskHigh: 'Riesgo alto',
         scrollUp: '▲ Subir', scrollDown: '▼ Bajar',
         commentatorWaiting: '🎙️ El Comentarista empezará a hablar en cuanto se realice el primer movimiento.',
@@ -4783,7 +4783,7 @@ limitations under the License.
         restartGame: '🔄 Restart game', mainMenu: '🏠 Main menu',
         tabCommentary: '🎙️ Commentator', tabProfessor: '🦉 Coach',
         btnAnalysis: '🔍 Analysis', btnWhatDo: '🎯 What should I do?', btnWasGood: '💡 Was it good?', hawksEye: 'Hawk Eye',
-        trainingOn: '🎓 Training Mode: ON', trainingOff: '🎓 Training Mode: OFF',
+        trainingOn: '🎓 Assisted Mode: ON', trainingOff: '🎓 Assisted Mode: OFF',
         historyTitle: '📜 Moves', capturedTitle: '⚔️ Captured Pieces',
         capturedWhite: '⬜ Captured by White:', capturedBlack: '⬛ Captured by Black:',
         undo: '↩️ Undo', restartBtn: '🔄 Restart game', reviewGame: '🔍 Review game', sideMenuBtn: '☰ Menu',
@@ -4798,8 +4798,8 @@ limitations under the License.
         partial: '⏱️ Partial analysis due to time limit (10s).', emergencyCoachLine: '🛟 I’ll give you a clear, safe move right now.',
         continueAnalysis: 'Continue analysis (+10s)',
         noCompute: 'I could not compute the Coach recommendation.',
-        trainingEnabled: 'Training Mode enabled 🎓',
-        trainingDisabled: 'Training Mode disabled',
+        trainingEnabled: 'Assisted Mode enabled 🎓',
+        trainingDisabled: 'Assisted Mode disabled',
         riskLow: 'Low risk', riskMedium: 'Medium risk', riskHigh: 'High risk',
         scrollUp: '▲ Up', scrollDown: '▼ Down',
         commentatorWaiting: '🎙️ The Commentator will start speaking after the first move.',
@@ -6729,39 +6729,9 @@ limitations under the License.
       if (pList) pList.innerHTML = `<div class="hint-empty" id="professorEmptyMsg">${t('professorPrompt')}</div>`;
       lastProfessorAction = null;
 
-      // 12. TRAINING SCANNER (PHASE 3)
-      if (trainingModeEnabled && (gameMode === 'pvp' || lastMovedColor === playerColor)) {
-        const quickTip = getTrainingTipMessage();
-        if (quickTip) showToast(quickTip, 5200);
-
-        let worstHanging = null;
-        let maxVal = -1;
-        for (let r = 0; r < 8; r++) {
-          for (let c = 0; c < 8; c++) {
-            const p = board[r][c];
-            // In PvP: warn the side that just moved (they need to see threats now).
-            // In AI mode: always warn the human player regardless of color chosen.
-            const scanColor = (gameMode === 'pvp') ? lastMovedColor : playerColor;
-            if (p !== ' ' && colorOf(p) === scanColor) {
-              const enemyColor = scanColor === 'w' ? 'b' : 'w';
-              const safety = evaluateSquareSafety(r, c, scanColor, board, enemyColor);
-              if (!safety.isSafe) {
-                const val = PIECE_VALUES[p.toUpperCase()] || 0;
-                if (val > maxVal) {
-                  maxVal = val;
-                  worstHanging = { r, c, piece: p, attacker: safety.attackers[0].piece, reason: safety.reason };
-                }
-              }
-            }
-          }
-        }
-        if (worstHanging) {
-          const pName = getLocalizedPieceName(worstHanging.piece);
-          const sq = sqName(worstHanging.r, worstHanging.c);
-          const en = currentLanguage === 'en';
-          let warningText = en ? `⚠️ Watch out! Your ${pName} on ${sq} is under attack.` : `⚠️ ¡Ojo! Tu ${pName} en ${sq} está bajo ataque.`;
-          setTimeout(() => showToast(warningText, 4000), 800);
-        }
+      // 12. ASSISTED MODE SCANNER — PvP only here; AI mode fires after AI move in triggerAI
+      if (trainingModeEnabled && gameMode === 'pvp') {
+        runAssistedModeScan(lastMovedColor);
       }
 
       // 13. FIN DE PARTIDA O IA
@@ -7659,6 +7629,40 @@ limitations under the License.
       }
 
       return out;
+    }
+
+    function runAssistedModeScan(scanColor) {
+      const en = currentLanguage === 'en';
+      const enemyColor = scanColor === 'w' ? 'b' : 'w';
+      let worstHanging = null, maxVal = -1;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = board[r][c];
+          if (p !== ' ' && colorOf(p) === scanColor) {
+            const safety = evaluateSquareSafety(r, c, scanColor, board, enemyColor);
+            if (!safety.isSafe) {
+              const val = PIECE_VALUES[p.toUpperCase()] || 0;
+              if (val > maxVal) { maxVal = val; worstHanging = { r, c, piece: p, attacker: safety.attackers[0].piece }; }
+            }
+          }
+        }
+      }
+      const quickTip = getTrainingTipMessage();
+      let assistedHtml;
+      if (worstHanging) {
+        const pName = getLocalizedPieceName(worstHanging.piece);
+        const sq = sqName(worstHanging.r, worstHanging.c);
+        const attackerName = getLocalizedPieceName(worstHanging.attacker);
+        assistedHtml = en
+          ? `⚠️ Your <strong>${pName}</strong> on <strong>${sq}</strong> is under attack by the ${attackerName}. Consider defending it or moving it to safety.`
+          : `⚠️ Tu <strong>${pName}</strong> en <strong>${sq}</strong> está bajo ataque del ${attackerName}. Considera defenderl${['Dama','Torre'].includes(pName)?'a':'o'} o moverla a un lugar seguro.`;
+      } else if (quickTip) {
+        assistedHtml = `💡 ${quickTip}`;
+      } else {
+        assistedHtml = en ? '✅ Position looks safe. No immediate threats detected.' : '✅ Posición segura. No se detectan amenazas inmediatas.';
+      }
+      const pList = document.getElementById('professorList');
+      if (pList) pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--warning,#f59e0b); background:rgba(245,158,11,0.06); padding:12px; margin-bottom:10px; border-radius:0 8px 8px 0; font-size:0.9rem;">${assistedHtml}</div>`;
     }
 
     function toggleTrainingMode() {
@@ -13661,6 +13665,10 @@ limitations under the License.
           else if (capType === 'N') showToast(bigMsgs[3]);
           else showToast(smallMsgs[Math.floor(Math.random() * smallMsgs.length)]);
         }
+
+        // ASSISTED MODE: scan after AI move so message is visible while player thinks
+        if (trainingModeEnabled) runAssistedModeScan(playerColor);
+
       } finally {
         // Ensure cleanup in case of error
         document.getElementById('thinkingBar').classList.remove('show');
