@@ -25,6 +25,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <title>Airin v2.25.0</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♞</text></svg>">
   <style>
     /* System font stack — no external dependency.
        Uses Outfit if already cached, otherwise falls back to similar geometric sans-serif fonts. */
@@ -18526,9 +18527,9 @@ limitations under the License.
       },
       {
         cat: 'opening', nameEs: "Trampa: Gambito Budapest", nameEn: "Trap: Budapest Gambit",
-        descEs: "Juegan negras. Recupera el peón con ventaja táctica.",
-        descEn: "Black to move. Regain the pawn with a tactical advantage.",
-        fen: "rnbqkb1r/pppp1ppp/8/4pP2/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 3"
+        descEs: "Juegan negras. El alfil blanco en f4 parece proteger el peón extra, pero hay una respuesta táctica que gana material. ¡Encuéntrala!",
+        descEn: "Black to move. White's bishop on f4 seems to guard the extra pawn, but there is a tactical reply that wins material. Find it!",
+        fen: "rnbqkb1r/pppp1ppp/8/4P3/2P2Bn1/8/PP2PPPP/RN1QKBNR b KQkq - 2 4"
       },
       {
         cat: 'opening', nameEs: "Trampa: Fried Liver", nameEn: "Trap: Fried Liver Attack",
@@ -18538,36 +18539,36 @@ limitations under the License.
         solution: ['g5f7', 'e8f7']
       },
       {
-        cat: 'opening', nameEs: "Trampa: Gambito de Rey rechazado", nameEn: "Trap: King's Gambit Declined",
-        descEs: "Juegan blancas. Aprovecha el desarrollo superior para atacar.",
-        descEn: "White to move. Use your development lead to launch a quick attack.",
-        fen: "rnbqkbnr/pppp1ppp/8/4p3/4PP2/8/PPPP2PP/RNBQKBNR b KQkq - 0 2"
+        cat: 'opening', nameEs: "Trampa: Gambito de Rey", nameEn: "Trap: King's Gambit",
+        descEs: "Juegan negras. Blancas ofrece el peón f4 para ganar el centro. ¿Lo aceptas o lo rechazas?",
+        descEn: "Black to move. White offers the f4 pawn for rapid development and center control. Accept or decline?",
+        fen: "rnbqkbnr/pppp1ppp/8/4p3/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2"
       },
       {
         cat: 'opening', nameEs: "Trampa: Defensa Petrov — Error clásico", nameEn: "Trap: Petrov's Classical Blunder",
-        descEs: "Juegan blancas. Las negras cometieron un error. ¡Aprovecha!",
-        descEn: "White to move. Black made a classic mistake. Exploit it!",
-        fen: "rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"
+        descEs: "Juegan blancas. Tras 1.e4 e5 2.Cf3 Cf6 3.Cxe5 Cxe4?? las negras caen en una trampa clásica. ¡Aprovecha con Dd2!",
+        descEn: "White to move. After 1.e4 e5 2.Nf3 Nf6 3.Nxe5 Nxe4?? Black falls into a classic trap. Play Qe2 and win a piece!",
+        fen: "rnbqkb1r/pppp1ppp/8/4N3/4n3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 4"
       },
       {
-        cat: 'opening', nameEs: "Trampa: Ataque de los 4 Caballos", nameEn: "Trap: Four Knights Fork",
-        descEs: "Juegan blancas. Un doble ataque gana material.",
-        descEn: "White to move. A knight fork wins material immediately.",
+        cat: 'opening', nameEs: "Trampa: Gambito Halloween", nameEn: "Trap: Halloween Gambit",
+        descEs: "Juegan blancas. Sacrifica el caballo para ganar el centro con los peones. ¡Una apertura agresiva y sorprendente!",
+        descEn: "White to move. Sacrifice the knight to seize the center with pawns. An aggressive and surprising opening gambit!",
         fen: "r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 4 4"
       },
 
       // ── TÁCTICAS FUNDAMENTALES ───────────────────────────────────────────────
       {
-        cat: 'tactic', nameEs: "Táctica: Mate del Pasillo", nameEn: "Tactic: Back Rank Mate",
-        descEs: "Juegan blancas. El rey negro está atrapado en el pasillo. Mate en 1.",
-        descEn: "White to move. The king is trapped on the back rank. Mate in 1.",
+        cat: 'tactic', nameEs: "Táctica: Debilidad del Pasillo — Patrón", nameEn: "Tactic: Back Rank Weakness — Pattern",
+        descEs: "Juegan blancas. Los peones encierran al rey en el pasillo. ¿Ves la debilidad? Este patrón es muy frecuente en partidas.",
+        descEn: "White to move. The pawns lock the king on the back rank. Can you spot the weakness? This pattern is very common in real games.",
         fen: "6k1/5ppp/8/8/8/8/8/4R1K1 w - - 0 1"
       },
       {
         cat: 'tactic', nameEs: "Táctica: El Tenedor de Caballo", nameEn: "Tactic: Knight Fork",
-        descEs: "Juegan blancas. El caballo ataca al rey y a la torre simultáneamente.",
-        descEn: "White to move. The knight attacks king and rook at the same time.",
-        fen: "3r3k/8/8/8/8/5N2/8/3K4 w - - 0 1"
+        descEs: "Juegan negras. El caballo puede saltar a una casilla que ataca al rey y a la torre simultáneamente. ¡Gana material!",
+        descEn: "Black to move. The knight can leap to a square that attacks the king and rook at the same time. Win material!",
+        fen: "1rr3k1/3bppbp/3p1np1/1B1N4/P2BP3/5P2/P2R2PP/R5K1 b - - 0 21"
       },
       {
         cat: 'tactic', nameEs: "Táctica: La Clavada Absoluta", nameEn: "Tactic: Absolute Pin",
@@ -18583,9 +18584,9 @@ limitations under the License.
       },
       {
         cat: 'tactic', nameEs: "Táctica: Jaque Doble", nameEn: "Tactic: Double Check",
-        descEs: "Juegan blancas. Un jaque doble fuerza el mate.",
-        descEn: "White to move. A double check forces checkmate.",
-        fen: "r1bqk2r/pppp1ppp/2n2n2/2b5/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 6"
+        descEs: "Juegan negras. Un jaque doble — de caballo y alfil a la vez — es el golpe definitivo. ¡Mate en 1!",
+        descEn: "Black to move. A double check — from knight and bishop at once — is the killing blow. Mate in 1!",
+        fen: "r2qkb1r/2p1pppp/p1n2nb1/1N2N3/B2P2P1/7P/PPP5/R1BQK2R b KQkq - 0 11"
       },
       {
         cat: 'tactic', nameEs: "Táctica: La Enfilada", nameEn: "Tactic: The Skewer",
@@ -18594,22 +18595,22 @@ limitations under the License.
         fen: "3k4/3q4/8/8/8/8/8/R3K3 w Q - 0 1"
       },
       {
-        cat: 'tactic', nameEs: "Táctica: Ataque a la Torre Colgada", nameEn: "Tactic: Hanging Rook",
-        descEs: "Juegan blancas. La torre negra está colgada. Gana material.",
-        descEn: "White to move. The black rook is hanging. Win material cleanly.",
-        fen: "3r2k1/pp3ppp/2p5/8/4r3/1B6/PP3PPP/R4RK1 w - - 0 1"
+        cat: 'tactic', nameEs: "Táctica: Jaque Intermedio (Zwischenzug)", nameEn: "Tactic: Intermediate Check (Zwischenzug)",
+        descEs: "Juegan blancas. Antes de capturar la pieza negra, ¡hay un jaque intermedio que mejora el resultado!",
+        descEn: "White to move. Before capturing the hanging piece, there is an intermediate check that improves the outcome!",
+        fen: "r4rk1/pp3ppp/8/2b5/4q3/2B5/PP3PPP/R3R1K1 w - - 0 1"
       },
       {
-        cat: 'tactic', nameEs: "Táctica: Captura de Dama — Trampa", nameEn: "Tactic: Queen Trap",
-        descEs: "Juegan blancas. La dama negra está atrapada. ¿Cómo la capturas?",
-        descEn: "White to move. The black queen is trapped. How do you win it?",
-        fen: "4k3/8/8/3q4/8/4N3/4R3/4K3 w - - 0 1"
+        cat: 'tactic', nameEs: "Táctica: Desvío — Sacrificio Fatal", nameEn: "Tactic: Deflection — Fatal Sacrifice",
+        descEs: "Juegan negras. Sacrifica una pieza para apartar al defensor clave del rey blanco y forzar el mate.",
+        descEn: "Black to move. Sacrifice a piece to deflect the key defender away from the white king and force checkmate.",
+        fen: "rn1qr1k1/ppp3pQ/3p1pP1/3Pp3/2P1P3/8/PP3PP1/R1B1K3 b Q - 2 16"
       },
       {
-        cat: 'tactic', nameEs: "Táctica: Mate con Alfil y Caballo", nameEn: "Tactic: Smothered Mate Setup",
-        descEs: "Juegan blancas. El caballo puede dar jaque ahogado.",
-        descEn: "White to move. The knight can deliver a smothered mate.",
-        fen: "6rk/6pp/8/8/8/8/5N2/6K1 w - - 0 1"
+        cat: 'tactic', nameEs: "Táctica: Mate Ahogado", nameEn: "Tactic: Smothered Mate",
+        descEs: "Juegan blancas. El rey negro está rodeado por sus propias piezas. ¡El caballo da jaque ahogado!",
+        descEn: "White to move. The black king is surrounded by its own pieces. The knight delivers a smothered mate!",
+        fen: "2rq1rk1/1p3p1p/p1pn2p1/P2p4/1P1PnP2/3NP3/5PBP/R1Q3RK w - - 2 22"
       },
       {
         cat: 'tactic', nameEs: "Táctica: Doble Ataque con Dama", nameEn: "Tactic: Queen Double Attack",
@@ -18634,24 +18635,24 @@ limitations under the License.
         fen: "7k/6p1/5N2/8/8/8/8/R5K1 w - - 0 1"
       },
       {
-        cat: 'tactic', 
-        nameEs: "Táctica: Zugzwang", 
+        cat: 'tactic',
+        nameEs: "Táctica: Zugzwang",
         nameEn: "Tactic: Zugzwang",
-        descEs: "Juegan negras. ¡Cualquier movimiento empeora tu posición!",
-        descEn: "Black to move. Any move makes your position worse — that's zugzwang!",
-        fen: "8/3k4/8/3K4/3P4/8/8/8 b - - 0 1"
+        descEs: "Juegan negras. Estás en zugzwang: cualquier movimiento empeora tu posición. ¡El turno se convierte en tu peor enemigo!",
+        descEn: "Black to move. You are in zugzwang: every move makes your position worse. Having to move is your worst enemy!",
+        fen: "8/6p1/8/6k1/4P3/5KpP/8/8 b - - 3 46"
       },
       {
-        cat: 'tactic', nameEs: "Táctica: Sacrificio de Alfil en h6", nameEn: "Tactic: Bishop Sacrifice on h6",
-        descEs: "Juegan blancas. El rey negro parece bien protegido, pero hay una debilidad oculta. ¡Encuéntrala!",
-        descEn: "White to move. The black king looks safe, but there is a hidden weakness. Find it!",
-        fen: "r1bq1rk1/ppp2ppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 8"
+        cat: 'tactic', nameEs: "Táctica: El Sacrificio Griego — Bxh7+", nameEn: "Tactic: The Greek Gift — Bxh7+",
+        descEs: "Juegan blancas. El clásico sacrificio de alfil derrumba el enroque negro. ¿Cuál es el seguimiento correcto?",
+        descEn: "White to move. The classic bishop sacrifice7 shatters Black's kingside castle. What is the correct follow-up?",
+        fen: "r1bq1rk1/ppp2ppp/2n1pn2/3p4/2PP4/2PBPN2/P4PPP/R1BQK2R w KQ - 3 8"
       },
       {
-        cat: 'tactic', nameEs: "Táctica: Ataque a la Batería", nameEn: "Tactic: Battery Attack",
-        descEs: "Juegan blancas. Hay una columna abierta que puede ser muy poderosa. ¿Cómo la aprovechas?",
-        descEn: "White to move. There is an open file that could be very powerful. How do you use it?",
-        fen: "r4rk1/ppp2ppp/8/3q4/3P4/8/PPP2PPP/R2QR1K1 w - - 0 1"
+        cat: 'tactic', nameEs: "Táctica: Torre en Séptima — El Rodillo", nameEn: "Tactic: Rook on the 7th — The Roller",
+        descEs: "Juegan blancas. La torre en séptima fila destruye los peones negros. ¡Causa el máximo daño!",
+        descEn: "White to move. The rook on the 7th rank wreaks havoc among Black's pawns. Cause maximum damage!",
+        fen: "6k1/1R3ppp/8/8/8/8/PPP2PPP/6K1 w - - 0 1"
       },
 
       // ── FINALES CLÁSICOS ─────────────────────────────────────────────────────
@@ -18669,14 +18670,14 @@ limitations under the License.
       },
       {
         cat: 'endgame', nameEs: "Final: Oposición de Reyes", nameEn: "Endgame: King Opposition",
-        descEs: "Juegan blancas. Gana la oposición directa para coronar el peón.",
-        descEn: "White to move. Win the direct opposition to promote your pawn.",
-        fen: "8/8/8/8/3k4/3P4/3K4/8 w - - 0 1"
+        descEs: "Juegan blancas. El rey negro bloquea el paso. Gana la oposición directa para abrir el camino al peón.",
+        descEn: "White to move. The black king blocks the way. Win the direct opposition to clear the path for your pawn.",
+        fen: "8/8/8/3k4/3P4/8/3K4/8 w - - 0 1"
       },
       {
         cat: 'endgame', nameEs: "Final: Coronación de Peón", nameEn: "Endgame: Pawn Promotion",
-        descEs: "Juegan negras. Usa el rey para escoltar el peón hasta coronar.",
-        descEn: "Black to move. Use the king to escort the pawn to promotion.",
+        descEs: "Juegan negras. Usa el rey para escoltar el peón hasta coronar. ¡El rey blanco no puede llegar a tiempo!",
+        descEn: "Black to move. Use the king to escort the pawn to promotion. The white king cannot stop it in time!",
         fen: "8/8/8/8/3k4/3p4/8/4K3 b - - 0 1"
       },
       {
@@ -18687,9 +18688,9 @@ limitations under the License.
       },
       {
         cat: 'endgame', nameEs: "Final: Posición de Philidor", nameEn: "Endgame: Philidor Position",
-        descEs: "Juegan negras. La defensa Philidor mantiene las tablas.",
-        descEn: "Black to move. The Philidor defense holds the draw. Find it!",
-        fen: "8/8/8/1K1k4/8/8/8/r2R4 b - - 0 1"
+        descEs: "Juegan negras. La defensa Philidor: coloca la torre en la 6ª fila para mantener las tablas. ¡Es la única forma de resistir!",
+        descEn: "Black to move. The Philidor defense: place your rook on the 6th rank to hold the draw. It's the only way to resist!",
+        fen: "4k3/8/4r3/3P4/3K4/8/8/4R3 b - - 0 1"
       },
       {
         cat: 'endgame', nameEs: "Final: Peón Pasado Imparable", nameEn: "Endgame: Unstoppable Passer",
@@ -18729,14 +18730,14 @@ limitations under the License.
       },
       {
         cat: 'endgame', nameEs: "Final: Torres Activas vs Pasivas", nameEn: "Endgame: Active vs Passive Rook",
-        descEs: "Juegan blancas. La torre activa domina. El rey marcha.",
-        descEn: "White to move. The active rook dominates. March the king forward.",
-        fen: "8/r7/8/3K4/3P4/8/8/3R4 w - - 0 1"
+        descEs: "Juegan blancas. La torre activa domina. Avanza el rey para escoltar el peón a la coronación.",
+        descEn: "White to move. The active rook dominates. March the king forward to escort the pawn to promotion.",
+        fen: "8/r7/8/3K4/3P4/8/8/3R2k1 w - - 0 1"
       },
       {
-        cat: 'endgame', nameEs: "Final: Peón a y Torre — Posición Difícil", nameEn: "Endgame: Rook vs Rook Pawn",
-        descEs: "Juegan blancas. El peón a con alfil equivocado puede ser tablas.",
-        descEn: "White to move. The a-pawn with wrong bishop can be a tricky draw.",
+        cat: 'endgame', nameEs: "Final: Peón a — La Fortaleza del Rey", nameEn: "Endgame: The a-Pawn Stalemate Trap",
+        descEs: "Juegan blancas. El peón a llega a la última fila, pero ¡cuidado con el ahogado! ¿Puedes coronar sin empatar?",
+        descEn: "White to move. The a-pawn is about to promote, but watch out for stalemate! Can you queen without drawing?",
         fen: "k7/P7/K7/8/8/8/8/8 w - - 0 1"
       },
 
@@ -19057,181 +19058,7 @@ limitations under the License.
       }
     ];
 
-    // 🎲 BASE DE DATOS DE PUZZLES ALEATORIOS (100 posiciones curadas)
-    const PUZZLES_DB = [
-      // ── Mate in 2 (genuine calculation required) ─────────────────────────
-      {
-        fen: "1k1r4/pp4p1/2q5/8/8/8/PPP5/1K1R4 b - - 0 1",
-        themes: ["mateIn2", "queenSacrifice", "backRankMate"], rating: 1100,
-        descEn: "Mate in 2. Black sacrifices the queen on d1 to force a back-rank mate. Two moves, one stunning queen sac.",
-        descEs: "Mate en 2. Las negras sacrifican la dama en d1 para forzar un mate de pasillo. Dos movimientos, un sacrificio impresionante."
-      },
-      {
-        fen: "2r3k1/pp3ppp/8/8/2Q5/8/PPP2PPP/2R3K1 w - - 0 1",
-        themes: ["mateIn2", "queenSacrifice", "backRankMate"], rating: 1150,
-        descEn: "Mate in 2. White sacrifices the queen on c8 — the black king is trapped by its own pawns on the back rank.",
-        descEs: "Mate en 2. Las blancas sacrifican la dama en c8: el rey negro queda atrapado por sus propios peones en la última fila."
-      },
-      {
-        fen: "6rk/6pp/7N/5Q2/8/8/8/6K1 w - - 0 1",
-        themes: ["mateIn2", "smotheredMate", "sacrifice"], rating: 1200,
-        descEn: "Mate in 2. The knight on h6 and queen combine spectacularly. The black king is smothered by its own pawns.",
-        descEs: "Mate en 2. El caballo en h6 y la dama se combinan de forma espectacular. El rey negro es asfixiado por sus propios peones."
-      },
-      {
-        fen: "r4rk1/ppp2ppp/8/3Q4/8/8/PPP2PPP/R5K1 w - - 0 1",
-        themes: ["mateIn2", "queenSacrifice", "backRankMate"], rating: 1250,
-        descEn: "Mate in 2. A bolt from the blue — sacrifice the queen to expose the back rank. White mates on the next move.",
-        descEs: "Mate en 2. Un rayo desde el cielo: sacrifica la dama para exponer el pasillo. Las blancas matan en el siguiente movimiento."
-      },
-      {
-        fen: "5rk1/ppp2ppp/8/3q4/8/8/PPP2PPP/1R4K1 b - - 0 1",
-        themes: ["mateIn2", "queenSacrifice", "backRankMate"], rating: 1250,
-        descEn: "Mate in 2 for Black. Same stunning motif from the other side — sacrifice the queen on b1 to force back-rank mate.",
-        descEs: "Mate en 2 para negras. El mismo motivo impresionante desde el otro lado: sacrifica la dama en b1 para forzar el mate de pasillo."
-      },
-
-      // ── Mate in 3 (requires real planning) ──────────────────────────────
-      {
-        fen: "r1b2rk1/pppp1Npp/8/8/3qP3/8/PPPP1PPP/RNBQK2R b KQkq - 0 1",
-        themes: ["mateIn3", "desperado", "kingsideAttack"], rating: 1400,
-        descEn: "Mate in 3. Black must find a queen sacrifice and two precise follow-ups. Desperate times call for desperate measures!",
-        descEs: "Mate en 3. Las negras deben encontrar un sacrificio de dama y dos continuaciones precisas. ¡Los tiempos desesperados requieren medidas desesperadas!"
-      },
-      {
-        fen: "5k2/ppp2Bpp/8/8/8/8/PPP2PPP/5RK1 w - - 0 1",
-        themes: ["mateIn3", "bishop", "interference"], rating: 1300,
-        descEn: "Mate in 3. The rook and bishop work together — find the quiet first move that sets up an unstoppable mating net.",
-        descEs: "Mate en 3. La torre y el alfil colaboran: encuentra el primer movimiento silencioso que prepara una red de mate imparable."
-      },
-      {
-        fen: "r1b1k2r/pppp1ppp/8/8/4n3/8/PPPP1PPP/RNBQKB1R b KQkq - 0 1",
-        themes: ["mateIn3", "knightSacrifice", "discoveredCheck"], rating: 1500,
-        descEn: "Mate in 3. The knight on e4 is the key piece. A sacrifice reveals a discovered check — find the forced sequence.",
-        descEs: "Mate en 3. El caballo en e4 es la pieza clave. Un sacrificio revela un jaque descubierto: encuentra la secuencia forzada."
-      },
-      {
-        fen: "rnb1k2r/pppp1ppp/8/4Q3/4n3/8/PPPP1PPP/RNB1KB1R b KQkq - 0 1",
-        themes: ["mateIn3", "fork", "kingsideAttack"], rating: 1450,
-        descEn: "Mate in 3 for Black. The knight on e4 and the disorganized white pieces create a forcing mating sequence.",
-        descEs: "Mate en 3 para negras. El caballo en e4 y las piezas blancas desorganizadas crean una secuencia de mate forzada."
-      },
-
-      // ── Winning material (3-4 move combinations) ────────────────────────
-      {
-        fen: "r1bqkb1r/ppp2ppp/2np4/4N3/2BpP3/8/PPPP1PPP/RNBQK2R w KQkq - 0 6",
-        themes: ["fork", "knightFork", "middlegame"], rating: 1400,
-        descEn: "White to play. The knight on e5 can explode into a multi-move combination that wins decisive material. Find the fork!",
-        descEs: "Blancas juegan. El caballo en e5 puede explotar en una combinación de varios movimientos que gana material decisivo. ¡Encuentra la horquilla!"
-      },
-      {
-        fen: "r2qkb1r/pp1n1ppp/2p1pn2/3pN3/2PP4/2N3P1/PP2PPBP/R1BQK2R w KQkq - 0 8",
-        themes: ["sacrifice", "knightSacrifice", "middlegame"], rating: 1600,
-        descEn: "White to play. A knight sacrifice on d7 or f7 ignites a brilliant combination. Calculate 4 moves ahead!",
-        descEs: "Blancas juegan. Un sacrificio de caballo en d7 o f7 desata una combinación brillante. ¡Calcula 4 movimientos!"
-      },
-      {
-        fen: "r1bk3r/ppp2ppp/2n5/8/2B5/4BN2/PPP2PPP/3RK2R w K - 0 1",
-        themes: ["discoveredAttack", "pin", "tactics"], rating: 1550,
-        descEn: "White to play. A discovered attack on the king wins a rook. The pieces work in harmony — find the 3-move sequence.",
-        descEs: "Blancas juegan. Un ataque descubierto sobre el rey gana una torre. Las piezas trabajan en armonía: encuentra la secuencia de 3 movimientos."
-      },
-      {
-        fen: "2r1r1k1/pp3ppp/3p4/8/4Q3/8/P4PPP/R1R3K1 w - - 0 1",
-        themes: ["skewer", "doubleAttack", "tactics"], rating: 1500,
-        descEn: "White to play. A stunning rook double to c8 and e8, combined with the queen, creates an unstoppable double threat.",
-        descEs: "Blancas juegan. Una impresionante combinación de torres en c8 y e8, junto con la dama, crea una doble amenaza imparable."
-      },
-      {
-        fen: "r1b2rk1/pp3ppp/1qn1p3/3pN3/2pP4/2P1B3/PP1QBPPP/R4RK1 w - - 0 1",
-        themes: ["decoy", "sacrifice", "middlegame"], rating: 1700,
-        descEn: "White to play. Sacrifice a piece to lure the black pieces into a losing position. Find the 4-move winning combination!",
-        descEs: "Blancas juegan. Sacrifica una pieza para atraer a las piezas negras a una posición perdedora. ¡Encuentra la combinación ganadora de 4 movimientos!"
-      },
-
-      // ── Greek Gift (Bxh7/Bxh2 sacrifice patterns) ────────────────────────
-      {
-        fen: "r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R w KQ - 0 7",
-        themes: ["greekGift", "sacrifice", "kingsideAttack"], rating: 1800,
-        descEn: "White to play. The Greek Gift! Sacrifice Bxh7+, then Ng5+, then Qh5 — a classic 3-step demolition of the king's shelter.",
-        descEs: "Blancas juegan. ¡El Regalo Griego! Sacrifica Axh7+, luego Cg5+, luego Dh5: una demolición clásica de 3 pasos del refugio del rey."
-      },
-
-      // ── Smothered Mate patterns ───────────────────────────────────────────
-      {
-        fen: "r1bqkb1r/ppp2Npp/3p4/8/4n3/8/PPPP1PPP/RNBQKB1R b KQkq - 0 1",
-        themes: ["smotheredMate", "knightSacrifice", "mateIn4"], rating: 1600,
-        descEn: "Mate in 4 for Black! The smothered mate pattern: sacrifice the queen, then force the king into a corner. A stunning combination!",
-        descEs: "¡Mate en 4 para negras! El patrón de mate ahogado: sacrifica la dama, luego obliga al rey a una esquina. ¡Una combinación impresionante!"
-      },
-
-      // ── Endgame technique (not trivial) ─────────────────────────────────
-      {
-        fen: "8/8/8/4k3/8/4K3/4R3/8 w - - 0 1",
-        themes: ["rookEndgame", "lucena", "endgame"], rating: 1200,
-        descEn: "Rook endgame technique. White must use the rook to cut off the black king and demonstrate winning technique. How do you win?",
-        descEs: "Técnica de final de torres. Las blancas deben usar la torre para cortar al rey negro y demostrar la técnica ganadora. ¿Cómo ganas?"
-      },
-      {
-        fen: "8/8/p7/Pk6/1P6/8/8/4K3 w - - 0 1",
-        themes: ["pawnEndgame", "breakthrough", "endgame"], rating: 1300,
-        descEn: "Pawn endgame. White has a hidden 3-move pawn breakthrough that wins instantly. Calculate carefully — it involves a sacrifice!",
-        descEs: "Final de peones. Las blancas tienen una irrupción de peones en 3 movimientos que gana al instante. ¡Calcula con cuidado: involucra un sacrificio!"
-      },
-      {
-        fen: "8/8/8/8/8/2k5/2p5/2K5 b - - 0 1",
-        themes: ["pawnEndgame", "promotion", "zugzwang"], rating: 1100,
-        descEn: "Black to play. The pawn on c2 is about to promote, but White defends with the king. Find the right move order to queen the pawn!",
-        descEs: "Negras juegan. El peón en c2 está a punto de coronar, pero las blancas defienden con el rey. ¡Encuentra el orden de moves correcto para coronar el peón!"
-      },
-      {
-        fen: "8/4k3/4P3/8/8/4K3/8/8 w - - 0 1",
-        themes: ["pawnEndgame", "opposition", "technique"], rating: 1250,
-        descEn: "Key squares. White must win the opposition with the king to escort the pawn to promotion. Find the correct king path in 4 moves.",
-        descEs: "Casillas clave. Las blancas deben ganar la oposición con el rey para escoltar el peón a la coronación. Encuentra la ruta correcta del rey en 4 movimientos."
-      },
-      {
-        fen: "8/5pk1/6p1/8/8/6P1/5PK1/8 w - - 0 1",
-        themes: ["pawnEndgame", "zugzwang", "endgame"], rating: 1400,
-        descEn: "Pawn endgame zugzwang study. White must maneuver to put Black in zugzwang — the solution requires precise 4-move king triangulation.",
-        descEs: "Estudio de zugzwang en final de peones. Las blancas deben maniobrar para poner a negras en zugzwang: la solución requiere triangulación precisa de 4 movimientos del rey."
-      },
-      {
-        fen: "8/1R6/8/8/8/1r6/k7/1K6 w - - 0 1",
-        themes: ["rookEndgame", "philidor", "technique"], rating: 1350,
-        descEn: "Philidor's method. White must win this rook endgame using the 7th rank and cutting off the king. Find the 3-step winning sequence.",
-        descEs: "El método Philidor. Las blancas deben ganar este final de torres usando la 7ª fila y cortando al rey. Encuentra la secuencia ganadora de 3 pasos."
-      },
-
-      // ── Tactical middlegame combinations ─────────────────────────────────
-      {
-        fen: "r3r1k1/pp3ppp/1qn5/3p4/3P2b1/2N1BN2/PPQ2PPP/R4RK1 b - - 0 1",
-        themes: ["pin", "doubleAttack", "tactics"], rating: 1650,
-        descEn: "Black to play. Multiple pieces are tangled — a 3-move combination exploiting the pin on the f3 knight wins decisive material.",
-        descEs: "Negras juegan. Varias piezas están enredadas: una combinación de 3 movimientos explotando la clavada sobre el caballo f3 gana material decisivo."
-      },
-      {
-        fen: "r1bqr1k1/pp3ppp/2p5/8/4n3/3B1N2/PPP2PPP/R2QR1K1 w - - 0 1",
-        themes: ["tactics", "trappedPiece", "interference"], rating: 1550,
-        descEn: "White to play. The black knight on e4 looks powerful but is actually in trouble. Find the 3-move sequence that traps it.",
-        descEs: "Blancas juegan. El caballo negro en e4 parece poderoso pero en realidad está en problemas. Encuentra la secuencia de 3 movimientos que lo atrapa."
-      },
-      {
-        fen: "r2q1rk1/ppp1bppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQR1K1 b - - 0 8",
-        themes: ["tactics", "middlegame", "initiative"], rating: 1500,
-        descEn: "Black to play. In this sharp symmetrical position, Black has a 4-move combination that seizes the initiative and gains material.",
-        descEs: "Negras juegan. En esta posición simétrica y afilada, las negras tienen una combinación de 4 movimientos que toma la iniciativa y gana material."
-      },
-      {
-        fen: "4r1k1/pp3ppp/8/8/2q5/8/P1P2PPP/1R1Q1RK1 b - - 0 1",
-        themes: ["interference", "backRankMate", "mateIn3"], rating: 1600,
-        descEn: "Mate in 3 for Black. The queen and rook cooperate. A brilliant interference sacrifice cuts the white rook from the back rank defense.",
-        descEs: "Mate en 3 para negras. La dama y la torre cooperan. Un brillante sacrificio de interferencia corta la torre blanca de la defensa del pasillo."
-      },
-
-    ];
-
-
+    const PUZZLES_DB = []; // random challenge now picks from FEN_LIBRARY directly
 
 
     function openFenLibrary() {
@@ -19465,10 +19292,8 @@ limitations under the License.
     }
 
     function rerollFenChallenge() {
-      // Pick a new random puzzle and reload the modal directly
-      if (PUZZLES_DB.length === 0) return;
-      const randomFen = PUZZLES_DB[Math.floor(Math.random() * PUZZLES_DB.length)];
-      showFenChallengeModal(randomFen, null, null, true);
+      const item = FEN_LIBRARY[Math.floor(Math.random() * FEN_LIBRARY.length)];
+      showFenChallengeModal(item, null, null, true);
     }
 
     function startFenChallenge() {
@@ -19520,41 +19345,12 @@ limitations under the License.
         list.appendChild(btn);
       });
 
-      // Show PUZZLES_DB entries that have scripted solutions (puzzle mode)
-      const themeToCategory = { mateIn1:'tactic', mateIn2:'tactic', mateIn3:'tactic', mateIn4:'tactic',
-        fork:'tactic', pin:'tactic', skewer:'tactic', discoveredAttack:'tactic', discoveredCheck:'tactic',
-        sacrifice:'tactic', queenSacrifice:'tactic', knightSacrifice:'tactic', greekGift:'tactic',
-        backRankMate:'tactic', smotheredMate:'tactic', trappedPiece:'tactic', doubleAttack:'tactic',
-        pawnEndgame:'endgame', rookEndgame:'endgame', knightEndgame:'endgame', queenEndgame:'endgame',
-        endgame:'endgame', lucena:'endgame', philidor:'endgame', technique:'endgame',
-        breakthrough:'endgame', opposition:'endgame', zugzwang:'endgame',
-        opening:'opening', middlegame:'tactic' };
-      PUZZLES_DB.filter(p => p.solution && p.solution.length > 0).forEach(item => {
-        const firstTheme = (item.themes || [])[0] || '';
-        const itemCat = themeToCategory[firstTheme] || 'tactic';
-        if (category !== 'all' && itemCat !== category) return;
-        const btn = document.createElement('div');
-        btn.className = 'fen-item';
-        btn.style.borderLeft = '3px solid var(--accent)';
-        btn.onclick = () => { closeFenLibrary(); showFenChallengeModal(item, null, null, false); };
-        const themeLabels = { mateIn1:'Mate in 1', mateIn2:'Mate in 2', mateIn3:'Mate in 3', mateIn4:'Mate in 4',
-          pawnEndgame:'Pawn Endgame', rookEndgame:'Rook Endgame', zugzwang:'Zugzwang',
-          promotion:'Promotion', breakthrough:'Breakthrough', opposition:'Opposition' };
-        const themeLabelsEs = { mateIn1:'Mate en 1', mateIn2:'Mate en 2', mateIn3:'Mate en 3', mateIn4:'Mate en 4',
-          pawnEndgame:'Final de Peones', rookEndgame:'Final de Torre', zugzwang:'Zugzwang',
-          promotion:'Coronación', breakthrough:'Irrupción', opposition:'Oposición' };
-        const name = '🧩 ' + (en ? (themeLabels[firstTheme] || firstTheme) : (themeLabelsEs[firstTheme] || firstTheme));
-        const desc = en ? item.descEn : item.descEs;
-        btn.innerHTML = `<strong>${name}</strong><span>${desc}</span>`;
-        list.appendChild(btn);
-      });
     }
 
     function loadRandomPuzzle() {
-      if (PUZZLES_DB.length === 0) return;
-      const puzzle = PUZZLES_DB[Math.floor(Math.random() * PUZZLES_DB.length)];
+      const item = FEN_LIBRARY[Math.floor(Math.random() * FEN_LIBRARY.length)];
       closeFenLibrary();
-      showFenChallengeModal(puzzle, null, null, true); // true = show reroll button
+      showFenChallengeModal(item, null, null, true); // true = show reroll button
     }
 
     function _syncFenDiffButtons(level) {
