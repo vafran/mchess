@@ -15627,7 +15627,16 @@ limitations under the License.
       }
 
       // ── Render ────────────────────────────────────────────────────────────
-      pList.innerHTML = notes.map(n => {
+      // Puzzle goal banner when a FEN challenge is loaded
+      let _fenBanner = '';
+      if (fenPositionLoaded && lastLoadedChallengeItem) {
+        const _bh = en ? (lastLoadedChallengeItem.hintEn || '') : (lastLoadedChallengeItem.hintEs || '');
+        if (_bh) {
+          _fenBanner = `<div style="border-left:4px solid var(--accent); padding:8px 12px; margin-bottom:10px; background:rgba(244,114,182,0.07); border-radius:4px; font-size:0.85rem;">🎓 <strong>${en ? 'Puzzle goal:' : 'Objetivo:'}</strong> ${_bh}</div>`;
+        }
+      }
+
+      pList.innerHTML = _fenBanner + notes.map(n => {
         const borderColor = n.color || 'var(--primary)';
         const bg = n.isEval
           ? (n.color === 'var(--success)' ? 'rgba(34,197,94,0.07)'
@@ -15832,7 +15841,10 @@ limitations under the License.
           const enemyColor = sideToAnalyze === 'w' ? 'b' : 'w';
 
           const afterCopy = simulateMove(board, move);
-          const isMate = inCheck(enemyColor, afterCopy) && getAllMovesForColor(enemyColor, afterCopy).length === 0;
+          const isMate1 = inCheck(enemyColor, afterCopy) && getAllMovesForColor(enemyColor, afterCopy).length === 0;
+          // Also treat engine-confirmed forced-mate lines as isMate (score > 50000 = forced mate)
+          const isForcedMate = !isMate1 && (opt.score !== undefined && opt.score > 50000);
+          const isMate = isMate1 || isForcedMate;
 
           const hanging = getImmediateHangingAfterMove(move, sideToAnalyze);
           let riskLevel = getMoveRiskLevel(move, sideToAnalyze);
@@ -15936,7 +15948,7 @@ limitations under the License.
 
           return {
             ...enrichedOpt, riskLevel, replyDelta: reply.delta, tacticalPenalty, hanging, isMate,
-            score: isMate ? 99999 : (opt.score !== undefined ? opt.score : 0)
+            score: isMate ? (isMate1 ? 99999 : opt.score) : (opt.score !== undefined ? opt.score : 0)
           };
         });
 
@@ -16345,9 +16357,11 @@ limitations under the License.
             ? `⚠️ <strong>You are being mated</strong> — try to hold on as long as possible:`
             : `⚠️ <strong>Te están dando jaque mate</strong> — intenta resistir el mayor tiempo posible:`;
         } else if (displayList.length === 1 && displayList[0].isMate) {
+          const _mScore = displayList[0].score || 99999;
+          const _mIn = _mScore >= 99990 ? 1 : Math.ceil((100000 - _mScore) / 2);
           msgTexto = en
-            ? '🏆 <strong>Checkmate in 1!</strong> This move ends the game:'
-            : '🏆 <strong>¡Jaque Mate en 1!</strong> Esta jugada termina la partida:';
+            ? `🏆 <strong>Mate in ${_mIn}!</strong> This move leads to forced checkmate:`
+            : `🏆 <strong>¡Jaque Mate en ${_mIn}!</strong> Esta jugada lleva al mate forzado:`;
         } else if (_posLosing) {
           msgTexto = en
             ? `The position is tough — here are your best options (${displayList.length}):`
@@ -16369,6 +16383,12 @@ limitations under the License.
           let strategicIntent = "";
           if (isBook) {
             strategicIntent = `<strong>${simplifyForKids(opt.name || '')}</strong>: ${simplifyForKids(opt.desc || '')}`;
+          } else if (opt.isMate) {
+            const _ms = opt.score || 99999;
+            const _mN = _ms >= 99990 ? 1 : Math.ceil((100000 - _ms) / 2);
+            strategicIntent = en
+              ? `This is the <strong>winning move</strong> — it leads to forced checkmate in ${_mN}!`
+              : `Esta es la <strong>jugada ganadora</strong> — lleva al mate forzado en ${_mN}!`;
           } else if (opt.tacticalPenalty > 250) {
             // CONTROL DE CORDURA: high tacticalPenalty means the penalty heuristics
             // flagged this move (hanging piece, abandoned ally, contested square).
@@ -16448,7 +16468,16 @@ limitations under the License.
           ? `<div style="margin-bottom:10px; padding:8px 10px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); font-size:0.82rem;">${t('emergencyCoachLine')}</div>`
           : '';
 
-        pList.innerHTML = `${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
+        // Puzzle goal banner — shown above engine moves when a FEN challenge is loaded
+        let _fenGoalBanner = '';
+        if (fenPositionLoaded && lastLoadedChallengeItem) {
+          const _gh = en ? (lastLoadedChallengeItem.hintEn || '') : (lastLoadedChallengeItem.hintEs || '');
+          if (_gh) {
+            _fenGoalBanner = `<div style="border-left:4px solid var(--accent); padding:8px 12px; margin-bottom:10px; background:rgba(244,114,182,0.07); border-radius:4px; font-size:0.85rem;">🎓 <strong>${en ? 'Puzzle goal:' : 'Objetivo:'}</strong> ${_gh}</div>`;
+          }
+        }
+
+        pList.innerHTML = `${_fenGoalBanner}${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
 
       } catch (err) {
         pList.innerHTML = `<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`;
@@ -18526,9 +18555,11 @@ limitations under the License.
         solution: ['f3e5', 'g4d1', 'c4f7', 'e8e7', 'c3d5']
       },
       {
-        cat: 'opening', nameEs: "Trampa: Gambito Budapest", nameEn: "Trap: Budapest Gambit",
-        descEs: "Juegan negras. El alfil blanco en f4 parece proteger el peón extra, pero hay una respuesta táctica que gana material. ¡Encuéntrala!",
-        descEn: "Black to move. White's bishop on f4 seems to guard the extra pawn, but there is a tactical reply that wins material. Find it!",
+        cat: 'opening', nameEs: "Apertura: Gambito Budapest", nameEn: "Opening: Budapest Gambit",
+        descEs: "Juegan negras. Negras sacrificó un peón (1.d4 Cf6 2.c4 e5) para obtener desarrollo rápido y presión activa. El objetivo es recuperar el peón con ventaja posicional.",
+        descEn: "Black to move. Black sacrificed a pawn (1.d4 Nf6 2.c4 e5) for rapid development and active piece play. The goal is to recover the pawn with a positional advantage.",
+        hintEs: "Juega Cc6 para presionar el peón en e5. Luego desarrolla con Ab4+ o Ac5. Negras tiene desarrollo activo como compensación por el peón — ¡las piezas valen más que los peones en la apertura!",
+        hintEn: "Play Nc6 to pressure the e5 pawn. Then develop with Bb4+ or Bc5. Black has active piece play as compensation for the pawn — pieces are worth more than pawns in the opening!",
         fen: "rnbqkb1r/pppp1ppp/8/4P3/2P2Bn1/8/PP2PPPP/RN1QKBNR b KQkq - 2 4"
       },
       {
@@ -18546,8 +18577,10 @@ limitations under the License.
       },
       {
         cat: 'opening', nameEs: "Trampa: Defensa Petrov — Error clásico", nameEn: "Trap: Petrov's Classical Blunder",
-        descEs: "Juegan blancas. Tras 1.e4 e5 2.Cf3 Cf6 3.Cxe5 Cxe4?? las negras caen en una trampa clásica. ¡Aprovecha con Dd2!",
+        descEs: "Juegan blancas. Tras 1.e4 e5 2.Cf3 Cf6 3.Cxe5 Cxe4?? las negras caen en una trampa clásica. ¡Aprovecha con De2!",
         descEn: "White to move. After 1.e4 e5 2.Nf3 Nf6 3.Nxe5 Nxe4?? Black falls into a classic trap. Play Qe2 and win a piece!",
+        hintEs: "De2! La dama ataca el caballo negro en e4. Si el caballo se mueve, Cxe4 gana. Si el caballo se queda, la dama lo captura. Las negras no pueden defender ambos caballos a la vez.",
+        hintEn: "Qe2! The queen attacks the black knight on e4. If the knight moves, Nxe4 wins it. If it stays, the queen takes it. Black cannot defend both knights at the same time.",
         fen: "rnbqkb1r/pppp1ppp/8/4N3/4n3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 4"
       },
       {
