@@ -18596,13 +18596,19 @@ limitations under the License.
         cat: 'tactic', nameEs: "Táctica: Debilidad del Pasillo — Patrón", nameEn: "Tactic: Back Rank Weakness — Pattern",
         descEs: "Juegan blancas. Los peones encierran al rey en el pasillo. ¿Ves la debilidad? Este patrón es muy frecuente en partidas.",
         descEn: "White to move. The pawns lock the king on the back rank. Can you spot the weakness? This pattern is very common in real games.",
-        fen: "6k1/5ppp/8/8/8/8/8/4R1K1 w - - 0 1"
+        hintEs: "El rey negro está atrapado detrás de sus propios peones — no puede escapar por la última fila. ¡Lleva la torre a e8 para dar jaque mate!",
+        hintEn: "The black king is trapped behind its own pawns — it cannot escape along the back rank. Bring the rook to e8 for checkmate!",
+        fen: "6k1/5ppp/8/8/8/8/8/4R1K1 w - - 0 1",
+        solution: ['e1e8']
       },
       {
         cat: 'tactic', nameEs: "Táctica: El Tenedor de Caballo", nameEn: "Tactic: Knight Fork",
-        descEs: "Juegan negras. El caballo puede saltar a una casilla que ataca al rey y a la torre simultáneamente. ¡Gana material!",
-        descEn: "Black to move. The knight can leap to a square that attacks the king and rook at the same time. Win material!",
-        fen: "1rr3k1/3bppbp/3p1np1/1B1N4/P2BP3/5P2/P2R2PP/R5K1 b - - 0 21"
+        descEs: "Juegan blancas. El caballo puede saltar a una casilla que ataca a la dama y a la torre negras al mismo tiempo. ¡Gana material y fuerza el mate!",
+        descEn: "White to move. The knight can leap to a square that attacks the black queen and rook at the same time. Win material and force checkmate!",
+        hintEs: "El caballo en f3 puede saltar a g5 atacando la dama en d8 y la torre en h7 a la vez. ¡El tenedor gana material y lleva al mate!",
+        hintEn: "The knight on f3 can jump to g5, attacking the queen on d8 and the rook on h7 at the same time. The fork wins material and leads to checkmate!",
+        fen: "rnbqkr2/ppp1bpQp/8/8/2p1R3/5N2/PPP2PPP/RNB3K1 w q - 1 10",
+        solution: ['f3g5', 'd8d1', 'e4e1', 'd1e1']
       },
       {
         cat: 'tactic', nameEs: "Táctica: La Clavada Absoluta", nameEn: "Tactic: Absolute Pin",
