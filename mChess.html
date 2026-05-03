@@ -19192,12 +19192,12 @@ limitations under the License.
       },
       {
         cat: 'tactic', nameEs: "Táctica: Desvío — Sacrificio Fatal", nameEn: "Tactic: Deflection — Fatal Sacrifice",
-        descEs: "Juegan negras. Sacrifica una pieza para apartar al defensor clave y forzar el mate.",
-        descEn: "Black to move. Sacrifice a piece to deflect the key defender and force checkmate.",
-        hintEs: "Mueve el rey negro a f8 — esto desvía la defensa blanca. La dama blanca en h7 queda fuera de posición y no puede evitar el mate en h8.",
-        hintEn: "Move the black king to f8 — this deflects the white defense. The white queen on h7 is out of position and cannot prevent mate on h8.",
-        fen: "rn1qr1k1/ppp3pQ/3p1pP1/3Pp3/2P1P3/8/PP3PP1/R1B1K3 b Q - 2 16",
-        solution: ['g8f8', 'h7h8', 'f8e7']
+        descEs: "Juegan blancas. Sacrifica la dama capturando la torre negra para forzar jaque mate en el pasillo.",
+        descEn: "White to move. Sacrifice the queen by capturing the black rook to force back rank checkmate.",
+        hintEs: "Toma la torre en d8 con la dama. El rey negro no puede escapar — el caballo cubre f7 y los peones bloquean g7 y h7.",
+        hintEn: "Take the rook on d8 with your queen. The black king cannot escape — the knight covers f7 and the pawns block g7 and h7.",
+        fen: "3r2k1/5ppp/8/3Q2N1/8/8/6PP/6K1 w - - 0 1",
+        solution: ['d5d8']
       },
       {
         cat: 'tactic', nameEs: "Táctica: Mate Ahogado", nameEn: "Tactic: Smothered Mate",
@@ -19219,21 +19219,21 @@ limitations under the License.
       },
       {
         cat: 'tactic', nameEs: "Táctica: Mate de Anastasia", nameEn: "Tactic: Anastasia's Mate",
-        descEs: "Juegan blancas. El caballo corta las casillas de escape del rey y la torre da el golpe final. ¡Patrón clásico!",
-        descEn: "White to move. The knight cuts off the king's escape squares and the rook delivers the final blow. A classic pattern!",
-        hintEs: "Mueve el peón a c4 para abrir la columna. El caballo en e6 corta las casillas del rey y la torre en e6 da jaque mate lateral.",
-        hintEn: "Move the pawn to c4 — it opens the line. The knight on e6 cuts off the king's squares and the rook on e6 delivers the lateral checkmate.",
-        fen: "8/p1p2kpp/1b2r3/8/8/3Rn1PK/PPP4P/4R3 w - - 2 27",
-        solution: ['c2c4']
+        descEs: "Juegan blancas. La torre va a a8 dando jaque mate — el caballo en g6 cubre las casillas de escape del rey. ¡Patrón clásico!",
+        descEn: "White to move. The rook goes to a8 for checkmate — the knight on g6 covers the king's escape squares. A classic pattern!",
+        hintEs: "Mueve la torre de a1 a a8. El rey negro en g8 no puede escapar: el caballo en g6 cubre h8, la torre cubre toda la 8ª fila, y la torre negra en f7 bloquea f7.",
+        hintEn: "Move the rook from a1 to a8. The black king on g8 cannot escape: the knight on g6 covers h8, the rook covers the entire 8th rank, and the black rook on f7 blocks f7.",
+        fen: "6k1/5rpp/6N1/8/8/8/8/R6K w - - 0 1",
+        solution: ['a1a8']
       },
       {
         cat: 'tactic', nameEs: "Táctica: Mate Árabe", nameEn: "Tactic: Arabian Mate",
-        descEs: "Juegan blancas. Torre y caballo forman una pareja letal — el caballo controla las casillas de escape y la torre da mate.",
-        descEn: "White to move. Rook and knight form a deadly duo — the knight controls the escape squares and the rook delivers checkmate.",
-        hintEs: "Mueve la dama a h2 para dar jaque. La torre en h7 da el golpe final — el caballo en f3 bloquea todas las escapatorias del rey en h8.",
-        hintEn: "Move the queen to h2 to give check. The rook on h7 delivers the final blow — the knight on f3 blocks all escape squares for the king on h8.",
-        fen: "r4k2/4bPpr/pp6/2p5/P3QB2/5n2/1P3P1q/R3R2K w - - 0 23",
-        solution: ['f4h2']
+        descEs: "Juegan blancas. Torre y caballo forman una pareja letal — el caballo cubre las casillas de escape y la torre da jaque mate.",
+        descEn: "White to move. Rook and knight form a deadly duo — the knight covers the escape squares and the rook delivers checkmate.",
+        hintEs: "Mueve la torre de h5 a h8, capturando la torre negra. El rey en g8 no puede escapar — el caballo en g6 cubre f8 y h8, y los peones bloquean f7, g7 y h7.",
+        hintEn: "Move the rook from h5 to h8, capturing the black rook. The king on g8 cannot escape — the knight on g6 covers f8 and h8, and the pawns block f7, g7 and h7.",
+        fen: "5rkr/5ppp/6N1/7R/8/8/8/6K1 w - - 0 1",
+        solution: ['h5h8']
       },
       {
         cat: 'tactic', nameEs: "Táctica: Zugzwang", nameEn: "Tactic: Zugzwang",
