@@ -6428,15 +6428,17 @@ limitations under the License.
           // Puzzle complete check (after last human move)
           if (puzzleMode && puzzleMode.step >= puzzleMode.solution.length) {
             const en = currentLanguage === 'en';
+            const isMateChallenge = lastLoadedChallengeItem && (lastLoadedChallengeItem.cat === 'mate' || lastLoadedChallengeItem.cat === 'opening');
             puzzleMode = null;
-            setTimeout(() => {
-              switchTab('professor');
-              const pList = document.getElementById('professorList');
-              pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--success); background:rgba(34,197,94,0.05); padding:12px; margin-bottom:10px;">
-                <span class="hint-icon">🏆</span>
-                <span class="hint-text">${en ? '🎉 <strong>Puzzle solved!</strong> Perfect — you found the winning line.' : '🎉 <strong>¡Puzzle resuelto!</strong> Perfecto — encontraste la línea ganadora.'}</span>
-              </div>`;
-            }, 600);
+            if (!isMateChallenge) {
+              setTimeout(() => {
+                showStatus(
+                  '🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'),
+                  en ? 'Perfect — you found the winning move!' : '¡Perfecto — encontraste la jugada ganadora!'
+                );
+              }, 600);
+            }
+            // For mate puzzles, checkGameOver() inside makeMove() will show the checkmate modal
           }
           return;
         }
@@ -6943,6 +6945,14 @@ limitations under the License.
       if (btnNext) {
         btnNext.style.display = lastLoadedFen ? '' : 'none';
         btnNext.textContent = t('nextChallenge');
+      }
+      const btnReview = document.getElementById('btnReviewGame');
+      if (btnReview) {
+        const en = currentLanguage === 'en';
+        const isHistorical = lastLoadedChallengeItem && lastLoadedChallengeItem.cat === 'historical';
+        btnReview.textContent = isHistorical
+          ? (en ? '▶️ Keep playing' : '▶️ Seguir jugando')
+          : t('reviewGame');
       }
       document.getElementById('statusBanner').classList.add('show');
     }
@@ -16468,16 +16478,7 @@ limitations under the License.
           ? `<div style="margin-bottom:10px; padding:8px 10px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); font-size:0.82rem;">${t('emergencyCoachLine')}</div>`
           : '';
 
-        // Puzzle goal banner — shown above engine moves when a FEN challenge is loaded
-        let _fenGoalBanner = '';
-        if (fenPositionLoaded && lastLoadedChallengeItem) {
-          const _gh = en ? (lastLoadedChallengeItem.hintEn || '') : (lastLoadedChallengeItem.hintEs || '');
-          if (_gh) {
-            _fenGoalBanner = `<div style="border-left:4px solid var(--accent); padding:8px 12px; margin-bottom:10px; background:rgba(244,114,182,0.07); border-radius:4px; font-size:0.85rem;">🎓 <strong>${en ? 'Puzzle goal:' : 'Objetivo:'}</strong> ${_gh}</div>`;
-          }
-        }
-
-        pList.innerHTML = `${_fenGoalBanner}${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
+        pList.innerHTML = `${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
 
       } catch (err) {
         pList.innerHTML = `<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`;
@@ -16501,6 +16502,21 @@ limitations under the License.
         </div>`;
         highlightBookMove(hintMove.fr, hintMove.fc, hintMove.tr, hintMove.tc);
         return;
+      }
+
+      // FEN challenge hint: show ONLY the coaching tip, bypass engine entirely
+      if (fenPositionLoaded && lastLoadedChallengeItem) {
+        const en = currentLanguage === 'en';
+        const hint = en ? (lastLoadedChallengeItem.hintEn || '') : (lastLoadedChallengeItem.hintEs || '');
+        if (hint) {
+          switchTab('professor');
+          const pList = document.getElementById('professorList');
+          pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--accent); padding:12px; margin-bottom:10px; background:rgba(244,114,182,0.07); border-radius:4px;">
+            <span class="hint-icon">🎓</span>
+            <span class="hint-text"><strong>${en ? 'Coach:' : 'Profesor:'}</strong> ${hint}</span>
+          </div>`;
+          return;
+        }
       }
 
       // 1. DETERMINAR TURNO Y PERMISOS (Soporte PvP)
@@ -18542,10 +18558,12 @@ limitations under the License.
       // ── TRAMPAS DE APERTURA ──────────────────────────────────────────────────
       {
         cat: 'opening', nameEs: "Trampa: Mate del Pastor", nameEn: "Trap: Scholar's Mate",
-        descEs: "Juegan blancas. El rey negro está muy expuesto. ¿Puedes dar mate rápido?",
-        descEn: "White to move. The black king is very exposed. Can you deliver checkmate quickly?",
-        fen: "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1",
-        solution: ['f3f7']
+        descEs: "Juegan blancas. Tienes el alfil en c4 apuntando a f7 y el caballo negro en c6. El rey negro está débil. ¿Puedes dar mate en dos jugadas?",
+        descEn: "White to move. Your bishop aims at f7 and the black knight is on c6. The black king is weak. Can you deliver checkmate in two moves?",
+        hintEs: "Lleva la dama a h5. Amenaza mate en f7 y ataca el peón en e5. Si el caballo negro intenta defender jugando Cf6, ¡la dama da mate en f7!",
+        hintEn: "Bring the queen to h5. It threatens mate on f7 and attacks the e5 pawn. If the black knight tries to defend by playing Nf6, the queen delivers checkmate on f7!",
+        fen: "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR w KQkq e6 2 3",
+        solution: ['d1h5', 'g8f6', 'h5f7']
       },
       {
         cat: 'opening', nameEs: "Trampa: Mate de Legal", nameEn: "Trap: Légal's Mate",
@@ -18555,39 +18573,22 @@ limitations under the License.
         solution: ['f3e5', 'g4d1', 'c4f7', 'e8e7', 'c3d5']
       },
       {
-        cat: 'opening', nameEs: "Apertura: Gambito Budapest", nameEn: "Opening: Budapest Gambit",
-        descEs: "Juegan negras. Negras sacrificó un peón (1.d4 Cf6 2.c4 e5) para obtener desarrollo rápido y presión activa. El objetivo es recuperar el peón con ventaja posicional.",
-        descEn: "Black to move. Black sacrificed a pawn (1.d4 Nf6 2.c4 e5) for rapid development and active piece play. The goal is to recover the pawn with a positional advantage.",
-        hintEs: "Juega Cc6 para presionar el peón en e5. Luego desarrolla con Ab4+ o Ac5. Negras tiene desarrollo activo como compensación por el peón — ¡las piezas valen más que los peones en la apertura!",
-        hintEn: "Play Nc6 to pressure the e5 pawn. Then develop with Bb4+ or Bc5. Black has active piece play as compensation for the pawn — pieces are worth more than pawns in the opening!",
-        fen: "rnbqkb1r/pppp1ppp/8/4P3/2P2Bn1/8/PP2PPPP/RN1QKBNR b KQkq - 2 4"
+        cat: 'opening', nameEs: "Trampa: Mate del Loco", nameEn: "Trap: Fool's Mate",
+        descEs: "Juegan negras. Las blancas han debilitado gravemente su rey con f3 y van a jugar g4. ¡Es el mate más rápido de la historia del ajedrez!",
+        descEn: "Black to move. White has fatally weakened their king with f3 and is about to play g4. It's the fastest checkmate in the history of chess!",
+        hintEs: "Primero juega e5 para controlar el centro. Cuando las blancas cometan el error de jugar g4, ¡la dama va a h4 y es jaque mate!",
+        hintEn: "First play e5 to control the center. When White blunders g4, bring the queen to h4 — that's checkmate!",
+        fen: "rnbqkbnr/pppppppp/8/8/8/5P2/PPPPP1PP/RNBQKBNR b KQkq - 0 1",
+        solution: ['e7e5', 'g2g4', 'd8h4']
       },
       {
-        cat: 'opening', nameEs: "Trampa: Fried Liver", nameEn: "Trap: Fried Liver Attack",
-        descEs: "Juegan blancas. El rey negro no ha enrocado todavía. ¿Puedes lanzar un ataque decisivo?",
-        descEn: "White to move. The black king hasn't castled yet. Can you launch a decisive attack?",
-        fen: "r1bqkb1r/ppp2ppp/2n5/3np1N1/2B5/8/PPPP1PPP/RNBQK2R w KQkq - 0 6",
-        solution: ['g5f7', 'e8f7']
-      },
-      {
-        cat: 'opening', nameEs: "Trampa: Gambito de Rey", nameEn: "Trap: King's Gambit",
-        descEs: "Juegan negras. Blancas ofrece el peón f4 para ganar el centro. ¿Lo aceptas o lo rechazas?",
-        descEn: "Black to move. White offers the f4 pawn for rapid development and center control. Accept or decline?",
-        fen: "rnbqkbnr/pppp1ppp/8/4p3/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2"
-      },
-      {
-        cat: 'opening', nameEs: "Trampa: Defensa Petrov — Error clásico", nameEn: "Trap: Petrov's Classical Blunder",
-        descEs: "Juegan blancas. Tras 1.e4 e5 2.Cf3 Cf6 3.Cxe5 Cxe4?? las negras caen en una trampa clásica. ¡Aprovecha con De2!",
-        descEn: "White to move. After 1.e4 e5 2.Nf3 Nf6 3.Nxe5 Nxe4?? Black falls into a classic trap. Play Qe2 and win a piece!",
-        hintEs: "De2! La dama ataca el caballo negro en e4. Si el caballo se mueve, Cxe4 gana. Si el caballo se queda, la dama lo captura. Las negras no pueden defender ambos caballos a la vez.",
-        hintEn: "Qe2! The queen attacks the black knight on e4. If the knight moves, Nxe4 wins it. If it stays, the queen takes it. Black cannot defend both knights at the same time.",
-        fen: "rnbqkb1r/pppp1ppp/8/4N3/4n3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 4"
-      },
-      {
-        cat: 'opening', nameEs: "Trampa: Gambito Halloween", nameEn: "Trap: Halloween Gambit",
-        descEs: "Juegan blancas. Sacrifica el caballo para ganar el centro con los peones. ¡Una apertura agresiva y sorprendente!",
-        descEn: "White to move. Sacrifice the knight to seize the center with pawns. An aggressive and surprising opening gambit!",
-        fen: "r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 4 4"
+        cat: 'opening', nameEs: "Trampa: Gambito Ponziani — Atracción Fatal", nameEn: "Trap: Ponziani Gambit — Fatal Attraction",
+        descEs: "Juegan negras. Las blancas parecen tener un ataque feroz, pero hay una combinación brillante que atrae al rey blanco a una red de mate en 4 jugadas.",
+        descEn: "Black to move. White seems to have a fierce attack, but there is a brilliant combination that lures the white king into a mating net in 4 moves.",
+        hintEs: "Mueve el caballo a e5 para abrir líneas. Las blancas responderán con el alfil a g5 — ¡entonces empieza la trampa! Cada captura arrastra al rey blanco más cerca del mate.",
+        hintEn: "Move the knight to e5 to open lines. White will respond with bishop to g5 — then the trap begins! Each capture drags the white king closer to checkmate.",
+        fen: "r1bk1b1r/ppp2Bpp/2npP3/8/6Q1/6P1/PPP2P2/RNB2KNq b - - 2 10",
+        solution: ['c6e5', 'c1g5', 'f8e7', 'g5e7', 'd8e7', 'g4g5', 'e7f8', 'g5d8']
       },
 
       // ── TÁCTICAS FUNDAMENTALES ───────────────────────────────────────────────
@@ -18781,7 +18782,8 @@ limitations under the License.
         nameEn: "🪙 The Golden Rain — Marshall 1912",
         descEs: "Juegan negras — posición exacta (movimiento 23). Marshall jugó aquí la jugada más famosa de la historia. Los espectadores lanzaron monedas de oro al tablero. ¿Puedes descubrir qué hizo? Desbloquea el trofeo 🪙 La Lluvia de Oro.",
         descEn: "Black to move — exact game position (move 23). Marshall played here what many call the most famous move in history. Spectators threw gold coins onto the board. Can you find what he did? Unlocks the 🪙 Golden Rain trophy.",
-        fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23"
+        fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23",
+        solution: ['c3g3']
       },
       {
         cat: 'historical',
@@ -18789,7 +18791,8 @@ limitations under the License.
         nameEn: "💥 The Cannon Shot — Vladimirov 1987",
         descEs: "Juegan blancas. Vladimirov sorprendió al mundo en 1987 con un sacrificio de pieza explosivo — iniciativa y coordinación por encima del material. ¿Puedes encontrar la misma jugada genial? Desbloquea el trofeo 💥 El Cañonazo.",
         descEn: "White to move. Vladimirov stunned the world in 1987 with an explosive piece sacrifice — initiative and coordination over material. Can you find the same brilliant move? Unlocks the 💥 Cannon Shot trophy.",
-        fen: "r4k1r/1b2bPR1/p4n2/3p4/4P2P/1q2B2B/PpP5/1K4R1 w - - 0 26"
+        fen: "r4k1r/1b2bPR1/p4n2/3p4/4P2P/1q2B2B/PpP5/1K4R1 w - - 0 26",
+        solution: ['g7g8']
       },
       {
         cat: 'historical',
@@ -18797,7 +18800,8 @@ limitations under the License.
         nameEn: "🚂 The Locomotive — Ortueta vs Sanz 1933",
         descEs: "Juegan negras — posición exacta (movimiento 31). En Madrid 1933, Sanz jugó una combinación que muchos llaman inmortal. Los peones pueden ser más poderosos que las torres. ¿Ves cómo? Desbloquea el trofeo 🚂 La Locomotora.",
         descEn: "Black to move — exact game position (move 31). In Madrid 1933, Sanz played a combination many call immortal. Pawns can be more powerful than rooks. Can you see how? Unlocks the 🚂 Locomotive trophy.",
-        fen: "8/pR4pk/1b2p3/2p3p1/N1p5/7P/PP1r2P1/6K1 b - - 2 31"
+        fen: "8/pR4pk/1b2p3/2p3p1/N1p5/7P/PP1r2P1/6K1 b - - 2 31",
+        solution: ['d2b2']
       },
       {
         cat: 'historical',
@@ -18805,7 +18809,8 @@ limitations under the License.
         nameEn: "🔥 Fire on the Board — Shirov vs Topalov 1998",
         descEs: "Juegan negras — posición exacta (movimiento 47). Shirov jugó en Linares 1998 una de las jugadas más bellas de la historia — un sacrificio de pieza tan preciso como estético. ¿Puedes encontrarla? Desbloquea el trofeo 🔥 Fuego en el Tablero.",
         descEn: "Black to move — exact game position (move 47). Shirov played in Linares 1998 one of the most beautiful moves in history — a piece sacrifice as precise as it is elegant. Can you find it? Unlocks the 🔥 Fire on the Board trophy.",
-        fen: "8/8/4kpp1/3p1b2/p6P/2B5/6P1/6K1 b - - 2 47"
+        fen: "8/8/4kpp1/3p1b2/p6P/2B5/6P1/6K1 b - - 2 47",
+        solution: ['f5h3']
       },
 
       // ── MATES ────────────────────────────────────────────────────────────────
