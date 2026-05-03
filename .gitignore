@@ -41,3 +41,4 @@ pr_*.md
 
 # === Tournament screenshot analysis folders ===
 stockfish_tests/Tournament_*/test_profile.airin
+*.csv
