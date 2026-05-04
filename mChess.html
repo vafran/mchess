@@ -4960,7 +4960,7 @@ limitations under the License.
 
       // 🧘 FEN Master — fallback check on move
       const _fenCats = ['opening', 'mate1', 'mate2', 'mate3', 'mate4'];
-      if (_fenCats.every(cat => (profile.completedChallenges || []).filter(c => c.cat === cat).length >= 2))
+      if (_fenCats.every(cat => (currentProfile.completedChallenges || []).filter(c => c.cat === cat).length >= 2))
         unlockTrophy('fen_master');
 
       // 🔫 Artillería Pesada — Two own rooks on same column, path clear between them
