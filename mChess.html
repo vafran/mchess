@@ -3796,17 +3796,18 @@ limitations under the License.
         🎲 Reto Aleatorio
       </button>
 
-      <div class="panel-tabs" style="margin-bottom: 10px;">
-        <button class="panel-tab-btn active" onclick="renderFenList('all')" id="tabFen-all">Todas</button>
-        <button class="panel-tab-btn" onclick="renderFenList('opening')" id="tabFen-opening">Aperturas</button>
-        <button class="panel-tab-btn" onclick="renderFenList('tactic')" id="tabFen-tactic">Táctica</button>
-        <button class="panel-tab-btn" onclick="renderFenList('endgame')" id="tabFen-endgame">Finales</button>
+      <div class="panel-tabs" style="margin-bottom: 10px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none;">
+        <button class="panel-tab-btn active" onclick="renderFenList('opening')" id="tabFen-opening" style="white-space: nowrap; flex-shrink: 0;">Aperturas</button>
+        <button class="panel-tab-btn" onclick="renderFenList('mate1')" id="tabFen-mate1"
+          style="flex-shrink:0; white-space:nowrap; background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.10)); border-color:rgba(239,68,68,0.4); color:var(--text);">Mate 1</button>
+        <button class="panel-tab-btn" onclick="renderFenList('mate2')" id="tabFen-mate2"
+          style="flex-shrink:0; white-space:nowrap; background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.10)); border-color:rgba(239,68,68,0.4); color:var(--text);">Mate 2</button>
+        <button class="panel-tab-btn" onclick="renderFenList('mate3')" id="tabFen-mate3"
+          style="flex-shrink:0; white-space:nowrap; background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.10)); border-color:rgba(239,68,68,0.4); color:var(--text);">Mate 3</button>
+        <button class="panel-tab-btn" onclick="renderFenList('mate4')" id="tabFen-mate4"
+          style="flex-shrink:0; white-space:nowrap; background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.10)); border-color:rgba(239,68,68,0.4); color:var(--text);">Mate 4</button>
         <button class="panel-tab-btn" onclick="renderFenList('historical')" id="tabFen-historical"
-          style="background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.10)); border-color:rgba(251,191,36,0.4); color:var(--text);">📜
-          Leyendas</button>
-        <button class="panel-tab-btn" onclick="renderFenList('mate')" id="tabFen-mate"
-          style="background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.10)); border-color:rgba(239,68,68,0.4); color:var(--text);">♟
-          Mates</button>
+          style="flex-shrink:0; white-space:nowrap; background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.10)); border-color:rgba(251,191,36,0.4); color:var(--text);">Leyendas</button>
       </div>
 
       <div id="fenLibraryList" style="overflow-y: auto; flex: 1; text-align: left; padding-right: 5px;">
@@ -6952,7 +6953,7 @@ limitations under the License.
           // Puzzle complete check (after last human move)
           if (puzzleMode && puzzleMode.step >= puzzleMode.solution.length) {
             const en = currentLanguage === 'en';
-            const isMateChallenge = lastLoadedChallengeItem && (lastLoadedChallengeItem.cat === 'mate' || lastLoadedChallengeItem.cat === 'opening');
+            const isMateChallenge = lastLoadedChallengeItem && (lastLoadedChallengeItem.cat === 'mate1' || lastLoadedChallengeItem.cat === 'mate2' || lastLoadedChallengeItem.cat === 'mate3' || lastLoadedChallengeItem.cat === 'mate4' || lastLoadedChallengeItem.cat === 'opening');
             puzzleMode = null;
             if (!isMateChallenge) {
               setTimeout(() => {
@@ -15090,14 +15091,13 @@ limitations under the License.
           const name = lang === 'en' ? (item.nameEn || item.nameEs) : (item.nameEs || item.nameEn);
           const desc = lang === 'en' ? (item.descEn || item.descEs) : (item.descEs || item.descEn);
           const catLabels = {
-            en: { opening: 'Opening trap', tactic: 'Tactical puzzle', endgame: 'Endgame study', historical: 'Historical position', mate: 'Checkmate challenge' },
-            es: { opening: 'Trampa de apertura', tactic: 'Puzzle táctico', endgame: 'Estudio de final', historical: 'Posición histórica', mate: 'Desafío de mate' }
+            en: { opening: 'Opening trap', historical: 'Historical position', mate1: 'Mate in 1', mate2: 'Mate in 2', mate3: 'Mate in 3', mate4: 'Mate in 4' },
+            es: { opening: 'Trampa de apertura', historical: 'Posición histórica', mate1: 'Mate en 1', mate2: 'Mate en 2', mate3: 'Mate en 3', mate4: 'Mate en 4' }
           };
           const catLabel = (catLabels[lang][item.cat] || (lang === 'en' ? 'Challenge' : 'Desafío'));
-          const mateTag = item.mateIn ? (lang === 'en' ? ` — Mate in ${item.mateIn}` : ` — Mate en ${item.mateIn}`) : '';
           const intro = lang === 'en'
-            ? `🧩 <strong>${catLabel}${mateTag}:</strong> ${name}. ${desc} Think carefully before moving!`
-            : `🧩 <strong>${catLabel}${mateTag}:</strong> ${name}. ${desc} ¡Piensa bien antes de mover!`;
+            ? `🧩 <strong>${catLabel}:</strong> ${name}. ${desc} Think carefully before moving!`
+            : `🧩 <strong>${catLabel}:</strong> ${name}. ${desc} ¡Piensa bien antes de mover!`;
           list.innerHTML = `<div class="commentary-entry" style="border-left: 4px solid var(--accent); padding: 8px 10px; background: rgba(168,85,247,0.05);"><span class="hint-text"><em>${intro}</em></span></div>`;
           return;
         }
@@ -19126,121 +19126,6 @@ limitations under the License.
         solution: ['c1g5', 'f8e7', 'g5e7', 'd8e7', 'g4g5', 'e7f8', 'g5d8']
       },
 
-      // ── TÁCTICAS FUNDAMENTALES ───────────────────────────────────────────────
-      {
-        cat: 'tactic', nameEs: "Táctica: Debilidad del Pasillo — Patrón", nameEn: "Tactic: Back Rank Weakness — Pattern",
-        descEs: "Juegan blancas. Los peones encierran al rey en el pasillo. ¿Ves la debilidad? Este patrón es muy frecuente en partidas.",
-        descEn: "White to move. The pawns lock the king on the back rank. Can you spot the weakness? This pattern is very common in real games.",
-        hintEs: "El rey negro está atrapado detrás de sus propios peones — no puede escapar por la última fila. ¡Lleva la torre a e8 para dar jaque mate!",
-        hintEn: "The black king is trapped behind its own pawns — it cannot escape along the back rank. Bring the rook to e8 for checkmate!",
-        fen: "6k1/5ppp/8/8/8/8/8/4R1K1 w - - 0 1",
-        solution: ['e1e8']
-      },
-      {
-        cat: 'tactic', nameEs: "Táctica: Mate Ahogado", nameEn: "Tactic: Smothered Mate",
-        descEs: "Juegan negras. El rey blanco está rodeado y atrapado por sus propias piezas. ¡El caballo negro da el golpe final!",
-        descEn: "Black to move. The white king is surrounded and trapped by its own pieces. The black knight delivers the final blow!",
-        hintEs: "El rey blanco en h1 está completamente rodeado: el peón en g2, el peón en h2 y la propia torre en g1 le bloquean todas las salidas. ¡El caballo negro salta a f2 para dar jaque mate!",
-        hintEn: "The white king on h1 is completely surrounded: the pawn on g2, the pawn on h2, and the rook on g1 block all its exits. The black knight jumps to f2 for checkmate!",
-        fen: "6k1/8/8/8/4n3/8/6PP/6RK b - - 0 1",
-        solution: ['e4f2']
-      },
-      {
-        cat: 'tactic', nameEs: "Táctica: Mate de Anastasia", nameEn: "Tactic: Anastasia's Mate",
-        descEs: "Juegan blancas. La torre va a a8 dando jaque mate — el caballo en g6 cubre todas las casillas de escape del rey. ¡Patrón clásico!",
-        descEn: "White to move. The rook goes to a8 for checkmate — the knight on g6 covers all of the king's escape squares. A classic pattern!",
-        hintEs: "Mueve la torre de a1 a a8. El rey negro en g8 no puede escapar: el caballo en g6 cubre f8 y h8, los peones propios bloquean g7 y h7, y la torre negra en f7 bloquea f7.",
-        hintEn: "Move the rook from a1 to a8. The black king on g8 cannot escape: the knight on g6 covers f8 and h8, own pawns block g7 and h7, and the black rook on f7 blocks f7.",
-        fen: "6k1/5rpp/6N1/8/8/8/8/R6K w - - 0 1",
-        solution: ['a1a8']
-      },
-
-      // ── FINALES CLÁSICOS ─────────────────────────────────────────────────────
-      {
-        cat: 'endgame', nameEs: "Final: Mate de la Escalera", nameEn: "Endgame: Ladder Mate",
-        descEs: "Juegan blancas. Acorrala al rey con las dos torres.",
-        descEn: "White to move. Trap the king in the corner with your two rooks.",
-        fen: "8/8/8/8/k7/8/1R6/2R4K w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Mate de Dama", nameEn: "Endgame: Queen Mate",
-        descEs: "Juegan blancas. Lleva al rey negro a la esquina con tu dama.",
-        descEn: "White to move. Drive the black king to the corner with your queen.",
-        fen: "8/8/8/8/8/3k4/8/3KQ3 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Oposición de Reyes", nameEn: "Endgame: King Opposition",
-        descEs: "Juegan blancas. El rey negro bloquea el paso. Gana la oposición directa para abrir el camino al peón.",
-        descEn: "White to move. The black king blocks the way. Win the direct opposition to clear the path for your pawn.",
-        fen: "8/8/8/3k4/3P4/8/3K4/8 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Coronación de Peón", nameEn: "Endgame: Pawn Promotion",
-        descEs: "Juegan negras. Usa el rey para escoltar el peón hasta coronar. ¡El rey blanco no puede llegar a tiempo!",
-        descEn: "Black to move. Use the king to escort the pawn to promotion. The white king cannot stop it in time!",
-        fen: "8/8/8/8/3k4/3p4/8/4K3 b - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Torre y Peón vs Torre", nameEn: "Endgame: Rook and Pawn vs Rook",
-        descEs: "Juegan blancas. Aprende la posición de Lucena para ganar.",
-        descEn: "White to move. Learn the Lucena position to convert the extra pawn.",
-        fen: "1K1k4/1P6/8/8/8/8/r7/4R3 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Posición de Philidor", nameEn: "Endgame: Philidor Position",
-        descEs: "Juegan negras. La defensa Philidor: coloca la torre en la 6ª fila para mantener las tablas. ¡Es la única forma de resistir!",
-        descEn: "Black to move. The Philidor defense: place your rook on the 6th rank to hold the draw. It's the only way to resist!",
-        fen: "4k3/8/4r3/3P4/3K4/8/8/4R3 b - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Peón Pasado Imparable", nameEn: "Endgame: Unstoppable Passer",
-        descEs: "Juegan blancas. El peón pasado en la 7ª fila corona.",
-        descEn: "White to move. The passed pawn on the 7th rank is unstoppable.",
-        fen: "8/P5k1/8/8/8/8/6K1/8 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Rey y Peón vs Rey — Regla del cuadrado", nameEn: "Endgame: King & Pawn — Square Rule",
-        descEs: "Juegan negras. ¿Puede el rey negro alcanzar el cuadrado del peón?",
-        descEn: "Black to move. Can the black king enter the pawn's square to stop it?",
-        fen: "8/8/8/3P4/8/8/8/k5K1 b - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Alfil del Color Equivocado", nameEn: "Endgame: Wrong Bishop",
-        descEs: "Juegan blancas. El alfil no controla la casilla de coronación. Tablas.",
-        descEn: "White to move. The bishop doesn't control the promotion square. It's a draw!",
-        fen: "8/6pk/8/8/8/8/6PB/6K1 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Mate de Torre y Peón", nameEn: "Endgame: Rook and Pawn Mate",
-        descEs: "Juegan blancas. La torre corta al rey. El peón corona.",
-        descEn: "White to move. The rook cuts off the enemy king. Advance the pawn.",
-        fen: "8/8/8/8/2k5/8/3PK3/3R4 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Dos Alfiles vs Rey", nameEn: "Endgame: Two Bishops vs King",
-        descEs: "Juegan blancas. Usa los dos alfiles para acorralar al rey.",
-        descEn: "White to move. Use both bishops to drive the king to the corner.",
-        fen: "8/8/8/3k4/8/8/8/3KBB2 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Peones Doblados Perdedores", nameEn: "Endgame: Doubled Pawns Weakness",
-        descEs: "Juegan blancas. Los peones doblados son débiles. Gana el peón.",
-        descEn: "White to move. The doubled pawns are a fatal weakness. Win the pawn.",
-        fen: "8/8/4k3/8/4K3/4P3/4P3/8 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Torres Activas vs Pasivas", nameEn: "Endgame: Active vs Passive Rook",
-        descEs: "Juegan blancas. La torre activa domina. Avanza el rey para escoltar el peón a la coronación.",
-        descEn: "White to move. The active rook dominates. March the king forward to escort the pawn to promotion.",
-        fen: "8/r7/8/3K4/3P4/8/8/3R2k1 w - - 0 1"
-      },
-      {
-        cat: 'endgame', nameEs: "Final: Peón a — La Fortaleza del Rey", nameEn: "Endgame: The a-Pawn Stalemate Trap",
-        descEs: "Juegan blancas. El peón a llega a la última fila, pero ¡cuidado con el ahogado! ¿Puedes coronar sin empatar?",
-        descEn: "White to move. The a-pawn is about to promote, but watch out for stalemate! Can you queen without drawing?",
-        fen: "k7/P7/K7/8/8/8/8/8 w - - 0 1"
-      },
-
       // ── LEYENDAS: PARTIDAS HISTÓRICAS ────────────────────────────────────────
       {
         cat: 'historical',
@@ -19282,42 +19167,42 @@ limitations under the License.
       // ── MATES ────────────────────────────────────────────────────────────────
       // Mate in 1
       {
-        cat: 'mate', mateIn: 1,
+        cat: 'mate1',
         nameEs: "Mate en 1 — Jaque de pasillo", nameEn: "Mate in 1 — Back Rank",
         descEs: "Juegan blancas. El rey negro no tiene escapatoria. ¿Cuál es la jugada ganadora?",
         descEn: "White to move. The black king has no escape. What is the winning move?",
         fen: "3r2k1/ppp2ppp/8/8/8/8/PPP2PPP/3R2K1 w - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 1,
+        cat: 'mate1',
         nameEs: "Mate en 1 — La Dama", nameEn: "Mate in 1 — Queen Delivers",
         descEs: "Juegan blancas. El rey negro está acorralado. Una sola jugada es mate.",
         descEn: "White to move. The black king is cornered. One move is checkmate.",
         fen: "k7/2Q5/1K6/8/8/8/8/8 w - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 1,
+        cat: 'mate1',
         nameEs: "Mate en 1 — Torre al Pasillo", nameEn: "Mate in 1 — Back Rank Rook",
         descEs: "Juegan blancas. El rey negro está atrapado en la última fila. ¿Puedes dar mate?",
         descEn: "White to move. The black king is trapped on the back rank. Can you deliver checkmate?",
         fen: "4k3/8/4K3/8/8/8/8/R7 w - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 1,
+        cat: 'mate1',
         nameEs: "Mate en 1 — Patrón de Anastasia", nameEn: "Mate in 1 — Anastasia's Pattern",
         descEs: "Juegan blancas. La torre cruza por la tercera fila hasta la columna 'h' para dar el golpe de gracia, aprovechando que el caballo corta los escapes del rey.",
         descEn: "White to move. The rook swings across the 3rd rank to the 'h' file for the final blow, while the knight covers the king's escape squares.",
         fen: "8/4N1pk/8/8/8/R7/8/6K1 w - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 1,
+        cat: 'mate1',
         nameEs: "Mate en 1 — Mate de Boden", nameEn: "Mate in 1 — Boden's Mate",
         descEs: "Juegan blancas. Los dos alfiles se cruzan como espadas para atrapar al rey negro. Un alfil corta los escapes, el otro da el golpe final.",
         descEn: "White to move. Two criss-crossing bishops slice through the defense to trap the black king. One cuts escapes, the other delivers the final blow.",
         fen: "2kr4/p2p4/8/8/5B2/3B4/8/6K1 w - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 1,
+        cat: 'mate1',
         nameEs: "Mate en 1 — El Salto del Caballo", nameEn: "Mate in 1 — Knight's Leap",
         descEs: "Juegan blancas. El rey negro está en la esquina sin escapatoria. ¿Encuentras el mate?",
         descEn: "White to move. The black king is in the corner with no way out. Can you find checkmate?",
@@ -19326,70 +19211,70 @@ limitations under the License.
 
       // Mate in 2
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Desviación y Peón", nameEn: "Mate in 2 — Deflection and Pawn",
         descEs: "Juegan blancas. El rey negro está en apuros. ¿Puedes dar mate en dos jugadas?",
         descEn: "White to move. The black king is in trouble. Can you deliver checkmate in two moves?",
         fen: "8/8/p3p3/3b1pR1/1B3P1k/8/4r1PK/8 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Peón y Alfil", nameEn: "Mate in 2 — Pawn and Bishop",
         descEs: "Juegan blancas. El rey negro tiene pocas casillas. ¿Puedes forzar el mate en dos?",
         descEn: "White to move. The black king has few squares. Can you force checkmate in two?",
         fen: "3n4/1R6/p5k1/2B5/1P3PK1/r7/8/8 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Alfil y Torre", nameEn: "Mate in 2 — Bishop and Rook",
         descEs: "Juegan blancas. El rey negro está acorralado. Encuentra la combinación de mate en dos.",
         descEn: "White to move. The black king is cornered. Find the two-move mating combination.",
         fen: "k2r4/ppRn2p1/6p1/1P3p2/3p1B2/6P1/P4PBP/4n1K1 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Cebo de Torre", nameEn: "Mate in 2 — Rook Lure",
         descEs: "Juegan blancas. El rey negro parece a salvo en su esquina. ¿Puedes atraparlo en dos jugadas?",
         descEn: "White to move. The black king seems safe in its corner. Can you trap it in two moves?",
         fen: "6k1/p2p2p1/8/3np1N1/1P5R/3q2P1/5RKP/8 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Sacrificio Desviador", nameEn: "Mate in 2 — Deflecting Sacrifice",
         descEs: "Juegan negras. El rey blanco tiene un defensor clave. ¿Puedes eliminarlo y dar mate en dos?",
         descEn: "Black to move. The white king has a key defender. Can you remove it and deliver mate in two?",
         fen: "1k1r4/pp5R/2p5/P5p1/7b/4Pq2/1PQ2P2/3NK3 b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Caballo y Peón", nameEn: "Mate in 2 — Knight and Pawn",
         descEs: "Juegan blancas. El rey negro está en una posición débil. Encuentra la secuencia de mate en dos.",
         descEn: "White to move. The black king is in a weak position. Find the two-move mating sequence.",
         fen: "1r3k2/4R3/1p4Pp/p1pN1p2/2Pn1K2/1P6/1P6/8 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Caza del Rey", nameEn: "Mate in 2 — King Hunt",
         descEs: "Juegan negras. El rey blanco está expuesto en el centro. ¡Es tu oportunidad de atacar!",
         descEn: "Black to move. The white king is exposed in the center. This is your chance to attack!",
         fen: "5bk1/R4p1p/6p1/8/3p2K1/1Q4P1/1P3P1q/2r5 b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Clavada Mortal", nameEn: "Mate in 2 — Deadly Pin",
         descEs: "Juegan blancas. Una pieza negra está clavada y no puede defender al rey. ¿Puedes aprovecharla?",
         descEn: "White to move. One black piece is pinned and cannot defend its king. Can you exploit it?",
         fen: "3rr2k/pp1b2b1/4q1pp/2Pp1p2/3B4/1P2QNP1/P6P/R4RK1 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — La Dama al Rescate", nameEn: "Mate in 2 — Queen to the Rescue",
         descEs: "Juegan blancas. Parece que la torre dará el mate, pero hay un giro inesperado. ¿Ves quién da el golpe final?",
         descEn: "White to move. It looks like a rook will deliver the checkmate, but there is a surprising twist. Can you see who lands the final blow?",
         fen: "3r2k1/6pp/1nQ1R3/3r4/3N2q1/6N1/n4PPP/4R1K1 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 2,
+        cat: 'mate2',
         nameEs: "Mate en 2 — Apertura de Líneas", nameEn: "Mate in 2 — Opening Lines",
         descEs: "Juegan blancas. El rey negro tiene pocas defensas. Busca la jugada que abre todas las líneas.",
         descEn: "White to move. The black king has little defense. Find the move that opens all the lines.",
@@ -19398,91 +19283,91 @@ limitations under the License.
 
       // Mate in 3
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Rey al Descubierto", nameEn: "Mate in 3 — Exposed King",
         descEs: "Juegan negras. El rey blanco ha salido demasiado pronto. ¿Puedes castigarlo con mate en tres?",
         descEn: "Black to move. The white king came out too early. Can you punish it with checkmate in three?",
         fen: "r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Sacrificio de Dama y Torre", nameEn: "Mate in 3 — Queen Sac and Back Rank",
         descEs: "Juegan blancas. El rey negro está débilmente protegido. ¿Puedes encontrar el mate en tres jugadas?",
         descEn: "White to move. The black king is weakly protected. Can you find checkmate in three moves?",
         fen: "r1b3kr/ppp1Bp1p/1b6/n2P4/2p3q1/2Q2N2/P4PPP/RN2R1K1 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Dama Sacrificada", nameEn: "Mate in 3 — Queen Sacrifice",
         descEs: "Juegan negras. El rey blanco está expuesto. Hay una combinación brillante que fuerza mate en tres.",
         descEn: "Black to move. The white king is exposed. There is a brilliant combination that forces checkmate in three.",
         fen: "rn3rk1/p5pp/2p5/3Ppb2/2q5/1Q6/PPPB2PP/R3K1NR b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Torre, Dama y Caballo", nameEn: "Mate in 3 — Rook, Queen and Knight",
         descEs: "Juegan blancas. El rey negro está encerrado en la esquina. ¿Puedes tejer la red de mate en tres?",
         descEn: "White to move. The black king is locked in the corner. Can you weave the mating net in three?",
         fen: "r1bq1r1k/pp2n1pp/8/3N1p2/2B4R/8/PPP2QPP/7K w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Red de Mate Central", nameEn: "Mate in 3 — Central Mating Net",
         descEs: "Juegan blancas. El rey negro está en el centro sin refugio. Encuentra la secuencia de mate en tres.",
         descEn: "White to move. The black king is in the center with no shelter. Find the three-move mating sequence.",
         fen: "rnb1qr2/ppp1Nkp1/3p4/4P1B1/7Q/5N2/PPP3PP/R3K2n w Q - 1 0"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Sacrificio Destructor", nameEn: "Mate in 3 — Destructive Sacrifice",
         descEs: "Juegan negras. El rey blanco parece protegido, pero sus peones son su talón de Aquiles. ¿Lo ves?",
         descEn: "Black to move. The white king looks protected, but its pawns are its weakness. Can you see it?",
         fen: "5rk1/1bR2pbp/4p1p1/8/1p1P1PPq/1B2P2r/P2NQ2P/5RK1 b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Extracción del Rey", nameEn: "Mate in 3 — King Extraction",
         descEs: "Juegan blancas. El rey negro puede ser arrastrado a una trampa. ¿Puedes forzar el mate en tres?",
         descEn: "White to move. The black king can be lured into a trap. Can you force checkmate in three?",
         fen: "3R4/r6p/Pkp1N1p1/3p1n2/1P3P2/2P2K2/7P/8 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Mate de Peón Silencioso", nameEn: "Mate in 3 — Quiet Pawn Mate",
         descEs: "Juegan negras. El rey blanco está atrapado. Hay una combinación de tres jugadas que lo mata.",
         descEn: "Black to move. The white king is trapped. There is a three-move combination that delivers checkmate.",
         fen: "6k1/p2p3p/2p1p1p1/2Pn2K1/4B1P1/1N3P2/P6r/R4b2 b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Desviación Magistral", nameEn: "Mate in 3 — Masterful Deflection",
         descEs: "Juegan negras. El rey blanco tiene defensores, pero hay una manera de eliminarlos. ¿La encuentras?",
         descEn: "Black to move. The white king has defenders, but there is a way to remove them. Can you find it?",
         fen: "4k1r1/5p2/p1q5/1p2p2p/6n1/P4bQ1/1P4RP/3NR1BK b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Trampa Ineludible", nameEn: "Mate in 3 — Inescapable Trap",
         descEs: "Juegan negras. La posición parece igualada, pero hay una secuencia forzada de mate en tres. ¡Búscala!",
         descEn: "Black to move. The position looks balanced, but there is a forced three-move mating sequence. Find it!",
         fen: "6k1/2P2p2/6p1/4p1Kp/p1R1Pn1P/5P1r/P4P2/8 b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Caballo Kamikaze", nameEn: "Mate in 3 — Kamikaze Knight",
         descEs: "Juegan negras. El rey blanco está encerrado en la esquina. ¿Puedes encontrar el mate en tres?",
         descEn: "Black to move. The white king is locked in the corner. Can you find checkmate in three?",
         fen: "6k1/4R3/p5q1/2pP1Q2/3bn1r1/P7/6PP/5R1K b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Infiltración Real", nameEn: "Mate in 3 — Royal Infiltration",
         descEs: "Juegan negras. El rey blanco está inseguro en su propio campo. Busca el ataque decisivo en tres jugadas.",
         descEn: "Black to move. The white king is unsafe in its own camp. Find the decisive attack in three moves.",
         fen: "3r3k/1b2b1pp/3pp3/p3n1P1/1pPqP2P/1P2N2R/P1QB1r2/2KR3B b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 3,
+        cat: 'mate3',
         nameEs: "Mate en 3 — Demolición del Enroque", nameEn: "Mate in 3 — Castle Demolition",
         descEs: "Juegan negras. El rey blanco tiene defensas débiles. Hay una combinación forzada de mate en tres.",
         descEn: "Black to move. The white king has weak defenses. There is a forced checkmate in three.",
@@ -19491,70 +19376,70 @@ limitations under the License.
 
       // Mate in 4
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Cacería con Jaques", nameEn: "Mate in 4 — King Hunt",
         descEs: "Juegan blancas. El rey negro está expuesto en el flanco. ¿Puedes forzar el mate en cuatro jugadas?",
         descEn: "White to move. The black king is exposed on the flank. Can you force checkmate in four moves?",
         fen: "r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Destrucción del Escudo", nameEn: "Mate in 4 — Shelter Demolition",
         descEs: "Juegan negras. Sacrificio de torre destruye el escudo del rey, la dama lo persigue hasta el mate.",
         descEn: "Black to move. Rook sacrifice destroys the king's shelter, then the queen hunts it down to mate.",
         fen: "8/6pk/3pp2p/4p1nP/1P2P3/3P1rP1/4qPK1/2QN3R b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Arrinconando al Rey", nameEn: "Mate in 4 — Cornered King",
         descEs: "Juegan blancas. La dama y el alfil arrinconan al rey con cuatro jaques consecutivos.",
         descEn: "White to move. Queen and bishop herd the king into the corner with four consecutive checks.",
         fen: "r6k/pppb1B2/6Q1/8/3P4/2P1q3/PKP3PP/7R w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Sacrificio Doble", nameEn: "Mate in 4 — Double Sacrifice",
         descEs: "Juegan blancas. Sacrificio de caballo y dama abren líneas, el alfil bloquea y la torre da mate de pasillo.",
         descEn: "White to move. Knight and queen sacrifices open lines, bishop cuts off the king, rook delivers back-rank mate.",
         fen: "rnb3kr/ppp2ppp/1b6/3q4/3pN4/Q4N2/PPP2KPP/R1B1R3 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Atracción Fatal", nameEn: "Mate in 4 — Fatal Attraction",
         descEs: "Juegan blancas. Espectacular sacrificio de dama para arrastrar al rey negro a una red de mate letal tejida por el alfil y la torre.",
         descEn: "White to move. Spectacular queen sacrifice to drag the black king into a lethal mating net woven by the bishop and rook.",
         fen: "r3r1k1/pp3pb1/3pb1p1/q5B1/1n2N3/3B1N2/PPP2PPQ/2K4R w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Danza de las Torres", nameEn: "Mate in 4 — Dance of the Rooks",
         descEs: "Juegan negras. Una brillante secuencia de sacrificios continuos con las torres fuerza al rey blanco a un rincón sin salida.",
         descEn: "Black to move. A brilliant sequence of continuous rook sacrifices forces the white king into a corner with no escape.",
         fen: "4r1rk/pQ2P2p/P7/2pqb3/3p1p2/8/3B2PP/4RRK1 b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Caza en el Centro", nameEn: "Mate in 4 — Center Hunt",
         descEs: "Juegan blancas. Un sacrificio de torre destruye la cobertura del rey negro, iniciando una persecución que culmina con un mate de caballo.",
         descEn: "White to move. A rook sacrifice destroys the black king's cover, initiating a pursuit that culminates in a knight mate.",
         fen: "r6r/pp2pk1p/1n3b2/5Q1N/8/3B4/q4PPP/3RR1K1 w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Demolición Real", nameEn: "Mate in 4 — Royal Demolition",
         descEs: "Juegan negras. La torre se inmola para romper el enroque, permitiendo a la dama y al caballo ejecutar al rey blanco.",
         descEn: "Black to move. The rook sacrifices itself to shatter the castled position, allowing the queen and knight to execute the white king.",
         fen: "3k4/1pp3b1/4b2p/1p3qp1/3Pn3/2P1RN2/r5P1/1Q2R1K1 b - - 0 1"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Red de Peón y Torre", nameEn: "Mate in 4 — Pawn and Rook Net",
         descEs: "Juegan blancas. Tras forzar el cambio de damas, un preciso avance de peón apoya a la torre para dar el jaque mate definitivo.",
         descEn: "White to move. After forcing the queen exchange, a precise pawn advance supports the rook to deliver the final checkmate.",
         fen: "r4k2/1pp3q1/3p1NnQ/p3P3/2P3p1/8/PP6/2K4R w - - 1 0"
       },
       {
-        cat: 'mate', mateIn: 4,
+        cat: 'mate4',
         nameEs: "Mate en 4 — Geometría Perfecta", nameEn: "Mate in 4 — Perfect Geometry",
         descEs: "Juegan blancas. Un sacrificio de caballo abre la posición para que las piezas menores y la torre acorralen al rey negro en el borde del tablero.",
         descEn: "White to move. A knight sacrifice opens the position so the minor pieces and rook can corner the black king on the edge of the board.",
@@ -19572,12 +19457,12 @@ limitations under the License.
       document.getElementById('fenLibraryTitle').textContent = en ? '🧩 Training' : '🧩 Entrenamiento';
       document.getElementById('btnFenLibClose').textContent = en ? 'Close' : 'Volver';
       document.getElementById('btnRandomPuzzle').textContent = en ? '🎲 Random Challenge' : '🎲 Reto Aleatorio';
-      document.getElementById('tabFen-all').textContent = en ? 'All' : 'Todas';
       document.getElementById('tabFen-opening').textContent = en ? 'Openings' : 'Aperturas';
-      document.getElementById('tabFen-tactic').textContent = en ? 'Tactics' : 'Táctica';
-      document.getElementById('tabFen-endgame').textContent = en ? 'Endgames' : 'Finales';
+      document.getElementById('tabFen-mate1').textContent = 'Mate 1';
+      document.getElementById('tabFen-mate2').textContent = 'Mate 2';
+      document.getElementById('tabFen-mate3').textContent = 'Mate 3';
+      document.getElementById('tabFen-mate4').textContent = 'Mate 4';
       document.getElementById('tabFen-historical').textContent = en ? 'Legends' : 'Leyendas';
-      document.getElementById('tabFen-mate').textContent = en ? 'Mates' : 'Mates';
       document.getElementById('fenModePvp').textContent = en ? '👫 2 Players' : '👫 2 Jugadores';
       document.getElementById('fenModeAi').textContent = en ? '🤖 vs AI' : '🤖 vs IA';
       document.getElementById('fenDiffEasy').textContent = en ? '🐣 Easy' : '🐣 Fácil';
@@ -19604,7 +19489,7 @@ limitations under the License.
       const colorNote = document.getElementById('fenColorNote');
       if (colorNote) colorNote.style.display = gameMode === 'ai' ? 'block' : 'none';
 
-      renderFenList('all');
+      renderFenList('opening');
       document.getElementById('statusBanner').classList.remove('show');
       modal.classList.add('show');
     }
@@ -19825,7 +19710,7 @@ limitations under the License.
       const en = currentLanguage === 'en';
       list.innerHTML = '';
 
-      ['all', 'opening', 'tactic', 'endgame', 'historical', 'mate'].forEach(cat => {
+      ['opening', 'historical', 'mate1', 'mate2', 'mate3', 'mate4'].forEach(cat => {
         const tab = document.getElementById(`tabFen-${cat}`);
         if (tab) {
           tab.classList.toggle('active', cat === category);
@@ -19844,7 +19729,8 @@ limitations under the License.
         };
         const name = en ? item.nameEn : item.nameEs;
         const desc = en ? item.descEn : item.descEs;
-        const mateBadge = item.mateIn ? `<span style="float:right;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.15);color:#dc2626;border:1px solid rgba(239,68,68,0.4);border-radius:4px;padding:1px 6px;margin-left:6px;">M${item.mateIn}</span>` : '';
+        const mateNum = { mate1: 1, mate2: 2, mate3: 3, mate4: 4 }[item.cat];
+        const mateBadge = mateNum ? `<span style="float:right;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.15);color:#dc2626;border:1px solid rgba(239,68,68,0.4);border-radius:4px;padding:1px 6px;margin-left:6px;">M${mateNum}</span>` : '';
         btn.innerHTML = `<strong>${name}${mateBadge}</strong><span>${desc}</span>`;
         list.appendChild(btn);
       });
