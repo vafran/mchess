@@ -6,6 +6,52 @@ Formato: versión · tamaño · qué cambió.
 [Ir a README_es.md](../README_es.md)
 
 ---
+## v2.25.0 — Renovación de la Librería de Entrenamiento
+**~20.000 líneas · ~1,08 MB**
+
+### Librería de Entrenamiento — Categorías Reestructuradas
+
+Las pestañas de Táctica y Finales han sido reemplazadas por pestañas de **Mate en 1 / 2 / 3 / 4**. Todas las posiciones son puzzles verificados de Lichess. La estructura de categorías ahora es:
+
+| Pestaña | Contenido |
+|---|---|
+| Aperturas | Trampas de apertura con guión jugadas paso a paso |
+| Mate en 1 | Jaque mates de un movimiento verificados |
+| Mate en 2 | Mates forzados de 3 semijugadas verificados |
+| Mate en 3 | Mates forzados de 5 semijugadas verificados |
+| Mate en 4 | Mates forzados de 7 semijugadas verificados |
+| Leyendas | Las 4 posiciones históricas (Marshall, Vladimirov, Ortueta, Shirov) |
+
+- **Todos los FENs de táctica y finales reemplazados** por posiciones de puzzles verificados de Lichess — posiciones rotas o fabricadas (Horquilla de Caballo, Jaque Doble, Mate de la Coz, Zugzwang, Regalo Griego, Philidor, Oposición del Rey, Torre Activa, y otras) eliminadas y reemplazadas con FENs correctos.
+- **PUZZLES_DB retirado** — las 20 posiciones aleatorias creadas a mano y sin verificar han desaparecido. El desafío aleatorio y el re-roll ahora extraen de la librería completa y verificada FEN_LIBRARY (~47 posiciones que abarcan todas las categorías).
+
+### Librería de Entrenamiento — Trampas de Apertura con Guión
+
+Los desafíos de apertura ahora están guionizados: el motor reproduce los movimientos de "error" del oponente automáticamente desde el array de solución, para que el jugador atraviese la trampa paso a paso.
+
+- **Mate del Pastor** — nuevo FEN después de 2...Cc6, solución de 3 movimientos con respuestas guionizadas del motor.
+- **Mate del Loco** — añadido como secuencia de jaque mate guionizada.
+- **Gambito Ponziani** — añadido como trampa guionizada de 7 movimientos que lleva a Dxd8#.
+- **Budapest, Fried Liver, Gambito de Rey, Gambito Halloween, Petrov** — FENs corregidos (turno de mover incorrecto, colocación de piezas incorrecta) y descripciones arregladas.
+- **Puzzles históricos (Marshall, Vladimirov, Ortueta, Shirov)** — añadidos arrays de solución; el botón tras resolver muestra "Seguir jugando" en lugar de "Revisar partida".
+
+### Librería de Entrenamiento — Sistema de Pistas del Profesor
+
+- **Banner de pista** — cuando un desafío FEN tiene un campo `hintEs`/`hintEn`, los paneles de Análisis y "¿Qué hago?" muestran un banner rosa 🎓 con la pista específica para ese puzzle en lugar de ejecutar el motor.
+- **Corrección Mate-en-N** — los mates forzados confirmados por el motor (puntuación > 50.000cp) ahora eluden correctamente los filtros de penalización táctica que suprimían las sugerencias de movimientos de mate en 2 o más. La etiqueta ahora muestra "¡Mate en N!" derivado de la puntuación real del motor.
+- **Flujo de puzzle resuelto** — completar un puzzle muestra un modal de estado; las categorías de apertura y mate omiten el modal (la animación de jaque mate se encarga de ello). El último movimiento guionizado ya no dispara un parpadeo falso de "¡Puzzle resuelto!".
+
+### Vitrina de Trofeos — FEN Master
+
+- **🧘 FEN Master (nuevo):** Reemplaza a *El Dragón* en la categoría de Aprendizaje. Se desbloquea cuando el jugador completa al menos 2 desafíos de cada una de las 5 categorías no históricas (Aperturas, Mate en 1, Mate en 2, Mate en 3, Mate en 4).
+- **🐉 El Dragón (retirado):** Trofeo de desarrollo de fianchetto eliminado — se disparaba incidentalmente en cualquier partida que llegara a la jugada 10 con un alfil en b2/g2/b7/g7, sin conexión con las funciones de aprendizaje del juego.
+- **Purga de trofeos fantasma:** Al cargar el perfil, cualquier ID de trofeo que ya no exista en el registro se elimina. Esto evita que los trofeos retirados cuenten para el total de 64/64 o aparezcan como entradas fantasma completadas. Los jugadores existentes que tuvieran El Dragón verán su recuento ajustado automáticamente.
+
+### Miscelánea
+
+- **Favicon** — añadido un caballo ♞ SVG en línea como URI `data:`, funciona bajo el protocolo `file:///` sin servidor.
+
+---
 
 ## v2.24.0 — El Estadístico
 **~16.500 líneas · ~860 KB**
