@@ -4487,7 +4487,10 @@ limitations under the License.
               b: { ...defaultProfile.colorStats.b, ...((saved.colorStats || {}).b || {}) }
             },
             recentResults: Array.isArray(saved.recentResults) ? saved.recentResults : [],
-            unlockedTrophies: Array.isArray(saved.unlockedTrophies) ? saved.unlockedTrophies : [],
+            unlockedTrophies: Array.isArray(saved.unlockedTrophies)
+              ? saved.unlockedTrophies.filter(t => t && TROPHY_DEFS[t.id])  // purge deprecated trophy IDs
+              : [],
+
             unlockedMedals: Array.isArray(saved.unlockedMedals) ? saved.unlockedMedals : [],
             wheatAndChessboard: saved.wheatAndChessboard || false,
             playDates: Array.isArray(saved.playDates) ? saved.playDates : [],
@@ -4570,6 +4573,11 @@ limitations under the License.
         completedAt: new Date().toISOString()
       });
       saveProfile();
+      // 🧘 FEN Master — 2 completed from each of the 5 non-historical categories
+      const _cc = currentProfile.completedChallenges;
+      const _fenCats = ['opening', 'mate1', 'mate2', 'mate3', 'mate4'];
+      if (_fenCats.every(cat => _cc.filter(c => c.cat === cat).length >= 2))
+        unlockTrophy('fen_master');
     }
 
     function _checkTimeBasedTrophies(p) {
@@ -4674,7 +4682,7 @@ limitations under the License.
       el_pulpo: { icon: '🐙', cat: 7, name: { es: 'El Pulpo', en: 'Octopus Knight' }, desc: { es: 'Establece un Caballo en la 6ª fila defendido por un peón tuyo.', en: 'Post a Knight on the 6th rank defended by your own pawn.' }, story: { es: 'Un caballo en e6/d6 defendido por un peón es uno de los mayores recursos posicionales. ¡Cólalo ahí!', en: 'A knight on e6/d6 (or e3/d3 as Black) defended by a pawn is one of the strongest positional assets in chess. Park it there!' } },
       el_calzoncillo: { icon: '👖', cat: 7, name: { es: 'El Calzoncillo', en: 'The Fork' }, desc: { es: 'Ataca dos piezas enemigas de mayor valor con un solo peón.', en: 'Attack two higher-value enemy pieces with a single pawn.' }, story: { es: 'Avanza un peón hasta una casilla donde ataque a dos caballos, alfiles, torres o damas a la vez.', en: 'Set up a pawn push to a square where it attacks two knights, bishops, rooks, or queens at once.' } },
       la_sorpresa: { icon: '🎁', cat: 7, name: { es: '¡Sorpresa!', en: 'Discovered Attack!' }, desc: { es: 'Realiza un jaque a la descubierta.', en: 'Deliver a discovered check.' }, story: { es: 'Mueve una pieza que bloqueaba a un alfil, torre o dama, de forma que la pieza descubierta dé jaque.', en: 'Move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.' } },
-      el_dragon: { icon: '🐉', cat: 6, name: { es: 'El Dragón', en: 'The Dragon' }, desc: { es: 'Desarrolla un Alfil en fianchetto (b2, g2, b7 o g7) en los primeros 10 movimientos.', en: 'Develop a Bishop to a fianchetto square (b2, g2, b7 or g7) in the first 10 moves.' }, story: { es: 'Fianchetta tu alfil a b2 o g2 (con blancas) o b7 o g7 (con negras) al principio de la partida.', en: 'Fianchetto your bishop to b2 or g2 (as White) or b7 or g7 (as Black) early in the game. A classic setup.' } },
+      fen_master: { icon: '🧘', cat: 6, name: { es: 'FEN Master', en: 'FEN Master' }, desc: { es: 'Completa 2 desafíos de cada categoría: aperturas, mate en 1, mate en 2, mate en 3 y mate en 4.', en: 'Complete 2 challenges from each category: openings, mate in 1, mate in 2, mate in 3, and mate in 4.' }, story: { es: 'Un jugador completo domina todas las fases del tablero. Resolver desafíos de apertura y matemáticas de mate demuestra que tu visión tabléro es verdaderamente equilibrada.', en: 'A complete player masters the whole board. Solving opening traps and mating puzzles across every difficulty proves your chess vision is truly well-rounded.' } },
       the_analyst: { icon: '🔍', cat: 6, name: { es: 'El Analista', en: 'The Analyst' }, desc: { es: 'Usa ¿Fue buena? 5 veces.', en: 'Use "Was it good?" 5 times.' }, story: { es: 'Los grandes jugadores no solo juegan — estudian sus propias jugadas después. Usa el botón ¿Fue buena? cinco veces para reflexionar sobre tus movimientos.', en: 'Great players don\'t just play — they study their own moves afterwards. Use the "Was it good?" button five times to reflect on your play.' } },
       artilleria_pesada: { icon: '🔫', cat: 7, name: { es: 'Artillería Pesada', en: 'The Battery' }, desc: { es: 'Apila dos Torres tuyas en la misma columna.', en: 'Stack two of your Rooks on the same column.' }, story: { es: 'Dobla las torres en una columna abierta sin piezas de por medio. Muy común en las columnas d o e.', en: 'Double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file.' } },
       great_trade: { icon: '🌪️', cat: 7, name: { es: 'Teoría del Caos', en: 'Chaos Theory' }, desc: { es: '4 capturas en 4 medias jugadas consecutivas.', en: '4 consecutive half-moves are all captures — a full fireworks sequence.' }, story: { es: 'Cuando el centro estalla y ambos bandos intercambian pieza por pieza sin parar — eso es la Teoría del Caos.', en: 'When the center explodes and both sides trade piece for piece without stopping — that\'s Chaos Theory.' } },
@@ -4950,9 +4958,10 @@ limitations under the License.
         if (forks >= 2) unlockTrophy('el_calzoncillo');
       }
 
-      // 🐉 El Dragón — Bishop developed to a fianchetto square in first 10 moves
-      if (type === 'B' && history.length < 20 && (tr === 1 || tr === 6) && (tc === 1 || tc === 6))
-        unlockTrophy('el_dragon');
+      // 🧘 FEN Master — fallback check on move
+      const _fenCats = ['opening', 'mate1', 'mate2', 'mate3', 'mate4'];
+      if (_fenCats.every(cat => (profile.completedChallenges || []).filter(c => c.cat === cat).length >= 2))
+        unlockTrophy('fen_master');
 
       // 🔫 Artillería Pesada — Two own rooks on same column, path clear between them
       if (type === 'R') {

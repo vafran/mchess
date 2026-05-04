@@ -125,7 +125,7 @@ Upon starting for the first time, Airin asks for your name. From that point on, 
 
 **⚡ Relentless** — win in 15 moves, beat Hard without any hints, force a draw against the Magician, build a win streak, win 50 games on each side of the board.
 
-**📚 Learning** — use the Coach, explore named openings, set up the fianchetto, review your moves with "Was it good?".
+**📚 Learning (4):** Use the Coach 10 times, explore 5 named openings, complete 2 challenges from each training category (*FEN Master* 🧘), review your play with "Was it good?" 5 times (*The Analyst*).
 
 **⚔️ Tactics** — rook on the 7th rank, double rooks, battery, pawn fork, discovered check, pawn storm, and more.
 
@@ -188,13 +188,14 @@ Three styles, with labels now visible under the slider:
 
 ## Training Library
 
-| Tab | Positions | Sample topics |
+| Tab | Positions | Content |
 |---|---|---|
-| Openings | 7 | Scholar's Mate, Fried Liver Attack, Budapest Gambit |
-| Tactics | 15 | Fork, pin, skewer, discovered attack, back rank, zugzwang |
-| Endgames | 14 | Lucena, Philidor, square rule, king opposition, wrong bishop |
-| Random | 30 | Curated tactical puzzles with themes: mate, fork, pin, skewer, sacrifice, promotion |
-| Legends | 4 | The 4 historical positions behind the Historian trophies (Marshall, Vladimirov, Sanz-Ortueta, Shirov-Topalov) |
+| Openings | 7 | Scripted traps: Scholar's Mate, Fool's Mate, Ponziani, Fried Liver, Budapest, King's Gambit, Halloween Gambit |
+| Mate in 1 | ~10 | Verified single-move checkmates (Lichess) |
+| Mate in 2 | ~10 | Verified 3-ply forced mates (Lichess) |
+| Mate in 3 | ~10 | Verified 5-ply forced mates (Lichess) |
+| Mate in 4 | ~10 | Verified 7-ply forced mates (Lichess) |
+| Legends | 4 | The 4 historical positions (Marshall, Vladimirov, Sanz-Ortueta, Shirov-Topalov) |
 
 <img src="screenshots/EN/training.png" alt="FEN Training Library" width="300" />
 
@@ -233,26 +234,19 @@ Three styles, with labels now visible under the slider:
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
 
-## What's new in v2.24.0 — *The Statistician*
+## What's new in v2.25.0 — *Training Library Overhaul*
 
-Welcome to Airin v2.24.0! This massive update introduces **The Statistician**, giving Airin a memory and bringing your chess journey to life.
+### 🎓 Training Library Restructured
+* **Mate in 1 / 2 / 3 / 4 tabs** replace the old Tactics and Endgames sections. Every position is a verified Lichess puzzle.
+* **Scripted opening traps** — Scholar's Mate, Fool's Mate, and Ponziani Gambit now play out move-by-move: the engine automatically plays the opponent's blunder moves from the solution array so the player experiences the whole trap.
+* **Hint system** — puzzles now show a 🎓 hint banner in the Coach panel instead of a generic engine analysis.
+* **Random challenge** now draws from the full verified library (~47 positions) — the old unverified hand-crafted positions are retired.
 
-### 📊 Player Profiles & Tracking
-* **Your Profile:** Upon starting, Airin will now ask for your name. You can view your lifetime statistics, including total games played, win/loss/draw rates, and your best and current win streaks.
-* **Hall of Records:** Airin now tracks your fastest wins and your highest evaluation advantages.
-* **Save & Load:** You can now export your entire profile and game progress to a file and load it later on any device.
+### 🧘 Trophy: FEN Master
+* Replaces *The Dragon*. Unlocks by completing 2 challenges from each of the 5 non-historical categories (Openings, Mate in 1, 2, 3, 4).
+* Retired trophies are stripped at profile load — existing saves are cleaned up automatically.
 
-### 🏆 The Trophy Cabinet
-* **64 Trophies, 8 Medals:** A Trophy Cabinet with 64 trophies across 8 categories — one trophy for every square, one category for every row. Complete an entire category to earn its medal.
-* **No-Undo Ladder:** Four trophies for winning each difficulty level without ever pressing Undo — *No Training Wheels*, *Written in Ink*, *Irreversible Spell*, *The Immortal*.
-* **Hidden Easter Eggs:** 9 secret trophies tucked away. You won't know what they are until you find them.
-* **The Historians:** Recreate legendary moments from chess history! If you find the same brilliant sacrifices played by masters like Marshall or Vladimirov, Airin will recognise it and reward you.
-* **Something beyond the 64th square:** Collect all 64 trophies and all 8 medals to uncover a final title rooted in chess history.
-
-### 🎉 In-Game Celebrations
-* When you unlock a trophy or medal, a banner slides in from the corner — real-time, non-intrusive, never covering the board.
-
-*(For the complete engine updates from v2.23.0 and prior, see the full Changelog).*
+*(For The Statistician feature set from v2.24.0, see the full Changelog).*
 
 ---
 

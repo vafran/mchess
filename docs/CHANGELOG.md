@@ -6,6 +6,52 @@ Format: version · size · what changed.
 [Go to README.md](../README.md)
 
 ---
+## v2.25.0 — Training Library Overhaul
+**~20,000 lines · ~1.08 MB**
+
+### Training Library — Restructured Categories
+
+The Tactics and Endgames tabs have been replaced with **Mate in 1 / 2 / 3 / 4** tabs. All positions are verified Lichess puzzles. The category structure is now:
+
+| Tab | Content |
+|---|---|
+| Openings | Scripted opening traps played move-by-move |
+| Mate in 1 | Verified single-move checkmates |
+| Mate in 2 | Verified 3-ply forced mates |
+| Mate in 3 | Verified 5-ply forced mates |
+| Mate in 4 | Verified 7-ply forced mates |
+| Legends | The 4 historical positions (Marshall, Vladimirov, Ortueta, Shirov) |
+
+- **All tactical and endgame FENs replaced** with verified Lichess puzzle positions — broken or fabricated positions (Knight Fork, Double Check, Smothered Mate, Zugzwang, Greek Gift, Philidor, King Opposition, Active Rook, and others) removed and replaced with correct FENs.
+- **PUZZLES_DB retired** — the 20 hand-crafted unverified random positions are gone. Random challenge and re-roll now draw from the full verified FEN_LIBRARY (~47 positions spanning all categories).
+
+### Training Library — Scripted Opening Traps
+
+Opening challenges are now scripted: the engine plays the opponent's "blunder" moves automatically from the solution array, so the player walks through the trap step by step.
+
+- **Scholar's Mate** — new FEN after 2...Nc6, 3-move solution with scripted engine responses.
+- **Fool's Mate** — added as scripted checkmate sequence.
+- **Ponziani Gambit** — added as scripted 7-move trap leading to Qxd8#.
+- **Budapest, Fried Liver, King's Gambit, Halloween Gambit, Petrov** — FENs corrected (wrong side-to-move, incorrect piece placement) and descriptions fixed.
+- **Historical puzzles (Marshall, Vladimirov, Ortueta, Shirov)** — solution arrays added; post-solve button shows "Keep playing" instead of "Review game".
+
+### Training Library — Coach Hint System
+
+- **Hint banner** — when a FEN challenge has a `hintEs`/`hintEn` field, the Analysis and "What should I do?" panels show a pink 🎓 goal banner with the specific hint for that puzzle instead of running the engine.
+- **Mate-in-N fix** — engine-confirmed forced mates (score > 50,000cp) now correctly bypass tactical penalty filters that were suppressing mate-in-2+ move suggestions. The label now shows "Mate in N!" derived from the actual engine score.
+- **Puzzle solved flow** — completing a puzzle shows a status modal; opening and mate categories skip the modal (the checkmate animation handles it). The last scripted move no longer triggers a false "Puzzle solved!" flash.
+
+### Trophy Cabinet — FEN Master
+
+- **🧘 FEN Master (new):** Replaces *The Dragon* in the Learning category. Unlocks when the player completes at least 2 challenges from each of the 5 non-historical categories (Openings, Mate in 1, Mate in 2, Mate in 3, Mate in 4).
+- **🐉 The Dragon (retired):** Fianchetto-bishop trophy removed — triggered incidentally on any game reaching move 10 with a bishop on b2/g2/b7/g7, unrelated to the training features.
+- **Ghost trophy purge:** On profile load, any trophy ID no longer in the registry is stripped so retired trophies don't count toward 64/64 or show as phantom-completed.
+
+### Misc
+
+- **Favicon** — inline SVG ♞ knight added as a `data:` URI, works under `file:///` protocol without a server.
+
+---
 ## v2.24.0 — The Statistician
 **~16,500 lines · ~860 KB**
 

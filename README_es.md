@@ -128,7 +128,7 @@ La Vitrina de Trofeos está construida sobre el propio tablero: **64 trofeos** (
 
 **⚡ Implacable (9)** — para los que llevan los límites y no se rinden. Gana en 15 jugadas, derrota al Mago sin pistas, fuerza tablas contra el Mago, construye una racha de 3 victorias, gana 50 partidas con cada color, juega en 5 días distintos.
 
-**📚 Aprendizaje (4)** — usa al Profesor 10 veces, explora 5 aperturas con nombre, monta un fianchetto, o usa el botón *¿Fue buena?* 5 veces para ganar el título de **El Analista**.
+**📚 Aprendizaje (4)** — usa al Profesor 10 veces, explora 5 aperturas con nombre, completa 2 desafíos de cada categoría de entrenamiento (*FEN Master* 🧘), o usa el botón *¿Fue buena?* 5 veces para ganar el título de **El Analista**.
 
 **⚔️ Táctica (9)** — patrones clásicos: torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, tormenta de capturas y más.
 
@@ -195,13 +195,14 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ## Librería de Entrenamiento
 
-| Pestaña | Posiciones | Ejemplos |
+| Pestaña | Posiciones | Contenido |
 |---|---|---|
-| Aperturas | 7 | Mate del Pastor, Fried Liver, Gambito Budapest |
-| Táctica | 15 | Tenedor, clavada, enfilada, descubierta, pasillo, zugzwang |
-| Finales | 14 | Lucena, Philidor, regla del cuadrado, oposición, alfil equivocado |
-| Aleatorio | 30 | Puzzles tácticos curados con tema: mate, tenedor, clavada, ensarte, sacrificio, coronación |
-| Leyendas | 4 | Las 4 posiciones históricas detrás de los trofeos Historiadores (Marshall, Vladimirov, Sanz-Ortueta, Shirov-Topalov) |
+| Aperturas | 7 | Trampas guiadas: Mate del Pastor, Mate del Loco, Ponziani, Fried Liver, Budapest, Gambito del Rey, Gambito Halloween |
+| Mate en 1 | ~10 | Mates en 1 verificados (Lichess) |
+| Mate en 2 | ~10 | Mates en 2 verificados — 3 semijugadas (Lichess) |
+| Mate en 3 | ~10 | Mates en 3 verificados — 5 semijugadas (Lichess) |
+| Mate en 4 | ~10 | Mates en 4 verificados — 7 semijugadas (Lichess) |
+| Leyendas | 4 | Las 4 posiciones históricas (Marshall, Vladimirov, Sanz-Ortueta, Shirov-Topalov) |
 
 <img src="screenshots/ES/training.png" alt="Librearía FEN de entrenamiento" width="500" />
 
@@ -243,42 +244,19 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
-## Lo nuevo en v2.24.0 — *El Estadístico*
+## Lo nuevo en v2.25.0 — *Renovación de la Librería de Entrenamiento*
 
-¡Bienvenido a Airin v2.24.0! Esta enorme actualización introduce **El Estadístico** — dándole memoria a Airin y dando vida a tu viaje en el ajedrez con perfiles, trofeos, medallas y una leyenda final construida alrededor del tablero.
+### 🎓 Nueva estructura de la Librería de Entrenamiento
+* Las pestañas de **Táctica** y **Finales** han sido reemplazadas por **Mate en 1 / 2 / 3 / 4**. Todas las posiciones son puzzles verificados de Lichess.
+* **Aperturas con guión** — el Mate del Pastor, el Mate del Loco y el Gambito Ponziani ahora se juegan paso a paso: el motor reproduce automáticamente los movimientos de error del rival para que el jugador viva la trampa completa.
+* **Sistema de pistas** — los puzzles muestran un banner 🎓 en el panel del Profesor en lugar de un análisis genérico del motor.
+* **Desafío aleatorio** ahora saca posiciones de la librería verificada completa (~47 posiciones) — las posiciones no verificadas anteriores quedan retiradas.
 
-### 📊 Perfiles de Jugador y Seguimiento
-* **Tu Perfil:** Airin ahora te recuerda. Escribe tu nombre en el perfil y sigue tus estadísticas de por vida — partidas totales, victorias, tablas, derrotas, deshacer usados, pistas pedidas y piezas capturadas.
-* **Salón de los Récords:** Airin rastrea tus victorias más rápidas (en menos jugadas) y tus mayores ventajas de evaluación.
-* **Estadísticas por Color:** El perfil registra victorias, tablas y derrotas por separado para las partidas con blancas y con negras.
-* **Record por Bot:** Consulta tu historial completo W/D/L contra cada nivel de dificultad, mostrado como barras de colores.
-* **Guardar y Cargar:** Exporta todo tu perfil a un archivo `.airin` e impórtalo en cualquier dispositivo para llevarte tu progreso.
+### 🧘 Trofeo: FEN Master
+* Reemplaza *El Dragón* en la categoría de Aprendizaje. Se desbloquea completando 2 desafíos de cada una de las 5 categorías no históricas (Aperturas, Mate en 1, 2, 3, 4).
+* Los trofeos retirados se eliminan al cargar el perfil — las partidas guardadas existentes se limpian automáticamente.
 
-### 🏆 La Vitrina de Trofeos — 64 Trofeos · 8 Medallas · 1 Leyenda
-La Vitrina de Trofeos está construida sobre el propio tablero: **64 trofeos** en **8 categorías** (una por cada fila del tablero).
-
-* **🏅 Progresión (12):** Hitos que se ganan de forma natural al progresar — primera victoria, primer jaque, primer enroque, primera coronación, primera captura al paso y más.
-* **🧠 Técnica (10):** Recompensas por juego disciplinado: enroca sin mover el rey, sobrevive 60 jugadas al Rey Sabio, da jaque mate con el Rey en la 6ª fila, o sube la **Escalera Sin-Deshacer** completa.
-* **⚡ Implacable (9):** Para los que llevan los límites. Gana en 15 jugadas, derrota al Mago sin pistas, fuerza tablas contra el Mago, gana 50 partidas con cada color, construye una racha de 3 victorias, juega en 5 días distintos.
-* **📚 Aprendizaje (4):** Usa al Profesor 10 veces, explora 5 aperturas con nombre, monta un fianchetto, o gana **El Analista** usando el botón *¿Fue buena?* 5 veces.
-* **⚔️ Táctica (9):** Patrones clásicos — torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, o desencadena una tormenta de 4 capturas consecutivas.
-* **🥊 Dos Jugadores (7):** Trofeos exclusivos del modo 2 jugadores locales.
-* **📜 Los Historiadores (4):** Recrea sacrificios legendarios. Si juegas el mismo movimiento brillante que Marshall, Vladimirov, Ortueta o Shirov — y la casilla sigue bajo ataque — Airin lo reconocerá.
-* **🥚 Huevos de Pascua (9):** Nueve trofeos secretos. No sabrás cuáles son hasta que los encuentres.
-
-#### 8 Medallas de Categoría
-Completa **todos los trofeos** de una categoría para ganar su medalla. Las medallas aparecen como un estante en tu perfil sobre la cuadrícula de trofeos.
-
-### 🌾 Algo Más Allá de la Casilla 64
-Consigue los 64 trofeos y las 8 medallas para desbloquear un título final. Una tarjeta vive en la parte inferior de tu vitrina desde el principio — visible siempre, mostrando tu progreso. Haz clic para leer la leyenda.
-
-### 🎉 Celebraciones en el Juego
-Al desbloquear un trofeo, una pancarta se desliza desde la esquina inferior derecha — visible pero sin cubrir el tablero. Las medallas activan una pancarta ligeramente más larga. El título final activa una celebración especial de 5 segundos.
-
-### 👋 Bienvenida Personalizada
-El menú principal te saluda por tu nombre una vez configurado el perfil. Puedes editar tu nombre en cualquier momento en la pantalla de perfil.
-
-*(Para las actualizaciones completas del motor desde v2.23.0 y anteriores, consulta el Historial de versiones completo)*.
+*(Para el conjunto completo de funciones de El Estadístico en v2.24.0, consulta el Historial de versiones).*
 
 ---
 
@@ -422,4 +400,4 @@ Este es un registro honesto de cómo se construyó el proyecto. Es también, qui
 
 ---
 
-*Airin Chess v2.24.0 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~860 KB. Sin dependencias. Abre el archivo y juega.*
+*Airin Chess v2.25.0 — Un juego de ajedrez hecho para una niña de 9 años, que accidentalmente se convirtió en un motor serio.* *~1,08 MB. Sin dependencias. Abre el archivo y juega.*
