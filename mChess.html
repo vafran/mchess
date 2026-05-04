@@ -4427,7 +4427,8 @@ limitations under the License.
       unlockedMedals: [],         // [{ cat: 1, unlockedAt: '2026-...' }, ...]
       wheatAndChessboard: false,   // true when all 64 trophies and all 8 medals are earned
       playDates: [],               // ISO date strings 'YYYY-MM-DD' when player played
-      namedOpeningsPlayed: []      // distinct named opening keys seen across games
+      namedOpeningsPlayed: [],     // distinct named opening keys seen across games
+      completedChallenges: []      // [{ nameEs, nameEn, cat, completedAt }]
     };
 
     let currentProfile = null;
@@ -4490,7 +4491,8 @@ limitations under the License.
             unlockedMedals: Array.isArray(saved.unlockedMedals) ? saved.unlockedMedals : [],
             wheatAndChessboard: saved.wheatAndChessboard || false,
             playDates: Array.isArray(saved.playDates) ? saved.playDates : [],
-            namedOpeningsPlayed: Array.isArray(saved.namedOpeningsPlayed) ? saved.namedOpeningsPlayed : []
+            namedOpeningsPlayed: Array.isArray(saved.namedOpeningsPlayed) ? saved.namedOpeningsPlayed : [],
+            completedChallenges: Array.isArray(saved.completedChallenges) ? saved.completedChallenges : []
           };
         } else {
           currentProfile = JSON.parse(JSON.stringify(defaultProfile));
@@ -4553,6 +4555,21 @@ limitations under the License.
       try {
         localStorage.setItem(PROFILE_KEY, JSON.stringify(currentProfile));
       } catch (_) { }
+    }
+
+    function recordChallengeCompleted(item) {
+      if (!item || !currentProfile) return;
+      const already = currentProfile.completedChallenges.some(
+        c => c.nameEs === item.nameEs && c.nameEn === item.nameEn
+      );
+      if (already) return;
+      currentProfile.completedChallenges.push({
+        nameEs: item.nameEs || '',
+        nameEn: item.nameEn || '',
+        cat: item.cat || '',
+        completedAt: new Date().toISOString()
+      });
+      saveProfile();
     }
 
     function _checkTimeBasedTrophies(p) {
@@ -6954,6 +6971,7 @@ limitations under the License.
           if (puzzleMode && puzzleMode.step >= puzzleMode.solution.length) {
             const en = currentLanguage === 'en';
             const isMateChallenge = lastLoadedChallengeItem && (lastLoadedChallengeItem.cat === 'mate1' || lastLoadedChallengeItem.cat === 'mate2' || lastLoadedChallengeItem.cat === 'mate3' || lastLoadedChallengeItem.cat === 'mate4' || lastLoadedChallengeItem.cat === 'opening');
+            recordChallengeCompleted(lastLoadedChallengeItem);
             puzzleMode = null;
             if (!isMateChallenge) {
               setTimeout(() => {
@@ -7345,6 +7363,7 @@ limitations under the License.
           }
           if (humanWon) {
             // Human wins → confetti + character defeat speech
+            if (fenPositionLoaded && lastLoadedChallengeItem) recordChallengeCompleted(lastLoadedChallengeItem);
             playVictorySound();
             launchVictoryConfetti();
             setTimeout(() => {
@@ -7663,6 +7682,35 @@ limitations under the License.
             <div class="profile-record-chip"><span>${_('profileHighestEval')}</span>${highestEvalText}</div>
           </div>
         </div>
+
+        ${(() => {
+          const completed = p?.completedChallenges || [];
+          if (completed.length === 0) return '';
+          const total = FEN_LIBRARY.filter(i => i.solution && i.solution.length > 0).length + FEN_LIBRARY.filter(i => i.cat && i.cat.startsWith('mate')).length;
+          const catOrder = ['opening', 'mate1', 'mate2', 'mate3', 'mate4', 'historical'];
+          const catLabel = { opening: (L === 'en' ? 'Openings' : 'Aperturas'), mate1: 'Mate 1', mate2: 'Mate 2', mate3: 'Mate 3', mate4: 'Mate 4', historical: (L === 'en' ? 'Legends' : 'Leyendas') };
+          const completedByName = new Set(completed.map(c => c.nameEs));
+          const byCategory = {};
+          FEN_LIBRARY.forEach(item => {
+            if (!item.cat) return;
+            if (!byCategory[item.cat]) byCategory[item.cat] = [];
+            byCategory[item.cat].push(item);
+          });
+          const rows = catOrder.map(cat => {
+            const items = byCategory[cat] || [];
+            if (!items.length) return '';
+            const chips = items.map(item => {
+              const done = completedByName.has(item.nameEs);
+              const name = L === 'en' ? (item.nameEn || item.nameEs) : (item.nameEs || item.nameEn);
+              return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;padding:3px 8px;border-radius:12px;margin:2px;border:1px solid ${done ? 'rgba(34,197,94,0.5)' : 'rgba(168,85,247,0.2)'};background:${done ? 'rgba(34,197,94,0.1)' : 'rgba(168,85,247,0.05)'};color:var(--text);opacity:${done ? '1' : '0.45'};">${done ? '✓' : '○'} ${name}</span>`;
+            }).join('');
+            return `<div style="margin-bottom:8px;"><div style="font-size:0.7rem;font-weight:700;opacity:0.5;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em;">${catLabel[cat] || cat}</div>${chips}</div>`;
+          }).join('');
+          return `<div>
+            <div class="profile-section-title">${L === 'en' ? 'Training' : 'Entrenamiento'} <span style="font-size:0.75rem;font-weight:400;opacity:0.6;">${completed.length} ${L === 'en' ? 'completed' : 'completados'}</span></div>
+            ${rows}
+          </div>`;
+        })()}
 
         <div>
           <div class="profile-section-title">${_('profileTrophiesTitle')}</div>
@@ -14121,7 +14169,7 @@ limitations under the License.
           puzzleMode.step++;
           // If all scripted moves are done after this AI move, end the puzzle phase
           if (puzzleMode.step >= puzzleMode.solution.length) {
-            const _wasChallenge = lastLoadedChallengeItem;
+            recordChallengeCompleted(lastLoadedChallengeItem);
             puzzleMode = null;
             // Show Puzzle solved! if checkmate modal wasn't already triggered by checkGameOver()
             setTimeout(() => {
