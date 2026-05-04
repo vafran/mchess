@@ -7363,7 +7363,7 @@ limitations under the License.
           }
           if (humanWon) {
             // Human wins → confetti + character defeat speech
-            if (fenPositionLoaded && lastLoadedChallengeItem) recordChallengeCompleted(lastLoadedChallengeItem);
+            if (lastLoadedChallengeItem) recordChallengeCompleted(lastLoadedChallengeItem);
             playVictorySound();
             launchVictoryConfetti();
             setTimeout(() => {
@@ -7684,31 +7684,15 @@ limitations under the License.
         </div>
 
         ${(() => {
-          const completed = p?.completedChallenges || [];
-          if (completed.length === 0) return '';
-          const total = FEN_LIBRARY.filter(i => i.solution && i.solution.length > 0).length + FEN_LIBRARY.filter(i => i.cat && i.cat.startsWith('mate')).length;
-          const catOrder = ['opening', 'mate1', 'mate2', 'mate3', 'mate4', 'historical'];
-          const catLabel = { opening: (L === 'en' ? 'Openings' : 'Aperturas'), mate1: 'Mate 1', mate2: 'Mate 2', mate3: 'Mate 3', mate4: 'Mate 4', historical: (L === 'en' ? 'Legends' : 'Leyendas') };
-          const completedByName = new Set(completed.map(c => c.nameEs));
-          const byCategory = {};
-          FEN_LIBRARY.forEach(item => {
-            if (!item.cat) return;
-            if (!byCategory[item.cat]) byCategory[item.cat] = [];
-            byCategory[item.cat].push(item);
-          });
-          const rows = catOrder.map(cat => {
-            const items = byCategory[cat] || [];
-            if (!items.length) return '';
-            const chips = items.map(item => {
-              const done = completedByName.has(item.nameEs);
-              const name = L === 'en' ? (item.nameEn || item.nameEs) : (item.nameEs || item.nameEn);
-              return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;padding:3px 8px;border-radius:12px;margin:2px;border:1px solid ${done ? 'rgba(34,197,94,0.5)' : 'rgba(168,85,247,0.2)'};background:${done ? 'rgba(34,197,94,0.1)' : 'rgba(168,85,247,0.05)'};color:var(--text);opacity:${done ? '1' : '0.45'};">${done ? '✓' : '○'} ${name}</span>`;
-            }).join('');
-            return `<div style="margin-bottom:8px;"><div style="font-size:0.7rem;font-weight:700;opacity:0.5;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em;">${catLabel[cat] || cat}</div>${chips}</div>`;
-          }).join('');
+          const completed = (p?.completedChallenges || []).length;
+          const total = FEN_LIBRARY.length;
+          const pct = total > 0 ? Math.round(completed / total * 100) : 0;
           return `<div>
-            <div class="profile-section-title">${L === 'en' ? 'Training' : 'Entrenamiento'} <span style="font-size:0.75rem;font-weight:400;opacity:0.6;">${completed.length} ${L === 'en' ? 'completed' : 'completados'}</span></div>
-            ${rows}
+            <div class="profile-section-title">🧩 ${L === 'en' ? 'Training' : 'Entrenamiento'}</div>
+            <div class="trophy-progress-wrap">
+              <div class="trophy-progress-bar" style="width:${pct}%"></div>
+            </div>
+            <div class="trophy-progress-label">${completed} / ${total} ${L === 'en' ? 'challenges completed' : 'desafíos completados'}</div>
           </div>`;
         })()}
 
@@ -19759,10 +19743,13 @@ limitations under the License.
         }
       });
 
+      const completedSet = new Set((currentProfile?.completedChallenges || []).map(c => c.nameEs));
       FEN_LIBRARY.forEach(item => {
         if (category !== 'all' && item.cat !== category) return;
         const btn = document.createElement('div');
+        const done = completedSet.has(item.nameEs);
         btn.className = 'fen-item';
+        if (done) btn.style.cssText = 'border-left: 3px solid rgba(34,197,94,0.7); opacity: 0.75;';
         btn.onclick = () => {
           closeFenLibrary();
           showFenChallengeModal(item, null, null, false);
@@ -19771,7 +19758,8 @@ limitations under the License.
         const desc = en ? item.descEn : item.descEs;
         const mateNum = { mate1: 1, mate2: 2, mate3: 3, mate4: 4 }[item.cat];
         const mateBadge = mateNum ? `<span style="float:right;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.15);color:#dc2626;border:1px solid rgba(239,68,68,0.4);border-radius:4px;padding:1px 6px;margin-left:6px;">M${mateNum}</span>` : '';
-        btn.innerHTML = `<strong>${name}${mateBadge}</strong><span>${desc}</span>`;
+        const checkBadge = done ? `<span style="float:right;font-size:0.85rem;color:rgba(34,197,94,0.9);margin-left:6px;">✓</span>` : '';
+        btn.innerHTML = `<strong>${name}${checkBadge}${mateBadge}</strong><span>${desc}</span>`;
         list.appendChild(btn);
       });
 
