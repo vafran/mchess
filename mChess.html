@@ -7944,14 +7944,6 @@ limitations under the License.
       sessionUndos++;
       if (gameMode === 'pvp') sessionPvpBothUndoFree = false; // 🥊 No Takebacks! guard
 
-      if (gameMode === 'ai' && currentDifficulty === 'hard') {
-        playErrorSound();
-        showToast(currentLanguage === 'en'
-          ? 'Undo is disabled on Hard level 🚫'
-          : 'No se puede deshacer en nivel Difícil 🚫');
-        return;
-      }
-
       if (undoStack.length === 0) { playErrorSound(); return; }
 
       // If viewing history, snap back to present before altering the timeline
