@@ -7141,33 +7141,35 @@ limitations under the License.
           await makeMove(sr, sc, r, c, puzzlePromo);
 
           // Puzzle complete check (after last human move)
-          const _humanThreshold = puzzleMode.humanSteps ?? puzzleMode.solution.length;
-          const _humanDone = puzzleMode && puzzleMode.step >= _humanThreshold && !puzzleMode.modalShown;
-          if (_humanDone) {
-            const en = currentLanguage === 'en';
-            const isMateChallenge = lastLoadedChallengeItem && (lastLoadedChallengeItem.cat === 'mate1' || lastLoadedChallengeItem.cat === 'mate2' || lastLoadedChallengeItem.cat === 'mate3' || lastLoadedChallengeItem.cat === 'mate4' || lastLoadedChallengeItem.cat === 'opening');
-            recordChallengeCompleted(lastLoadedChallengeItem);
-            // Keep puzzleMode alive if scripted continuation remains, but mark modal as shown
-            if (puzzleMode.humanSteps != null && puzzleMode.step < puzzleMode.solution.length) {
-              puzzleMode.modalShown = true;
-            } else {
-              puzzleMode = null;
+          if (puzzleMode) {
+            const _humanThreshold = puzzleMode.humanSteps ?? puzzleMode.solution.length;
+            const _humanDone = puzzleMode.step >= _humanThreshold && !puzzleMode.modalShown;
+            if (_humanDone) {
+              const en = currentLanguage === 'en';
+              const isMateChallenge = lastLoadedChallengeItem && (lastLoadedChallengeItem.cat === 'mate1' || lastLoadedChallengeItem.cat === 'mate2' || lastLoadedChallengeItem.cat === 'mate3' || lastLoadedChallengeItem.cat === 'mate4' || lastLoadedChallengeItem.cat === 'opening');
+              recordChallengeCompleted(lastLoadedChallengeItem);
+              // Keep puzzleMode alive if scripted continuation remains, but mark modal as shown
+              if (puzzleMode.humanSteps != null && puzzleMode.step < puzzleMode.solution.length) {
+                puzzleMode.modalShown = true;
+              } else {
+                puzzleMode = null;
+              }
+              if (!isMateChallenge) {
+                setTimeout(() => {
+                  const customMsg = lastLoadedChallengeItem && (en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
+                  if (customMsg) {
+                    showStatus('🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'), '');
+                    document.getElementById('statusMsg').innerHTML = customMsg.replace(/\n/g, '<br>');
+                  } else {
+                    showStatus(
+                      '🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'),
+                      en ? 'Perfect — you found the winning move!' : '¡Perfecto — encontraste la jugada ganadora!'
+                    );
+                  }
+                }, 600);
+              }
+              // For mate puzzles, checkGameOver() inside makeMove() will show the checkmate modal
             }
-            if (!isMateChallenge) {
-              setTimeout(() => {
-                const customMsg = lastLoadedChallengeItem && (en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
-                if (customMsg) {
-                  showStatus('🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'), '');
-                  document.getElementById('statusMsg').innerHTML = customMsg.replace(/\n/g, '<br>');
-                } else {
-                  showStatus(
-                    '🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'),
-                    en ? 'Perfect — you found the winning move!' : '¡Perfecto — encontraste la jugada ganadora!'
-                  );
-                }
-              }, 600);
-            }
-            // For mate puzzles, checkGameOver() inside makeMove() will show the checkmate modal
           }
           return;
         }
