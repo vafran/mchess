@@ -7141,11 +7141,18 @@ limitations under the License.
           await makeMove(sr, sc, r, c, puzzlePromo);
 
           // Puzzle complete check (after last human move)
-          if (puzzleMode && puzzleMode.step >= puzzleMode.solution.length) {
+          const _humanThreshold = puzzleMode.humanSteps ?? puzzleMode.solution.length;
+          const _humanDone = puzzleMode && puzzleMode.step >= _humanThreshold && !puzzleMode.modalShown;
+          if (_humanDone) {
             const en = currentLanguage === 'en';
             const isMateChallenge = lastLoadedChallengeItem && (lastLoadedChallengeItem.cat === 'mate1' || lastLoadedChallengeItem.cat === 'mate2' || lastLoadedChallengeItem.cat === 'mate3' || lastLoadedChallengeItem.cat === 'mate4' || lastLoadedChallengeItem.cat === 'opening');
             recordChallengeCompleted(lastLoadedChallengeItem);
-            puzzleMode = null;
+            // Keep puzzleMode alive if scripted continuation remains, but mark modal as shown
+            if (puzzleMode.humanSteps != null && puzzleMode.step < puzzleMode.solution.length) {
+              puzzleMode.modalShown = true;
+            } else {
+              puzzleMode = null;
+            }
             if (!isMateChallenge) {
               setTimeout(() => {
                 const customMsg = lastLoadedChallengeItem && (en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
@@ -7687,6 +7694,10 @@ limitations under the License.
       }
       // Hide the end-game banner so the player can analyse the final position
       document.getElementById('statusBanner').classList.remove('show');
+      // If scripted continuation is still pending (humanSteps puzzle), resume it now
+      if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+        setTimeout(() => triggerAI(), 400);
+      }
     }
 
     // ── Profile Modal ────────────────────────────────────────────────────────
@@ -8192,7 +8203,7 @@ limitations under the License.
       selected = null; legalMoves = [];
       // Sync puzzle step to match the restored history length (only if puzzle not yet completed)
       if (lastLoadedPuzzleMode && history.length < lastLoadedPuzzleMode.solution.length) {
-        puzzleMode = { solution: [...lastLoadedPuzzleMode.solution], step: history.length };
+        puzzleMode = { solution: [...lastLoadedPuzzleMode.solution], step: history.length, humanSteps: lastLoadedPuzzleMode.humanSteps };
       } else {
         puzzleMode = null;
       }
@@ -8217,7 +8228,7 @@ limitations under the License.
       if (lastLoadedFen) {
         document.getElementById('fenInput').value = lastLoadedFen;
         loadPositionFromFEN();
-        if (lastLoadedPuzzleMode) puzzleMode = { solution: [...lastLoadedPuzzleMode.solution], step: 0 };
+        if (lastLoadedPuzzleMode) puzzleMode = { solution: [...lastLoadedPuzzleMode.solution], step: 0, humanSteps: lastLoadedPuzzleMode.humanSteps };
         playMoveSound();
       } else {
         init();
@@ -14334,17 +14345,20 @@ limitations under the License.
           puzzleMode.step++;
           // If all scripted moves are done after this AI move, end the puzzle phase
           if (puzzleMode.step >= puzzleMode.solution.length) {
+            // If humanSteps was set, completion modal already fired on the human's last move — don't repeat it
+            const _alreadyShown = puzzleMode.humanSteps != null;
             recordChallengeCompleted(lastLoadedChallengeItem);
             puzzleMode = null;
-            // Show Puzzle solved! if checkmate modal wasn't already triggered by checkGameOver()
-            setTimeout(() => {
-              if (!document.getElementById('statusBanner').classList.contains('show')) {
-                const _en = currentLanguage === 'en';
-                const _customMsg = lastLoadedChallengeItem && (_en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
-                showStatus('🏆 ' + (_en ? 'Puzzle solved!' : '¡Puzzle resuelto!'), _customMsg ? '' : (_en ? 'Perfect — you found the winning combination!' : '¡Perfecto — encontraste la combinación ganadora!'));
-                if (_customMsg) document.getElementById('statusMsg').innerHTML = _customMsg.replace(/\n/g, '<br>');
-              }
-            }, 900);
+            if (!_alreadyShown) {
+              setTimeout(() => {
+                if (!document.getElementById('statusBanner').classList.contains('show')) {
+                  const _en = currentLanguage === 'en';
+                  const _customMsg = lastLoadedChallengeItem && (_en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
+                  showStatus('🏆 ' + (_en ? 'Puzzle solved!' : '¡Puzzle resuelto!'), _customMsg ? '' : (_en ? 'Perfect — you found the winning combination!' : '¡Perfecto — encontraste la combinación ganadora!'));
+                  if (_customMsg) document.getElementById('statusMsg').innerHTML = _customMsg.replace(/\n/g, '<br>');
+                }
+              }, 900);
+            }
           }
           await new Promise(r => setTimeout(r, 600 + (Math.random() * 400 | 0)));
           if (aiSearchGeneration !== searchGen) { clearInterval(countdownInterval); aiThinking = false; return; }
@@ -19342,6 +19356,7 @@ limitations under the License.
         descEn: "Black to move — exact game position (move 23). Marshall played here what many call the most famous move in history. Spectators threw gold coins onto the board. Can you find what he did? Unlocks the 🪙 Golden Rain trophy.",
         fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23",
         solution: ['c3g3', 'h2g3', 'd4e2'],
+        humanSteps: 1,
         completionMsgEs: "🏳️ ¡Levitsky se rinde!\n\nMarshall mueve su dama a una casilla donde puede ser capturada de tres formas distintas. Algunos anotadores le dan tres signos de exclamación (!!!). Tim Krabbé la considera la tercera jugada más impactante de la historia.\n\nLas negras amenazan ...Dxh2#. Todas las capturas pierden:\n• 24.hxg3 Ce2#\n• 24.fxg3 Ce2+ 25.Rh1 Txf1#\n• 24.Dxg3 Ce2+ 25.Rh1 Cxg3+ y ganan fácilmente\n\nLevitsky se rindió. Los espectadores lanzaron monedas de oro al tablero.",
         completionMsgEn: "🏳️ Levitsky resigns!\n\nMarshall moves his queen where it may be captured three ways. Some annotators give this move three exclamation marks (!!!). Tim Krabbé considers it the third-most stunning move of all time.\n\nBlack threatens ...Qxh2#. All captures lose:\n• 24.hxg3 Ne2#\n• 24.fxg3 Ne2+ 25.Kh1 Rxf1#\n• 24.Qxg3 Ne2+ 25.Kh1 Nxg3+ and Black wins easily\n\nLevitsky resigned. Spectators threw gold coins onto the board."
       },
@@ -19352,7 +19367,10 @@ limitations under the License.
         descEs: "Juegan blancas. Vladimirov sorprendió al mundo en 1987 con un sacrificio de pieza explosivo — iniciativa y coordinación por encima del material. ¿Puedes encontrar la misma jugada genial? Desbloquea el trofeo 💥 El Cañonazo.",
         descEn: "White to move. Vladimirov stunned the world in 1987 with an explosive piece sacrifice — initiative and coordination over material. Can you find the same brilliant move? Unlocks the 💥 Cannon Shot trophy.",
         fen: "r4k1r/1b2bPR1/p4n2/3p4/4P2P/1q2B2B/PpP5/1K4R1 w - - 0 26",
-        solution: ['g7g8']
+        solution: ['g7g8'],
+        humanSteps: 1,
+        completionMsgEs: "🏳️ ¡Las negras se rinden!\n\n26.Txg8+! Rxg8 27.f8=D+! Txf8 28.Txf8#\n\nVladimirov sacrifica la torre en g8 para abrir la columna f, luego corona el peón en f8 con jaque de dama, y remata con la otra torre. Una combinación de tres jugadas que destruye la posición negra con iniciativa pura.\n\nEl sacrificio de la torre fue posible porque las piezas negras en b2 y b3 estaban completamente fuera de juego.",
+        completionMsgEn: "🏳️ Black resigns!\n\n26.Rxg8+! Kxg8 27.f8=Q+! Rxf8 28.Rxf8#\n\nVladimirov sacrifices the rook on g8 to open the f-file, then promotes the f7-pawn to a queen with check, and delivers checkmate with the other rook. A three-move combination that crushes Black's position through pure initiative.\n\nThe sacrifice works because Black's pieces on b2 and b3 are completely out of play."
       },
       {
         cat: 'historical',
@@ -19361,7 +19379,10 @@ limitations under the License.
         descEs: "Juegan negras — posición exacta (movimiento 31). En Madrid 1933, Sanz jugó una combinación que muchos llaman inmortal. Los peones pueden ser más poderosos que las torres. ¿Ves cómo? Desbloquea el trofeo 🚂 La Locomotora.",
         descEn: "Black to move — exact game position (move 31). In Madrid 1933, Sanz played a combination many call immortal. Pawns can be more powerful than rooks. Can you see how? Unlocks the 🚂 Locomotive trophy.",
         fen: "8/pR4pk/1b2p3/2p3p1/N1p5/7P/PP1r2P1/6K1 b - - 2 31",
-        solution: ['d2b2']
+        solution: ['d2b2'],
+        humanSteps: 1,
+        completionMsgEs: "🏳️ ¡Ortueta se rinde!\n\n31...Txb2! 32.Cxb2 c3 33.Tb3 cxb2 34.Txb2 c4!\n\nSanz sacrifica la torre por el caballo para lanzar sus peones como una locomotora imparable. El truco final es 34...c4! — la torre no puede defender ambos peones a la vez. Si 35.Tb4 b5, si 35.Tc2 b3, en ambos casos un peón corona.\n\nUna de las combinaciones más ingeniosas de la historia del ajedrez, jugada en Madrid en 1933.",
+        completionMsgEn: "🏳️ Ortueta resigns!\n\n31...Rxb2! 32.Nxb2 c3 33.Rb3 cxb2 34.Rxb2 c4!\n\nSanz sacrifices the rook for the knight to launch his pawns like an unstoppable locomotive. The key is 34...c4! — the rook cannot cover both pawns at once. If 35.Rb4 b5, if 35.Rc2 b3, in both cases a pawn promotes.\n\nOne of the most ingenious combinations in chess history, played in Madrid in 1933."
       },
       {
         cat: 'historical',
@@ -19370,7 +19391,10 @@ limitations under the License.
         descEs: "Juegan negras — posición exacta (movimiento 47). Shirov jugó en Linares 1998 una de las jugadas más bellas de la historia — un sacrificio de pieza tan preciso como estético. ¿Puedes encontrarla? Desbloquea el trofeo 🔥 Fuego en el Tablero.",
         descEn: "Black to move — exact game position (move 47). Shirov played in Linares 1998 one of the most beautiful moves in history — a piece sacrifice as precise as it is elegant. Can you find it? Unlocks the 🔥 Fire on the Board trophy.",
         fen: "8/8/4kpp1/3p1b2/p6P/2B5/6P1/6K1 b - - 2 47",
-        solution: ['f5h3']
+        solution: ['f5h3'],
+        humanSteps: 1,
+        completionMsgEs: "🏳️ ¡Topalov se rinde!\n\n47...Axh3!! 48.gxh3 g5 49.hxg5+ fxg5 50.h4 g4\n\nShirov sacrifica el alfil para crear un peón pasado de g imparable. Con el alfil blanco atrapado en h3 y los peones negros avanzando, Topalov no puede detener la coronación.\n\nEl sacrificio de alfil es «imposible» a primera vista — ¿por qué dar una pieza en un final de peones? Pero el peón de g se vuelve invulnerable. Topalov se rindió en el movimiento 53.\n\nKasparov la llamó «la jugada más bella de la última década».",
+        completionMsgEn: "🏳️ Topalov resigns!\n\n47...Bxh3!! 48.gxh3 g5 49.hxg5+ fxg5 50.h4 g4\n\nShirov sacrifices the bishop to create an unstoppable passed g-pawn. With White's bishop stuck on h3 and Black's pawns marching, Topalov cannot stop promotion.\n\nThe bishop sacrifice looks impossible at first glance — why give up a piece in a pawn endgame? But the g-pawn becomes untouchable. Topalov resigned on move 53.\n\nKasparov called it 'the most beautiful move of the last decade'."
       },
 
       // ── MATES ────────────────────────────────────────────────────────────────
@@ -19909,9 +19933,10 @@ limitations under the License.
       if (diffCfg) { aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit; }
       loadPositionFromFEN();
       if (item && item.solution && item.solution.length > 0) {
-        puzzleMode = { solution: item.solution, step: 0 };
+        const hs = item.humanSteps ?? null;
+        puzzleMode = { solution: item.solution, step: 0, humanSteps: hs };
       }
-      lastLoadedPuzzleMode = puzzleMode ? { solution: [...puzzleMode.solution], step: 0 } : null;
+      lastLoadedPuzzleMode = puzzleMode ? { solution: [...puzzleMode.solution], step: 0, humanSteps: puzzleMode.humanSteps } : null;
     }
 
     function renderFenList(category) {
