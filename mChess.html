@@ -1585,8 +1585,8 @@ limitations under the License.
       gap: 18px;
     }
 
-    /* Mobile: outer modal scrolls so close button is always reachable */
-    @media (max-width: 640px) {
+    /* Mobile or short screens: outer modal scrolls so content is reachable */
+    @media (max-width: 640px), (max-height: 850px) {
       #profileModal, .confirm-modal, .promo-modal, .trophy-story-overlay, .ingame-menu-overlay, .screen-overlay {
         align-items: flex-start;
         overflow-y: auto;
