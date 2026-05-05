@@ -3357,6 +3357,16 @@ limitations under the License.
           title="Fútbol">⚽</button>
       </div>
 
+      <span class="options-label" id="optSoundThemeLabel" style="margin-top:10px;">🔊 Sonido</span>
+      <div class="options-diff-row" style="margin-bottom:8px;">
+        <button class="options-diff-btn sound-theme-btn active" data-theme="classic" id="optSoundClassic"
+          onclick="setSoundTheme('classic')">Clásico</button>
+        <button class="options-diff-btn sound-theme-btn" data-theme="retro" id="optSoundRetro"
+          onclick="setSoundTheme('retro')">Retro</button>
+        <button class="options-diff-btn sound-theme-btn" data-theme="soft" id="optSoundSoft"
+          onclick="setSoundTheme('soft')">Suave</button>
+      </div>
+
       <span class="options-label" id="commentaryStyleLabel" style="margin-top:12px;">🎙️ Estilo del Comentarista</span>
       <div style="width:100%; margin-top:6px; margin-bottom:6px;">
         <div style="width:100%; padding: 0 10px; box-sizing: border-box;">
@@ -5263,7 +5273,7 @@ limitations under the License.
         btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento FEN', btnProfile: '🏆 Mi Perfil',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
-        optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual', soundThemeLabel: '🔊 Sonido', soundClassic: 'Clásico', soundRetro: 'Retro', soundSoft: 'Suave',
+        optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual', soundThemeLabel: '🔊 Sonido', soundClassic: 'Clásico', soundRetro: 'Retro', soundSoft: 'Suave', themeMagic: 'Mágico', themeForest: 'Bosque', themeOcean: 'Océano', themeClassic: 'Clásico', themeFutbol: 'Fútbol',
         commentaryStyle: '🎙️ Estilo del Comentarista', styleSerious: '🎚️ Más serio', styleMixed: '🎚️ Mixto', styleFunny: '🎚️ Más divertido',
         ingameMenuTitle: 'Menú', continueGame: '▶️ Continuar partida', ingameOptions: '⚙️ Opciones',
         quickPvp: '👫 2 Jugadores', quickAi: '🤖 vs IA',
@@ -5372,7 +5382,7 @@ limitations under the License.
         btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 FEN Training', btnProfile: '🏆 My Profile',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
-        optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme', soundThemeLabel: '🔊 Sound', soundClassic: 'Classic', soundRetro: 'Retro', soundSoft: 'Soft',
+        optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme', soundThemeLabel: '🔊 Sound', soundClassic: 'Classic', soundRetro: 'Retro', soundSoft: 'Soft', themeMagic: 'Magic', themeForest: 'Forest', themeOcean: 'Ocean', themeClassic: 'Classic', themeFutbol: 'Soccer',
         commentaryStyle: '🎙️ Commentator Style', styleSerious: '🎚️ More serious', styleMixed: '🎚️ Mixed', styleFunny: '🎚️ More playful',
         ingameMenuTitle: 'Menu', continueGame: '▶️ Continue game', ingameOptions: '⚙️ Options',
         quickPvp: '👫 2 Players', quickAi: '🤖 vs AI',
@@ -5593,6 +5603,8 @@ limitations under the License.
         btnIngameSaveGame: 'btnSaveShort', btnIngameLoadGame: 'btnLoadShort',
         ingameOptionsTitle: 'optionsTitle', igCommentaryStyleLabel: 'commentaryStyle',
         igLanguageLabel: 'languageLabel', igModeLabel: 'modeLabel', igDiffLabel: 'diffLabel', igThemeLabel: 'themeLabel', igSoundThemeLabel: 'soundThemeLabel', igOptionsBack: 'backMenu',
+        igSoundClassic: 'soundClassic', igSoundRetro: 'soundRetro', igSoundSoft: 'soundSoft',
+        optSoundThemeLabel: 'soundThemeLabel', optSoundClassic: 'soundClassic', optSoundRetro: 'soundRetro', optSoundSoft: 'soundSoft',
         optSliderSerious: 'sliderSerious', optSliderMixed: 'sliderMixed', optSliderFunny: 'sliderFunny',
         igSliderSerious: 'sliderSerious', igSliderMixed: 'sliderMixed', igSliderFunny: 'sliderFunny',
         tabCommentary: 'tabCommentary', tabProfessor: 'tabProfessor',
@@ -5606,6 +5618,15 @@ limitations under the License.
       Object.entries(map).forEach(([id, key]) => {
         const el = document.getElementById(id);
         if (el) el.textContent = t(key);
+      });
+
+      const tooltipsMap = {
+        optThemeMagic: 'themeMagic', optThemeForest: 'themeForest', optThemeOcean: 'themeOcean', optThemeClassic: 'themeClassic', optThemeFutbol: 'themeFutbol',
+        igThemeMagic: 'themeMagic', igThemeForest: 'themeForest', igThemeOcean: 'themeOcean', igThemeClassic: 'themeClassic', igThemeFutbol: 'themeFutbol'
+      };
+      Object.entries(tooltipsMap).forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        if (el) el.title = t(key);
       });
 
       // Personalized greeting: "Hello, <name>! Who are you playing with today?"
