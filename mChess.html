@@ -59,12 +59,12 @@ limitations under the License.
 
     body.theme-forest {
       --bg: #f0fdf4;
-      --primary: #16a34a;
-      --primary-light: #86efac;
+      --primary: #15803d;
+      --primary-light: #4ade80;
       --accent: #b45309;
       --accent-light: #fde68a;
-      --light-sq: #fefce8;
-      --dark-sq: #86efac;
+      --light-sq: #dcfce7;
+      --dark-sq: #16a34a;
       --text: #14532d;
       --text-light: #15803d;
       --shadow: 0 8px 32px rgba(20, 100, 40, 0.15);
@@ -538,13 +538,15 @@ limitations under the License.
       z-index: 2;
     }
 
-    /* Improvement for white piece visibility in Futbol theme */
-    body.theme-futbol .piece.white {
+    /* Improvement for white piece visibility in Futbol and Forest themes */
+    body.theme-futbol .piece.white,
+    body.theme-forest .piece.white {
       filter: drop-shadow(0 0 2px #000) drop-shadow(1px 2px 4px rgba(0, 0, 0, 0.5));
       color: #fff;
     }
 
-    body.theme-futbol .piece.black {
+    body.theme-futbol .piece.black,
+    body.theme-forest .piece.black {
       color: #1a1a1a;
       filter: drop-shadow(0 0 1px #fff) drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.4));
     }
