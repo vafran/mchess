@@ -1593,10 +1593,38 @@ limitations under the License.
         padding: 16px 0 max(16px, env(safe-area-inset-bottom, 16px));
       }
 
-      .profile-box, .confirm-box, .promo-box, .trophy-story-card, .menu-card {
+      .profile-box, .confirm-box, .promo-box, .trophy-story-card {
         max-height: none;
         overflow-y: visible;
         margin: 0 auto;
+      }
+
+      .menu-card {
+        max-height: none;
+        overflow-y: visible;
+        margin: 0 auto;
+        padding: 24px 20px;
+        width: 92vw;
+        min-width: 0;
+      }
+
+      .status-box {
+        padding: 24px 20px;
+        width: 92vw;
+        max-width: none;
+        max-height: none;
+        overflow-y: visible;
+        margin: 0 auto;
+      }
+
+      .status-box p {
+        font-size: 0.9rem;
+      }
+
+      #statusBanner {
+        align-items: flex-start;
+        overflow-y: auto;
+        padding: 16px 0 max(16px, env(safe-area-inset-bottom, 16px));
       }
     }
 
@@ -2491,6 +2519,8 @@ limitations under the License.
       min-width: 300px;
       max-width: 380px;
       width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .menu-logo {
