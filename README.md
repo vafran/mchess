@@ -225,6 +225,7 @@ Three styles, with labels now visible under the slider:
 | Theme | 🪄 Magic · 🌲 Forest · 🌊 Ocean · 🏛️ Classic · ⚽ Football |
 | Commentator style | Serious · Mixed · Playful |
 | Sound | On / Off |
+| Sound theme | 🎵 Classic (wooden thud) · 🕹️ Retro (beeps) · 🎶 Soft (tones) |
 | Training Mode | On / Off |
 
 
@@ -245,6 +246,15 @@ Three styles, with labels now visible under the slider:
 ### 🧘 Trophy: FEN Master
 * Replaces *The Dragon*. Unlocks by completing 2 challenges from each of the 5 non-historical categories (Openings, Mate in 1, 2, 3, 4).
 * Retired trophies are stripped at profile load — existing saves are cleaned up automatically.
+
+### 🔊 Sound Themes
+Three synthesised sound themes selectable in Options (main menu and in-game):
+* **Classic** — wooden thud: filtered noise burst + sine body, mimicking a real piece on a wooden board. Castling plays two quick thuds.
+* **Retro** — square-wave beeps.
+* **Soft** — sine tones.
+
+### 🏛️ Legends — Historical Resignations
+After finding the key sacrifice in any Legends puzzle, a **resignation modal** appears with the historical context — the forced line, key variations, and period quotes. Pressing **Keep Playing** resumes the scripted AI continuation on the board.
 
 *(For The Statistician feature set from v2.24.0, see the full Changelog).*
 
@@ -283,7 +293,7 @@ Piece values: N=325, B=335, R=500, Q=900 (bishop correctly valued above knight b
 
 ### Audio
 
-All sounds synthesised at runtime via Web Audio API. Zero audio files bundled.
+All sounds synthesised at runtime via Web Audio API. Zero audio files bundled. Three selectable themes: Classic (filtered noise + sine body), Retro (square wave), Soft (sine).
 
 ---
 
@@ -398,4 +408,4 @@ This is an honest record of how the project was made. It is also, perhaps, a doc
 
 ---
 
-*Airin Chess v2.24.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~860 KB. Zero dependencies. Open the file and play.*
+*Airin Chess v2.25.0 — A chess game made for a 9-year-old, that accidentally became a serious engine.* *~1.08 MB. Zero dependencies. Open the file and play.*

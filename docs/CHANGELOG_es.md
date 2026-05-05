@@ -47,6 +47,28 @@ Los desafíos de apertura ahora están guionizados: el motor reproduce los movim
 - **🐉 El Dragón (retirado):** Trofeo de desarrollo de fianchetto eliminado — se disparaba incidentalmente en cualquier partida que llegara a la jugada 10 con un alfil en b2/g2/b7/g7, sin conexión con las funciones de aprendizaje del juego.
 - **Purga de trofeos fantasma:** Al cargar el perfil, cualquier ID de trofeo que ya no exista en el registro se elimina. Esto evita que los trofeos retirados cuenten para el total de 64/64 o aparezcan como entradas fantasma completadas. Los jugadores existentes que tuvieran El Dragón verán su recuento ajustado automáticamente.
 
+### Temas de Sonido
+
+Selector de tema de sonido disponible en los paneles de Opciones del menú principal y durante la partida.
+
+- **Clásico** — golpe de madera sintetizado: ráfaga de ruido filtrado + cuerpo senoidal de baja frecuencia, que imita una pieza real sobre un tablero de madera. Al enrocar se escuchan dos golpes rápidos seguidos.
+- **Retro** — pitidos de onda cuadrada.
+- **Suave** — tonos senoidales.
+
+La preferencia del tema y el estado de silencio persisten entre sesiones.
+
+### Leyendas — Rendiciones en los Puzzles Históricos
+
+Cada puzzle de la pestaña **Leyendas** ahora ofrece un desenlace más rico:
+
+- Tras el movimiento de sacrificio clave, aparece un **modal de rendición** con el contexto histórico: continuación forzada, variantes notables y citas de época cuando están disponibles.
+- Al pulsar **Seguir jugando** se reanuda la continuación guionizada — la IA juega automáticamente los movimientos restantes en el tablero.
+- El modal de "¡Puzzle resuelto!" ya no vuelve a aparecer durante ni después de la continuación guionizada.
+
+### Modal de Opciones — Desplazamiento en Móvil
+
+Ambas superposiciones de opciones (menú principal y durante la partida) ahora se desplazan correctamente en móviles sin pantalla completa. La tarjeta interior usa `max-height: 90vh; overflow-y: auto` con relleno reducido en pantallas estrechas.
+
 ### Miscelánea
 
 - **Favicon** — añadido un caballo ♞ SVG en línea como URI `data:`, funciona bajo el protocolo `file:///` sin servidor.

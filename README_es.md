@@ -233,6 +233,7 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 | Tema visual | 🪄 Magia · 🌲 Bosque · 🌊 Océano · 🏛️ Clásico · ⚽ Fútbol |
 | Estilo del comentarista | Serio · Mixto · Divertido |
 | Sonido | Activado / Desactivado |
+| Tema de sonido | 🎵 Clásico (golpe de madera) · 🕹️ Retro (pitidos) · 🎶 Suave (tonos) |
 | Modo Entrenamiento | Activado / Desactivado |
 
 
@@ -255,6 +256,15 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 ### 🧘 Trofeo: FEN Master
 * Reemplaza *El Dragón* en la categoría de Aprendizaje. Se desbloquea completando 2 desafíos de cada una de las 5 categorías no históricas (Aperturas, Mate en 1, 2, 3, 4).
 * Los trofeos retirados se eliminan al cargar el perfil — las partidas guardadas existentes se limpian automáticamente.
+
+### 🔊 Temas de Sonido
+Tres temas de sonido sintetizados, seleccionables en Opciones (menú principal y durante la partida):
+* **Clásico** — golpe de madera: ráfaga de ruido filtrado + cuerpo senoidal, que imita una pieza real sobre un tablero de madera. Al enrocar se escuchan dos golpes rápidos.
+* **Retro** — pitidos de onda cuadrada.
+* **Suave** — tonos senoidales.
+
+### 🏛️ Leyendas — Rendiciones Históricas
+Tras encontrar el sacrificio clave en cualquier puzzle de Leyendas, aparece un **modal de rendición** con el contexto histórico — la línea forzada, variantes clave y citas de época. Al pulsar **Seguir jugando** la IA continúa con los movimientos guionizados en el tablero.
 
 *(Para el conjunto completo de funciones de El Estadístico en v2.24.0, consulta el Historial de versiones).*
 
@@ -291,7 +301,7 @@ Valores de piezas: C=325, A=335, T=500, D=900. Interpolación tapered mediojuego
 
 ### Audio
 
-Todos los sonidos sintetizados en tiempo de ejecución con la Web Audio API. Sin archivos de audio empaquetados.
+Todos los sonidos sintetizados en tiempo de ejecución con la Web Audio API. Sin archivos de audio empaquetados. Tres temas seleccionables: Clásico (ruido filtrado + senoidal), Retro (onda cuadrada) y Suave (senoidal).
 
 ---
 

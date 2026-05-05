@@ -47,6 +47,28 @@ Opening challenges are now scripted: the engine plays the opponent's "blunder" m
 - **🐉 The Dragon (retired):** Fianchetto-bishop trophy removed — triggered incidentally on any game reaching move 10 with a bishop on b2/g2/b7/g7, unrelated to the training features.
 - **Ghost trophy purge:** On profile load, any trophy ID no longer in the registry is stripped so retired trophies don't count toward 64/64 or show as phantom-completed.
 
+### Sound Themes
+
+A sound theme selector is now available in both the main menu and in-game Options panels.
+
+- **Classic** — synthesised wooden thud: filtered noise burst + low-frequency sine body, mimicking a real chess piece on a wooden board. Castling plays two quick thuds in succession.
+- **Retro** — square-wave beeps.
+- **Soft** — sine-wave tones.
+
+Theme preference and mute state persist across sessions.
+
+### Legends — Historical Puzzle Resignations
+
+Each puzzle in the **Legends** tab now delivers a richer ending:
+
+- After the key sacrifice move, a **resignation modal** appears with historical context: forced continuation, notable variations, and period quotes where available.
+- Pressing **Keep Playing** dismisses the modal and the scripted AI continuation resumes automatically on the board.
+- The "Puzzle Solved" modal no longer re-appears during or after the scripted continuation.
+
+### Options Modal — Mobile Scrolling
+
+Both options overlays (main menu and in-game) now scroll correctly on mobile viewports without fullscreen. Inner card uses `max-height: 90vh; overflow-y: auto` with reduced padding on narrow screens.
+
 ### Misc
 
 - **Favicon** — inline SVG ♞ knight added as a `data:` URI, works under `file:///` protocol without a server.
