@@ -817,6 +817,10 @@ limitations under the License.
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
       animation: pop 0.5s ease;
       border: 2px solid rgba(168, 85, 247, 0.15);
+      max-height: 85vh;
+      overflow-y: auto;
+      max-width: 520px;
+      width: 90%;
     }
 
     .status-box h2 {
@@ -832,6 +836,8 @@ limitations under the License.
       font-size: 1.1rem;
       margin-bottom: 18px;
       color: #666;
+      text-align: left;
+      line-height: 1.55;
     }
 
     /* ── Promo modal ───────────────────── */
@@ -7142,10 +7148,16 @@ limitations under the License.
             puzzleMode = null;
             if (!isMateChallenge) {
               setTimeout(() => {
-                showStatus(
-                  '🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'),
-                  en ? 'Perfect — you found the winning move!' : '¡Perfecto — encontraste la jugada ganadora!'
-                );
+                const customMsg = lastLoadedChallengeItem && (en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
+                if (customMsg) {
+                  showStatus('🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'), '');
+                  document.getElementById('statusMsg').innerHTML = customMsg.replace(/\n/g, '<br>');
+                } else {
+                  showStatus(
+                    '🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'),
+                    en ? 'Perfect — you found the winning move!' : '¡Perfecto — encontraste la jugada ganadora!'
+                  );
+                }
               }, 600);
             }
             // For mate puzzles, checkGameOver() inside makeMove() will show the checkmate modal
@@ -14328,7 +14340,9 @@ limitations under the License.
             setTimeout(() => {
               if (!document.getElementById('statusBanner').classList.contains('show')) {
                 const _en = currentLanguage === 'en';
-                showStatus('🏆 ' + (_en ? 'Puzzle solved!' : '¡Puzzle resuelto!'), _en ? 'Perfect — you found the winning combination!' : '¡Perfecto — encontraste la combinación ganadora!');
+                const _customMsg = lastLoadedChallengeItem && (_en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
+                showStatus('🏆 ' + (_en ? 'Puzzle solved!' : '¡Puzzle resuelto!'), _customMsg ? '' : (_en ? 'Perfect — you found the winning combination!' : '¡Perfecto — encontraste la combinación ganadora!'));
+                if (_customMsg) document.getElementById('statusMsg').innerHTML = _customMsg.replace(/\n/g, '<br>');
               }
             }, 900);
           }
@@ -19327,7 +19341,9 @@ limitations under the License.
         descEs: "Juegan negras — posición exacta (movimiento 23). Marshall jugó aquí la jugada más famosa de la historia. Los espectadores lanzaron monedas de oro al tablero. ¿Puedes descubrir qué hizo? Desbloquea el trofeo 🪙 La Lluvia de Oro.",
         descEn: "Black to move — exact game position (move 23). Marshall played here what many call the most famous move in history. Spectators threw gold coins onto the board. Can you find what he did? Unlocks the 🪙 Golden Rain trophy.",
         fen: "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23",
-        solution: ['c3g3']
+        solution: ['c3g3', 'h2g3', 'd4e2'],
+        completionMsgEs: "🏳️ ¡Levitsky se rinde!\n\nMarshall mueve su dama a una casilla donde puede ser capturada de tres formas distintas. Algunos anotadores le dan tres signos de exclamación (!!!). Tim Krabbé la considera la tercera jugada más impactante de la historia.\n\nLas negras amenazan ...Dxh2#. Todas las capturas pierden:\n• 24.hxg3 Ce2#\n• 24.fxg3 Ce2+ 25.Rh1 Txf1#\n• 24.Dxg3 Ce2+ 25.Rh1 Cxg3+ y ganan fácilmente\n\nLevitsky se rindió. Los espectadores lanzaron monedas de oro al tablero.",
+        completionMsgEn: "🏳️ Levitsky resigns!\n\nMarshall moves his queen where it may be captured three ways. Some annotators give this move three exclamation marks (!!!). Tim Krabbé considers it the third-most stunning move of all time.\n\nBlack threatens ...Qxh2#. All captures lose:\n• 24.hxg3 Ne2#\n• 24.fxg3 Ne2+ 25.Kh1 Rxf1#\n• 24.Qxg3 Ne2+ 25.Kh1 Nxg3+ and Black wins easily\n\nLevitsky resigned. Spectators threw gold coins onto the board."
       },
       {
         cat: 'historical',
