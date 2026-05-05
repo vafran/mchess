@@ -8178,9 +8178,11 @@ limitations under the License.
         if ('_sessionConsecutiveCaptures' in s) sessionConsecutiveCaptures = s._sessionConsecutiveCaptures;
       }
       selected = null; legalMoves = [];
-      // Sync puzzle step to match the restored history length
-      if (lastLoadedPuzzleMode) {
+      // Sync puzzle step to match the restored history length (only if puzzle not yet completed)
+      if (lastLoadedPuzzleMode && history.length < lastLoadedPuzzleMode.solution.length) {
         puzzleMode = { solution: [...lastLoadedPuzzleMode.solution], step: history.length };
+      } else {
+        puzzleMode = null;
       }
       document.getElementById('statusBanner').classList.remove('show');
       playMoveSound();
