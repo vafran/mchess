@@ -3475,6 +3475,16 @@ limitations under the License.
           style="margin-top:6px; font-size:0.82rem; color:var(--text-light); font-weight:700; text-align:center;">🎚️
           Mixto</div>
       </div>
+      <span class="options-label" id="igSoundThemeLabel" style="margin-top:10px;">🔊 Sonido</span>
+      <div class="options-diff-row" style="margin-bottom:8px;">
+        <button class="options-diff-btn sound-theme-btn active" data-theme="classic" id="igSoundClassic"
+          onclick="setSoundTheme('classic')">Clásico</button>
+        <button class="options-diff-btn sound-theme-btn" data-theme="retro" id="igSoundRetro"
+          onclick="setSoundTheme('retro')">Retro</button>
+        <button class="options-diff-btn sound-theme-btn" data-theme="soft" id="igSoundSoft"
+          onclick="setSoundTheme('soft')">Suave</button>
+      </div>
+
       <button class="menu-btn secondary" id="igOptionsBack" style="margin-top:8px;"
         onclick="closeIngameOptions()">&#8592; Volver</button>
     </div>
@@ -4140,6 +4150,7 @@ limitations under the License.
     let isViewingHistory = false;
     let snapshotBeforeHumanMove = null;
     let soundEnabled = true;
+    let soundTheme = 'classic'; // 'classic' | 'retro' | 'soft'
     let animating = false;
     let commentaryLog = [];
     let commentaryStyleMemory = {};
@@ -4682,7 +4693,7 @@ limitations under the License.
       el_pulpo: { icon: '🐙', cat: 7, name: { es: 'El Pulpo', en: 'Octopus Knight' }, desc: { es: 'Establece un Caballo en la 6ª fila defendido por un peón tuyo.', en: 'Post a Knight on the 6th rank defended by your own pawn.' }, story: { es: 'Un caballo en e6/d6 defendido por un peón es uno de los mayores recursos posicionales. ¡Cólalo ahí!', en: 'A knight on e6/d6 (or e3/d3 as Black) defended by a pawn is one of the strongest positional assets in chess. Park it there!' } },
       el_calzoncillo: { icon: '👖', cat: 7, name: { es: 'El Calzoncillo', en: 'The Fork' }, desc: { es: 'Ataca dos piezas enemigas de mayor valor con un solo peón.', en: 'Attack two higher-value enemy pieces with a single pawn.' }, story: { es: 'Avanza un peón hasta una casilla donde ataque a dos caballos, alfiles, torres o damas a la vez.', en: 'Set up a pawn push to a square where it attacks two knights, bishops, rooks, or queens at once.' } },
       la_sorpresa: { icon: '🎁', cat: 7, name: { es: '¡Sorpresa!', en: 'Discovered Attack!' }, desc: { es: 'Realiza un jaque a la descubierta.', en: 'Deliver a discovered check.' }, story: { es: 'Mueve una pieza que bloqueaba a un alfil, torre o dama, de forma que la pieza descubierta dé jaque.', en: 'Move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.' } },
-      fen_master: { icon: '🧘', cat: 6, name: { es: 'FEN Master', en: 'FEN Master' }, desc: { es: 'Completa 2 desafíos de cada categoría: aperturas, mate en 1, mate en 2, mate en 3 y mate en 4.', en: 'Complete 2 challenges from each category: openings, mate in 1, mate in 2, mate in 3, and mate in 4.' }, story: { es: 'Un jugador completo domina todas las fases del tablero. Resolver desafíos de apertura y matemáticas de mate demuestra que tu visión tabléro es verdaderamente equilibrada.', en: 'A complete player masters the whole board. Solving opening traps and mating puzzles across every difficulty proves your chess vision is truly well-rounded.' } },
+      fen_master: { icon: '🧘', cat: 6, name: { es: 'Maestro FEN', en: 'FEN Master' }, desc: { es: 'Completa 2 desafíos de cada categoría: aperturas, mate en 1, mate en 2, mate en 3 y mate en 4.', en: 'Complete 2 challenges from each category: openings, mate in 1, mate in 2, mate in 3, and mate in 4.' }, story: { es: 'Un jugador completo domina todas las fases del tablero. Resolver desafíos de apertura y matemáticas de mate demuestra que tu visión tabléro es verdaderamente equilibrada.', en: 'A complete player masters the whole board. Solving opening traps and mating puzzles across every difficulty proves your chess vision is truly well-rounded.' } },
       the_analyst: { icon: '🔍', cat: 6, name: { es: 'El Analista', en: 'The Analyst' }, desc: { es: 'Usa ¿Fue buena? 5 veces.', en: 'Use "Was it good?" 5 times.' }, story: { es: 'Los grandes jugadores no solo juegan — estudian sus propias jugadas después. Usa el botón ¿Fue buena? cinco veces para reflexionar sobre tus movimientos.', en: 'Great players don\'t just play — they study their own moves afterwards. Use the "Was it good?" button five times to reflect on your play.' } },
       artilleria_pesada: { icon: '🔫', cat: 7, name: { es: 'Artillería Pesada', en: 'The Battery' }, desc: { es: 'Apila dos Torres tuyas en la misma columna.', en: 'Stack two of your Rooks on the same column.' }, story: { es: 'Dobla las torres en una columna abierta sin piezas de por medio. Muy común en las columnas d o e.', en: 'Double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file.' } },
       great_trade: { icon: '🌪️', cat: 7, name: { es: 'Teoría del Caos', en: 'Chaos Theory' }, desc: { es: '4 capturas en 4 medias jugadas consecutivas.', en: '4 consecutive half-moves are all captures — a full fireworks sequence.' }, story: { es: 'Cuando el centro estalla y ambos bandos intercambian pieza por pieza sin parar — eso es la Teoría del Caos.', en: 'When the center explodes and both sides trade piece for piece without stopping — that\'s Chaos Theory.' } },
@@ -5238,10 +5249,10 @@ limitations under the License.
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
         mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?', mainSubtitleHello: '¡Hola, {name}! ¿Con quién juegas hoy?',
-        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento', btnProfile: '🏆 Mi Perfil',
+        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento FEN', btnProfile: '🏆 Mi Perfil',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
-        optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual',
+        optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual', soundThemeLabel: '🔊 Sonido', soundClassic: 'Clásico', soundRetro: 'Retro', soundSoft: 'Suave',
         commentaryStyle: '🎙️ Estilo del Comentarista', styleSerious: '🎚️ Más serio', styleMixed: '🎚️ Mixto', styleFunny: '🎚️ Más divertido',
         ingameMenuTitle: 'Menú', continueGame: '▶️ Continuar partida', ingameOptions: '⚙️ Opciones',
         quickPvp: '👫 2 Jugadores', quickAi: '🤖 vs IA',
@@ -5347,10 +5358,10 @@ limitations under the License.
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
         mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?', mainSubtitleHello: 'Hello, {name}! Who are you playing with today?',
-        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 Training', btnProfile: '🏆 My Profile',
+        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 FEN Training', btnProfile: '🏆 My Profile',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
-        optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme',
+        optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme', soundThemeLabel: '🔊 Sound', soundClassic: 'Classic', soundRetro: 'Retro', soundSoft: 'Soft',
         commentaryStyle: '🎙️ Commentator Style', styleSerious: '🎚️ More serious', styleMixed: '🎚️ Mixed', styleFunny: '🎚️ More playful',
         ingameMenuTitle: 'Menu', continueGame: '▶️ Continue game', ingameOptions: '⚙️ Options',
         quickPvp: '👫 2 Players', quickAi: '🤖 vs AI',
@@ -5570,7 +5581,7 @@ limitations under the License.
         btnQuickPvp: 'quickPvp', btnQuickAi: 'quickAi',
         btnIngameSaveGame: 'btnSaveShort', btnIngameLoadGame: 'btnLoadShort',
         ingameOptionsTitle: 'optionsTitle', igCommentaryStyleLabel: 'commentaryStyle',
-        igLanguageLabel: 'languageLabel', igModeLabel: 'modeLabel', igDiffLabel: 'diffLabel', igThemeLabel: 'themeLabel', igOptionsBack: 'backMenu',
+        igLanguageLabel: 'languageLabel', igModeLabel: 'modeLabel', igDiffLabel: 'diffLabel', igThemeLabel: 'themeLabel', igSoundThemeLabel: 'soundThemeLabel', igOptionsBack: 'backMenu',
         optSliderSerious: 'sliderSerious', optSliderMixed: 'sliderMixed', optSliderFunny: 'sliderFunny',
         igSliderSerious: 'sliderSerious', igSliderMixed: 'sliderMixed', igSliderFunny: 'sliderFunny',
         tabCommentary: 'tabCommentary', tabProfessor: 'tabProfessor',
@@ -5620,6 +5631,13 @@ limitations under the License.
       if (igDiffHard) igDiffHard.textContent = `🔥 ${t('diffHard')}`;
       const igDiffGrandmaster = document.getElementById('igDiffGrandmaster');
       if (igDiffGrandmaster) igDiffGrandmaster.textContent = `👑 ${t('diffGrandmaster')}`;
+
+      const igSoundClassic = document.getElementById('igSoundClassic');
+      if (igSoundClassic) igSoundClassic.textContent = t('soundClassic');
+      const igSoundRetro = document.getElementById('igSoundRetro');
+      if (igSoundRetro) igSoundRetro.textContent = t('soundRetro');
+      const igSoundSoft = document.getElementById('igSoundSoft');
+      if (igSoundSoft) igSoundSoft.textContent = t('soundSoft');
 
       const commentatorEmpty = document.getElementById('commentaryEmptyMsg');
       if (commentatorEmpty) commentatorEmpty.textContent = t('commentatorWaiting');
@@ -5698,90 +5716,220 @@ limitations under the License.
       return audioCtx;
     }
 
+    // ── Sound themes ─────────────────────────────────────────────────────────
+    // classic: wooden chess piece thud (noise-based percussive click)
+    // retro:   8-bit square wave style
+    // soft:    mellow sine/triangle, lower volume
+    const SOUND_THEMES = {
+      retro:   { move: { type:'square', freq:[600,200], dur:0.1, vol:0.18 },
+                 capture: { type:'square', freqs:[440,880], dur:0.15, vol:0.18 },
+                 check: { type:'square', freqs:[330,415,523,659], vol:0.15 },
+                 error: { type:'square', freq:[160,100], dur:0.18, vol:0.15 },
+                 victory: { type:'square', melody:[330,392,523,659,784,1047], vol:0.15 },
+                 castle: { type:'square', freqs:[300,450,600], vol:0.15 },
+                 hover: { type:'square', freq:900, dur:0.03, vol:0.05 } },
+      soft:    { move: { type:'sine', freq:[600,250], dur:0.15, vol:0.15 },
+                 capture: { type:'sine', freqs:[528,792], dur:0.4, vol:0.12 },
+                 check: { type:'sine', freqs:[440,554,659,880], vol:0.08 },
+                 error: { type:'triangle', freq:[180,110], dur:0.22, vol:0.08 },
+                 victory: { type:'sine', melody:[440,494,554,659,740,880], vol:0.12 },
+                 castle: { type:'sine', freqs:[350,525,700], vol:0.10 },
+                 hover: { type:'sine', freq:1000, dur:0.04, vol:0.04 } }
+    };
+
+    function _st() { return SOUND_THEMES[soundTheme]; }
+
+    // Wooden thud: shaped noise burst with a short low-frequency body
+    function _woodThud(ctx, when, vol) {
+      const dur = 0.08;
+      const bufSize = Math.ceil(ctx.sampleRate * dur);
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      // Low-pass to make it woody, not hissy
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 0.8;
+      // Body: short sine thud underneath
+      const body = ctx.createOscillator();
+      body.type = 'sine';
+      body.frequency.setValueAtTime(180, when);
+      body.frequency.exponentialRampToValueAtTime(60, when + dur);
+      const bodyGain = ctx.createGain();
+      bodyGain.gain.setValueAtTime(vol * 0.6, when);
+      bodyGain.gain.exponentialRampToValueAtTime(0.001, when + dur);
+      // Noise envelope
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(vol * 0.5, when);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, when + dur * 0.7);
+      src.connect(lp); lp.connect(noiseGain); noiseGain.connect(ctx.destination);
+      body.connect(bodyGain); bodyGain.connect(ctx.destination);
+      src.start(when); src.stop(when + dur);
+      body.start(when); body.stop(when + dur);
+    }
+
     function playMoveSound() {
       if (!soundEnabled) return;
       const ctx = getAudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      if (soundTheme === 'classic') { _woodThud(ctx, ctx.currentTime, 0.55); return; }
+      const cfg = _st().move;
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.25, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.12);
+      osc.type = cfg.type;
+      osc.frequency.setValueAtTime(cfg.freq[0], ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(cfg.freq[1], ctx.currentTime + cfg.dur * 0.7);
+      gain.gain.setValueAtTime(cfg.vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + cfg.dur);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + cfg.dur);
     }
 
     function playCaptureSound() {
       if (!soundEnabled) return;
       const ctx = getAudioCtx();
-      // Chime: two tones
-      [660, 880].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+      if (soundTheme === 'classic') {
+        // Two quick thuds: piece removed, then placed
+        _woodThud(ctx, ctx.currentTime, 0.65);
+        _woodThud(ctx, ctx.currentTime + 0.1, 0.55);
+        return;
+      }
+      const cfg = _st().capture;
+      cfg.freqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'sine';
+        osc.type = cfg.type;
         osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.1);
-        gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.1);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
-        osc.start(ctx.currentTime + i * 0.1);
-        osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+        gain.gain.setValueAtTime(cfg.vol, ctx.currentTime + i * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + cfg.dur);
+        osc.start(ctx.currentTime + i * 0.1); osc.stop(ctx.currentTime + i * 0.1 + cfg.dur);
       });
     }
 
     function playCheckSound() {
       if (!soundEnabled) return;
       const ctx = getAudioCtx();
-      [523, 659, 784, 1047].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+      if (soundTheme === 'classic') {
+        // Thud + brief high ping to signal danger
+        _woodThud(ctx, ctx.currentTime, 0.6);
+        const osc = ctx.createOscillator(); const g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.value = 1200;
+        g.gain.setValueAtTime(0.12, ctx.currentTime + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start(ctx.currentTime + 0.05); osc.stop(ctx.currentTime + 0.25);
+        return;
+      }
+      const cfg = _st().check;
+      cfg.freqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'square';
+        osc.type = cfg.type;
         osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.08);
-        gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.08);
+        gain.gain.setValueAtTime(cfg.vol, ctx.currentTime + i * 0.08);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.2);
-        osc.start(ctx.currentTime + i * 0.08);
-        osc.stop(ctx.currentTime + i * 0.08 + 0.2);
+        osc.start(ctx.currentTime + i * 0.08); osc.stop(ctx.currentTime + i * 0.08 + 0.2);
       });
     }
 
     function playErrorSound() {
       if (!soundEnabled) return;
       const ctx = getAudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      if (soundTheme === 'classic') {
+        // Low dull thud x2 — "no"
+        _woodThud(ctx, ctx.currentTime, 0.45);
+        _woodThud(ctx, ctx.currentTime + 0.12, 0.3);
+        return;
+      }
+      const cfg = _st().error;
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(200, ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(120, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.2);
+      osc.type = cfg.type;
+      osc.frequency.setValueAtTime(cfg.freq[0], ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(cfg.freq[1], ctx.currentTime + cfg.dur);
+      gain.gain.setValueAtTime(cfg.vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + cfg.dur);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + cfg.dur);
     }
 
     function playVictorySound() {
       if (!soundEnabled) return;
       const ctx = getAudioCtx();
-      const melody = [523, 587, 659, 784, 880, 1047];
-      melody.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+      if (soundTheme === 'classic') {
+        // Short bright fanfare — still musical for victory
+        [523,659,784,1047].forEach((freq, i) => {
+          const osc = ctx.createOscillator(); const g = ctx.createGain();
+          osc.connect(g); g.connect(ctx.destination);
+          osc.type = 'triangle'; osc.frequency.value = freq;
+          const t = ctx.currentTime + i * 0.13;
+          g.gain.setValueAtTime(0.18, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+          osc.start(t); osc.stop(t + 0.28);
+        });
+        return;
+      }
+      const cfg = _st().victory;
+      cfg.melody.forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'sine';
+        osc.type = cfg.type;
         const t = ctx.currentTime + i * 0.12;
         osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.setValueAtTime(cfg.vol, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-        osc.start(t);
-        osc.stop(t + 0.25);
+        osc.start(t); osc.stop(t + 0.25);
       });
+    }
+
+    function playCastleSound() {
+      if (!soundEnabled) return;
+      const ctx = getAudioCtx();
+      if (soundTheme === 'classic') {
+        // Two piece moves in quick succession
+        _woodThud(ctx, ctx.currentTime, 0.55);
+        _woodThud(ctx, ctx.currentTime + 0.15, 0.5);
+        return;
+      }
+      const cfg = _st().castle;
+      cfg.freqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = cfg.type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.07);
+        gain.gain.setValueAtTime(cfg.vol, ctx.currentTime + i * 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.07 + 0.18);
+        osc.start(ctx.currentTime + i * 0.07); osc.stop(ctx.currentTime + i * 0.07 + 0.18);
+      });
+    }
+
+    function playHoverSound() {
+      if (!soundEnabled) return;
+      const ctx = getAudioCtx();
+      if (soundTheme === 'classic') {
+        // Very soft quick tap
+        _woodThud(ctx, ctx.currentTime, 0.12);
+        return;
+      }
+      const cfg = _st().hover;
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = cfg.type;
+      osc.frequency.setValueAtTime(cfg.freq, ctx.currentTime);
+      gain.gain.setValueAtTime(cfg.vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + cfg.dur);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + cfg.dur);
+    }
+
+    function setSoundTheme(theme) {
+      soundTheme = theme;
+      try { localStorage.setItem('mchess_sound_theme', theme); } catch (_) {}
+      document.querySelectorAll('.sound-theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+      playMoveSound(); // preview
     }
 
     function toggleSound() {
       soundEnabled = !soundEnabled;
       document.getElementById('soundToggle').textContent = soundEnabled ? '🔊' : '🔇';
+      try { localStorage.setItem('mchess_sound_enabled', soundEnabled ? '1' : '0'); } catch (_) {}
     }
 
     // ── Helpers ──────────────────────────────
@@ -5995,6 +6143,16 @@ limitations under the License.
           currentDifficulty = savedDifficulty;
           const s = DIFF_SETTINGS[savedDifficulty];
           aiDepth = s.depth; aiMistakeChance = s.mistakes; aiTimeLimit = s.timeLimit;
+        }
+        const savedSound = localStorage.getItem('mchess_sound_enabled');
+        if (savedSound !== null) {
+          soundEnabled = savedSound !== '0';
+          document.getElementById('soundToggle').textContent = soundEnabled ? '🔊' : '🔇';
+        }
+        const savedSoundTheme = localStorage.getItem('mchess_sound_theme');
+        if (savedSoundTheme && SOUND_THEMES[savedSoundTheme]) {
+          soundTheme = savedSoundTheme;
+          document.querySelectorAll('.sound-theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === soundTheme));
         }
       } catch (_) { }
 
@@ -7293,7 +7451,7 @@ limitations under the License.
             setTimeout(() => boardWrap.classList.remove('shake-hard'), 450);
           }
         }
-      } else { playMoveSound(); }
+      } else if (isCastle) { playCastleSound(); } else { playMoveSound(); }
 
       render();
       updateTurnUI();
