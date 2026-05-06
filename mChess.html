@@ -70,21 +70,93 @@ limitations under the License.
       --shadow: 0 8px 32px rgba(44, 62, 32, 0.15);
       --glow: 0 0 20px rgba(92, 124, 75, 0.3);
       --bg-gradient: linear-gradient(135deg, #e9e3d3 0%, #d4ddc5 50%, #f4f1ea 100%);
+      --btn-primary-from: #4b6b3a;
+      --btn-primary-to: #8b5a2b;
+      --btn-primary-glow: rgba(75, 107, 58, 0.4);
+      --btn-secondary-from: #d4ddc5;
+      --btn-secondary-to: #e3d5b8;
+      --btn-sound-from: #d4ddc5;
+      --btn-sound-to: #c8d6b5;
     }
 
     body.theme-ocean {
-      --bg: #eff6ff;
-      --primary: #2563eb;
-      --primary-light: #93c5fd;
-      --accent: #0891b2;
-      --accent-light: #a5f3fc;
-      --light-sq: #e0f2fe;
-      --dark-sq: #7dd3fc;
-      --text: #1e3a8a;
-      --text-light: #1d4ed8;
-      --shadow: 0 8px 32px rgba(20, 50, 150, 0.15);
-      --glow: 0 0 20px rgba(37, 99, 235, 0.3);
-      --bg-gradient: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #eff6ff 100%);
+      --bg: #0b1d35;
+      --card: rgba(22, 58, 105, 0.88);
+      --primary: #1a5276;
+      --primary-light: #5dade2;
+      --accent: #17a589;
+      --accent-light: #76d7c4;
+      --light-sq: #aecde8;
+      --dark-sq: #1f5880;
+      --text: #d6eaf8;
+      --text-light: #85c1e9;
+      --shadow: 0 8px 32px rgba(0, 15, 45, 0.55);
+      --glow: 0 0 20px rgba(26, 82, 118, 0.5);
+      --bg-gradient: linear-gradient(135deg, #0b1d35 0%, #0e2647 50%, #091525 100%);
+      --btn-primary-from: #1a5276;
+      --btn-primary-to: #17a589;
+      --btn-primary-glow: rgba(26, 82, 118, 0.5);
+      --btn-secondary-from: #163a69;
+      --btn-secondary-to: #1a4a72;
+      --btn-secondary-text: #d6eaf8;
+      --btn-sound-from: #163a69;
+      --btn-sound-to: #1a4a72;
+    }
+
+    body.theme-ocean .piece.white {
+      filter: drop-shadow(0 0 2px #000) drop-shadow(1px 2px 4px rgba(0, 0, 0, 0.6));
+      color: #fff;
+    }
+
+    body.theme-ocean .piece.black {
+      color: #0a1628;
+      filter: drop-shadow(0 0 2px rgba(255,255,255,0.6)) drop-shadow(1px 2px 3px rgba(0, 0, 0, 0.5));
+    }
+
+    body.theme-ocean .panel-tab-btn {
+      color: #85c1e9;
+    }
+
+    body.theme-ocean .panel-tab-btn.active {
+      color: #76d7c4;
+      border-bottom-color: #76d7c4;
+      background: rgba(93, 173, 226, 0.1);
+    }
+
+    body.theme-ocean .level-card {
+      background: linear-gradient(135deg, rgba(22, 58, 105, 0.95), rgba(15, 40, 75, 0.9));
+      border: 1px solid rgba(93, 173, 226, 0.25);
+      box-shadow: 0 10px 24px rgba(0, 10, 30, 0.35);
+    }
+
+    body.theme-ocean .level-card h3 {
+      color: #aecde8;
+    }
+
+    body.theme-ocean .level-card p {
+      color: #85c1e9;
+    }
+
+    body.theme-ocean .level-card:hover {
+      border-color: rgba(93, 173, 226, 0.5);
+      box-shadow: 0 18px 36px rgba(0, 10, 30, 0.5);
+    }
+
+    .options-lang-select {
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      background: rgba(255, 255, 255, 0.75);
+      color: var(--text);
+    }
+
+    body.theme-ocean .options-lang-select {
+      background: rgba(22, 58, 105, 0.9);
+      border: 1px solid rgba(93, 173, 226, 0.3);
+      color: #d6eaf8;
+    }
+
+    body.theme-ocean .menu-btn.secondary {
+      --menu-btn-secondary-bg: rgba(93, 173, 226, 0.12);
+      --menu-btn-secondary-border: rgba(93, 173, 226, 0.25);
     }
 
     body.theme-classic {
@@ -100,6 +172,13 @@ limitations under the License.
       --shadow: 0 8px 32px rgba(40, 40, 40, 0.15);
       --glow: 0 0 20px rgba(92, 92, 92, 0.3);
       --bg-gradient: linear-gradient(135deg, #e0e0e0 0%, #f0f0f0 50%, #fafafa 100%);
+      --btn-primary-from: #5c5c5c;
+      --btn-primary-to: #8b5a2b;
+      --btn-primary-glow: rgba(92, 92, 92, 0.35);
+      --btn-secondary-from: #e8e8e8;
+      --btn-secondary-to: #d2b48c;
+      --btn-sound-from: #e8e8e8;
+      --btn-sound-to: #d4d4d4;
     }
 
     body.theme-futbol {
@@ -116,6 +195,13 @@ limitations under the License.
       --shadow: 0 8px 32px rgba(27, 94, 32, 0.4);
       --glow: 0 0 20px rgba(76, 175, 80, 0.5);
       --bg-gradient: linear-gradient(135deg, #4caf50 0%, #2e7d32 50%, #1b5e20 100%);
+      --btn-primary-from: #2e7d32;
+      --btn-primary-to: #fdd835;
+      --btn-primary-glow: rgba(76, 175, 80, 0.45);
+      --btn-secondary-from: #c8e6c9;
+      --btn-secondary-to: #a5d6a7;
+      --btn-sound-from: #c8e6c9;
+      --btn-sound-to: #a5d6a7;
     }
 
     body.theme-futbol .board-wrap {
@@ -223,23 +309,18 @@ limitations under the License.
     }
 
     @keyframes floatBubble {
-      0% {
-        transform: translateY(100vh) scale(0.5);
-        opacity: 0;
-      }
+      0%   { transform: translateY(100vh) scale(0.5) translateX(0);   opacity: 0; }
+      10%  { opacity: 0.12; }
+      30%  { transform: translateY(65vh)  scale(0.8) translateX(18px); }
+      55%  { transform: translateY(35vh)  scale(1.0) translateX(-14px); }
+      80%  { transform: translateY(10vh)  scale(1.1) translateX(10px); }
+      90%  { opacity: 0.12; }
+      100% { transform: translateY(-15vh) scale(1.2) translateX(0);   opacity: 0; }
+    }
 
-      10% {
-        opacity: 0.12;
-      }
-
-      90% {
-        opacity: 0.12;
-      }
-
-      100% {
-        transform: translateY(-15vh) scale(1.2);
-        opacity: 0;
-      }
+    body.theme-ocean .bg-bubbles span {
+      border: 1px solid rgba(174, 205, 232, 0.35);
+      backdrop-filter: blur(2px);
     }
 
     /* ── Header ─────────────────────────── */
@@ -750,14 +831,14 @@ limitations under the License.
     }
 
     .btn-primary {
-      background: linear-gradient(145deg, #a855f7, #ec4899);
+      background: linear-gradient(145deg, var(--btn-primary-from, #a855f7), var(--btn-primary-to, #ec4899));
       color: #fff;
-      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 15px var(--btn-primary-glow, rgba(168, 85, 247, 0.4)), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
     }
 
     .btn-secondary {
-      background: linear-gradient(145deg, #e9d5ff, #ddd6fe);
-      color: var(--text);
+      background: linear-gradient(145deg, var(--btn-secondary-from, #e9d5ff), var(--btn-secondary-to, #ddd6fe));
+      color: var(--btn-secondary-text, var(--text));
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 -3px 0 rgba(0, 0, 0, 0.08);
     }
 
@@ -766,8 +847,8 @@ limitations under the License.
       min-width: 46px;
       padding: 12px;
       font-size: 1.2rem;
-      background: linear-gradient(145deg, #dbeafe, #c7d2fe);
-      color: var(--text);
+      background: linear-gradient(145deg, var(--btn-sound-from, #dbeafe), var(--btn-sound-to, #c7d2fe));
+      color: var(--btn-secondary-text, var(--text));
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 -3px 0 rgba(0, 0, 0, 0.08);
     }
 
@@ -2571,9 +2652,9 @@ limitations under the License.
     }
 
     .menu-btn.secondary {
-      background: rgba(168, 85, 247, 0.08);
+      background: var(--menu-btn-secondary-bg, rgba(168, 85, 247, 0.08));
       color: var(--text);
-      border: 1px solid rgba(168, 85, 247, 0.15);
+      border: 1px solid var(--menu-btn-secondary-border, rgba(168, 85, 247, 0.15));
     }
 
     .menu-mode-row {
@@ -3327,8 +3408,8 @@ limitations under the License.
           </div>
         </div>
       </div>
-      <button class="menu-btn secondary" id="btnBackToMenu"
-        style="margin-top:8px; border:none; background:transparent; font-size:0.85rem;"
+      <button class="menu-btn secondary back-to-menu-btn" id="btnBackToMenu"
+        style="margin-top:8px; font-size:0.85rem;"
         onclick="showScreen('screenMenu')">&#8592; Volver al Menú</button>
     </div>
   </div>
@@ -3368,8 +3449,8 @@ limitations under the License.
 
       <span class="options-label" id="optionsLanguageLabel" style="margin-top:8px;">🌐 Idioma</span>
       <div style="margin-top:6px; margin-bottom:8px;">
-        <select id="optLangSelect" class="lang-select" onchange="setLanguage(this.value)"
-          style="width:100%; padding:8px; border:1px solid rgba(168,85,247,0.25); border-radius:10px; background:rgba(255,255,255,0.75);">
+        <select id="optLangSelect" class="lang-select options-lang-select" onchange="setLanguage(this.value)"
+          style="width:100%; padding:8px; border-radius:10px;">
           <option value="es">Español</option>
           <option value="en">English</option>
         </select>
@@ -3471,8 +3552,8 @@ limitations under the License.
 
       <span class="options-label" id="igLanguageLabel">🌐 Idioma</span>
       <div style="margin-top:6px; margin-bottom:8px;">
-        <select id="igLangSelect" class="lang-select" onchange="setLanguage(this.value)"
-          style="width:100%; padding:8px; border:1px solid rgba(168,85,247,0.25); border-radius:10px; background:rgba(255,255,255,0.75);">
+        <select id="igLangSelect" class="lang-select options-lang-select" onchange="setLanguage(this.value)"
+          style="width:100%; padding:8px; border-radius:10px;">
           <option value="es">Español</option>
           <option value="en">English</option>
         </select>
@@ -18807,7 +18888,7 @@ limitations under the License.
       if (theme.includes('futbol')) colors = ['#ffffff', '#2ecc71', '#fbff00'];
       if (theme.includes('classic')) colors = ['#d4a373', '#faedcd', '#ccd5ae'];
       if (theme.includes('forest')) colors = ['#16a34a', '#fde68a', '#b45309'];
-      if (theme.includes('ocean')) colors = ['#2563eb', '#a5f3fc', '#0891b2'];
+      if (theme.includes('ocean')) colors = ['#1a5276', '#2e86c1', '#1abc9c'];
 
       const canvas = document.createElement('canvas');
       canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
@@ -19278,24 +19359,26 @@ limitations under the License.
       const themeData = {
         magic: { type: 'emoji', emojis: ['🦄', '🧚‍♀️', '🧙‍♀️', '🪄', '✨', '🌈'] },
         forest: { type: 'emoji', emojis: ['🍃', '🍁', '🌳', '🌺', '🦉'] },
-        ocean: { type: 'emoji', emojis: ['🐟', '🌊', '🐚', '🫧', '🦀'] },
+        ocean: { type: 'mixed', emojis: ['🐟', '🌊', '🐚', '🫧', '🦀'], colors: ['rgba(93,173,226,0.25)', 'rgba(26,188,156,0.2)', 'rgba(174,205,232,0.18)', 'rgba(46,134,193,0.22)'] },
         classic: { type: 'emoji', emojis: ['♙', '♘', '♗', '♖', '♕', '♔'] },
         futbol: { type: 'emoji', emojis: ['⚽', '🥅', '🏆', '🥇', '👟', '🏟️'] }
       };
 
       const data = themeData[theme] || themeData.magic;
 
-      for (let i = 0; i < 15; i++) {
+      const count = (data.type === 'bubble' || data.type === 'mixed') ? 22 : 15;
+      for (let i = 0; i < count; i++) {
         const span = document.createElement('span');
-        const size = 30 + Math.random() * 60;
+        const isBubble = data.type === 'bubble' || (data.type === 'mixed' && i % 2 === 0);
+        const size = isBubble ? (15 + Math.random() * 55) : (30 + Math.random() * 60);
 
-        if (data.type === 'bubble') {
+        if (isBubble) {
           span.style.width = size * 1.5 + 'px';
           span.style.height = size * 1.5 + 'px';
           span.style.background = data.colors[Math.floor(Math.random() * data.colors.length)];
           span.style.borderRadius = '50%';
         } else {
-          span.style.borderRadius = '0'; // reset for text
+          span.style.borderRadius = '0';
           span.style.background = 'transparent';
           span.textContent = data.emojis[Math.floor(Math.random() * data.emojis.length)];
           span.style.fontSize = size * 1.5 + 'px';
