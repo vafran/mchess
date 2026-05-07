@@ -4973,24 +4973,33 @@ limitations under the License.
       if (_cc.length >= 1) grant('first_puzzle');
       if (_cc.length >= 10) grant('keep_practicing');
       changed = p.unlockedTrophies.length > before;
-      // Backfill medals for any categories already completed (covers profiles saved before medal system)
+      // Sync medals: revoke any that are no longer fully earned, grant any that now are
       const unlockedSet = new Set(p.unlockedTrophies.map(t => t.id));
       for (let catNum = 1; catNum <= 8; catNum++) {
-        if (p.unlockedMedals.some(m => m.cat === catNum)) continue;
         if (!MEDAL_DEFS[catNum]) continue;
         const catIds = Object.entries(TROPHY_DEFS).filter(([, d]) => d.cat === catNum).map(([id]) => id);
-        if (catIds.length > 0 && catIds.every(id => unlockedSet.has(id))) {
+        const earned = catIds.length > 0 && catIds.every(id => unlockedSet.has(id));
+        const hasMedal = p.unlockedMedals.some(m => m.cat === catNum);
+        if (earned && !hasMedal) {
           p.unlockedMedals.push({ cat: catNum, unlockedAt: new Date().toISOString() });
           changed = true;
-          console.log(`[Statistician] Migration: backfilled medal for cat ${catNum}`);
+          console.log(`[Statistician] Migration: granted medal for cat ${catNum}`);
+        } else if (!earned && hasMedal) {
+          p.unlockedMedals = p.unlockedMedals.filter(m => m.cat !== catNum);
+          changed = true;
+          console.log(`[Statistician] Migration: revoked medal for cat ${catNum} (incomplete)`);
         }
       }
-      if (!p.wheatAndChessboard &&
-        p.unlockedMedals.length === Object.keys(MEDAL_DEFS).length &&
-        p.unlockedTrophies.length === Object.keys(TROPHY_DEFS).length) {
+      const allComplete = p.unlockedMedals.length === Object.keys(MEDAL_DEFS).length &&
+        p.unlockedTrophies.length === Object.keys(TROPHY_DEFS).length;
+      if (!p.wheatAndChessboard && allComplete) {
         p.wheatAndChessboard = true;
         changed = true;
-        console.log('[Statistician] Migration: backfilled wheatAndChessboard title');
+        console.log('[Statistician] Migration: granted wheatAndChessboard title');
+      } else if (p.wheatAndChessboard && !allComplete) {
+        p.wheatAndChessboard = false;
+        changed = true;
+        console.log('[Statistician] Migration: revoked wheatAndChessboard title (incomplete)');
       }
       if (changed) { saveProfile(); console.log(`[Statistician] Migration saved — trophies: ${p.unlockedTrophies.length}, medals: ${p.unlockedMedals.length}`); }
     }
