@@ -245,6 +245,22 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
+## Lo nuevo en v2.25.1 — *Expansión de Puzzles y Herramientas FEN*
+
+### ♟ Exportar FEN
+* **Botón Copiar FEN** añadido junto al botón de copiar PGN en la barra del historial. Copia el FEN completo de la posición actual al portapapeles — útil para compartir posiciones, analizarlas en herramientas externas o importarlas en la Librería de Entrenamiento de Airin.
+
+### 🎓 Librería de Entrenamiento — 64 Puzzles
+* 17 nuevos puzzles añadidos (2 mate en 2, 3 mate en 3, 12 mate en 4) — total: **64 posiciones**.
+* Distribución: 6 / 12 / 16 / 22 / 4 aperturas / 4 leyendas — más puzzles en las categorías más difíciles.
+* Requisitos del trofeo FEN Master actualizados: **3 aperturas, 4 mate en 1, 6 mate en 2, 8 mate en 3, 10 mate en 4**.
+
+### 🏫 Correcciones del Profesor
+* Filtro anti-error desactivado al analizar puzzles de mate — los movimientos sacrificiales (Cf6+, Ah6, etc.) ya no son bloqueados.
+* Detección correcta de mates por subpromoción (`cxb8=C#`) en el escáner de mate en 1.
+
+---
+
 ## Lo nuevo en v2.25.0 — *Renovación de la Librería de Entrenamiento*
 
 ### 🎓 Nueva estructura de la Librería de Entrenamiento

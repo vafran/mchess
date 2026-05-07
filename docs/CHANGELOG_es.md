@@ -22,9 +22,16 @@ Formato: versión · tamaño · qué cambió.
 - **Detección de mate por subpromoción** — el escáner de mate en 1 ahora prueba tanto la promoción a dama como a caballo, detectando correctamente mates del tipo `cxb8=N#`.
 - **Mayor profundidad para puzzles mate en 3/4** — la profundidad de búsqueda del profesor sube a 10–12 con 14–20s de tiempo cuando hay un puzzle de mate cargado.
 
+### Exportar FEN
+- **Botón Copiar FEN** (♟) añadido junto al botón de copiar PGN en la barra del historial de movimientos. Copia el FEN completo de la posición actual al portapapeles — colocación de piezas, color activo, derechos de enroque, casilla de al paso, reloj de semijugadas y número de jugada completa. Funciona en cualquier momento de la partida, incluidas las posiciones de puzzles cargadas.
+
 ### Tema Océano
 - Corregido el contraste de coordenadas del tablero, botones del profesor, modales de trofeos, mensajes de toast, indicadores de movimientos legales, selector de idioma, cuadros de finalización, fichas de estadísticas, modal de leyenda, etiquetas de progreso y texto de peligro.
 - Las piezas negras sobre casillas oscuras ahora tienen un brillo blanco para mejorar la visibilidad.
+
+### Temas Fútbol y Bosque
+- Las coordenadas del tablero ahora usan colores contrastantes según el tipo de casilla (blanco en casillas oscuras, oscuro en casillas claras) para mayor legibilidad en ambos temas.
+- Tema Fútbol: la franja diagonal de tiza se extiende también a las casillas oscuras; las casillas claras cambian a casi blanco para simular el patrón alternado de un campo de fútbol recién cortado.
 
 ---
 ## v2.25.0 — Renovación de la Librería de Entrenamiento

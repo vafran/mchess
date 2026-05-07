@@ -22,9 +22,16 @@ Format: version · size · what changed.
 - **Underpromotion mate detection** — the mate-in-1 scanner now tries both queen and knight promotions, so `cxb8=N#` style mates are correctly identified (previously only queen promotion was tried, missing the only checkmate).
 - **Depth boost for mate-in-3/4 puzzles** — professor search depth raised to 10–12 with 14–20s timeout when a mate puzzle is loaded, giving the engine time to find deep mating lines.
 
+### FEN Export
+- **Copy FEN button** (♟) added next to the PGN copy button in the move history bar. Copies the full FEN of the current position to clipboard — piece placement, active color, castling rights, en-passant square, halfmove clock, and fullmove number. Works at any point in the game, including loaded puzzle positions.
+
 ### Ocean Theme
 - Fixed contrast for board coordinates, professor buttons, trophy modals, toast messages, legal move highlights, language selector, completion boxes, stat chips, legend modal, progress labels, and danger text colors.
 - Black pieces on dark squares now have a white glow drop-shadow for readability.
+
+### Football & Forest Themes
+- Board coordinates now use contrasting colors per square type (white on dark squares, dark on light squares) for readability in both themes.
+- Football theme: diagonal chalk stripe extended to dark squares; light squares changed to near-white for a realistic mowed-pitch alternating pattern.
 
 ---
 ## v2.25.0 — Training Library Overhaul

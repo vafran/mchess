@@ -235,6 +235,22 @@ Three styles, with labels now visible under the slider:
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
 
+## What's new in v2.25.1 — *Puzzle Library Expansion & FEN Tools*
+
+### ♟ FEN Export
+* **Copy FEN button** added next to the PGN copy button in the move history bar. Copies the full FEN of the current position to clipboard — useful for sharing positions, loading them into analysis tools, or importing them back into Airin's Training Library.
+
+### 🎓 Training Library — 64 Puzzles
+* 17 new puzzles added (2 mate-in-2, 3 mate-in-3, 12 mate-in-4) — total now **64 positions**.
+* Distribution: 6 / 12 / 16 / 22 / 4 openings / 4 legends — harder categories have more puzzles.
+* FEN Master trophy requirements raised: **3 openings, 4 mate-1s, 6 mate-2s, 8 mate-3s, 10 mate-4s**.
+
+### 🏫 Coach Fixes
+* Anti-blunder filter disabled during mate puzzle analysis — sacrificial moves (Nf6+, Bh6, etc.) are no longer blocked.
+* Underpromotion mates (`cxb8=N#`) now correctly detected by the mate-in-1 scanner.
+
+---
+
 ## What's new in v2.25.0 — *Training Library Overhaul*
 
 ### 🎓 Training Library Restructured
