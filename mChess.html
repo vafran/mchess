@@ -317,8 +317,8 @@ limitations under the License.
       --primary-light: #4caf50;
       --accent: #fdd835;
       --accent-light: #fff59d;
-      --light-sq: #f0fdf4;
-      --dark-sq: #388e3c;
+      --light-sq: #e8f5e9;
+      --dark-sq: #2d6e1a;
       --text: #1b5e20;
       --text-light: #2e7d32;
       --text-on-dark: #ffffff;
@@ -340,8 +340,9 @@ limitations under the License.
       box-shadow: 0 0 0 6px #1b5e20, var(--shadow);
     }
 
-    body.theme-futbol .cell.light {
-      background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.08) 0px, rgba(0, 0, 0, 0.08) 3px, transparent 3px, transparent 8px);
+    body.theme-futbol .cell.light,
+    body.theme-futbol .cell.dark {
+      background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.10) 0px, rgba(0, 0, 0, 0.10) 3px, transparent 3px, transparent 8px);
     }
 
     body.theme-futbol .menu-card,
@@ -394,6 +395,31 @@ limitations under the License.
 
     body.theme-futbol #gameStatusHUD {
       color: #fff !important;
+    }
+
+    body.theme-futbol {
+      --highlight-move: rgba(255, 255, 255, 0.28);
+      --highlight-last-from: rgba(253, 216, 53, 0.55);
+      --highlight-last-to: rgba(255, 255, 255, 0.35);
+    }
+    body.theme-futbol .cell.move-hint::after {
+      background: rgba(255, 255, 255, 0.6);
+    }
+    body.theme-futbol .cell.dark .coord {
+      color: #fff;
+      opacity: 0.75;
+    }
+    body.theme-futbol .cell.light .coord {
+      color: #1b5e20;
+      opacity: 0.75;
+    }
+    body.theme-forest .cell.dark .coord {
+      color: #fff;
+      opacity: 0.75;
+    }
+    body.theme-forest .cell.light .coord {
+      color: #2c3e20;
+      opacity: 0.75;
     }
 
     body {
