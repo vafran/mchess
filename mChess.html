@@ -4875,6 +4875,7 @@ limitations under the License.
     // Session counters — reset on every init()
     let sessionUndos = 0;
     let sessionHints = 0;
+    let sessionBestMoveAsked = 0;
     let sessionMinEval = Infinity; // lowest eval seen (cp, from player's perspective)
     let sessionQueenBlundered = false;    // true if opponent captured player's queen uncontested
     let sessionCastled = false;    // true once the player castles
@@ -4893,9 +4894,7 @@ limitations under the License.
     let sessionPvpQueenPromoted = false;    // a pawn was promoted (any piece) in this PvP game
     // 🎒 Child-friendly session trackers
     let sessionPawnsMovedFromStart = 0;       // distinct pawns moved from their starting rank
-    let sessionKnightEverMoved = false;    // did the player move a knight this game?
     let sessionNoMaterialLost = true;     // stays true if player never loses a piece
-    let sessionMirrorCount = 0;        // how many of the first 3 moves mirror the opponent
     let sessionFirstCheckGiven = false;    // player gave check for the first time
     let sessionFirstPromotion = false;    // player promoted a pawn for the first time
     let sessionFirstCastle = false;    // player castled for the first time (any game, ever)
@@ -5012,8 +5011,11 @@ limitations under the License.
         completedAt: new Date().toISOString()
       });
       saveProfile();
-      // 🧘 FEN Master — complete a substantial portion of each category
+      // 🎓 First Puzzle / 🔁 Keep Practicing
       const _cc = currentProfile.completedChallenges;
+      if (_cc.length >= 1) unlockTrophy('first_puzzle');
+      if (_cc.length >= 10) unlockTrophy('keep_practicing');
+      // 🧘 FEN Master — complete a substantial portion of each category
       const _fenReq = { opening: 3, mate1: 4, mate2: 6, mate3: 8, mate4: 10 };
       if (Object.entries(_fenReq).every(([cat, req]) => _cc.filter(c => c.cat === cat).length >= req))
         unlockTrophy('fen_master');
@@ -5054,7 +5056,9 @@ limitations under the License.
       oops_queen: { icon: '😬', cat: 3, hidden: true, name: { es: '¿Mi Dama?', en: 'Oops, My Queen?' }, desc: { es: 'Gana tras perder tu dama sin compensación.', en: 'Win after losing your queen without compensation.' }, story: { es: '¡No te rindas! Incluso sin dama, puedes encontrar el mate si tu rival se descuida.', en: 'Don\'t resign! Even without your queen, you can still find a checkmate if your opponent gets careless.' } },
       ancient_law: { icon: '👻', cat: 3, hidden: true, name: { es: 'La Ley Antigua', en: 'The Ancient Law' }, desc: { es: 'Gana una partida en la que capturaste al paso.', en: 'Win a game where you captured en passant.' }, story: { es: 'Captura al paso. Es la regla más antigua y misteriosa del ajedrez.', en: 'Capture en passant. It\'s the most ancient and mysterious rule of chess.' } },
       the_rebel: { icon: '♞', cat: 3, hidden: true, name: { es: 'El Rebelde', en: 'The Rebel' }, desc: { es: 'Coronas un peón con Caballo y ganas.', en: 'Promote a pawn to a Knight and win.' }, story: { es: 'Cuando un peón llegue al final, corónalo como Caballo en vez de Dama, y gana la partida.', en: 'When a pawn reaches the last rank, promote it to a Knight instead of a Queen, and win the game.' } },
-      night_owl: { icon: '🦉', cat: 3, hidden: true, name: { es: 'Noctámbulo', en: 'Night Owl' }, desc: { es: 'Gana una partida entre medianoche y las 4 de la mañana.', en: 'Win a game between midnight and 4 AM.' }, story: { es: 'Juega y gana una partida entre la medianoche y las 4:00 AM hora local.', en: 'Play and win a game between midnight and 4:00 AM local time.' } },
+      first_puzzle: { icon: '🎓', cat: 6, name: { es: 'Primer Puzzle', en: 'First Puzzle' }, desc: { es: 'Completa tu primer puzzle en la Librería de Entrenamiento.', en: 'Complete your first puzzle in the Training Library.' }, story: { es: 'Abre la Librería de Entrenamiento con el botón 🧩, elige cualquier puzzle y resuélvelo.', en: 'Open the Training Library with the 🧩 button, pick any puzzle, and solve it.' } },
+      keep_practicing: { icon: '🔁', cat: 6, name: { es: 'A Practicar', en: 'Keep Practicing' }, desc: { es: 'Completa 10 puzzles en total en la Librería de Entrenamiento.', en: 'Complete 10 puzzles total in the Training Library.' }, story: { es: 'Los 10 puzzles pueden ser de cualquier categoría — mezcla aperturas, mate en 1, mate en 2 y más.', en: 'The 10 puzzles can be from any category — mix openings, mate in 1, mate in 2, and more.' } },
+      opening_student: { icon: '📖', cat: 6, name: { es: 'Estudiante de Aperturas', en: 'Opening Student' }, desc: { es: 'Usa "¿Qué hago?" 3 veces en la misma partida.', en: 'Use "What should I do?" 3 times in the same game.' }, story: { es: 'En una sola partida, pulsa el botón ¿Qué hago? tres veces para aprender qué jugadas recomienda el Profesor.', en: 'In a single game, press the "What should I do?" button three times to learn what moves the Coach recommends.' } },
       // Category 4 — The Historians (real-time, sacrifice required)
       secret_marshall_qg3: {
         icon: '🪙', cat: 4, name: { es: 'La Lluvia de Oro', en: 'Golden Rain' },
@@ -5096,8 +5100,6 @@ limitations under the License.
       // Cat 3 (Easter Eggs) — hidden Fun & Silly trophies moved here
       pawn_army: { icon: '🐛', cat: 1, name: { es: 'Ejército de Hormigas', en: 'Ant Army' }, desc: { es: 'Mueve 5 peones distintos en una partida.', en: 'Move 5 different pawns in one game.' }, story: { es: 'Avanza los peones de ambos lados al principio (e, d, c, f, g). Muy fácil de conseguir de forma natural.', en: 'Push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.' } },
       queen_bee: { icon: '🐝', cat: 7, name: { es: 'La Abeja Reina', en: 'Queen Bee' }, desc: { es: 'Gana capturando con la dama en el último movimiento.', en: 'Win with the queen as the final capture.' }, story: { es: 'Tu dama debe hacer la última captura antes del mate. Prepara la posición para que la dama tome a la pieza defensora.', en: 'You need the queen to be the piece that makes the last capture before mate. Set up a position where your queen captures the defending piece and then checkmate follows.' } },
-      no_knights: { icon: '🙈', cat: 3, hidden: true, name: { es: '¿Caballos? ¿Para qué?', en: 'Knights? Who Needs Them?' }, desc: { es: 'Gana sin mover ningún caballo.', en: 'Win a game without ever moving a knight.' }, story: { es: 'Deja tus caballos en sus casillas iniciales (b1/g1 o b8/g8) toda la partida y gana.', en: 'Leave your knights on their starting squares (b1/g1 or b8/g8) for the entire game and win.' } },
-      copy_cat: { icon: '🐱', cat: 3, hidden: true, name: { es: 'El Espejo', en: 'Copycat' }, desc: { es: 'Imita los 3 primeros movimientos del rival exactamente.', en: "Mirror the opponent's first 3 moves exactly." }, story: { es: 'Haz exactamente los mismos movimientos que tu rival durante los primeros 3 turnos completos.', en: 'Play exactly the same moves as your opponent for the first 3 full turns.' } },
       last_pawn: { icon: '🥲', cat: 3, hidden: true, name: { es: 'El Superviviente', en: 'The Survivor' }, desc: { es: 'Gana con solo 1 peón propio en el tablero.', en: 'Win with only 1 pawn remaining.' }, story: { es: 'Gana la partida teniendo exactamente un solo peón tuyo en el tablero.', en: 'Win the game while you only have exactly one pawn left on the board.' } },
       // Cat 5 — Speed & Challenge
       lightning_win: { icon: '⚡', cat: 5, name: { es: '¡Rayo!', en: 'Lightning!' }, desc: { es: 'Gana en 15 movimientos o menos (Medio o superior).', en: 'Win in 15 moves or fewer (Medium or harder).' }, story: { es: 'El Mate del Pastor o trampas en la Italiana pueden funcionar en Medio. Ataca muy rápido.', en: 'Scholar\'s Mate or Italian Game traps can work on Easy/Medium. Push fast and attack early.' } },
@@ -5256,7 +5258,6 @@ limitations under the License.
         if (sessionQueenBlundered) unlockTrophy('oops_queen');
         if (sessionEnPassantCaptured) unlockTrophy('ancient_law');
         if (sessionPromotedToKnight) unlockTrophy('the_rebel');
-        if (new Date().getHours() < 4) unlockTrophy('night_owl');
         // ⚡ Speed & Challenge
         if (['medium', 'hard', 'grandmaster'].includes(difficulty) && movesCount <= 30)
           unlockTrophy('lightning_win');  // ≤15 full moves per player
@@ -5264,8 +5265,6 @@ limitations under the License.
         if (sessionNoMaterialLost) unlockTrophy('perfect_endgame');
         // 🐝 Fun & Silly — win conditions
         if (sessionLastCapturePiece === 'Q') unlockTrophy('queen_bee');
-        if (!sessionKnightEverMoved) unlockTrophy('no_knights');
-        if (sessionMirrorCount >= 3) unlockTrophy('copy_cat');
         // last_pawn: player has exactly 1 pawn left
         const myPawn = playerColor === 'w' ? 'P' : 'p';
         let pawnCount = 0;
@@ -5519,10 +5518,8 @@ limitations under the License.
           sessionQueenBlundered: !!sessionQueenBlundered,
           sessionEnPassantCaptured: !!sessionEnPassantCaptured,
           sessionPromotedToKnight: !!sessionPromotedToKnight,
-          sessionKnightEverMoved: !!sessionKnightEverMoved,
           sessionNoMaterialLost: !!sessionNoMaterialLost,
           sessionLastCapturePiece: sessionLastCapturePiece,
-          sessionMirrorCount,
           sessionPawnsMovedFromStart,
           sessionEnPassantCount,
           sessionFirstCastle: !!sessionFirstCastle,
@@ -5592,10 +5589,8 @@ limitations under the License.
         sessionQueenBlundered = !!s.sessionQueenBlundered;
         sessionEnPassantCaptured = !!s.sessionEnPassantCaptured;
         sessionPromotedToKnight = !!s.sessionPromotedToKnight;
-        sessionKnightEverMoved = !!s.sessionKnightEverMoved;
         sessionNoMaterialLost = s.sessionNoMaterialLost !== undefined ? !!s.sessionNoMaterialLost : true;
         sessionLastCapturePiece = s.sessionLastCapturePiece || null;
-        sessionMirrorCount = s.sessionMirrorCount || 0;
         sessionPawnsMovedFromStart = s.sessionPawnsMovedFromStart || 0;
         sessionEnPassantCount = s.sessionEnPassantCount || 0;
         sessionFirstCastle = !!s.sessionFirstCastle;
@@ -6650,6 +6645,7 @@ limitations under the License.
       // Statistician: reset session counters
       sessionUndos = 0;
       sessionHints = 0;
+      sessionBestMoveAsked = 0;
       sessionMinEval = Infinity;
       sessionQueenBlundered = false;
       sessionCastled = false;
@@ -6663,9 +6659,7 @@ limitations under the License.
       sessionTrainingUsed = trainingModeEnabled;
       // 🎒 Child-friendly session resets
       sessionPawnsMovedFromStart = 0;
-      sessionKnightEverMoved = false;
       sessionNoMaterialLost = true;
-      sessionMirrorCount = 0;
       sessionFirstCheckGiven = false;
       sessionFirstPromotion = false;
       sessionFirstCastle = false;
@@ -7717,14 +7711,6 @@ limitations under the License.
         // 🐛 pawn_army: track distinct pawns by counting how many left their starting rank
         if (type === 'P' && !isCastle && ((color === 'w' && sr === 6) || (color === 'b' && sr === 1))) {
           sessionPawnsMovedFromStart++;
-        }
-        // 🙈 no_knights: flag if player ever moves a knight
-        if (type === 'N') sessionKnightEverMoved = true;
-        // 🐱 copy_cat: mirror opponent's moves (odd plies = player if player is White)
-        if (history.length >= 1 && history.length <= 3 && history.length % 2 === 1) {
-          const opponentLastMove = history[history.length - 2];
-          const playerThisMove = sqName(tr, tc);
-          if (opponentLastMove && opponentLastMove.replace(/[+#!?]/g, '').endsWith(playerThisMove)) sessionMirrorCount++;
         }
         // ♟️ perfect_endgame: detect if player lost any material this move
         if (!isCastle && captured !== ' ' && color !== playerColor) sessionNoMaterialLost = false;
@@ -17718,6 +17704,8 @@ limitations under the License.
 
     function requestBestMove() {
       sessionHints++;
+      sessionBestMoveAsked++;
+      if (sessionBestMoveAsked >= 3 && currentProfile) unlockTrophy('opening_student');
       lastProfessorAction = 'best';
 
       // Puzzle mode: reveal the expected next move as a hint

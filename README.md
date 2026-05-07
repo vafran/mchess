@@ -125,7 +125,7 @@ Upon starting for the first time, Airin asks for your name. From that point on, 
 
 **⚡ Relentless** — win in 15 moves, beat Hard without any hints, force a draw against the Magician, build a win streak, win 50 games on each side of the board.
 
-**📚 Learning (5):** Use the Coach 10 times, explore 5 named openings, complete 3 openings + 4 mate-1s + 6 mate-2s + 8 mate-3s + 10 mate-4s in the Training Library (*FEN Master* 🧘), review your play with "Was it good?" 5 times (*The Analyst*).
+**📚 Learning (7):** Use the Coach 10 times, explore 5 named openings, complete your first puzzle 🎓, complete 10 puzzles total 🔁, use "What should I do?" 3 times in one game 📖, review your play with "Was it good?" 5 times (*The Analyst*), and complete 3 openings + 4 mate-1s + 6 mate-2s + 8 mate-3s + 10 mate-4s (*FEN Master* 🧘).
 
 **⚔️ Tactics** — rook on the 7th rank, double rooks, battery, pawn fork, discovered check, pawn storm, and more.
 
@@ -133,7 +133,7 @@ Upon starting for the first time, Airin asks for your name. From that point on, 
 
 **📜 The Historians** — recreate legendary sacrifices from chess history in real time.
 
-**🥚 Easter Eggs (hidden)** — 9 secret trophies. Names hidden until unlocked. You'll figure them out.
+**🥚 Easter Eggs (hidden)** — 6 secret trophies. Names hidden until unlocked. You'll figure them out.
 
 Complete every trophy in a category to earn its **medal**. Collect all 64 trophies and all 8 medals to discover what lies beyond the 64th square.
 

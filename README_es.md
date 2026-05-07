@@ -128,7 +128,7 @@ La Vitrina de Trofeos está construida sobre el propio tablero: **64 trofeos** (
 
 **⚡ Implacable (9)** — para los que llevan los límites y no se rinden. Gana en 15 jugadas, derrota al Mago sin pistas, fuerza tablas contra el Mago, construye una racha de 3 victorias, gana 50 partidas con cada color, juega en 5 días distintos.
 
-**📚 Aprendizaje (5)** — usa al Profesor 10 veces, explora 5 aperturas con nombre, completa 3 aperturas + 4 mate-1 + 6 mate-2 + 8 mate-3 + 10 mate-4 en la Librería de Entrenamiento (*FEN Master* 🧘), o usa el botón *¿Fue buena?* 5 veces para ganar el título de **El Analista**.
+**📚 Aprendizaje (7)** — usa al Profesor 10 veces, explora 5 aperturas con nombre, completa tu primer puzzle 🎓, completa 10 puzzles en total 🔁, usa "¿Qué hago?" 3 veces en una partida 📖, usa *¿Fue buena?* 5 veces (**El Analista**), y completa 3 aperturas + 4 mate-1 + 6 mate-2 + 8 mate-3 + 10 mate-4 (*FEN Master* 🧘).
 
 **⚔️ Táctica (9)** — patrones clásicos: torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, tormenta de capturas y más.
 
@@ -136,7 +136,7 @@ La Vitrina de Trofeos está construida sobre el propio tablero: **64 trofeos** (
 
 **📜 Los Historiadores (4)** — recrea sacrificios legendarios de la historia del ajedrez en tiempo real.
 
-**🥚 Huevos de Pascua (9)** — nueve trofeos secretos. Nombres ocultos hasta desbloquearlos. Ya los descubrirás.
+**🥚 Huevos de Pascua (6)** — seis trofeos secretos. Nombres ocultos hasta desbloquearlos. Ya los descubrirás.
 
 #### 8 Medallas de Categoría
 

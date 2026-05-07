@@ -29,6 +29,14 @@ Formato: versión · tamaño · qué cambió.
 - Corregido el contraste de coordenadas del tablero, botones del profesor, modales de trofeos, mensajes de toast, indicadores de movimientos legales, selector de idioma, cuadros de finalización, fichas de estadísticas, modal de leyenda, etiquetas de progreso y texto de peligro.
 - Las piezas negras sobre casillas oscuras ahora tienen un brillo blanco para mejorar la visibilidad.
 
+### Reequilibrio de Trofeos — Aprendizaje vs Huevos de Pascua
+- **3 nuevos trofeos de Aprendizaje** (la categoría pasa a tener 7 en total):
+  - 🎓 **Primer Puzzle** — completa tu primer puzzle en la Librería de Entrenamiento.
+  - 🔁 **A Practicar** — completa 10 puzzles en total en cualquier categoría.
+  - 📖 **Estudiante de Aperturas** — usa "¿Qué hago?" 3 veces en la misma partida.
+- **3 Huevos de Pascua retirados**: Noctámbulo (ganar a las 4am — sin relación con el ajedrez), ¿Caballos? ¿Para qué? (premiaba malos hábitos de apertura), El Espejo (premiaba copiar al rival — también mal hábito). Los Huevos de Pascua pasan a tener 6.
+- Los IDs de trofeos retirados se eliminan automáticamente de los perfiles existentes al cargar.
+
 ### Temas Fútbol y Bosque
 - Las coordenadas del tablero ahora usan colores contrastantes según el tipo de casilla (blanco en casillas oscuras, oscuro en casillas claras) para mayor legibilidad en ambos temas.
 - Tema Fútbol: la franja diagonal de tiza se extiende también a las casillas oscuras; las casillas claras cambian a casi blanco para simular el patrón alternado de un campo de fútbol recién cortado.

@@ -29,6 +29,14 @@ Format: version · size · what changed.
 - Fixed contrast for board coordinates, professor buttons, trophy modals, toast messages, legal move highlights, language selector, completion boxes, stat chips, legend modal, progress labels, and danger text colors.
 - Black pieces on dark squares now have a white glow drop-shadow for readability.
 
+### Trophy Rebalance — Learning vs Easter Eggs
+- **3 new Learning trophies** (category now has 7 total):
+  - 🎓 **First Puzzle** — complete your first Training Library puzzle.
+  - 🔁 **Keep Practicing** — complete 10 puzzles total across any category.
+  - 📖 **Opening Student** — use "What should I do?" 3 times in a single game.
+- **3 Easter Egg trophies retired**: Night Owl (win at 4am — unrelated to chess), Knights? Who Needs Them? (rewarded bad opening habits), Mirror Moves (rewarded copying the opponent — also bad habits). Easter Eggs now has 6.
+- Retired trophy IDs are automatically stripped from existing profiles on next load.
+
 ### Football & Forest Themes
 - Board coordinates now use contrasting colors per square type (white on dark squares, dark on light squares) for readability in both themes.
 - Football theme: diagonal chalk stripe extended to dark squares; light squares changed to near-white for a realistic mowed-pitch alternating pattern.

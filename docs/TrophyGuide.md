@@ -108,13 +108,18 @@
 | 🦉 | **The Student** | Use any Coach feature (Analysis, What should I do?, or Was it good?) a total of **10 times** across all games. |
 | 🗺️ | **The Explorer** | Play through **5 different named openings** across any games (the Commentator must announce the opening name). |
 | 🔍 | **The Analyst** | Use the **"Was it good?"** Coach button **5 times** across any games. |
+| 🎓 | **First Puzzle** | Complete your **first puzzle** in the Training Library (any category). |
+| 🔁 | **Keep Practicing** | Complete **10 puzzles total** in the Training Library (any mix of categories). |
+| 📖 | **Opening Student** | Use **"What should I do?"** 3 times in a single game. |
 | 🧘 | **FEN Master** | Complete **3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, and 10 mate-in-4s** in the Training Library. |
 
 > **Tips:**
 > - **The Student**: open the Coach tab and press any of the three buttons — each press counts. Available on Easy, Medium, and Hard.
 > - **The Explorer**: play e4 e5 (Italian/Ruy Lopez area), d4 d5 (Queen's Gambit), c4 (English), Nf3 (Réti), etc. Each named line the Commentator announces counts as one discovery.
 > - **The Analyst**: after each move you make, click the Coach tab and press "Was it good?" — it reviews your last move for blunders and missed wins. Five reflections unlock the trophy.
-> - **FEN Master**: open the Training Library (puzzle icon), pick any tab and solve puzzles. The counter tracks completions across all sessions. With 64 puzzles total (6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4), this is a long-term challenge.
+> - **First Puzzle / Keep Practicing**: open the Training Library with the 🧩 button and solve any puzzle. Completions accumulate across all sessions.
+> - **Opening Student**: in a single game, press "What should I do?" three times — great for your first few games while learning with the Coach.
+> - **FEN Master**: open the Training Library, pick any tab and solve puzzles. With 64 puzzles total (6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4), this is a long-term challenge.
 
 ---
 
@@ -231,13 +236,10 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 
 | Icon | Trophy (ES / EN) | Hint |
 |------|-----------------|------|
-| 🤦 | **Dumb and Dumber** | 🔒 Sometimes the simplest opponent is the hardest to beat badly enough… |
+| 🤦 | **Chicken Brothers** | 🔒 Sometimes the simplest opponent is the hardest to beat badly enough… |
 | 😬 | **Oops, My Queen?** | 🔒 They said you couldn't win after losing your most powerful piece for nothing. They were wrong. |
 | 👻 | **The Ancient Law** | 🔒 En passant is the law. Always has been. |
 | ♞ | **The Rebel** | 🔒 Who says a pawn has to become a queen? |
-| 🦉 | **Night Owl** | 🔒 Some people play chess at... unusual hours. |
-| 🙈 | **Knights? Who Needs Them?** | 🔒 Win a game while your knights stay home on b1 and g1 the whole time. |
-| 🐱 | **Mirror Moves** | 🔒 Imitation is the sincerest form of flattery — for the first three moves, at least. |
 | 🥲 | **The Survivor** | 🔒 Sometimes one little pawn is all you need. |
 | 🐴 | **Philidor's Ghost** | 🔒 The most elegant finish in chess. The king cannot escape its own guard. |
 
@@ -250,11 +252,11 @@ These trophies unlock when you play a **historically famous sacrifice** and the 
 | 🏅 Progression | 12 | 🥇 |
 | 🧠 Technical | 10 | 🧠 |
 | ⚡ Relentless | 9 | ⚡ |
-| 📚 Learning | 4 | 📚 |
+| 📚 Learning | 7 | 📚 |
 | ⚔️ Tactics | 9 | ⚔️ |
 | 🥊 Two-Player | 7 | 🥊 |
 | 📜 The Historians | 4 | 📜 |
-| 🥚 Easter Eggs | 9 | 🥚 |
+| 🥚 Easter Eggs | 6 | 🥚 |
 | **Total** | **64** | **8** |
 
 Collect all 64 trophies and all 8 medals to earn the final title: **♟️ 2⁶⁴ − 1: The Wheat and Chessboard**.
