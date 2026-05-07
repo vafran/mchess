@@ -16827,7 +16827,19 @@ limitations under the License.
       // other lines first. This O(n) scan guarantees we never miss a mate in 1.
       try {
         const allMoves = getAllMovesForColor(sideToAnalyze, board);
+        // For pawn promotions also try knight (underpromotion can be the only mate)
+        const expandedMoves = [];
         for (const mv of allMoves) {
+          const p = board[mv.fr][mv.fc];
+          const isPromoRank = (p === 'P' && mv.tr === 0) || (p === 'p' && mv.tr === 7);
+          if (isPromoRank) {
+            expandedMoves.push({ ...mv, promo: 'q' });
+            expandedMoves.push({ ...mv, promo: 'n' });
+          } else {
+            expandedMoves.push(mv);
+          }
+        }
+        for (const mv of expandedMoves) {
           const after = simulateMove(board, mv);
           if (inCheck(enemyColor, after) && getAllMovesForColor(enemyColor, after).length === 0) {
             const msgTexto = en
