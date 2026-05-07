@@ -3870,6 +3870,7 @@ limitations under the License.
           <button onclick="exitHistoryView()" id="msExit" title="Presente" style="display:none">🚀</button>
           <button onclick="undoMove()" id="msUndo" title="Deshacer">↩</button>
           <button onclick="copyMoveHistory()" id="msCopy" title="Copiar PGN">📋</button>
+          <button onclick="copyFen()" id="msFen" title="Copiar FEN">♟</button>
         </div>
       </div>
     </div>
@@ -19487,6 +19488,50 @@ limitations under the License.
         ta.select(); document.execCommand('copy');
         document.body.removeChild(ta);
         flashCopy();
+      });
+    }
+
+    function copyFen() {
+      // Build FEN from current global state
+      let fen = '';
+      for (let r = 0; r < 8; r++) {
+        let empty = 0;
+        for (let c = 0; c < 8; c++) {
+          const p = board[r][c];
+          if (p === ' ') { empty++; }
+          else { if (empty) { fen += empty; empty = 0; } fen += p; }
+        }
+        if (empty) fen += empty;
+        if (r < 7) fen += '/';
+      }
+      fen += ' ' + turn;
+      let castle = '';
+      if (castleRights.K) castle += 'K';
+      if (castleRights.Q) castle += 'Q';
+      if (castleRights.k) castle += 'k';
+      if (castleRights.q) castle += 'q';
+      fen += ' ' + (castle || '-');
+      if (enPassantTarget) {
+        const file = String.fromCharCode(97 + enPassantTarget[1]);
+        const rank = 8 - enPassantTarget[0];
+        fen += ' ' + file + rank;
+      } else {
+        fen += ' -';
+      }
+      fen += ' ' + halfMoveClock + ' ' + Math.ceil((history.length + 1) / 2);
+
+      const flashFen = () => {
+        const b = document.getElementById('msFen');
+        if (b) { b.textContent = '✅'; setTimeout(() => { b.textContent = '♟'; }, 1800); }
+      };
+      navigator.clipboard.writeText(fen).then(flashFen).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = fen;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        flashFen();
       });
     }
 
