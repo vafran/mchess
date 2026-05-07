@@ -6,6 +6,27 @@ Formato: versión · tamaño · qué cambió.
 [Ir a README_es.md](../README_es.md)
 
 ---
+## v2.25.1 — Expansión de Puzzles y Correcciones del Profesor
+
+### Librería de Entrenamiento — 64 Puzzles
+- **17 nuevos puzzles añadidos** (2 mate en 2, 3 mate en 3, 12 mate en 4) hasta un total de **64 posiciones**.
+- Los nuevos mate en 4 son partidas históricas maestras (Anderssen, Morphy, Steinitz, Chigorin, etc.) de wtharvey.com.
+- Distribución: 6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4 / 4 aperturas / 4 leyendas — más posiciones en las categorías más difíciles.
+- Corregido el FEN del puzzle "Sacrificio Doble" mate en 4 (una fila tenía 9 casillas; corregido a `3pN3`).
+
+### Trofeo Maestro FEN
+- Nuevos requisitos acordes con la librería ampliada: **3 aperturas, 4 mate en 1, 6 mate en 2, 8 mate en 3, 10 mate en 4**.
+
+### Correcciones del Profesor
+- **Filtro anti-error desactivado en puzzles de mate** — el filtro bloqueaba movimientos sacrificiales correctos (sacrificio de caballo, de dama) mostrando sugerencias erróneas. Ahora se desactiva al usar el profesor en cualquier puzzle de mate.
+- **Detección de mate por subpromoción** — el escáner de mate en 1 ahora prueba tanto la promoción a dama como a caballo, detectando correctamente mates del tipo `cxb8=N#`.
+- **Mayor profundidad para puzzles mate en 3/4** — la profundidad de búsqueda del profesor sube a 10–12 con 14–20s de tiempo cuando hay un puzzle de mate cargado.
+
+### Tema Océano
+- Corregido el contraste de coordenadas del tablero, botones del profesor, modales de trofeos, mensajes de toast, indicadores de movimientos legales, selector de idioma, cuadros de finalización, fichas de estadísticas, modal de leyenda, etiquetas de progreso y texto de peligro.
+- Las piezas negras sobre casillas oscuras ahora tienen un brillo blanco para mejorar la visibilidad.
+
+---
 ## v2.25.0 — Renovación de la Librería de Entrenamiento
 **~20.000 líneas · ~1,08 MB**
 

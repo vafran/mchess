@@ -125,7 +125,7 @@ Upon starting for the first time, Airin asks for your name. From that point on, 
 
 **⚡ Relentless** — win in 15 moves, beat Hard without any hints, force a draw against the Magician, build a win streak, win 50 games on each side of the board.
 
-**📚 Learning (4):** Use the Coach 10 times, explore 5 named openings, complete 2 challenges from each training category (*FEN Master* 🧘), review your play with "Was it good?" 5 times (*The Analyst*).
+**📚 Learning (5):** Use the Coach 10 times, explore 5 named openings, complete 3 openings + 4 mate-1s + 6 mate-2s + 8 mate-3s + 10 mate-4s in the Training Library (*FEN Master* 🧘), review your play with "Was it good?" 5 times (*The Analyst*).
 
 **⚔️ Tactics** — rook on the 7th rank, double rooks, battery, pawn fork, discovered check, pawn storm, and more.
 
@@ -190,11 +190,11 @@ Three styles, with labels now visible under the slider:
 
 | Tab | Positions | Content |
 |---|---|---|
-| Openings | 7 | Scripted traps: Scholar's Mate, Fool's Mate, Ponziani, Fried Liver, Budapest, King's Gambit, Halloween Gambit |
-| Mate in 1 | ~10 | Verified single-move checkmates (Lichess) |
-| Mate in 2 | ~10 | Verified 3-ply forced mates (Lichess) |
-| Mate in 3 | ~10 | Verified 5-ply forced mates (Lichess) |
-| Mate in 4 | ~10 | Verified 7-ply forced mates (Lichess) |
+| Openings | 4 | Scripted traps: Scholar's Mate, Légal's Mate, Fool's Mate, Ponziani Gambit |
+| Mate in 1 | 6 | Verified single-move checkmates |
+| Mate in 2 | 12 | Verified 3-ply forced mates |
+| Mate in 3 | 16 | Verified 5-ply forced mates |
+| Mate in 4 | 22 | Verified 7-ply forced mates (historical masterpieces) |
 | Legends | 4 | The 4 historical positions (Marshall, Vladimirov, Sanz-Ortueta, Shirov-Topalov) |
 
 <img src="screenshots/EN/training.png" alt="FEN Training Library" width="300" />

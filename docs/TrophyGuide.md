@@ -107,14 +107,14 @@
 |------|-----------------|---------------|
 | 🦉 | **The Student** | Use any Coach feature (Analysis, What should I do?, or Was it good?) a total of **10 times** across all games. |
 | 🗺️ | **The Explorer** | Play through **5 different named openings** across any games (the Commentator must announce the opening name). |
-| 🐉 | **The Dragon** | Develop a Bishop to a **fianchetto square** (b2, g2, b7, or g7) in the **first 10 moves**. |
 | 🔍 | **The Analyst** | Use the **"Was it good?"** Coach button **5 times** across any games. |
+| 🧘 | **FEN Master** | Complete **3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, and 10 mate-in-4s** in the Training Library. |
 
 > **Tips:**
 > - **The Student**: open the Coach tab and press any of the three buttons — each press counts. Available on Easy, Medium, and Hard.
 > - **The Explorer**: play e4 e5 (Italian/Ruy Lopez area), d4 d5 (Queen's Gambit), c4 (English), Nf3 (Réti), etc. Each named line the Commentator announces counts as one discovery.
-> - **The Dragon**: play g3 followed by Bg2 (as White) or g6 followed by Bg7 (as Black) early. The fianchetto is used in the King's Indian, the Dragon Sicilian, and many modern setups.
 > - **The Analyst**: after each move you make, click the Coach tab and press "Was it good?" — it reviews your last move for blunders and missed wins. Five reflections unlock the trophy.
+> - **FEN Master**: open the Training Library (puzzle icon), pick any tab and solve puzzles. The counter tracks completions across all sessions. With 64 puzzles total (6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4), this is a long-term challenge.
 
 ---
 

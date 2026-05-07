@@ -128,7 +128,7 @@ La Vitrina de Trofeos está construida sobre el propio tablero: **64 trofeos** (
 
 **⚡ Implacable (9)** — para los que llevan los límites y no se rinden. Gana en 15 jugadas, derrota al Mago sin pistas, fuerza tablas contra el Mago, construye una racha de 3 victorias, gana 50 partidas con cada color, juega en 5 días distintos.
 
-**📚 Aprendizaje (4)** — usa al Profesor 10 veces, explora 5 aperturas con nombre, completa 2 desafíos de cada categoría de entrenamiento (*FEN Master* 🧘), o usa el botón *¿Fue buena?* 5 veces para ganar el título de **El Analista**.
+**📚 Aprendizaje (5)** — usa al Profesor 10 veces, explora 5 aperturas con nombre, completa 3 aperturas + 4 mate-1 + 6 mate-2 + 8 mate-3 + 10 mate-4 en la Librería de Entrenamiento (*FEN Master* 🧘), o usa el botón *¿Fue buena?* 5 veces para ganar el título de **El Analista**.
 
 **⚔️ Táctica (9)** — patrones clásicos: torre en la 7ª fila, dobles torres, batería, horquilla de peón, jaque a la descubierta, tormenta de capturas y más.
 
@@ -197,11 +197,11 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 | Pestaña | Posiciones | Contenido |
 |---|---|---|
-| Aperturas | 7 | Trampas guiadas: Mate del Pastor, Mate del Loco, Ponziani, Fried Liver, Budapest, Gambito del Rey, Gambito Halloween |
-| Mate en 1 | ~10 | Mates en 1 verificados (Lichess) |
-| Mate en 2 | ~10 | Mates en 2 verificados — 3 semijugadas (Lichess) |
-| Mate en 3 | ~10 | Mates en 3 verificados — 5 semijugadas (Lichess) |
-| Mate en 4 | ~10 | Mates en 4 verificados — 7 semijugadas (Lichess) |
+| Aperturas | 4 | Trampas guiadas: Mate del Pastor, Mate de Légal, Mate del Loco, Gambito Ponziani |
+| Mate en 1 | 6 | Mates en 1 verificados |
+| Mate en 2 | 12 | Mates en 2 verificados — 3 semijugadas |
+| Mate en 3 | 16 | Mates en 3 verificados — 5 semijugadas |
+| Mate en 4 | 22 | Mates en 4 históricos verificados — 7 semijugadas |
 | Leyendas | 4 | Las 4 posiciones históricas (Marshall, Vladimirov, Sanz-Ortueta, Shirov-Topalov) |
 
 <img src="screenshots/ES/training.png" alt="Librearía FEN de entrenamiento" width="500" />
@@ -251,10 +251,10 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 * Las pestañas de **Táctica** y **Finales** han sido reemplazadas por **Mate en 1 / 2 / 3 / 4**. Todas las posiciones son puzzles verificados de Lichess.
 * **Aperturas con guión** — el Mate del Pastor, el Mate del Loco y el Gambito Ponziani ahora se juegan paso a paso: el motor reproduce automáticamente los movimientos de error del rival para que el jugador viva la trampa completa.
 * **Sistema de pistas** — los puzzles muestran un banner 🎓 en el panel del Profesor en lugar de un análisis genérico del motor.
-* **Desafío aleatorio** ahora saca posiciones de la librería verificada completa (~47 posiciones) — las posiciones no verificadas anteriores quedan retiradas.
+* **Desafío aleatorio** ahora saca posiciones de la librería verificada completa (64 posiciones) — las posiciones no verificadas anteriores quedan retiradas.
 
 ### 🧘 Trofeo: FEN Master
-* Reemplaza *El Dragón* en la categoría de Aprendizaje. Se desbloquea completando 2 desafíos de cada una de las 5 categorías no históricas (Aperturas, Mate en 1, 2, 3, 4).
+* Se desbloquea completando **3 aperturas, 4 mate en 1, 6 mate en 2, 8 mate en 3 y 10 mate en 4** en la Librería de Entrenamiento.
 * Los trofeos retirados se eliminan al cargar el perfil — las partidas guardadas existentes se limpian automáticamente.
 
 ### 🔊 Temas de Sonido

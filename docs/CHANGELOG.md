@@ -6,6 +6,27 @@ Format: version · size · what changed.
 [Go to README.md](../README.md)
 
 ---
+## v2.25.1 — Puzzle Library Expansion & Coach Fixes
+
+### Training Library — 64 Puzzles
+- **17 new puzzles added** (2 mate-in-2, 3 mate-in-3, 12 mate-in-4) bringing the total to **64 positions** across all categories.
+- New mate-in-4s are historical masterpieces (Anderssen, Morphy, Steinitz, Chigorin, etc.) sourced from wtharvey.com.
+- Distribution: 6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4 / 4 openings / 4 legends — more positions at higher difficulty.
+- Fixed "Double Sacrifice" mate-in-4 FEN (invalid rank had 9 squares; corrected to `3pN3`).
+
+### FEN Master Trophy
+- Raised requirements to match the expanded library: **3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, 10 mate-in-4s**.
+
+### Coach / Professor Fixes
+- **Anti-blunder filter disabled for mate puzzles** — the filter was blocking correct sacrificial moves (knight sac, queen sac) and showing wrong suggestions. Now bypassed when the coach is used on any mate puzzle.
+- **Underpromotion mate detection** — the mate-in-1 scanner now tries both queen and knight promotions, so `cxb8=N#` style mates are correctly identified (previously only queen promotion was tried, missing the only checkmate).
+- **Depth boost for mate-in-3/4 puzzles** — professor search depth raised to 10–12 with 14–20s timeout when a mate puzzle is loaded, giving the engine time to find deep mating lines.
+
+### Ocean Theme
+- Fixed contrast for board coordinates, professor buttons, trophy modals, toast messages, legal move highlights, language selector, completion boxes, stat chips, legend modal, progress labels, and danger text colors.
+- Black pieces on dark squares now have a white glow drop-shadow for readability.
+
+---
 ## v2.25.0 — Training Library Overhaul
 **~20,000 lines · ~1.08 MB**
 
