@@ -422,6 +422,84 @@ limitations under the License.
       opacity: 0.75;
     }
 
+    /* ── Help Modal ─────────────────────────────── */
+    #helpModal .confirm-box {
+      max-width: 420px;
+      padding: 28px 24px 22px;
+      text-align: left;
+    }
+    .help-slide { display: none; }
+    .help-slide.active { display: block; }
+    .help-slide-icon {
+      font-size: 2.6rem;
+      text-align: center;
+      margin-bottom: 10px;
+      line-height: 1;
+    }
+    .help-slide-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .help-slide-body {
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .help-slide-body ul {
+      margin: 8px 0 0 0;
+      padding-left: 18px;
+    }
+    .help-slide-body li { margin-bottom: 5px; }
+    .help-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 20px;
+      gap: 8px;
+    }
+    .help-nav-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 18px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .help-nav-btn:disabled { opacity: 0.25; cursor: default; }
+    .help-dots {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .help-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      opacity: 0.35;
+      transition: opacity 0.2s;
+    }
+    .help-dot.active { opacity: 1; }
+    .help-close {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      background: none;
+      border: 1px solid var(--primary-light);
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 0.85rem;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .help-close:hover { background: rgba(0,0,0,0.05); }
+
     body {
       font-family: 'Outfit', 'Nunito', 'Varela Round', 'Poppins', system-ui, -apple-system, sans-serif;
       background: var(--bg-gradient);
@@ -3483,7 +3561,6 @@ limitations under the License.
   <!-- ── Main Menu Screen ─────────────────────── -->
   <div class="screen-overlay" id="screenMenu">
     <div class="menu-card">
-      <div class="menu-logo">♟️</div>
       <div class="menu-title" id="menuTitleMain">Airin</div>
       <p id="menuSubtitleMain"
         style="font-size:0.88rem; color:var(--text-light); text-align:center; margin-bottom:4px;">¿Con quién juegas
@@ -3501,6 +3578,9 @@ limitations under the License.
       <button class="menu-btn secondary" id="btnMainProfile" onclick="openProfileModal()"
         style="margin-top:4px; background: linear-gradient(135deg, rgba(168,85,247,0.12), rgba(244,114,182,0.10)); border-color: rgba(168,85,247,0.3); color: var(--text);">🏆
         Mi Perfil</button>
+      <button class="menu-btn secondary" id="btnMainHelp" onclick="openHelp()"
+        style="margin-top:4px; background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(14,165,233,0.10)); border-color: rgba(56,189,248,0.35); color: var(--text);">❓
+        Ayuda</button>
       <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
         <button class="menu-btn secondary" id="btnMainSaveGame" onclick="exportProfile()"
           style="flex:1; font-size:0.85rem; padding:10px 6px;">💾 Guardar</button>
@@ -3670,8 +3750,8 @@ limitations under the License.
 
   <!-- ── In-game pause menu overlay ────────────── -->
   <div class="ingame-menu-overlay hidden" id="ingameMenu">
-    <div class="menu-card">
-      <div style="font-size:2rem;">♟️</div>
+    <div class="menu-card" style="position:relative;">
+      <button onclick="closeIngameMenu()" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-light); line-height:1; padding:4px;">✕</button>
       <div class="menu-title" id="ingameMenuTitle" style="font-size:1.2rem;">Menú</div>
       <button class="menu-btn primary" id="btnContinueGame" onclick="closeIngameMenu()">&#9654;&#65039; Continuar
         partida</button>
@@ -3690,6 +3770,7 @@ limitations under the License.
           onclick="document.getElementById('globalFileInput').click(); closeIngameMenu();"
           style="flex:1; font-size:0.85rem; padding:10px 6px;">📂 Cargar</button>
       </div>
+      <button class="menu-btn secondary" id="btnFlipBoard" onclick="flipBoard(); closeIngameMenu();">🔄 Girar tablero</button>
       <button class="menu-btn secondary" id="btnIngameOptions" onclick="showIngameOptions()">&#9881;&#65039;
         Opciones</button>
       <button class="menu-btn secondary" id="btnRestartGameMenu" onclick="newGameFromMenu()">&#128260; Reiniciar
@@ -3861,6 +3942,7 @@ limitations under the License.
       <!-- ── Move carousel strip ── -->
       <div id="moveStrip">
         <div class="ms-nav">
+          <button onclick="flipBoard()" id="msFlip" title="Girar tablero">🔄</button>
           <button onclick="viewMove(0)" title="Inicio">⏮</button>
           <button onclick="viewPrev()" title="Anterior">◀</button>
         </div>
@@ -4186,6 +4268,60 @@ limitations under the License.
       </div>
 
       <button class="btn btn-secondary" onclick="closeAbout()" id="btnAboutClose" style="width:100%;">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- ── Help Modal ─────────────────────────────── -->
+  <div class="confirm-modal" id="helpModal" onclick="if(event.target===this)closeHelp()" style="z-index:310;">
+    <div class="confirm-box">
+
+      <div class="help-slide active" id="helpSlide0">
+        <div class="help-slide-icon">🎯</div>
+        <div class="help-slide-title" id="helpTitle0"></div>
+        <div class="help-slide-body" id="helpBody0"></div>
+      </div>
+      <div class="help-slide" id="helpSlide1">
+        <div class="help-slide-icon">🤖</div>
+        <div class="help-slide-title" id="helpTitle1"></div>
+        <div class="help-slide-body" id="helpBody1"></div>
+      </div>
+      <div class="help-slide" id="helpSlide2">
+        <div class="help-slide-icon">🏫</div>
+        <div class="help-slide-title" id="helpTitle2"></div>
+        <div class="help-slide-body" id="helpBody2"></div>
+      </div>
+      <div class="help-slide" id="helpSlide3">
+        <div class="help-slide-icon">👁️</div>
+        <div class="help-slide-title" id="helpTitle3"></div>
+        <div class="help-slide-body" id="helpBody3"></div>
+      </div>
+      <div class="help-slide" id="helpSlide4">
+        <div class="help-slide-icon">🧩</div>
+        <div class="help-slide-title" id="helpTitle4"></div>
+        <div class="help-slide-body" id="helpBody4"></div>
+      </div>
+      <div class="help-slide" id="helpSlide5">
+        <div class="help-slide-icon">🏆</div>
+        <div class="help-slide-title" id="helpTitle5"></div>
+        <div class="help-slide-body" id="helpBody5"></div>
+      </div>
+      <div class="help-slide" id="helpSlide6">
+        <div class="help-slide-icon">♟️</div>
+        <div class="help-slide-title" id="helpTitle6"></div>
+        <div class="help-slide-body" id="helpBody6"></div>
+      </div>
+      <div class="help-slide" id="helpSlide7">
+        <div class="help-slide-icon">💾</div>
+        <div class="help-slide-title" id="helpTitle7"></div>
+        <div class="help-slide-body" id="helpBody7"></div>
+      </div>
+
+      <div class="help-nav">
+        <button class="help-nav-btn" id="helpPrev" onclick="helpNav(-1)">←</button>
+        <div class="help-dots" id="helpDots"></div>
+        <button class="help-nav-btn" id="helpNext" onclick="helpNav(1)">→</button>
+      </div>
+      <button class="help-close" id="helpCloseBtn" onclick="closeHelp()">Cerrar</button>
     </div>
   </div>
 
@@ -5541,12 +5677,21 @@ limitations under the License.
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
         mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?', mainSubtitleHello: '¡Hola, {name}! ¿Con quién juegas hoy?',
-        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento FEN', btnProfile: '🏆 Mi Perfil',
+        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento FEN', btnProfile: '🏆 Mi Perfil', btnHelp: '❓ Ayuda',
+        helpClose: 'Cerrar',
+        helpT0: 'El Tablero', helpB0: '<ul><li>Toca una pieza para seleccionarla. Los puntos verdes muestran los movimientos legales.</li><li>Toca un punto verde para mover.</li><li>Gira el tablero con el botón 🔄 a la izquierda de la barra de historial de movimientos.</li><li>El rey parpadea en rojo cuando está en jaque.</li></ul>',
+        helpT1: 'Niveles de IA', helpB1: '<ul><li>🐣 <b>Pollito</b> — comete errores a propósito. Ideal para aprender.</li><li>🧙 <b>Aprendiz</b> — juega decente pero tiene fallos.</li><li>🔮 <b>Mago</b> — juega bien, sin errores graves (~1600 ELO).</li><li>👑 <b>Rey Sabio</b> — nivel máximo, muy difícil de vencer (~1830 ELO).</li></ul>',
+        helpT2: 'El Profesor', helpB2: '<ul><li>🔍 <b>Análisis</b> — evalúa la posición actual y dice si vas ganando o perdiendo.</li><li>🎯 <b>¿Qué hago?</b> — sugiere los mejores movimientos para ti.</li><li>💡 <b>¿Fue buena?</b> — analiza tu último movimiento y avisa si hubo un error o una mejor jugada.</li></ul><br>El Profesor no está disponible en nivel Rey Sabio.',
+        helpT3: 'Ojo Halcón', helpB3: '<ul><li>Usa las flechas ◀▶ en la barra de movimientos para revisar la partida jugada a jugada.</li><li>El botón 👁️ <b>Ojo Halcón</b> en el Profesor dibuja flechas en el tablero mostrando amenazas y movimientos clave.</li><li>Pulsa 🚀 para volver a la posición actual.</li></ul>',
+        helpT4: 'Entrenamiento', helpB4: '<ul><li>64 puzzles organizados por dificultad: aperturas, mate en 1, 2, 3 y 4.</li><li>El Profesor te da una pista específica para cada puzzle.</li><li>Completa puzzles para desbloquear el trofeo 🧘 <b>Maestro FEN</b>.</li><li>Accede desde el menú principal con el botón 🧩 Entrenamiento.</li></ul>',
+        helpT5: 'Trofeos', helpB5: '<ul><li>Hay <b>64 trofeos</b> en total, organizados por categorías.</li><li>Se desbloquean automáticamente al conseguir logros durante las partidas.</li><li>Algunos son secretos — ¡descúbrelos jugando!</li><li>Consulta tu colección en 🏆 <b>Mi Perfil</b>.</li></ul>',
+        helpT6: 'Exportar partida', helpB6: '<ul><li>📋 <b>Copiar PGN</b> — copia los movimientos en formato estándar para analizar en otras aplicaciones.</li><li>♟ <b>Copiar FEN</b> — copia la posición actual del tablero como código FEN.</li><li>Ambos botones están en la barra de historial de movimientos.</li></ul>',
+        helpT7: 'Tu Perfil', helpB7: '<ul><li>Crea un perfil para guardar tus trofeos, estadísticas y partidas.</li><li>💾 <b>Guardar</b> descarga un archivo con todo tu progreso.</li><li>📂 <b>Cargar</b> restaura tu perfil en cualquier dispositivo.</li><li>Puedes tener varios perfiles para jugar con distintas personas.</li></ul>',
         diffTitle: 'Nivel de la IA', backMenu: '← Volver al Menú',
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
         optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual', soundThemeLabel: '🔊 Sonido', soundClassic: 'Clásico', soundRetro: 'Retro', soundSoft: 'Suave', themeMagic: 'Mágico', themeForest: 'Bosque', themeOcean: 'Océano', themeClassic: 'Clásico', themeFutbol: 'Fútbol',
         commentaryStyle: '🎙️ Estilo del Comentarista', styleSerious: '🎚️ Más serio', styleMixed: '🎚️ Mixto', styleFunny: '🎚️ Más divertido',
-        ingameMenuTitle: 'Menú', continueGame: '▶️ Continuar partida', ingameOptions: '⚙️ Opciones',
+        ingameMenuTitle: 'Menú', continueGame: '▶️ Continuar partida', ingameOptions: '⚙️ Opciones', btnFlipBoard: '🔄 Girar tablero',
         quickPvp: '👫 2 Jugadores', quickAi: '🤖 vs IA',
         restartGame: '🔄 Reiniciar partida', mainMenu: '🏠 Menú principal',
         tabCommentary: '🎙️ Comentarista', tabProfessor: '🦉 Profesor',
@@ -5650,12 +5795,21 @@ limitations under the License.
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
         mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?', mainSubtitleHello: 'Hello, {name}! Who are you playing with today?',
-        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 FEN Training', btnProfile: '🏆 My Profile',
+        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 FEN Training', btnProfile: '🏆 My Profile', btnHelp: '❓ Help',
+        helpClose: 'Close',
+        helpT0: 'The Board', helpB0: '<ul><li>Tap a piece to select it. Green dots show legal moves.</li><li>Tap a green dot to move there.</li><li>Flip the board with the 🔄 button on the left of the move history bar.</li><li>The king flashes red when in check.</li></ul>',
+        helpT1: 'AI Levels', helpB1: '<ul><li>🐣 <b>Chick</b> — makes deliberate mistakes. Great for learning.</li><li>🧙 <b>Apprentice</b> — plays decently but has weak spots.</li><li>🔮 <b>Wizard</b> — plays well with no big blunders (~1600 ELO).</li><li>👑 <b>Wise King</b> — maximum difficulty, very hard to beat (~1830 ELO).</li></ul>',
+        helpT2: 'The Coach', helpB2: '<ul><li>🔍 <b>Analysis</b> — evaluates the current position and tells you who is winning.</li><li>🎯 <b>What should I do?</b> — suggests the best moves available to you.</li><li>💡 <b>Was it good?</b> — reviews your last move and warns if there was a mistake or a better option.</li></ul><br>The Coach is not available at Wise King level.',
+        helpT3: "Hawk's Eye", helpB3: '<ul><li>Use the ◀▶ arrows in the move bar to replay the game move by move.</li><li>The 👁️ <b>Hawk\'s Eye</b> button in the Coach draws arrows on the board showing threats and key moves.</li><li>Press 🚀 to jump back to the current position.</li></ul>',
+        helpT4: 'Training Library', helpB4: '<ul><li>64 puzzles sorted by difficulty: openings, mate in 1, 2, 3, and 4.</li><li>The Coach gives a specific hint for each puzzle.</li><li>Complete puzzles to unlock the 🧘 <b>FEN Master</b> trophy.</li><li>Access it from the main menu with the 🧩 Training button.</li></ul>',
+        helpT5: 'Trophies', helpB5: '<ul><li>There are <b>64 trophies</b> in total, organized by category.</li><li>They unlock automatically as you achieve things during games.</li><li>Some are secret — discover them by playing!</li><li>Check your collection in 🏆 <b>My Profile</b>.</li></ul>',
+        helpT6: 'Export Game', helpB6: '<ul><li>📋 <b>Copy PGN</b> — copies the moves in standard format to analyze in other apps.</li><li>♟ <b>Copy FEN</b> — copies the current board position as a FEN code.</li><li>Both buttons are in the move history bar.</li></ul>',
+        helpT7: 'Your Profile', helpB7: '<ul><li>Create a profile to save your trophies, stats, and games.</li><li>💾 <b>Save</b> downloads a file with all your progress.</li><li>📂 <b>Load</b> restores your profile on any device.</li><li>You can have multiple profiles for different players.</li></ul>',
         diffTitle: 'AI Level', backMenu: '← Back to Menu',
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
         optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme', soundThemeLabel: '🔊 Sound', soundClassic: 'Classic', soundRetro: 'Retro', soundSoft: 'Soft', themeMagic: 'Magic', themeForest: 'Forest', themeOcean: 'Ocean', themeClassic: 'Classic', themeFutbol: 'Soccer',
         commentaryStyle: '🎙️ Commentator Style', styleSerious: '🎚️ More serious', styleMixed: '🎚️ Mixed', styleFunny: '🎚️ More playful',
-        ingameMenuTitle: 'Menu', continueGame: '▶️ Continue game', ingameOptions: '⚙️ Options',
+        ingameMenuTitle: 'Menu', continueGame: '▶️ Continue game', ingameOptions: '⚙️ Options', btnFlipBoard: '🔄 Flip board',
         quickPvp: '👫 2 Players', quickAi: '🤖 vs AI',
         restartGame: '🔄 Restart game', mainMenu: '🏠 Main menu',
         tabCommentary: '🎙️ Commentator', tabProfessor: '🦉 Coach',
@@ -5864,12 +6018,12 @@ limitations under the License.
     function applyTranslations() {
       const map = {
         titleMain: 'mainTitle', menuTitleMain: 'mainTitle', menuSubtitleMain: 'mainSubtitle',
-        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining', btnMainProfile: 'btnProfile',
+        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining', btnMainProfile: 'btnProfile', btnMainHelp: 'btnHelp',
         btnMainSaveGame: 'btnSaveShort', btnMainLoadGame: 'btnLoadShort',
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
         colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
         optionsTitle: 'optionsTitle', optionsLanguageLabel: 'languageLabel', optionsThemeLabel: 'themeLabel', commentaryStyleLabel: 'commentaryStyle', btnOptionsBack: 'backMenu', optionsLoadFenLabel: 'loadFen',
-        ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnOpenProfile: 'btnOpenProfile', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
+        ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnOpenProfile: 'btnOpenProfile', btnFlipBoard: 'btnFlipBoard', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
         btnQuickPvp: 'quickPvp', btnQuickAi: 'quickAi',
         btnIngameSaveGame: 'btnSaveShort', btnIngameLoadGame: 'btnLoadShort',
         ingameOptionsTitle: 'optionsTitle', igCommentaryStyleLabel: 'commentaryStyle',
@@ -19542,6 +19696,7 @@ limitations under the License.
     // In-game menu handlers
     function openIngameMenu() { document.getElementById('ingameMenu').classList.remove('hidden'); }
     function closeIngameMenu() { document.getElementById('ingameMenu').classList.add('hidden'); }
+    function flipBoard() { boardFlipped = !boardFlipped; render(); }
     function showIngameOptions() {
       closeIngameMenu();
       document.getElementById('ingameOptions').classList.remove('hidden');
@@ -20534,6 +20689,52 @@ limitations under the License.
 
     function closeAbout() {
       document.getElementById('aboutModal').classList.remove('show');
+    }
+
+    let _helpSlide = 0;
+    const _HELP_TOTAL = 8;
+
+    function openHelp() {
+      _helpSlide = 0;
+      _renderHelpSlide();
+      // Build dots
+      const dots = document.getElementById('helpDots');
+      dots.innerHTML = '';
+      for (let i = 0; i < _HELP_TOTAL; i++) {
+        const d = document.createElement('div');
+        d.className = 'help-dot' + (i === 0 ? ' active' : '');
+        d.onclick = (function(idx){ return function(){ _helpSlide = idx; _renderHelpSlide(); }; })(i);
+        dots.appendChild(d);
+      }
+      document.getElementById('helpModal').classList.add('show');
+    }
+
+    function closeHelp() {
+      document.getElementById('helpModal').classList.remove('show');
+    }
+
+    function helpNav(dir) {
+      _helpSlide = Math.max(0, Math.min(_HELP_TOTAL - 1, _helpSlide + dir));
+      _renderHelpSlide();
+    }
+
+    function _renderHelpSlide() {
+      for (let i = 0; i < _HELP_TOTAL; i++) {
+        const s = document.getElementById('helpSlide' + i);
+        if (s) s.classList.toggle('active', i === _helpSlide);
+        const d = document.querySelectorAll('#helpDots .help-dot')[i];
+        if (d) d.classList.toggle('active', i === _helpSlide);
+      }
+      document.getElementById('helpPrev').disabled = _helpSlide === 0;
+      document.getElementById('helpNext').disabled = _helpSlide === _HELP_TOTAL - 1;
+      // Fill content from i18n
+      for (let i = 0; i < _HELP_TOTAL; i++) {
+        const tEl = document.getElementById('helpTitle' + i);
+        const bEl = document.getElementById('helpBody' + i);
+        if (tEl) tEl.textContent = t('helpT' + i);
+        if (bEl) bEl.innerHTML = t('helpB' + i);
+      }
+      document.getElementById('helpCloseBtn').textContent = t('helpClose');
     }
 
     window.hawkEyeTimer = null;
