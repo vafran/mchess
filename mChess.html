@@ -4969,6 +4969,9 @@ limitations under the License.
       if (p.bots.medium.w >= 1) grant('graduation');
       if (p.bots.hard.w >= 1) grant('magic_trick');
       if (p.bots.grandmaster.w >= 1) grant('king_slayer');
+      const _cc = (p.completedChallenges || []);
+      if (_cc.length >= 1) grant('first_puzzle');
+      if (_cc.length >= 10) grant('keep_practicing');
       changed = p.unlockedTrophies.length > before;
       // Backfill medals for any categories already completed (covers profiles saved before medal system)
       const unlockedSet = new Set(p.unlockedTrophies.map(t => t.id));
