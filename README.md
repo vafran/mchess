@@ -235,42 +235,37 @@ Three styles, with labels now visible under the slider:
 |---|---|---|---|
 | 1 | Low | **Stalemate in won positions (Wise King only)** — In rare simplified endgames (queen + pawns vs lone king), the engine may play a move that stalemates the opponent instead of mating them, converting a win into a draw. Root cause: the quiescence search evaluates the final position using `evaluate()`
 
-## What's new in v2.25.1 — *Puzzle Library Expansion & FEN Tools*
-
-### ♟ FEN Export
-* **Copy FEN button** added next to the PGN copy button in the move history bar. Copies the full FEN of the current position to clipboard — useful for sharing positions, loading them into analysis tools, or importing them back into Airin's Training Library.
-
-### 🎓 Training Library — 64 Puzzles
-* 17 new puzzles added (2 mate-in-2, 3 mate-in-3, 12 mate-in-4) — total now **64 positions**.
-* Distribution: 6 / 12 / 16 / 22 / 4 openings / 4 legends — harder categories have more puzzles.
-* FEN Master trophy requirements raised: **3 openings, 4 mate-1s, 6 mate-2s, 8 mate-3s, 10 mate-4s**.
-
-### 🏫 Coach Fixes
-* Anti-blunder filter disabled during mate puzzle analysis — sacrificial moves (Nf6+, Bh6, etc.) are no longer blocked.
-* Underpromotion mates (`cxb8=N#`) now correctly detected by the mate-in-1 scanner.
-
----
-
 ## What's new in v2.25.0 — *Training Library Overhaul*
 
-### 🎓 Training Library Restructured
-* **Mate in 1 / 2 / 3 / 4 tabs** replace the old Tactics and Endgames sections. Every position is a verified Lichess puzzle.
-* **Scripted opening traps** — Scholar's Mate, Fool's Mate, and Ponziani Gambit now play out move-by-move: the engine automatically plays the opponent's blunder moves from the solution array so the player experiences the whole trap.
-* **Hint system** — puzzles now show a 🎓 hint banner in the Coach panel instead of a generic engine analysis.
-* **Random challenge** now draws from the full verified library (~47 positions) — the old unverified hand-crafted positions are retired.
+### 🎓 Training Library — 64 Puzzles
+* **Mate in 1 / 2 / 3 / 4 tabs** replace the old Tactics and Endgames sections. Every position is a verified Lichess or historical puzzle.
+* **64 positions total**: 6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4 / 4 openings / 4 legends.
+* **Scripted opening traps** — Scholar's Mate, Fool's Mate, and Ponziani Gambit play out move-by-move.
+* **Hint system** — puzzles show a 🎓 hint banner in the Coach panel instead of generic engine analysis.
+
+### ♟ FEN Export
+* **Copy FEN button** added next to the PGN copy button — copies the full FEN of the current position to clipboard.
 
 ### 🧘 Trophy: FEN Master
-* Replaces *The Dragon*. Unlocks by completing 2 challenges from each of the 5 non-historical categories (Openings, Mate in 1, 2, 3, 4).
-* Retired trophies are stripped at profile load — existing saves are cleaned up automatically.
+* Requires: **3 openings, 4 mate-1s, 6 mate-2s, 8 mate-3s, 10 mate-4s** completed in the Training Library.
+* Replaces *The Dragon* (retired). Retired trophy IDs are stripped from existing profiles automatically.
+
+### 🏆 Trophy Rebalance
+* **3 new Learning trophies**: 🎓 First Puzzle, 🔁 Keep Practicing, 📖 Opening Student.
+* **3 Easter Egg trophies retired**: Night Owl, Knights? Who Needs Them?, Mirror Moves.
+* **PvP trophies now unlock correctly** — Face to Face, No Takebacks!, Regular Rivals etc. were never firing. Fixed with a dedicated PvP trophy path; AI trophies cannot fire in PvP games.
+* **Multiple trophy popups now queue** — each shows in sequence instead of overwriting each other.
 
 ### 🔊 Sound Themes
-Three synthesised sound themes selectable in Options (main menu and in-game):
-* **Classic** — wooden thud: filtered noise burst + sine body, mimicking a real piece on a wooden board. Castling plays two quick thuds.
-* **Retro** — square-wave beeps.
-* **Soft** — sine tones.
+* **Classic** — synthesised wooden thud. **Retro** — square-wave beeps. **Soft** — sine tones. Selectable in Options.
 
 ### 🏛️ Legends — Historical Resignations
-After finding the key sacrifice in any Legends puzzle, a **resignation modal** appears with the historical context — the forced line, key variations, and period quotes. Pressing **Keep Playing** resumes the scripted AI continuation on the board.
+After finding the key sacrifice, a **resignation modal** shows the historical context and forced line. Pressing **Keep Playing** resumes the scripted continuation.
+
+### 🏫 Coach Fixes
+* Opening suggestions suppressed for FEN-loaded positions — the book lookup is blocked for the entire session.
+* Anti-blunder filter disabled during mate puzzles — sacrificial moves are no longer blocked.
+* Underpromotion mates (`cxb8=N#`) now correctly detected.
 
 *(For The Statistician feature set from v2.24.0, see the full Changelog).*
 

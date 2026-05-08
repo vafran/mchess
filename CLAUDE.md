@@ -895,6 +895,8 @@ Each entry has a `bad_move` (what the engine incorrectly does now) and a `pass_c
 
 `v2.MINOR.PATCH` — updated manually in the `<title>` tag and 3 other occurrences in the HTML.
 
+> **NEVER bump the version number unless the user explicitly asks.** Do not bump it as part of a bugfix, a doc update, or a changelog update. The version in the HTML `<title>` is the source of truth — if it says v2.25.0, all docs must reflect v2.25.0. Do not create new version entries in changelogs or READMEs for changes that belong to the current version.
+
 **Convention (enforced going forward from v2.23.0):**
 - **`v2.X.0`** = production release — the only versions that live on `main`. When a dev cycle is ready to ship, bump the minor version and reset patch to 0 before the PR.
 - **`v2.X.Y` (Y > 0)** = development iterations on the feat branch, and hotfixes applied directly to `main` for critical bugs found in production.

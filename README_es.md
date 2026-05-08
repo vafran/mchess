@@ -245,42 +245,37 @@ Tres estilos, con etiquetas ahora visibles bajo el deslizador:
 
 ---
 
-## Lo nuevo en v2.25.1 — *Expansión de Puzzles y Herramientas FEN*
-
-### ♟ Exportar FEN
-* **Botón Copiar FEN** añadido junto al botón de copiar PGN en la barra del historial. Copia el FEN completo de la posición actual al portapapeles — útil para compartir posiciones, analizarlas en herramientas externas o importarlas en la Librería de Entrenamiento de Airin.
-
-### 🎓 Librería de Entrenamiento — 64 Puzzles
-* 17 nuevos puzzles añadidos (2 mate en 2, 3 mate en 3, 12 mate en 4) — total: **64 posiciones**.
-* Distribución: 6 / 12 / 16 / 22 / 4 aperturas / 4 leyendas — más puzzles en las categorías más difíciles.
-* Requisitos del trofeo FEN Master actualizados: **3 aperturas, 4 mate en 1, 6 mate en 2, 8 mate en 3, 10 mate en 4**.
-
-### 🏫 Correcciones del Profesor
-* Filtro anti-error desactivado al analizar puzzles de mate — los movimientos sacrificiales (Cf6+, Ah6, etc.) ya no son bloqueados.
-* Detección correcta de mates por subpromoción (`cxb8=C#`) en el escáner de mate en 1.
-
----
-
 ## Lo nuevo en v2.25.0 — *Renovación de la Librería de Entrenamiento*
 
-### 🎓 Nueva estructura de la Librería de Entrenamiento
-* Las pestañas de **Táctica** y **Finales** han sido reemplazadas por **Mate en 1 / 2 / 3 / 4**. Todas las posiciones son puzzles verificados de Lichess.
-* **Aperturas con guión** — el Mate del Pastor, el Mate del Loco y el Gambito Ponziani ahora se juegan paso a paso: el motor reproduce automáticamente los movimientos de error del rival para que el jugador viva la trampa completa.
-* **Sistema de pistas** — los puzzles muestran un banner 🎓 en el panel del Profesor en lugar de un análisis genérico del motor.
-* **Desafío aleatorio** ahora saca posiciones de la librería verificada completa (64 posiciones) — las posiciones no verificadas anteriores quedan retiradas.
+### 🎓 Librería de Entrenamiento — 64 Puzzles
+* Las pestañas de **Táctica** y **Finales** han sido reemplazadas por **Mate en 1 / 2 / 3 / 4**. Todas las posiciones son puzzles verificados de Lichess o partidas históricas.
+* **64 posiciones en total**: 6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4 / 4 aperturas / 4 leyendas.
+* **Aperturas con guión** — el Mate del Pastor, el Mate del Loco y el Gambito Ponziani se juegan paso a paso.
+* **Sistema de pistas** — los puzzles muestran un banner 🎓 en el panel del Profesor en lugar de un análisis genérico.
+
+### ♟ Exportar FEN
+* **Botón Copiar FEN** añadido junto al botón de copiar PGN — copia el FEN completo de la posición actual al portapapeles.
 
 ### 🧘 Trofeo: FEN Master
-* Se desbloquea completando **3 aperturas, 4 mate en 1, 6 mate en 2, 8 mate en 3 y 10 mate en 4** en la Librería de Entrenamiento.
-* Los trofeos retirados se eliminan al cargar el perfil — las partidas guardadas existentes se limpian automáticamente.
+* Requisitos: **3 aperturas, 4 mate en 1, 6 mate en 2, 8 mate en 3, 10 mate en 4** completados en la Librería.
+* Sustituye a *El Dragón* (retirado). Los IDs retirados se eliminan de los perfiles existentes automáticamente.
+
+### 🏆 Reequilibrio de Trofeos
+* **3 nuevos trofeos de Aprendizaje**: 🎓 Primer Puzzle, 🔁 A Practicar, 📖 Estudiante de Aperturas.
+* **3 Huevos de Pascua retirados**: Noctámbulo, ¿Caballos? ¿Para qué?, El Espejo.
+* **Los trofeos PvP ahora se desbloquean correctamente** — Cara a Cara, ¡Sin Trampas!, Rivales de Siempre etc. nunca se otorgaban. Corregido con una ruta dedicada; los trofeos de IA no pueden obtenerse en partidas PvP.
+* **Varios trofeos se encolan correctamente** — cada popup aparece en secuencia en lugar de sobreescribirse.
 
 ### 🔊 Temas de Sonido
-Tres temas de sonido sintetizados, seleccionables en Opciones (menú principal y durante la partida):
-* **Clásico** — golpe de madera: ráfaga de ruido filtrado + cuerpo senoidal, que imita una pieza real sobre un tablero de madera. Al enrocar se escuchan dos golpes rápidos.
-* **Retro** — pitidos de onda cuadrada.
-* **Suave** — tonos senoidales.
+* **Clásico** — golpe de madera. **Retro** — pitidos de onda cuadrada. **Suave** — tonos senoidales. Seleccionables en Opciones.
 
 ### 🏛️ Leyendas — Rendiciones Históricas
-Tras encontrar el sacrificio clave en cualquier puzzle de Leyendas, aparece un **modal de rendición** con el contexto histórico — la línea forzada, variantes clave y citas de época. Al pulsar **Seguir jugando** la IA continúa con los movimientos guionizados en el tablero.
+Tras el sacrificio clave, aparece un **modal de rendición** con el contexto histórico. Al pulsar **Seguir jugando** la IA continúa con los movimientos guionizados.
+
+### 🏫 Correcciones del Profesor
+* Sugerencias de apertura suprimidas en posiciones cargadas por FEN — bloqueadas durante toda la sesión.
+* Filtro anti-error desactivado en puzzles de mate — movimientos sacrificiales ya no quedan bloqueados.
+* Detección correcta de mates por subpromoción (`cxb8=C#`).
 
 *(Para el conjunto completo de funciones de El Estadístico en v2.24.0, consulta el Historial de versiones).*
 

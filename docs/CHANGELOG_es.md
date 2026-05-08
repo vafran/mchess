@@ -6,42 +6,6 @@ Formato: versión · tamaño · qué cambió.
 [Ir a README_es.md](../README_es.md)
 
 ---
-## v2.25.1 — Expansión de Puzzles y Correcciones del Profesor
-
-### Librería de Entrenamiento — 64 Puzzles
-- **17 nuevos puzzles añadidos** (2 mate en 2, 3 mate en 3, 12 mate en 4) hasta un total de **64 posiciones**.
-- Los nuevos mate en 4 son partidas históricas maestras (Anderssen, Morphy, Steinitz, Chigorin, etc.) de wtharvey.com.
-- Distribución: 6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4 / 4 aperturas / 4 leyendas — más posiciones en las categorías más difíciles.
-- Corregido el FEN del puzzle "Sacrificio Doble" mate en 4 (una fila tenía 9 casillas; corregido a `3pN3`).
-
-### Trofeo Maestro FEN
-- Nuevos requisitos acordes con la librería ampliada: **3 aperturas, 4 mate en 1, 6 mate en 2, 8 mate en 3, 10 mate en 4**.
-
-### Correcciones del Profesor
-- **Filtro anti-error desactivado en puzzles de mate** — el filtro bloqueaba movimientos sacrificiales correctos (sacrificio de caballo, de dama) mostrando sugerencias erróneas. Ahora se desactiva al usar el profesor en cualquier puzzle de mate.
-- **Detección de mate por subpromoción** — el escáner de mate en 1 ahora prueba tanto la promoción a dama como a caballo, detectando correctamente mates del tipo `cxb8=N#`.
-- **Mayor profundidad para puzzles mate en 3/4** — la profundidad de búsqueda del profesor sube a 10–12 con 14–20s de tiempo cuando hay un puzzle de mate cargado.
-
-### Exportar FEN
-- **Botón Copiar FEN** (♟) añadido junto al botón de copiar PGN en la barra del historial de movimientos. Copia el FEN completo de la posición actual al portapapeles — colocación de piezas, color activo, derechos de enroque, casilla de al paso, reloj de semijugadas y número de jugada completa. Funciona en cualquier momento de la partida, incluidas las posiciones de puzzles cargadas.
-
-### Tema Océano
-- Corregido el contraste de coordenadas del tablero, botones del profesor, modales de trofeos, mensajes de toast, indicadores de movimientos legales, selector de idioma, cuadros de finalización, fichas de estadísticas, modal de leyenda, etiquetas de progreso y texto de peligro.
-- Las piezas negras sobre casillas oscuras ahora tienen un brillo blanco para mejorar la visibilidad.
-
-### Reequilibrio de Trofeos — Aprendizaje vs Huevos de Pascua
-- **3 nuevos trofeos de Aprendizaje** (la categoría pasa a tener 7 en total):
-  - 🎓 **Primer Puzzle** — completa tu primer puzzle en la Librería de Entrenamiento.
-  - 🔁 **A Practicar** — completa 10 puzzles en total en cualquier categoría.
-  - 📖 **Estudiante de Aperturas** — usa "¿Qué hago?" 3 veces en la misma partida.
-- **3 Huevos de Pascua retirados**: Noctámbulo (ganar a las 4am — sin relación con el ajedrez), ¿Caballos? ¿Para qué? (premiaba malos hábitos de apertura), El Espejo (premiaba copiar al rival — también mal hábito). Los Huevos de Pascua pasan a tener 6.
-- Los IDs de trofeos retirados se eliminan automáticamente de los perfiles existentes al cargar.
-
-### Temas Fútbol y Bosque
-- Las coordenadas del tablero ahora usan colores contrastantes según el tipo de casilla (blanco en casillas oscuras, oscuro en casillas claras) para mayor legibilidad en ambos temas.
-- Tema Fútbol: la franja diagonal de tiza se extiende también a las casillas oscuras; las casillas claras cambian a casi blanco para simular el patrón alternado de un campo de fútbol recién cortado.
-
----
 ## v2.25.0 — Renovación de la Librería de Entrenamiento
 **~20.000 líneas · ~1,08 MB**
 
@@ -108,6 +72,40 @@ Ambas superposiciones de opciones (menú principal y durante la partida) ahora s
 ### Miscelánea
 
 - **Favicon** — añadido un caballo ♞ SVG en línea como URI `data:`, funciona bajo el protocolo `file:///` sin servidor.
+
+### Librería de Entrenamiento — 64 Puzzles
+- **17 nuevos puzzles añadidos** (2 mate en 2, 3 mate en 3, 12 mate en 4) hasta un total de **64 posiciones**.
+- Los nuevos mate en 4 son partidas históricas maestras (Anderssen, Morphy, Steinitz, Chigorin, etc.) de wtharvey.com.
+- Distribución: 6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4 / 4 aperturas / 4 leyendas.
+- Corregido el FEN del puzzle "Sacrificio Doble" mate en 4 (una fila tenía 9 casillas; corregido a `3pN3`).
+
+### Exportar FEN
+- **Botón Copiar FEN** (♟) añadido junto al botón de copiar PGN. Copia el FEN completo de la posición actual al portapapeles.
+
+### Trofeo Maestro FEN
+- Nuevos requisitos acordes con la librería ampliada: **3 aperturas, 4 mate en 1, 6 mate en 2, 8 mate en 3, 10 mate en 4**.
+
+### Reequilibrio de Trofeos — Aprendizaje vs Huevos de Pascua
+- **3 nuevos trofeos de Aprendizaje** (categoría con 7 en total): 🎓 Primer Puzzle, 🔁 A Practicar, 📖 Estudiante de Aperturas.
+- **3 Huevos de Pascua retirados**: Noctámbulo, ¿Caballos? ¿Para qué?, El Espejo. Los Huevos de Pascua pasan a tener 6.
+- Los IDs retirados se eliminan automáticamente de los perfiles existentes al cargar.
+
+### Correcciones del Profesor
+- **Filtro anti-error desactivado en puzzles de mate** — movimientos sacrificiales (sac de caballo, de dama) ya no quedan bloqueados.
+- **Detección de mate por subpromoción** — el escáner de mate en 1 ahora prueba también la promoción a caballo.
+- **Mayor profundidad para puzzles mate en 3/4** — profundidad sube a 10–12 con 14–20s de tiempo.
+- **Sugerencias de apertura suprimidas en posiciones cargadas por FEN** — la consulta al libro de aperturas queda bloqueada durante toda la sesión tras cargar cualquier posición.
+
+### Modo 2 Jugadores — Corrección de Trofeos
+- **Los trofeos PvP ahora se desbloquean correctamente** — Cara a Cara, ¡Sin Trampas!, Rivales de Siempre y demás nunca se otorgaban. Corregido con una función dedicada `checkPvpTrophyUnlocks`.
+- **Los trofeos de IA no pueden obtenerse en partidas PvP** — Primera Sangre, Cazador de Pollos, etc. quedan restringidos al modo IA. Los resultados PvP ya no afectan estadísticas ni rachas.
+
+### Notificaciones de Trofeos
+- **Varios trofeos ahora se encolan correctamente** — cada popup se muestra en secuencia (2800 ms, 400 ms de pausa) en lugar de sobreescribirse.
+
+### Temas Océano, Fútbol y Bosque
+- Océano: corregido el contraste de coordenadas, botones, modales, toast, indicadores de movimientos legales y más. Piezas negras con brillo blanco en casillas oscuras.
+- Fútbol y Bosque: coordenadas del tablero con colores contrastantes por tipo de casilla.
 
 ---
 

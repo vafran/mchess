@@ -6,42 +6,6 @@ Format: version · size · what changed.
 [Go to README.md](../README.md)
 
 ---
-## v2.25.1 — Puzzle Library Expansion & Coach Fixes
-
-### Training Library — 64 Puzzles
-- **17 new puzzles added** (2 mate-in-2, 3 mate-in-3, 12 mate-in-4) bringing the total to **64 positions** across all categories.
-- New mate-in-4s are historical masterpieces (Anderssen, Morphy, Steinitz, Chigorin, etc.) sourced from wtharvey.com.
-- Distribution: 6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4 / 4 openings / 4 legends — more positions at higher difficulty.
-- Fixed "Double Sacrifice" mate-in-4 FEN (invalid rank had 9 squares; corrected to `3pN3`).
-
-### FEN Master Trophy
-- Raised requirements to match the expanded library: **3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, 10 mate-in-4s**.
-
-### Coach / Professor Fixes
-- **Anti-blunder filter disabled for mate puzzles** — the filter was blocking correct sacrificial moves (knight sac, queen sac) and showing wrong suggestions. Now bypassed when the coach is used on any mate puzzle.
-- **Underpromotion mate detection** — the mate-in-1 scanner now tries both queen and knight promotions, so `cxb8=N#` style mates are correctly identified (previously only queen promotion was tried, missing the only checkmate).
-- **Depth boost for mate-in-3/4 puzzles** — professor search depth raised to 10–12 with 14–20s timeout when a mate puzzle is loaded, giving the engine time to find deep mating lines.
-
-### FEN Export
-- **Copy FEN button** (♟) added next to the PGN copy button in the move history bar. Copies the full FEN of the current position to clipboard — piece placement, active color, castling rights, en-passant square, halfmove clock, and fullmove number. Works at any point in the game, including loaded puzzle positions.
-
-### Ocean Theme
-- Fixed contrast for board coordinates, professor buttons, trophy modals, toast messages, legal move highlights, language selector, completion boxes, stat chips, legend modal, progress labels, and danger text colors.
-- Black pieces on dark squares now have a white glow drop-shadow for readability.
-
-### Trophy Rebalance — Learning vs Easter Eggs
-- **3 new Learning trophies** (category now has 7 total):
-  - 🎓 **First Puzzle** — complete your first Training Library puzzle.
-  - 🔁 **Keep Practicing** — complete 10 puzzles total across any category.
-  - 📖 **Opening Student** — use "What should I do?" 3 times in a single game.
-- **3 Easter Egg trophies retired**: Night Owl (win at 4am — unrelated to chess), Knights? Who Needs Them? (rewarded bad opening habits), Mirror Moves (rewarded copying the opponent — also bad habits). Easter Eggs now has 6.
-- Retired trophy IDs are automatically stripped from existing profiles on next load.
-
-### Football & Forest Themes
-- Board coordinates now use contrasting colors per square type (white on dark squares, dark on light squares) for readability in both themes.
-- Football theme: diagonal chalk stripe extended to dark squares; light squares changed to near-white for a realistic mowed-pitch alternating pattern.
-
----
 ## v2.25.0 — Training Library Overhaul
 **~20,000 lines · ~1.08 MB**
 
@@ -108,6 +72,44 @@ Both options overlays (main menu and in-game) now scroll correctly on mobile vie
 ### Misc
 
 - **Favicon** — inline SVG ♞ knight added as a `data:` URI, works under `file:///` protocol without a server.
+
+### Training Library — 64 Puzzles
+- **17 new puzzles added** (2 mate-in-2, 3 mate-in-3, 12 mate-in-4) bringing the total to **64 positions** across all categories.
+- New mate-in-4s are historical masterpieces (Anderssen, Morphy, Steinitz, Chigorin, etc.) sourced from wtharvey.com.
+- Distribution: 6 mate-1 / 12 mate-2 / 16 mate-3 / 22 mate-4 / 4 openings / 4 legends.
+- Fixed "Double Sacrifice" mate-in-4 FEN (invalid rank had 9 squares; corrected to `3pN3`).
+
+### FEN Export
+- **Copy FEN button** (♟) added next to the PGN copy button. Copies the full FEN of the current position to clipboard.
+
+### FEN Master Trophy
+- Requirements raised to match the expanded library: **3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, 10 mate-in-4s**.
+
+### Trophy Rebalance — Learning vs Easter Eggs
+- **3 new Learning trophies** (category now has 7 total): 🎓 First Puzzle, 🔁 Keep Practicing, 📖 Opening Student.
+- **3 Easter Egg trophies retired**: Night Owl, Knights? Who Needs Them?, Mirror Moves. Easter Eggs now has 6.
+- Retired trophy IDs are automatically stripped from existing profiles on next load.
+
+### Coach / Professor Fixes
+- **Anti-blunder filter disabled for mate puzzles** — sacrificial moves (knight sac, queen sac) are no longer blocked.
+- **Underpromotion mate detection** — the mate-in-1 scanner now tries both queen and knight promotions.
+- **Depth boost for mate-in-3/4 puzzles** — professor search depth raised to 10–12 with 14–20s timeout.
+- **Opening suggestions suppressed for FEN-loaded games** — the opening book lookup is now blocked for the entire session after loading any position.
+
+### Two-Player Mode — Trophy Fixes
+- **PvP trophies now unlock correctly** — Face to Face, No Takebacks!, Regular Rivals and all other PvP trophies were never firing due to an AI-mode gate. Fixed with a dedicated `checkPvpTrophyUnlocks` path.
+- **AI trophies cannot fire in PvP games** — First Blood, Chicken Hunter, bot trophies etc. are now strictly gated to AI mode. PvP results no longer affect AI statistics or streaks.
+
+### Trophy Popups
+- **Multiple trophies now queue correctly** — each popup shows in sequence (2800 ms display, 400 ms gap) instead of overwriting each other.
+
+### Ocean Theme
+- Fixed contrast for board coordinates, professor buttons, trophy modals, toast messages, legal move highlights, language selector, completion boxes, stat chips, legend modal, progress labels, and danger text.
+- Black pieces on dark squares now have a white glow drop-shadow for readability.
+
+### Football & Forest Themes
+- Board coordinates now use contrasting colors per square type for readability in both themes.
+- Football theme: diagonal chalk stripe extended to dark squares; light squares changed to near-white.
 
 ---
 ## v2.24.0 — The Statistician
