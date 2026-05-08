@@ -8010,7 +8010,12 @@ limitations under the License.
           }
           if (humanWon) {
             // Human wins → confetti + character defeat speech
-            if (lastLoadedChallengeItem) recordChallengeCompleted(lastLoadedChallengeItem);
+            if (lastLoadedChallengeItem) {
+              const _cat = lastLoadedChallengeItem.cat || '';
+              const _mateLimit = { mate1: 3, mate2: 5, mate3: 7, mate4: 9 };
+              const _limit = _mateLimit[_cat];
+              if (!_limit || history.length <= _limit) recordChallengeCompleted(lastLoadedChallengeItem);
+            }
             playVictorySound();
             launchVictoryConfetti();
             setTimeout(() => {
