@@ -5209,23 +5209,33 @@ limitations under the License.
 
     function showMedalCelebration(mDef, catNum) {
       const name = mDef.name[currentLanguage] || mDef.name.es;
-      document.getElementById('trophyCelebIcon').textContent = mDef.icon;
-      document.getElementById('trophyCelebLabel').textContent = '🏆 ' + (currentLanguage === 'en' ? 'Category Medal' : 'Medalla de Categoría');
-      document.getElementById('trophyCelebName').textContent = name;
-      const el = document.getElementById('trophyCelebration');
-      el.classList.add('show');
-      clearTimeout(el._hideTimer);
-      el._hideTimer = setTimeout(() => el.classList.remove('show'), 3500);
+      _queueCelebration(mDef.icon, '🏆 ' + (currentLanguage === 'en' ? 'Category Medal' : 'Medalla de Categoría'), name, 3500);
     }
 
     function showWheatChessboardCelebration() {
-      document.getElementById('trophyCelebIcon').textContent = '♟️';
-      document.getElementById('trophyCelebLabel').textContent = '2⁶⁴ − 1';
-      document.getElementById('trophyCelebName').textContent = currentLanguage === 'en' ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero';
+      _queueCelebration('♟️', '2⁶⁴ − 1', currentLanguage === 'en' ? 'The Wheat and Chessboard' : 'La Leyenda del Tablero', 5000);
+    }
+
+    const _celebQueue = [];
+    let _celebRunning = false;
+    function _runCelebQueue() {
+      if (_celebQueue.length === 0) { _celebRunning = false; return; }
+      _celebRunning = true;
+      const { icon, label, name, duration } = _celebQueue.shift();
       const el = document.getElementById('trophyCelebration');
+      document.getElementById('trophyCelebIcon').textContent = icon;
+      document.getElementById('trophyCelebLabel').textContent = label;
+      document.getElementById('trophyCelebName').textContent = name;
       el.classList.add('show');
       clearTimeout(el._hideTimer);
-      el._hideTimer = setTimeout(() => el.classList.remove('show'), 5000);
+      el._hideTimer = setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(_runCelebQueue, 400);
+      }, duration);
+    }
+    function _queueCelebration(icon, label, name, duration) {
+      _celebQueue.push({ icon, label, name, duration });
+      if (!_celebRunning) _runCelebQueue();
     }
 
     function showTrophyCelebration(def, id) {
@@ -5233,13 +5243,7 @@ limitations under the License.
       const icon = def ? def.icon : '🏆';
       const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '📚', 7: '⚔️', 8: '🥊' };
       const label = def ? (catLabels[def.cat] + ' ' + t('profileCat' + def.cat)) : '🏆';
-      document.getElementById('trophyCelebIcon').textContent = icon;
-      document.getElementById('trophyCelebLabel').textContent = label;
-      document.getElementById('trophyCelebName').textContent = name;
-      const el = document.getElementById('trophyCelebration');
-      el.classList.add('show');
-      clearTimeout(el._hideTimer);
-      el._hideTimer = setTimeout(() => el.classList.remove('show'), 2800);
+      _queueCelebration(icon, label, name, 2800);
     }
 
     function checkTrophyUnlocks(result, difficulty, movesCount) {
@@ -5306,17 +5310,18 @@ limitations under the License.
       // ♟️ blanco_y_negro: 50 wins as White AND 50 wins as Black
       if (p.colorStats && (p.colorStats.w?.w || 0) >= 50 && (p.colorStats.b?.w || 0) >= 50)
         unlockTrophy('blanco_y_negro');
-      // 🥊 PvP trophies (ai-mode guard is off; these fire in pvp games)
-      if (gameMode === 'pvp') {
-        sessionPvpGamesCompleted++;
-        if (sessionPvpGamesCompleted === 1) unlockTrophy('pvp_face_to_face');
-        if (sessionPvpGamesCompleted >= 5) unlockTrophy('pvp_regular_rivals');
-        if (sessionPvpBothUndoFree && result !== 'draw') unlockTrophy('pvp_no_takebacks');
-        if (result === 'draw') unlockTrophy('pvp_peace_treaty');
-        if ((result === 'win' || result === 'loss') && movesCount <= 50) unlockTrophy('pvp_coffeehouse');
-        if (sessionPvpQueenPromoted) unlockTrophy('pvp_passed_crown');
-        if (sessionPvpWhiteCheckCount >= 1 && sessionPvpBlackCheckCount >= 1) unlockTrophy('pvp_the_handshake');
-      }
+    }
+
+    function checkPvpTrophyUnlocks(result, movesCount) {
+      if (!currentProfile) return;
+      sessionPvpGamesCompleted++;
+      if (sessionPvpGamesCompleted === 1) unlockTrophy('pvp_face_to_face');
+      if (sessionPvpGamesCompleted >= 5) unlockTrophy('pvp_regular_rivals');
+      if (sessionPvpBothUndoFree && result !== 'draw') unlockTrophy('pvp_no_takebacks');
+      if (result === 'draw') unlockTrophy('pvp_peace_treaty');
+      if ((result === 'win' || result === 'loss') && movesCount <= 50) unlockTrophy('pvp_coffeehouse');
+      if (sessionPvpQueenPromoted) unlockTrophy('pvp_passed_crown');
+      if (sessionPvpWhiteCheckCount >= 1 && sessionPvpBlackCheckCount >= 1) unlockTrophy('pvp_the_handshake');
     }
 
     // Extra pawn-structure gates for motifs where piece count alone is not enough
@@ -5440,7 +5445,9 @@ limitations under the License.
     }
 
     function updateMatchStats(result, difficulty, movesCount) {
-      if (!currentProfile || gameMode !== 'ai') return;
+      if (!currentProfile) return;
+      if (gameMode === 'pvp') { checkPvpTrophyUnlocks(result, movesCount); saveProfile(); return; }
+      if (gameMode !== 'ai') return;
       if (sessionStartedFromFen) return; // FEN-loaded positions don't count as real matches
       sessionPendingResult = { result, difficulty, movesCount }; // store for reviewGame path
       if (sessionGameRecorded) return;
