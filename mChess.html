@@ -17060,7 +17060,7 @@ limitations under the License.
         const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
 
         // 1. BOOK + AI MERGE (No losses)
-        let bookOpts = (window._lastValidatedBookOptionsKey === historyKey) ? (window._lastValidatedBookOptions || []) : [];
+        let bookOpts = (!sessionStartedFromFen && window._lastValidatedBookOptionsKey === historyKey) ? (window._lastValidatedBookOptions || []) : [];
         const seen = new Set();
         const merged = [];
         // Metemos el libro primero
@@ -17815,7 +17815,7 @@ limitations under the License.
 
           // --- POSITION DATA EXTRACTION ---
           const historyKey = history.map(m => m.replace(/[+#]/g, '')).join(',');
-          const bookEntries = OPENING_BOOK[historyKey] || [];
+          const bookEntries = sessionStartedFromFen ? [] : (OPENING_BOOK[historyKey] || []);
           const legalMoves = getAllMovesForColor(currentTurn, board);
           const en = currentLanguage === 'en';
 
