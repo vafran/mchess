@@ -439,7 +439,7 @@ limitations under the License.
     .help-slide-title {
       font-size: 1.1rem;
       font-weight: 800;
-      color: var(--primary);
+      color: var(--accent);
       text-align: center;
       margin-bottom: 10px;
     }
@@ -4133,7 +4133,8 @@ limitations under the License.
 
   <div class="confirm-modal" id="fenLibraryModal" style="z-index: 300;">
     <div class="confirm-box"
-      style="max-height: 85vh; display: flex; flex-direction: column; width: 95%; max-width: 420px; padding: 20px;">
+      style="max-height: 85vh; display: flex; flex-direction: column; width: 95%; max-width: 420px; padding: 20px; position: relative;">
+      <button onclick="document.getElementById('fenLibraryModal').classList.remove('show')" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-light); line-height:1; padding:4px;">✕</button>
       <h3 id="fenLibraryTitle" style="margin-bottom: 10px; font-size: 1.4rem;">🧩 Entrenamiento</h3>
 
       <!-- Mode selector — the most important choice before loading any position -->
@@ -4229,20 +4230,20 @@ limitations under the License.
   <div class="confirm-modal" id="aboutModal" style="z-index: 300;">
     <div class="confirm-box" style="max-width: 360px; padding: 32px 24px 24px; text-align: center;">
       <div style="font-size: 3rem; margin-bottom: 8px; line-height:1;">♟️</div>
-      <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 4px;">Airin</div>
+      <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent); margin-bottom: 4px;">Airin</div>
       <div id="aboutVersion"
         style="font-size: 0.8rem; font-weight:600; color: var(--text-light); margin-bottom: 22px; letter-spacing: 0.08em; text-transform:uppercase;">
         v2.24.0</div>
 
       <div
-        style="background: rgba(0,0,0,0.04); border: 1px solid var(--primary-light); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
+        style="background: rgba(128,128,128,0.08); border: 1px solid rgba(128,128,128,0.2); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; text-align: left;">
         <div
-          style="display:flex; justify-content:space-between; align-items:center; padding: 7px 0; border-bottom: 1px solid var(--primary-light);">
+          style="display:flex; justify-content:space-between; align-items:center; padding: 7px 0; border-bottom: 1px solid rgba(128,128,128,0.2);">
           <span id="aboutLabelAuthor" style="font-size:0.78rem; color:var(--text-light);">Autor</span>
           <span style="font-size:0.88rem; font-weight:700; color:var(--text);">Aaron Vazquez Fraga</span>
         </div>
         <div
-          style="display:flex; justify-content:space-between; align-items:center; padding: 7px 0; border-bottom: 1px solid var(--primary-light);">
+          style="display:flex; justify-content:space-between; align-items:center; padding: 7px 0; border-bottom: 1px solid rgba(128,128,128,0.2);">
           <span id="aboutLabelLicense" style="font-size:0.78rem; color:var(--text-light);">Licencia</span>
           <span style="font-size:0.88rem; font-weight:700; color:var(--text);">Apache 2.0</span>
         </div>
@@ -4251,13 +4252,13 @@ limitations under the License.
             generado por</div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <span
-              style="background:var(--primary-light); color:var(--text); font-size:0.74rem; font-weight:700; padding:4px 11px; border-radius:20px; opacity:0.9;">Claude
+              style="background:rgba(128,128,128,0.15); color:var(--text); font-size:0.74rem; font-weight:700; padding:4px 11px; border-radius:20px;">Claude
               Sonnet</span>
             <span
-              style="background:var(--accent-light); color:var(--text); font-size:0.74rem; font-weight:700; padding:4px 11px; border-radius:20px; opacity:0.85;">Gemini
+              style="background:rgba(128,128,128,0.15); color:var(--text); font-size:0.74rem; font-weight:700; padding:4px 11px; border-radius:20px;">Gemini
               Pro</span>
             <span
-              style="background:var(--primary-light); color:var(--text); font-size:0.74rem; font-weight:700; padding:4px 11px; border-radius:20px; opacity:0.7;">ChatGPT</span>
+              style="background:rgba(128,128,128,0.15); color:var(--text); font-size:0.74rem; font-weight:700; padding:4px 11px; border-radius:20px;">ChatGPT</span>
           </div>
         </div>
       </div>
@@ -5057,11 +5058,11 @@ limitations under the License.
       // Category 2 — Technical & Late-Game
       pure_pride: { icon: '🛡️', cat: 2, name: { es: 'Orgullo Puro', en: 'Pure Pride' }, desc: { es: 'Gana sin ayudas, sin deshacer y sin Modo Entrenamiento (Difícil+).', en: 'Win without undos, hints, or Training Mode (Hard+).' }, story: { es: 'Para conseguir esto, debes ganar al Mago o Rey Sabio sin deshacer movimientos ni usar ayudas del Profesor o Entrenamiento.', en: 'To get this, you must beat the Hard or Master bot without ever pressing Undo or using any Coach hints, including Training Mode.' } },
       iron_castle: { icon: '🏰', cat: 2, name: { es: 'Castillo de Hierro', en: 'Iron Castle' }, desc: { es: 'Gana enrocando sin mover el rey después.', en: 'Win by castling and never moving your king again.' }, story: { es: 'Enroca rápido y juega posicional. Mantén tu rey seguro y no dejes que tenga que moverse.', en: 'Castle early and play a positional game. Keep your king safe and don\'t let it be forced to move.' } },
-      david_goliath: { icon: '🗿', cat: 4, name: { es: 'David y Goliat', en: 'David vs Goliath' }, desc: { es: 'Gana al Mago o Rey Sabio tras llegar a −500cp o peor.', en: 'Win against The Magician or Wise King after your eval reached −500cp or worse.' }, story: { es: 'Sobrevive a un gran error contra los bots más difíciles y remonta. Fíjate en la barra de ventaja.', en: 'Survive a massive blunder against the hardest bots, then mount a comeback. Watch the eval bar go deep red and then win.' } },
+      david_goliath: { icon: '🗿', cat: 2, name: { es: 'David y Goliat', en: 'David vs Goliath' }, desc: { es: 'Gana al Mago o Rey Sabio tras llegar a −500cp o peor.', en: 'Win against The Magician or Wise King after your eval reached −500cp or worse.' }, story: { es: 'Sobrevive a un gran error contra los bots más difíciles y remonta. Fíjate en la barra de ventaja.', en: 'Survive a massive blunder against the hardest bots, then mount a comeback. Watch the eval bar go deep red and then win.' } },
       illusion_breaker: { icon: '🌀', cat: 5, name: { es: 'El Rompe-Ilusiones', en: 'Illusion Breaker' }, desc: { es: 'Fuerza tablas contra El Mago.', en: 'Force a draw against The Magician.' }, story: { es: 'Si no puedes ganar, unas tablas son un buen resultado. Busca la triple repetición o el ahogado.', en: 'If you can\'t win, a draw is a good result. Look for threefold repetition or stalemate.' } },
       no_tricks: { icon: '🧩', cat: 5, name: { es: 'Sin Trucos', en: 'No Tricks Allowed' }, desc: { es: 'Derrota al Mago sin pedir ayuda.', en: 'Defeat The Magician without any hints.' }, story: { es: 'Gana al Mago tú solo. No se permite usar el análisis del Profesor.', en: 'Beat the Magician all by yourself. No Coach analysis or hints allowed.' } },
       royal_endurance: { icon: '⏳', cat: 2, name: { es: 'Resistencia Real', en: 'Royal Endurance' }, desc: { es: 'Sobrevive más de 60 movimientos contra el Rey Sabio.', en: 'Survive more than 60 moves against the Wise King.' }, story: { es: 'Sobrevivir 60 movimientos contra el Maestro demuestra gran resistencia. Juega sólido y cambia piezas.', en: 'Even if you lose, surviving 60 moves against the Master shows great resilience. Play solid and trade pieces.' } },
-      the_immortal: { icon: '💎', cat: 4, name: { es: 'El Inmortal', en: 'The Immortal' }, desc: { es: 'Derrota al Rey Sabio sin deshacer ningún movimiento.', en: 'Defeat the Wise King without undoing any move.' }, story: { es: 'Ganar al Rey Sabio sin deshacer ni un solo movimiento es la prueba definitiva. Piensa dos veces.', en: 'Winning against the Master without a single Undo is the ultimate test. Think twice before every move.' } },
+      the_immortal: { icon: '💎', cat: 2, name: { es: 'El Inmortal', en: 'The Immortal' }, desc: { es: 'Derrota al Rey Sabio sin deshacer ningún movimiento.', en: 'Defeat the Wise King without undoing any move.' }, story: { es: 'Ganar al Rey Sabio sin deshacer ni un solo movimiento es la prueba definitiva. Piensa dos veces.', en: 'Winning against the Master without a single Undo is the ultimate test. Think twice before every move.' } },
       usurper: { icon: '♟️', cat: 2, name: { es: 'El Usurpador', en: 'The Usurper' }, desc: { es: 'Da jaque mate al Rey Sabio con un peón.', en: 'Checkmate the Wise King with a pawn.' }, story: { es: 'En el final, corona un peón o usa un peón para dar el golpe de gracia.', en: 'In the endgame, promote a pawn or use a pawn to deliver the final checkmate blow.' } },
       // Category 3 — Easter Eggs (hidden until unlocked)
       dumb_dumber: { icon: '🪺', cat: 3, hidden: true, name: { es: 'Pollos Hermanos', en: 'Chicken Brothers' }, desc: { es: 'Empata contra el Pollito.', en: 'Draw against the Chick.' }, story: { es: '¡Empatar contra el Pollito es más difícil de lo que parece! Intenta provocar un ahogado a propósito.', en: 'Drawing against the Chick is harder than it looks! Try to set up a stalemate on purpose.' } },
@@ -5105,12 +5106,12 @@ limitations under the License.
         }
       },
       // Merged into Cat 1 (Progression) — beginner mechanic milestones
-      first_check: { icon: '🔔', cat: 6, name: { es: '¡Jaque!', en: 'Check!' }, desc: { es: 'Da jaque por primera vez.', en: 'Give check for the very first time.' }, story: { es: '¡Ataca al rey enemigo! Este es el primer paso hacia el mate.', en: 'Attack the enemy king! This is the first step towards checkmate.' } },
+      first_check: { icon: '🔔', cat: 1, name: { es: '¡Jaque!', en: 'Check!' }, desc: { es: 'Da jaque por primera vez.', en: 'Give check for the very first time.' }, story: { es: '¡Ataca al rey enemigo! Este es el primer paso hacia el mate.', en: 'Attack the enemy king! This is the first step towards checkmate.' } },
       first_promotion: { icon: '👑', cat: 1, name: { es: '¡Soy Reina!', en: 'I Am Queen!' }, desc: { es: 'Corona un peón por primera vez.', en: 'Promote a pawn for the very first time.' }, story: { es: 'Avanza un peón hasta el otro lado del tablero para convertirlo en Dama.', en: 'March a pawn all the way to the other side of the board to turn it into a Queen.' } },
-      first_castle_ever: { icon: '🏰', cat: 8, name: { es: '¡Mi Castillo!', en: 'My Castle!' }, desc: { es: 'Enroca por primera vez en tu vida.', en: 'Castle for the very first time ever.' }, story: { es: 'Mueve el Rey dos casillas hacia una Torre y crúzala. ¡Mantén tu Rey a salvo!', en: 'Move your King two squares towards a Rook, and jump the Rook over it. Keep your King safe!' } },
-      first_enp_ever: { icon: '👻', cat: 3, hidden: true, name: { es: '¡Al Paso Fantasma!', en: 'Ghost Capture!' }, desc: { es: 'Captura al paso por primera vez en tu vida.', en: 'Capture en passant for the very first time ever.' }, story: { es: 'Cuando un peón enemigo avance dos casillas y quede junto al tuyo, captúralo en diagonal como si hubiera movido una.', en: 'When an enemy pawn moves two squares forward and lands next to your pawn, capture it diagonally as if it only moved one square.' } },
+      first_castle_ever: { icon: '🏰', cat: 1, name: { es: '¡Mi Castillo!', en: 'My Castle!' }, desc: { es: 'Enroca por primera vez en tu vida.', en: 'Castle for the very first time ever.' }, story: { es: 'Mueve el Rey dos casillas hacia una Torre y crúzala. ¡Mantén tu Rey a salvo!', en: 'Move your King two squares towards a Rook, and jump the Rook over it. Keep your King safe!' } },
+      first_enp_ever: { icon: '👻', cat: 1, name: { es: '¡Al Paso Fantasma!', en: 'Ghost Capture!' }, desc: { es: 'Captura al paso por primera vez en tu vida.', en: 'Capture en passant for the very first time ever.' }, story: { es: 'Cuando un peón enemigo avance dos casillas y quede junto al tuyo, captúralo en diagonal como si hubiera movido una.', en: 'When an enemy pawn moves two squares forward and lands next to your pawn, capture it diagonally as if it only moved one square.' } },
       // Cat 3 (Easter Eggs) — hidden Fun & Silly trophies moved here
-      pawn_army: { icon: '🐛', cat: 7, name: { es: 'Ejército de Hormigas', en: 'Ant Army' }, desc: { es: 'Mueve 5 peones distintos en una partida.', en: 'Move 5 different pawns in one game.' }, story: { es: 'Avanza los peones de ambos lados al principio (e, d, c, f, g). Muy fácil de conseguir de forma natural.', en: 'Push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.' } },
+      pawn_army: { icon: '🐛', cat: 1, name: { es: 'Ejército de Hormigas', en: 'Ant Army' }, desc: { es: 'Mueve 5 peones distintos en una partida.', en: 'Move 5 different pawns in one game.' }, story: { es: 'Avanza los peones de ambos lados al principio (e, d, c, f, g). Muy fácil de conseguir de forma natural.', en: 'Push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.' } },
       queen_bee: { icon: '🐝', cat: 7, name: { es: 'La Abeja Reina', en: 'Queen Bee' }, desc: { es: 'Gana capturando con la dama en el último movimiento.', en: 'Win with the queen as the final capture.' }, story: { es: 'Tu dama debe hacer la última captura antes del mate. Prepara la posición para que la dama tome a la pieza defensora.', en: 'You need the queen to be the piece that makes the last capture before mate. Set up a position where your queen captures the defending piece and then checkmate follows.' } },
       last_pawn: { icon: '🥲', cat: 3, hidden: true, name: { es: 'El Superviviente', en: 'The Survivor' }, desc: { es: 'Gana con solo 1 peón propio en el tablero.', en: 'Win with only 1 pawn remaining.' }, story: { es: 'Gana la partida teniendo exactamente un solo peón tuyo en el tablero.', en: 'Win the game while you only have exactly one pawn left on the board.' } },
       // Cat 5 — Speed & Challenge
@@ -5118,10 +5119,10 @@ limitations under the License.
       comeback_kid: { icon: '💪', cat: 5, name: { es: 'El Gran Regreso', en: 'Comeback Kid' }, desc: { es: 'Gana tras estar 400 puntos por debajo.', en: 'Win after being down 400 centipawns or more.' }, story: { es: '¡No te rindas tras perder una pieza! Sigue jugando y espera a que la IA se equivoque.', en: 'Don\'t give up after blundering a piece! Keep playing and wait for the AI to make a mistake.' } },
       perfect_endgame: { icon: '♟️', cat: 5, name: { es: 'Clínica de Ajedrez', en: 'Chess Clinic' }, desc: { es: 'Gana sin perder ni una sola pieza.', en: 'Win without losing a single piece.' }, story: { es: 'Gana una partida sin que el rival te capture ni una sola pieza.', en: 'Win a game without your opponent capturing a single one of your pieces.' } },
       // Cat 6 — Streaks & Loyalty
-      blanco_y_negro: { icon: '♟️', cat: 4, name: { es: 'Blanco y Negro', en: 'Black and White' }, desc: { es: 'Gana 50 partidas con blancas Y 50 partidas con negras.', en: 'Win 50 games as White AND 50 games as Black.' }, story: { es: 'Tu perfil registra las victorias por color. Juega con ambos bandos de forma regular.', en: 'Your profile tracks wins by color — you can check your progress in the Profile screen. Play both sides regularly.' } },
+      blanco_y_negro: { icon: '♟️', cat: 5, name: { es: 'Blanco y Negro', en: 'Black and White' }, desc: { es: 'Gana 50 partidas con blancas Y 50 partidas con negras.', en: 'Win 50 games as White AND 50 games as Black.' }, story: { es: 'Tu perfil registra las victorias por color. Juega con ambos bandos de forma regular.', en: 'Your profile tracks wins by color — you can check your progress in the Profile screen. Play both sides regularly.' } },
       three_in_a_row: { icon: '🔥', cat: 5, name: { es: 'Tripleta', en: 'Hat Trick' }, desc: { es: 'Gana 3 partidas seguidas.', en: 'Win 3 games in a row.' }, story: { es: 'Las derrotas reinician la racha. Gana 3 seguidas (no tiene que ser en la misma sesión).', en: 'Losses reset the streak counter. Win 3 in a row — doesn\'t need to be in the same sitting.' } },
       daily_player: { icon: '📅', cat: 5, name: { es: '¡Cada Día!', en: 'Every Day!' }, desc: { es: 'Juega en 5 días de calendario distintos.', en: 'Play on 5 different calendar days.' }, story: { es: 'Juega al menos una partida cada vez que abras la app. Se desbloquea tras 5 días distintos.', en: 'Just play at least one game whenever you open the app. Unlocks after 5 separate days.' } },
-      weekend_warrior: { icon: '🛋️', cat: 4, name: { es: 'Guerrero del Fin de Semana', en: 'Weekend Warrior' }, desc: { es: 'Juega en sábado Y en domingo.', en: 'Play on both Saturday and Sunday.' }, story: { es: 'Juega una partida en Sábado y otra en Domingo. No tienen que ser del mismo fin de semana.', en: 'Play any game on Saturday, any game on Sunday. They don\'t need to be the same weekend.' } },
+      weekend_warrior: { icon: '🛋️', cat: 5, name: { es: 'Guerrero del Fin de Semana', en: 'Weekend Warrior' }, desc: { es: 'Juega en sábado Y en domingo.', en: 'Play on both Saturday and Sunday.' }, story: { es: 'Juega una partida en Sábado y otra en Domingo. No tienen que ser del mismo fin de semana.', en: 'Play any game on Saturday, any game on Sunday. They don\'t need to be the same weekend.' } },
       // Cat 7 — Learning
       professor_fan: { icon: '🦉', cat: 6, name: { es: 'El Estudiante', en: 'The Student' }, desc: { es: 'Usa la ayuda del Profesor 10 veces en total.', en: 'Use the Professor hint 10 times in total.' }, story: { es: 'Usa la pestaña del Profesor para pedir consejo o análisis 10 veces en total.', en: 'Use the Coach tab to ask for hints or analysis 10 times in total across all your games.' } },
       opening_explorer: { icon: '🗺️', cat: 6, name: { es: 'El Explorador', en: 'The Explorer' }, desc: { es: 'Juega 5 aperturas distintas con nombre.', en: 'Play 5 different named openings across games.' }, story: { es: 'Prueba a empezar con distintos peones (e4, d4, c4) o caballos (Cf3) para ver diferentes aperturas.', en: 'Try starting with different pawns (e4, d4, c4) or knights (Nf3) to trigger different named openings.' } },
@@ -5133,12 +5134,12 @@ limitations under the License.
       el_invasor: { icon: '🗼', cat: 7, name: { es: 'El Invasor', en: 'The Invader' }, desc: { es: 'Mantén una Torre en la 7ª fila rival durante 3 turnos seguidos.', en: 'Keep a Rook on the opponent\'s 7th rank for 3 consecutive turns.' }, story: { es: 'Cuando lleves una torre a la 7ª fila, mantenla ahí defendiéndola o creando amenazas durante 3 de tus turnos.', en: 'Once you get a rook to the 7th rank, keep it there by defending it or making threats. Count 3 of your turns with the rook still on that rank.' } },
       cerdos_ciegos: { icon: '🐖', cat: 7, name: { es: 'Cerdos Ciegos', en: 'Blind Swine' }, desc: { es: 'Coloca tus dos Torres simultáneamente en la 7ª fila rival.', en: 'Place both Rooks on the opponent\'s 7th rank at the same time.' }, story: { es: 'La clásica posición de \'dos cerdos ciegos en la séptima\'. Dobla tus torres en la 7ª fila — devastador en el final.', en: 'The classic \'two pigs on the seventh\' position. Double your rooks to the 7th rank — devastating in the endgame.' } },
       el_pulpo: { icon: '🐙', cat: 7, name: { es: 'El Pulpo', en: 'Octopus Knight' }, desc: { es: 'Establece un Caballo en la 6ª fila defendido por un peón tuyo.', en: 'Post a Knight on the 6th rank defended by your own pawn.' }, story: { es: 'Un caballo en e6/d6 defendido por un peón es uno de los mayores recursos posicionales. ¡Cólalo ahí!', en: 'A knight on e6/d6 (or e3/d3 as Black) defended by a pawn is one of the strongest positional assets in chess. Park it there!' } },
-      el_calzoncillo: { icon: '👖', cat: 5, name: { es: 'El Calzoncillo', en: 'The Fork' }, desc: { es: 'Ataca dos piezas enemigas de mayor valor con un solo peón.', en: 'Attack two higher-value enemy pieces with a single pawn.' }, story: { es: 'Avanza un peón hasta una casilla donde ataque a dos caballos, alfiles, torres o damas a la vez.', en: 'Set up a pawn push to a square where it attacks two knights, bishops, rooks, or queens at once.' } },
+      el_calzoncillo: { icon: '👖', cat: 7, name: { es: 'El Calzoncillo', en: 'The Fork' }, desc: { es: 'Ataca dos piezas enemigas de mayor valor con un solo peón.', en: 'Attack two higher-value enemy pieces with a single pawn.' }, story: { es: 'Avanza un peón hasta una casilla donde ataque a dos caballos, alfiles, torres o damas a la vez.', en: 'Set up a pawn push to a square where it attacks two knights, bishops, rooks, or queens at once.' } },
       la_sorpresa: { icon: '🎁', cat: 7, name: { es: '¡Sorpresa!', en: 'Discovered Attack!' }, desc: { es: 'Realiza un jaque a la descubierta.', en: 'Deliver a discovered check.' }, story: { es: 'Mueve una pieza que bloqueaba a un alfil, torre o dama, de forma que la pieza descubierta dé jaque.', en: 'Move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.' } },
       fen_master: { icon: '🧘', cat: 6, name: { es: 'Maestro FEN', en: 'FEN Master' }, desc: { es: 'Completa 3 aperturas, 4 mates en 1, 6 mates en 2, 8 mates en 3 y 10 mates en 4.', en: 'Complete 3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, and 10 mate-in-4s.' }, story: { es: 'Un jugador completo domina todas las fases del tablero. Resolver desafíos de apertura y matemáticas de mate demuestra que tu visión tabléro es verdaderamente equilibrada.', en: 'A complete player masters the whole board. Solving opening traps and mating puzzles across every difficulty proves your chess vision is truly well-rounded.' } },
       the_analyst: { icon: '🔍', cat: 6, name: { es: 'El Analista', en: 'The Analyst' }, desc: { es: 'Usa ¿Fue buena? 5 veces.', en: 'Use "Was it good?" 5 times.' }, story: { es: 'Los grandes jugadores no solo juegan — estudian sus propias jugadas después. Usa el botón ¿Fue buena? cinco veces para reflexionar sobre tus movimientos.', en: 'Great players don\'t just play — they study their own moves afterwards. Use the "Was it good?" button five times to reflect on your play.' } },
       artilleria_pesada: { icon: '🔫', cat: 7, name: { es: 'Artillería Pesada', en: 'The Battery' }, desc: { es: 'Apila dos Torres tuyas en la misma columna.', en: 'Stack two of your Rooks on the same column.' }, story: { es: 'Dobla las torres en una columna abierta sin piezas de por medio. Muy común en las columnas d o e.', en: 'Double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file.' } },
-      great_trade: { icon: '🌪️', cat: 3, hidden: true, name: { es: 'Teoría del Caos', en: 'Chaos Theory' }, desc: { es: '4 capturas en 4 medias jugadas consecutivas.', en: '4 consecutive half-moves are all captures — a full fireworks sequence.' }, story: { es: 'Cuando el centro estalla y ambos bandos intercambian pieza por pieza sin parar — eso es la Teoría del Caos.', en: 'When the center explodes and both sides trade piece for piece without stopping — that\'s Chaos Theory.' } },
+      great_trade: { icon: '🌪️', cat: 7, name: { es: 'Teoría del Caos', en: 'Chaos Theory' }, desc: { es: '4 capturas en 4 medias jugadas consecutivas.', en: '4 consecutive half-moves are all captures — a full fireworks sequence.' }, story: { es: 'Cuando el centro estalla y ambos bandos intercambian pieza por pieza sin parar — eso es la Teoría del Caos.', en: 'When the center explodes and both sides trade piece for piece without stopping — that\'s Chaos Theory.' } },
       kings_support: { icon: '👑', cat: 2, name: { es: 'El Rey Guerrero', en: "King's Support" }, desc: { es: 'Da jaque mate con tu Rey activo en la 6ª fila (3ª con negras) cerca del rey rival.', en: 'Deliver checkmate with your King on the 6th rank (3rd as Black), within 2 squares of the enemy king.' }, story: { es: 'Lleva tu Rey hasta la 6ª fila y úsalo para apoyar el jaque mate — igual que los profesionales en los finales.', en: 'March your King up to rank 6 and use it to support the mating attack — just like the pros do in endgames.' } },
       pawn_storm: { icon: '🌊', cat: 7, name: { es: 'Tormenta de Peones', en: 'Pawn Storm' }, desc: { es: 'Ten 4 peones tuyos simultáneamente en la 6ª fila o más avanzados.', en: 'Have 4 of your pawns on the 6th rank or further advanced at the same time.' }, story: { es: 'Empuja peones por ambos flancos para crear una ola imparable que abrume al rival.', en: 'Push pawns on both sides of the board to create an unstoppable wave that overwhelms your opponent.' } },
       smothered_mate: { icon: '🐴', cat: 3, hidden: true, name: { es: 'El Fantasma de Filidor', en: "Philidor's Ghost" }, desc: { es: 'Da jaque mate con un Caballo cuando el rey enemigo está completamente ahogado por sus propias piezas.', en: 'Deliver checkmate with a Knight while the enemy King is smothered by its own pieces.' }, story: { es: 'El patrón más elegante del ajedrez. El caballo salta sobre la guardia del rey que no puede escapar de sus propios piezas.', en: 'The most elegant pattern in chess. The knight leaps over the king\'s own pieces — and the king cannot escape its own bodyguard.' } },
@@ -5155,14 +5156,14 @@ limitations under the License.
     // One medal per category — earned by completing ALL trophies in that category.
     // cat:4 medal is "The Grand Historian" — the former grand_historian trophy, now elevated.
     const MEDAL_DEFS = {
-      1: { icon: '🥇', name: { es: 'Maestro de la Progresión', en: 'Progression Master' }, desc: { es: 'Completa los 8 trofeos de Progresión.', en: 'Complete all 8 Progression trophies.' } },
-      2: { icon: '🧠', name: { es: 'Maestro Técnico', en: 'Technical Master' }, desc: { es: 'Completa los 8 trofeos Técnicos.', en: 'Complete all 8 Technical trophies.' } },
-      3: { icon: '🥚', name: { es: 'Maestro de los Secretos', en: 'Master of Secrets' }, desc: { es: 'Descubre los 8 Easter Eggs ocultos.', en: 'Discover all 8 hidden Easter Eggs.' } },
-      4: { icon: '📜', name: { es: 'El Leyendario', en: 'The Legendary' }, desc: { es: 'Completa los 8 trofeos Legendarios.', en: 'Complete all 8 Legendary trophies.' } },
-      5: { icon: '⚡', name: { es: 'Maestro Implacable', en: 'Relentless Master' }, desc: { es: 'Completa los 8 trofeos Implacables.', en: 'Complete all 8 Relentless trophies.' } },
-      6: { icon: '📚', name: { es: 'Maestro del Aprendizaje', en: 'Learning Master' }, desc: { es: 'Completa los 8 trofeos de Aprendizaje.', en: 'Complete all 8 Learning trophies.' } },
-      7: { icon: '⚔️', name: { es: 'Maestro Táctico', en: 'Tactical Master' }, desc: { es: 'Completa los 8 trofeos Tácticos.', en: 'Complete all 8 Tactical trophies.' } },
-      8: { icon: '🥊', name: { es: 'Campeón Cara a Cara', en: 'Head-to-Head Champion' }, desc: { es: 'Completa los 8 trofeos de 2 Jugadores.', en: 'Complete all 8 Two-Player trophies.' } },
+      1: { icon: '🥇', name: { es: 'Maestro de la Progresión', en: 'Progression Master' }, desc: { es: 'Completa los 12 trofeos de Progresión.', en: 'Complete all 12 Progression trophies.' } },
+      2: { icon: '🧠', name: { es: 'Maestro Técnico', en: 'Technical Master' }, desc: { es: 'Completa los 10 trofeos Técnicos.', en: 'Complete all 10 Technical trophies.' } },
+      3: { icon: '🥚', name: { es: 'Maestro de los Secretos', en: 'Master of Secrets' }, desc: { es: 'Descubre los 6 Easter Eggs ocultos.', en: 'Discover all 6 hidden Easter Eggs.' } },
+      4: { icon: '📜', name: { es: 'El Gran Historiador', en: 'The Grand Historian' }, desc: { es: 'Completa los 4 trofeos históricos.', en: 'Complete all 4 historical trophies.' } },
+      5: { icon: '⚡', name: { es: 'Maestro Implacable', en: 'Relentless Master' }, desc: { es: 'Completa los 9 trofeos Implacables.', en: 'Complete all 9 Relentless trophies.' } },
+      6: { icon: '📚', name: { es: 'Maestro del Aprendizaje', en: 'Learning Master' }, desc: { es: 'Completa los 7 trofeos de Aprendizaje.', en: 'Complete all 7 Learning trophies.' } },
+      7: { icon: '⚔️', name: { es: 'Maestro Táctico', en: 'Tactical Master' }, desc: { es: 'Completa los 9 trofeos Tácticos.', en: 'Complete all 9 Tactical trophies.' } },
+      8: { icon: '🥊', name: { es: 'Campeón Cara a Cara', en: 'Head-to-Head Champion' }, desc: { es: 'Completa los 7 trofeos de 2 Jugadores.', en: 'Complete all 7 Two-Player trophies.' } },
     };
 
     function unlockTrophy(id) {
@@ -5687,8 +5688,8 @@ limitations under the License.
         btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento FEN', btnProfile: '🏆 Mi Perfil', btnHelp: '❓ Ayuda',
         helpClose: 'Cerrar',
         helpT0: 'El Tablero', helpB0: '<ul><li>Toca una pieza para seleccionarla. Los puntos verdes muestran los movimientos legales.</li><li>Toca un punto verde para mover.</li><li>Gira el tablero con el botón 🔄 a la izquierda de la barra de historial de movimientos.</li><li>El rey parpadea en rojo cuando está en jaque.</li></ul>',
-        helpT1: 'Niveles de IA', helpB1: '<ul><li>🐣 <b>Pollito</b> — comete errores a propósito. Ideal para aprender.</li><li>🧙 <b>Aprendiz</b> — juega decente pero tiene fallos.</li><li>🔮 <b>Mago</b> — juega bien, sin errores graves (~1600 ELO).</li><li>👑 <b>Rey Sabio</b> — nivel máximo, muy difícil de vencer (~1830 ELO).</li></ul>',
-        helpT2: 'El Profesor', helpB2: '<ul><li>🔍 <b>Análisis</b> — evalúa la posición actual y dice si vas ganando o perdiendo.</li><li>🎯 <b>¿Qué hago?</b> — sugiere los mejores movimientos para ti.</li><li>💡 <b>¿Fue buena?</b> — analiza tu último movimiento y avisa si hubo un error o una mejor jugada.</li></ul><br>El Profesor no está disponible en nivel Rey Sabio.',
+        helpT1: 'Niveles de IA', helpB1: '<ul><li>🐣 <b>Pollito</b> — comete errores a propósito. Ideal para aprender.</li><li>🧙 <b>Aprendiz</b> — juega decente pero tiene fallos.</li><li>🔮 <b>Mago</b> — juega bien, sin errores graves (~1650 ELO, hasta 15 s por jugada).</li><li>👑 <b>Rey Sabio</b> — nivel máximo (~1830 ELO, hasta 30 s por jugada).</li></ul>',
+        helpT2: 'El Profesor', helpB2: '<ul><li>🔍 <b>Análisis</b> — evalúa la posición actual y dice si vas ganando o perdiendo.</li><li>🎯 <b>¿Qué hago?</b> — sugiere los mejores movimientos para ti.</li><li>💡 <b>¿Fue buena?</b> — analiza tu último movimiento y avisa si hubo un error o una mejor jugada.</li></ul>',
         helpT3: 'Ojo Halcón', helpB3: '<ul><li>Usa las flechas ◀▶ en la barra de movimientos para revisar la partida jugada a jugada.</li><li>El botón 👁️ <b>Ojo Halcón</b> en el Profesor dibuja flechas en el tablero mostrando amenazas y movimientos clave.</li><li>Pulsa 🚀 para volver a la posición actual.</li></ul>',
         helpT4: 'Entrenamiento', helpB4: '<ul><li>64 puzzles organizados por dificultad: aperturas, mate en 1, 2, 3 y 4.</li><li>El Profesor te da una pista específica para cada puzzle.</li><li>Completa puzzles para desbloquear el trofeo 🧘 <b>Maestro FEN</b>.</li><li>Accede desde el menú principal con el botón 🧩 Entrenamiento.</li></ul>',
         helpT5: 'Trofeos', helpB5: '<ul><li>Hay <b>64 trofeos</b> en total, organizados por categorías.</li><li>Se desbloquean automáticamente al conseguir logros durante las partidas.</li><li>Algunos son secretos — ¡descúbrelos jugando!</li><li>Consulta tu colección en 🏆 <b>Mi Perfil</b>.</li></ul>',
@@ -5805,8 +5806,8 @@ limitations under the License.
         btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 FEN Training', btnProfile: '🏆 My Profile', btnHelp: '❓ Help',
         helpClose: 'Close',
         helpT0: 'The Board', helpB0: '<ul><li>Tap a piece to select it. Green dots show legal moves.</li><li>Tap a green dot to move there.</li><li>Flip the board with the 🔄 button on the left of the move history bar.</li><li>The king flashes red when in check.</li></ul>',
-        helpT1: 'AI Levels', helpB1: '<ul><li>🐣 <b>Chick</b> — makes deliberate mistakes. Great for learning.</li><li>🧙 <b>Apprentice</b> — plays decently but has weak spots.</li><li>🔮 <b>Wizard</b> — plays well with no big blunders (~1600 ELO).</li><li>👑 <b>Wise King</b> — maximum difficulty, very hard to beat (~1830 ELO).</li></ul>',
-        helpT2: 'The Coach', helpB2: '<ul><li>🔍 <b>Analysis</b> — evaluates the current position and tells you who is winning.</li><li>🎯 <b>What should I do?</b> — suggests the best moves available to you.</li><li>💡 <b>Was it good?</b> — reviews your last move and warns if there was a mistake or a better option.</li></ul><br>The Coach is not available at Wise King level.',
+        helpT1: 'AI Levels', helpB1: '<ul><li>🐣 <b>Chick</b> — makes deliberate mistakes. Great for learning.</li><li>🧙 <b>Apprentice</b> — plays decently but has weak spots.</li><li>🔮 <b>Wizard</b> — plays well with no big blunders (~1650 ELO, up to 15 s per move).</li><li>👑 <b>Wise King</b> — maximum difficulty (~1830 ELO, up to 30 s per move).</li></ul>',
+        helpT2: 'The Coach', helpB2: '<ul><li>🔍 <b>Analysis</b> — evaluates the current position and tells you who is winning.</li><li>🎯 <b>What should I do?</b> — suggests the best moves available to you.</li><li>💡 <b>Was it good?</b> — reviews your last move and warns if there was a mistake or a better option.</li></ul>',
         helpT3: "Hawk's Eye", helpB3: '<ul><li>Use the ◀▶ arrows in the move bar to replay the game move by move.</li><li>The 👁️ <b>Hawk\'s Eye</b> button in the Coach draws arrows on the board showing threats and key moves.</li><li>Press 🚀 to jump back to the current position.</li></ul>',
         helpT4: 'Training Library', helpB4: '<ul><li>64 puzzles sorted by difficulty: openings, mate in 1, 2, 3, and 4.</li><li>The Coach gives a specific hint for each puzzle.</li><li>Complete puzzles to unlock the 🧘 <b>FEN Master</b> trophy.</li><li>Access it from the main menu with the 🧩 Training button.</li></ul>',
         helpT5: 'Trophies', helpB5: '<ul><li>There are <b>64 trophies</b> in total, organized by category.</li><li>They unlock automatically as you achieve things during games.</li><li>Some are secret — discover them by playing!</li><li>Check your collection in 🏆 <b>My Profile</b>.</li></ul>',
@@ -15863,6 +15864,7 @@ limitations under the License.
       const isOpening = moveCount <= 10;
       const piecesCount = board.flat().filter(p => p !== ' ').length;
       const isEndgame = piecesCount <= 10;
+      const isCheckmate = lastMove.includes('#');
       const isCheck = lastMove.includes('+');
       const isCapture = lastMove.includes('x');
       const isPromotion = lastMove.includes('=');
@@ -16186,6 +16188,23 @@ limitations under the License.
         specialComment = lang === 'en'
           ? getRnd(["👀 Queen + Bishop combo: Scholar's Mate is in the air! Defend f7.", "🚨 Scholar's Mate setup spotted! The f7 square is under fire.", "⚠️ Watch out: Qf3 + Bc4 is the Scholar's Mate recipe."], 'special_scholar_threat')
           : getRnd(["👀 Dama + Alfil apuntan a f7: ¡huele a Jaque Pastor! Defiende ya.", "🚨 ¡Patrón de Jaque Pastor detectado! La casilla f7 está bajo fuego.", "⚠️ Cuidado: Qf3 + Bc4 es la receta del Jaque Pastor."], 'special_scholar_threat');
+      } else if (isCheckmate) {
+        specialTone = 'funny';
+        specialComment = lang === 'en'
+          ? getRnd([
+            "♟️ Checkmate! The king has no escape.",
+            "👑 It's over — checkmate! A beautiful finish.",
+            "🏆 Checkmate! The hunt is complete.",
+            "⚡ Game over! Checkmate delivered.",
+            "🎯 Checkmate! No way out for the king.",
+          ], 'special_checkmate')
+          : getRnd([
+            "♟️ ¡Jaque mate! El rey no tiene escapatoria.",
+            "👑 ¡Fin de la partida! ¡Jaque mate! Un final precioso.",
+            "🏆 ¡Jaque mate! La cacería ha concluido.",
+            "⚡ ¡Partida terminada! ¡Jaque mate!",
+            "🎯 ¡Jaque mate! El rey no puede escapar.",
+          ], 'special_checkmate');
       } else if (lastNorm === 'Bxh7' || lastNorm === 'Bxh2') {
         specialComment = lang === 'en'
           ? getRnd(["🎁 Greek Gift sacrifice spotted! King safety is under fire."], 'special_greek_gift')
@@ -16206,7 +16225,7 @@ limitations under the License.
       let toneUsed = 'serious';
       let actionComment = "";
 
-      if (isQueenCaptured) {
+      if (isQueenCaptured && !isCheckmate) {
         toneUsed = 'funny';
         actionComment = lang === 'en'
           ? getRnd(["💎 A massive blow! The Queen is captured.", "💎 Big hit! The Queen leaves the board.", "💎 Boom! That Queen capture changes the whole game."], 'queen_cap')
@@ -19317,6 +19336,7 @@ limitations under the License.
     function startAIGame(level) {
       // Set difficulty but delay starting so player can read character's line
       currentDifficulty = level;
+      try { localStorage.setItem('mchess_difficulty', level); } catch (_) { }
       const s = DIFF_SETTINGS[level];
       aiDepth = s.depth;
       aiMistakeChance = s.mistakes;
