@@ -361,10 +361,16 @@ limitations under the License.
       color: var(--text) !important;
     }
 
-    body.theme-futbol .menu-btn.secondary {
-      background: #ffffff;
-      color: var(--primary);
-      border: 1px solid var(--primary-light);
+    body.theme-futbol .menu-btn.secondary,
+    body.theme-futbol #btnMainTraining,
+    body.theme-futbol #btnMainProfile,
+    body.theme-futbol #btnMainOptions,
+    body.theme-futbol #btnMainHelp,
+    body.theme-futbol #btnMainSaveGame,
+    body.theme-futbol #btnMainLoadGame {
+      background: rgba(255, 255, 255, 0.92) !important;
+      color: #1b5e20 !important;
+      border: 1px solid rgba(27, 94, 32, 0.35) !important;
     }
 
     body.theme-futbol .tab-btn {
@@ -395,6 +401,20 @@ limitations under the License.
 
     body.theme-futbol #gameStatusHUD {
       color: #fff !important;
+    }
+
+    body.theme-futbol .lang-select,
+    body.theme-futbol .lang-select option,
+    body.theme-futbol #fullscreenBtn,
+    body.theme-futbol .topbar-left,
+    body.theme-futbol .topbar-right {
+      color: #fff !important;
+      -webkit-text-fill-color: #fff !important;
+    }
+    body.theme-futbol .lang-select {
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
+      padding: 2px 4px;
     }
 
     body.theme-futbol {
@@ -3569,18 +3589,18 @@ limitations under the License.
         <button class="menu-btn secondary" id="btnMainPvp" onclick="startNewGame('pvp')">&#128106; 2 Jugadores</button>
         <button class="menu-btn primary" id="btnMainVsAi" onclick="showScreen('screenDifficulty')">🤖 vs IA</button>
       </div>
-      <button class="menu-btn secondary" id="btnMainOptions" style="margin-top:4px;"
-        onclick="showScreen('screenOptions')">&#9881;&#65039;
-        Opciones</button>
-      <button class="menu-btn secondary" id="btnMainTraining" onclick="openFenLibrary()"
+      <button class="menu-btn secondary menu-btn-training" id="btnMainTraining" onclick="openFenLibrary()"
         style="margin-top:4px; background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); border-color: rgba(16,185,129,0.4); color: var(--text);">🧩
         Entrenamiento</button>
-      <button class="menu-btn secondary" id="btnMainProfile" onclick="openProfileModal()"
+      <button class="menu-btn secondary menu-btn-profile" id="btnMainProfile" onclick="openProfileModal()"
         style="margin-top:4px; background: linear-gradient(135deg, rgba(168,85,247,0.12), rgba(244,114,182,0.10)); border-color: rgba(168,85,247,0.3); color: var(--text);">🏆
         Mi Perfil</button>
-      <button class="menu-btn secondary" id="btnMainHelp" onclick="openHelp()"
-        style="margin-top:4px; background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(14,165,233,0.10)); border-color: rgba(56,189,248,0.35); color: var(--text);">❓
-        Ayuda</button>
+      <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
+        <button class="menu-btn secondary" id="btnMainOptions" style="flex:1;"
+          onclick="showScreen('screenOptions')">&#9881;&#65039; <span id="btnOptionsShortLabel">Opciones</span></button>
+        <button class="menu-btn secondary menu-btn-help" id="btnMainHelp" onclick="openHelp()"
+          style="flex:1; background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(14,165,233,0.10)); border-color: rgba(56,189,248,0.35); color: var(--text);">❓ <span id="btnHelpShortLabel">Ayuda</span></button>
+      </div>
       <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
         <button class="menu-btn secondary" id="btnMainSaveGame" onclick="exportProfile()"
           style="flex:1; font-size:0.85rem; padding:10px 6px;">💾 Guardar</button>
@@ -5692,7 +5712,7 @@ limitations under the License.
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
         mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?', mainSubtitleHello: '¡Hola, {name}! ¿Con quién juegas hoy?',
-        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnTraining: '🧩 Entrenamiento FEN', btnProfile: '🏆 Mi Perfil', btnHelp: '❓ Ayuda',
+        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnOptionsShort: 'Opciones', btnTraining: '🧩 Entrenamiento FEN', btnProfile: '🏆 Mi Perfil', btnHelp: '❓ Ayuda', btnHelpShort: 'Ayuda',
         helpClose: 'Cerrar',
         helpT0: 'El Tablero', helpB0: '<ul><li>Toca una pieza para seleccionarla. Los puntos verdes muestran los movimientos legales.</li><li>Toca un punto verde para mover.</li><li>Gira el tablero con el botón 🔄 a la izquierda de la barra de historial de movimientos.</li><li>El rey parpadea en rojo cuando está en jaque.</li></ul>',
         helpT1: 'Niveles de IA', helpB1: '<ul><li>🐣 <b>Pollito</b> — comete errores a propósito. Ideal para aprender.</li><li>🧙 <b>Aprendiz</b> — juega decente pero tiene fallos.</li><li>🔮 <b>Mago</b> — juega bien, sin errores graves (~1650 ELO, hasta 15 s por jugada).</li><li>👑 <b>Rey Sabio</b> — nivel máximo (~1830 ELO, hasta 30 s por jugada).</li></ul>',
@@ -5810,7 +5830,7 @@ limitations under the License.
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
         mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?', mainSubtitleHello: 'Hello, {name}! Who are you playing with today?',
-        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnTraining: '🧩 FEN Training', btnProfile: '🏆 My Profile', btnHelp: '❓ Help',
+        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnOptionsShort: 'Options', btnTraining: '🧩 FEN Training', btnProfile: '🏆 My Profile', btnHelp: '❓ Help', btnHelpShort: 'Help',
         helpClose: 'Close',
         helpT0: 'The Board', helpB0: '<ul><li>Tap a piece to select it. Green dots show legal moves.</li><li>Tap a green dot to move there.</li><li>Flip the board with the 🔄 button on the left of the move history bar.</li><li>The king flashes red when in check.</li></ul>',
         helpT1: 'AI Levels', helpB1: '<ul><li>🐣 <b>Chick</b> — makes deliberate mistakes. Great for learning.</li><li>🧙 <b>Apprentice</b> — plays decently but has weak spots.</li><li>🔮 <b>Wizard</b> — plays well with no big blunders (~1650 ELO, up to 15 s per move).</li><li>👑 <b>Wise King</b> — maximum difficulty (~1830 ELO, up to 30 s per move).</li></ul>',
@@ -6033,7 +6053,7 @@ limitations under the License.
     function applyTranslations() {
       const map = {
         titleMain: 'mainTitle', menuTitleMain: 'mainTitle', menuSubtitleMain: 'mainSubtitle',
-        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnMainOptions: 'btnOptions', btnMainTraining: 'btnTraining', btnMainProfile: 'btnProfile', btnMainHelp: 'btnHelp',
+        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnOptionsShortLabel: 'btnOptionsShort', btnMainTraining: 'btnTraining', btnMainProfile: 'btnProfile', btnHelpShortLabel: 'btnHelpShort',
         btnMainSaveGame: 'btnSaveShort', btnMainLoadGame: 'btnLoadShort',
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
         colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
