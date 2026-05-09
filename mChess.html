@@ -7006,6 +7006,15 @@ limitations under the License.
 
           // Apply Spider Sense CSS
           if (hangingSquares.has(`${r},${c}`)) cell.classList.add('spider-sense');
+          
+          if (puzzleMode && lastLoadedChallengeItem?.tutorialHighlights) {
+            const th = lastLoadedChallengeItem.tutorialHighlights;
+            if (history.length === th.historyLength) {
+              if (th.squares.some(sq => sq[0] === r && sq[1] === c)) {
+                cell.classList.add('spider-sense');
+              }
+            }
+          }
 
           // 💎 INTEGRATED ANTI-GHOST LOGIC:
           // Don't draw static piece if it's currently flying (animation)
@@ -9133,6 +9142,7 @@ limitations under the License.
     }
 
     function runAssistedModeScan(scanColor) {
+      if (lastLoadedChallengeItem?.isTutorial) return;
       const en = currentLanguage === 'en';
       const enemyColor = scanColor === 'w' ? 'b' : 'w';
       let worstHanging = null, maxVal = -1;
@@ -15074,7 +15084,13 @@ limitations under the License.
               }, 900);
             }
           }
-          await new Promise(r => setTimeout(r, 600 + (Math.random() * 400 | 0)));
+          
+          let delay = 600 + (Math.random() * 400 | 0);
+          if (lastLoadedChallengeItem?.tutorialHighlights && history.length === lastLoadedChallengeItem.tutorialHighlights.historyLength) {
+            delay = lastLoadedChallengeItem.tutorialHighlights.pauseMs || delay;
+          }
+          await new Promise(r => setTimeout(r, delay));
+          
           if (aiSearchGeneration !== searchGen) { clearInterval(countdownInterval); aiThinking = false; return; }
         }
 
@@ -20701,8 +20717,8 @@ limitations under the License.
             id: 'knight_capture',
             nameEs: '2. El caballo ataca',
             nameEn: '2. The knight attacks',
-            descEs: 'El caballo captura igual que se mueve: en L. Hay peones enemigos en el tablero. ¡Sáltalos a todos! Captura en f6, luego en e4.',
-            descEn: 'The knight captures the same way it moves: in an L. There are enemy pawns on the board. Jump and capture them all! Capture on f6, then on e4.',
+            descEs: 'El caballo captura igual que se mueve: en L. Hay peones enemigos en el tablero. ¡Sáltalos a todos! Captura en e2, luego en f4.',
+            descEn: 'The knight captures the same way it moves: in an L. There are enemy pawns on the board. Jump and capture them all! Capture on e2, then on f4.',
             fen: '8/8/8/8/5p2/8/4p3/2N5 w - - 0 1',
             solution: ['c1e2', 'e2f4'],
             humanSteps: 2,
@@ -20718,6 +20734,11 @@ limitations under the License.
             fen: '8/1b6/4r3/8/8/1N6/8/8 w - - 0 1',
             solution: ['b3c5', 'e6e8', 'c5b7'],
             humanSteps: 3,
+            tutorialHighlights: {
+              historyLength: 1, // trigger after the first move (b3c5)
+              squares: [[1, 1], [2, 4]], // b7 and e6
+              pauseMs: 4000 // wait 4 seconds to block user and show highlights
+            },
             completionMsgEs: '¡Horquilla ganadora!\n\nMoviste el caballo a c5 y atacaste dos piezas a la vez. La torre escapó, pero el alfil no pudo — ¡lo capturaste gratis!\n\nAsí funciona la horquilla: el rival solo puede salvar una pieza. La otra es tuya.\n\nLa horquilla de caballo es una de las tácticas más poderosas del ajedrez.',
             completionMsgEn: 'Winning fork!\n\nYou moved the knight to c5 and attacked two pieces at once. The rook escaped, but the bishop couldn\'t — you captured it for free!\n\nThat\'s how a fork works: your opponent can only save one piece. The other one is yours.\n\nThe knight fork is one of the most powerful tactics in chess.',
           },
@@ -20730,13 +20751,23 @@ limitations under the License.
     var _activeTutorialLesson = null;   // {lesson, chapter, lessonIdx, chapterIdx} of the running chapter
     var _nextTutorialChapter = null;    // {lesson, chapter} of the next chapter, if any
 
-    function _restoreCommentatorTab() {
-      const tabComm = document.getElementById('tabCommentary');
-      if (tabComm) { tabComm.disabled = false; tabComm.style.opacity = ''; tabComm.style.cursor = ''; }
+    function _setTutorialButtonsBlocked(blocked) {
+      const btnsToBlock = [
+        'tabCommentary', 'btnProfessorAnalysis', 'btnProfessorWasGood',
+        'btnHawksEye', 'trainingToggleBtn', 'msUndo', 'msCopy', 'msFen', 'msFlip'
+      ];
+      btnsToBlock.forEach(id => {
+        const b = document.getElementById(id);
+        if (b) {
+          b.disabled = blocked;
+          b.style.opacity = blocked ? '0.35' : '';
+          b.style.cursor = blocked ? 'not-allowed' : '';
+        }
+      });
     }
 
     function showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx) {
-      _restoreCommentatorTab();
+      _setTutorialButtonsBlocked(false);
       const en = currentLanguage === 'en';
       const msg = en ? chapter.completionMsgEn : chapter.completionMsgEs;
       const name = en ? chapter.nameEn : chapter.nameEs;
@@ -20897,9 +20928,8 @@ limitations under the License.
         ? { solution: [...puzzleMode.solution], step: 0, humanSteps: puzzleMode.humanSteps }
         : null;
 
-      // Block commentator tab and switch to professor with pinned description
-      const tabComm = document.getElementById('tabCommentary');
-      if (tabComm) { tabComm.disabled = true; tabComm.style.opacity = '0.35'; tabComm.style.cursor = 'not-allowed'; }
+      // Block all unused buttons and switch to professor with pinned description
+      _setTutorialButtonsBlocked(true);
       switchTab('professor');
       _pinTutorialDesc(chapter);
 
