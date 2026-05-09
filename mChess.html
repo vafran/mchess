@@ -239,6 +239,8 @@ limitations under the License.
     body.theme-ocean #tutorialModalTitle {
       color: #aecde8 !important;
     }
+    .tutorial-lesson-header { color: var(--primary); }
+    body.theme-ocean .tutorial-lesson-header { color: #5dade2; }
     body.theme-ocean .tutorial-desc-pin {
       border-left-color: #5dade2 !important;
       background: rgba(29, 82, 138, 0.25) !important;
@@ -4266,7 +4268,6 @@ limitations under the License.
     <div class="confirm-box"
       style="max-height: 85vh; display: flex; flex-direction: column; width: 95%; max-width: 420px; padding: 20px; position: relative;">
       <button onclick="closeTutorial()" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-light); line-height:1; padding:4px;">✕</button>
-      <div style="font-size:2rem; text-align:center; margin-bottom:4px;">📚</div>
       <h3 id="tutorialModalTitle" style="margin-bottom:6px; font-size:1.3rem; text-align:center;">Tutorial</h3>
       <p id="tutorialModalSubtitle" style="font-size:0.83rem; color:var(--text-light); text-align:center; margin-bottom:14px;">Aprende a jugar ajedrez paso a paso</p>
 
@@ -20690,7 +20691,8 @@ limitations under the License.
       TUTORIAL_LESSONS.forEach(lesson => {
         // Lesson header
         const header = document.createElement('div');
-        header.style.cssText = 'font-size:1rem; font-weight:800; color:var(--primary); margin-bottom:4px; display:flex; align-items:center; gap:6px;';
+        header.className = 'tutorial-lesson-header';
+        header.style.cssText = 'font-size:1rem; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;';
         header.innerHTML = `${lesson.iconEs} ${en ? lesson.nameEn : lesson.nameEs}`;
         container.appendChild(header);
 
