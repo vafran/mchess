@@ -8215,6 +8215,14 @@ limitations under the License.
       // La detección ya es correcta porque ahora positionHashes incluye castleRights y EP
       if (positionHashes.filter(h => h === cHash).length >= 3) { setTimeout(() => { const m = document.getElementById('drawClaimModal'), en = currentLanguage === 'en'; document.getElementById('drawClaimTitle').innerHTML = en ? '⚖️ Threefold Repetition!' : '⚖️ ¡Triple Repetición!'; document.getElementById('drawClaimDesc').innerHTML = en ? 'The exact same position has occurred 3 times. You can claim a draw right now.' : 'La misma posición exacta se ha repetido 3 veces. Puedes reclamar un empate ahora mismo.'; document.getElementById('btnIgnoreDraw').innerHTML = en ? 'Keep playing' : 'Continuar'; document.getElementById('btnAcceptDraw').innerHTML = en ? 'Claim Draw' : 'Reclamar Tablas'; m.classList.add('show'); }, 400); return; }
       saveGameState(); // 💾 Autosave after every legal move
+      // In a tutorial where the next solution step belongs to the human, flip turn back
+      // instead of triggering the AI — all-human-move exercises need this to continue
+      if (lastLoadedChallengeItem?.isTutorial && puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+        const nextUci = puzzleMode.solution[puzzleMode.step];
+        const nextM = uciToMoveObj(nextUci);
+        const nextIsHuman = nextM && board[nextM.fr] && board[nextM.fr][nextM.fc] !== ' ' && colorOf(board[nextM.fr][nextM.fc]) === playerColor;
+        if (nextIsHuman) { turn = playerColor; render(); updateTurnUI(); return; }
+      }
       if (gameMode === 'ai' && turn !== playerColor) triggerAI();
     }
     function ignoreDrawClaim() { document.getElementById('drawClaimModal').classList.remove('show'); if (gameMode === 'ai' && turn !== playerColor) triggerAI(); }
@@ -8861,6 +8869,13 @@ limitations under the License.
         document.getElementById('fenInput').value = lastLoadedFen;
         loadPositionFromFEN();
         if (lastLoadedPuzzleMode) puzzleMode = { solution: [...lastLoadedPuzzleMode.solution], step: 0, humanSteps: lastLoadedPuzzleMode.humanSteps };
+        // Re-pin tutorial description after restart
+        if (lastLoadedChallengeItem?.isTutorial && _activeTutorialLesson) {
+          const tabComm = document.getElementById('tabCommentary');
+          if (tabComm) { tabComm.disabled = true; tabComm.style.opacity = '0.35'; tabComm.style.cursor = 'not-allowed'; }
+          switchTab('professor');
+          _pinTutorialDesc(_activeTutorialLesson.chapter);
+        }
         playMoveSound();
       } else {
         init();
@@ -20570,9 +20585,21 @@ limitations under the License.
             completionMsgEn: 'Two perfect captures!\n\nPawns capture diagonally forward — never backward or straight. When an enemy pawn steps onto your diagonal, that\'s your chance to capture!',
           },
           {
+            id: 'pawn_hunt',
+            nameEs: '3. ¡A cazar piezas!',
+            nameEn: '3. Piece Hunt!',
+            descEs: '¡Tu peón es un cazador! Hay un caballo, un alfil y una torre enemigos en diagonal. Captúralos a todos en zigzag — izquierda, derecha, izquierda.',
+            descEn: 'Your pawn is a hunter! There\'s an enemy knight, bishop and rook lined up diagonally. Capture them all in a zigzag — left, right, left.',
+            fen: '8/8/8/2r5/3b4/2n5/3P4/8 w - - 0 1',
+            solution: ['d2c3', 'c3d4', 'd4c5'],
+            humanSteps: 3,
+            completionMsgEs: '¡Increíble! ¡Un peón solo capturó un caballo, un alfil y una torre!\n\nLos peones son lentos pero imparables si los cuidas bien. Capturan en diagonal hacia adelante — nunca hacia atrás ni recto.\n\n¡Nunca subestimes a un peón!',
+            completionMsgEn: 'Incredible! One pawn captured a knight, a bishop and a rook!\n\nPawns are slow but unstoppable when you use them well. They capture diagonally forward — never backward or straight.\n\nNever underestimate a pawn!',
+          },
+          {
             id: 'pawn_promote',
-            nameEs: '3. ¡Coronación!',
-            nameEn: '3. Promotion!',
+            nameEs: '4. ¡Coronación!',
+            nameEn: '4. Promotion!',
             descEs: 'Cuando un peón llega a la última fila, ¡se convierte en la pieza que elijas! Avanza el peón blanco hasta coronar.',
             descEn: 'When a pawn reaches the last rank, it becomes any piece you choose! Advance the white pawn all the way to promote.',
             fen: '8/P7/8/8/8/8/8/8 w - - 0 1',
