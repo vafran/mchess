@@ -5331,8 +5331,8 @@ limitations under the License.
       if (p.stats.hintsUsed >= 10) unlockTrophy('professor_fan');
       // 🗺️ opening_explorer — tracked in profile.namedOpeningsPlayed
       if ((p.namedOpeningsPlayed || []).length >= 5) unlockTrophy('opening_explorer');
-      // ♟️ blanco_y_negro: 50 wins as White AND 50 wins as Black
-      if (p.colorStats && (p.colorStats.w?.w || 0) >= 50 && (p.colorStats.b?.w || 0) >= 50)
+      // ♟️ blanco_y_negro: 10 wins as White AND 10 wins as Black
+      if (p.colorStats && (p.colorStats.w?.w || 0) >= 10 && (p.colorStats.b?.w || 0) >= 10)
         unlockTrophy('blanco_y_negro');
     }
 

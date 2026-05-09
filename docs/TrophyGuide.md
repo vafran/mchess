@@ -114,7 +114,7 @@ These trophies are unlocked by playing specific famous moves in any position. Lo
 | ♟️ | **Chess Clinic** | Win a game **without losing a single piece** (pawns included). |
 | 🌀 | **Illusion Breaker** | Force a draw (stalemate or 3-fold repetition) against the Hard bot (Magician). |
 | 🧩 | **No Tricks Allowed** | Defeat the Hard bot (Magician) without using any Coach hints. |
-| ♟️ | **Black and White** | Win **50 games as White** AND **50 games as Black**. |
+| ♟️ | **Black and White** | Win **10 games as White** AND **10 games as Black**. |
 | 🔥 | **Hat Trick** | Win **3 games in a row** in the same session or across sessions. |
 | 📅 | **Every Day!** | Play at least one game on **5 different calendar days** total. |
 | 🛋️ | **Weekend Warrior** | Play at least one game on a **Saturday** AND at least one on a **Sunday**. |
