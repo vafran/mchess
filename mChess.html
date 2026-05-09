@@ -837,6 +837,21 @@ limitations under the License.
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
+    .tutorial-goal-emoji {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6em;
+      pointer-events: none;
+      z-index: 2;
+      animation: tutorialGoalBounce 1.4s ease-in-out infinite;
+    }
+    @keyframes tutorialGoalBounce {
+      0%, 100% { transform: translateY(0); opacity: 0.85; }
+      50% { transform: translateY(-4px); opacity: 1; }
+    }
 
     @keyframes puzzleWrongFlash {
       0% {
@@ -6954,6 +6969,19 @@ limitations under the License.
           if (lastLoadedChallengeItem?.isTutorial && puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
             const nextM = uciToMoveObj(puzzleMode.solution[puzzleMode.step]);
             if (nextM && nextM.tr === r && nextM.tc === c) cell.classList.add('tutorial-target');
+          }
+          // Tutorial: show goal emoji on the final destination square (if chapter defines one)
+          if (lastLoadedChallengeItem?.isTutorial && lastLoadedChallengeItem.goalEmoji && puzzleMode) {
+            const sol = puzzleMode.solution;
+            if (sol && sol.length > 0) {
+              const lastM = uciToMoveObj(sol[sol.length - 1]);
+              if (lastM && lastM.tr === r && lastM.tc === c && board[r][c] === ' ') {
+                const emojiSpan = document.createElement('span');
+                emojiSpan.className = 'tutorial-goal-emoji';
+                emojiSpan.textContent = lastLoadedChallengeItem.goalEmoji;
+                cell.appendChild(emojiSpan);
+              }
+            }
           }
 
           // 🚦 SQUARE TRAFFIC LIGHT
@@ -20660,11 +20688,12 @@ limitations under the License.
             id: 'knight_move',
             nameEs: '1. El salto del caballo',
             nameEn: '1. The knight\'s leap',
-            descEs: 'El caballo se mueve en forma de L: dos casillas en una dirección y una en perpendicular. ¡Y puede saltar sobre otras piezas! Mueve el caballo de d4 a e6, luego a f4.',
-            descEn: 'The knight moves in an L-shape: two squares in one direction and one to the side. It can even jump over other pieces! Move the knight from d4 to e6, then to f4.',
+            descEs: 'El caballo se mueve en forma de L: dos casillas en una dirección y una en perpendicular. ¡Y puede saltar sobre otras piezas! Lleva el caballo de d4 hasta la bandera en g6.',
+            descEn: 'The knight moves in an L-shape: two squares in one direction and one to the side. It can even jump over other pieces! Get the knight from d4 to the flag on g6.',
             fen: '8/8/8/8/3N4/8/8/8 w - - 0 1',
-            solution: ['d4e6', 'e6f4'],
-            humanSteps: 2,
+            solution: ['d4e6', 'e6f4', 'f4g6'],
+            humanSteps: 3,
+            goalEmoji: '🏁',
             completionMsgEs: '¡Así salta el caballo!\n\nDos casillas hacia adelante y una al lado — o dos al lado y una hacia adelante. Siempre en L.\n\nFíjate que el caballo siempre cambia de color de casilla en cada salto. ¡Es la única pieza que puede saltar sobre las demás!',
             completionMsgEn: 'That\'s the knight\'s leap!\n\nTwo squares forward and one to the side — or two to the side and one forward. Always an L-shape.\n\nNotice the knight always changes square color with each jump. It\'s the only piece that can leap over others!',
           },
@@ -20854,6 +20883,7 @@ limitations under the License.
         humanSteps: chapter.humanSteps,
         completionMsgEs: chapter.completionMsgEs,
         completionMsgEn: chapter.completionMsgEn,
+        goalEmoji: chapter.goalEmoji ?? null,
         isTutorial: true,
         lessonIdx,
         chapterIdx,
