@@ -233,8 +233,40 @@ limitations under the License.
       border-color: rgba(93, 173, 226, 0.35);
       color: #d6eaf8;
     }
-    body.theme-ocean #fenChallengeName {
+    body.theme-ocean #fenChallengeName,
+    body.theme-ocean #tutorialLessonName,
+    body.theme-ocean #tutorialCompleteTitle,
+    body.theme-ocean #tutorialModalTitle {
       color: #aecde8 !important;
+    }
+    body.theme-ocean .tutorial-desc-pin {
+      border-left-color: #5dade2 !important;
+      background: rgba(29, 82, 138, 0.25) !important;
+    }
+    body.theme-ocean .tutorial-desc-pin .tutorial-desc-label {
+      color: #5dade2 !important;
+    }
+    body.theme-ocean .promo-box {
+      background: linear-gradient(145deg, rgba(22, 58, 105, 0.97), rgba(15, 40, 80, 0.97));
+      border-color: rgba(93, 173, 226, 0.35);
+      box-shadow: 0 20px 60px rgba(0, 15, 45, 0.6);
+    }
+    body.theme-ocean .promo-box h3 {
+      background: linear-gradient(135deg, #5dade2, #76d7c4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    body.theme-ocean .promo-box p {
+      color: #aecde8;
+    }
+    body.theme-ocean .promo-btn {
+      background: linear-gradient(145deg, rgba(29, 82, 138, 0.6), rgba(22, 58, 105, 0.8));
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+    }
+    body.theme-ocean .promo-btn:hover {
+      border-color: #5dade2;
+      box-shadow: 0 8px 24px rgba(93, 173, 226, 0.35);
     }
     body.theme-ocean .status-box {
       background: linear-gradient(145deg, rgba(22, 58, 105, 0.97), rgba(15, 40, 80, 0.97));
@@ -366,6 +398,7 @@ limitations under the License.
 
     body.theme-futbol .menu-btn.secondary,
     body.theme-futbol #btnMainTraining,
+    body.theme-futbol #btnMainTutorial,
     body.theme-futbol #btnMainProfile,
     body.theme-futbol #btnMainOptions,
     body.theme-futbol #btnMainHelp,
@@ -3592,9 +3625,14 @@ limitations under the License.
         <button class="menu-btn secondary" id="btnMainPvp" onclick="startNewGame('pvp')">&#128106; 2 Jugadores</button>
         <button class="menu-btn primary" id="btnMainVsAi" onclick="showScreen('screenDifficulty')">🤖 vs IA</button>
       </div>
-      <button class="menu-btn secondary menu-btn-training" id="btnMainTraining" onclick="openFenLibrary()"
-        style="margin-top:4px; background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); border-color: rgba(16,185,129,0.4); color: var(--text);">🧩
-        Entrenamiento</button>
+      <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
+        <button class="menu-btn secondary menu-btn-training" id="btnMainTraining" onclick="openFenLibrary()"
+          style="flex:1; background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); border-color: rgba(16,185,129,0.4); color: var(--text);">
+          <span id="btnTrainingLabel">🧩 Entrenamiento</span></button>
+        <button class="menu-btn secondary" id="btnMainTutorial" onclick="openTutorial()"
+          style="flex:1; background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(14,165,233,0.15)); border-color: rgba(56,189,248,0.4); color: var(--text);">
+          <span id="btnTutorialLabel">📚 Tutorial</span></button>
+      </div>
       <button class="menu-btn secondary menu-btn-profile" id="btnMainProfile" onclick="openProfileModal()"
         style="margin-top:4px; background: linear-gradient(135deg, rgba(168,85,247,0.12), rgba(244,114,182,0.10)); border-color: rgba(168,85,247,0.3); color: var(--text);">🏆
         Mi Perfil</button>
@@ -4219,6 +4257,53 @@ limitations under the License.
 
       <div class="confirm-buttons" style="margin-top: 15px;">
         <button class="btn btn-secondary" onclick="closeFenLibrary()" id="btnFenLibClose">Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tutorial Modal ───────────────────────── -->
+  <div class="confirm-modal" id="tutorialModal" style="z-index: 300;">
+    <div class="confirm-box"
+      style="max-height: 85vh; display: flex; flex-direction: column; width: 95%; max-width: 420px; padding: 20px; position: relative;">
+      <button onclick="closeTutorial()" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-light); line-height:1; padding:4px;">✕</button>
+      <div style="font-size:2rem; text-align:center; margin-bottom:4px;">📚</div>
+      <h3 id="tutorialModalTitle" style="margin-bottom:6px; font-size:1.3rem; text-align:center;">Tutorial</h3>
+      <p id="tutorialModalSubtitle" style="font-size:0.83rem; color:var(--text-light); text-align:center; margin-bottom:14px;">Aprende a jugar ajedrez paso a paso</p>
+
+      <!-- Chapter list -->
+      <div id="tutorialChapterList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px; padding-right:4px;">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="confirm-buttons" style="margin-top:15px;">
+        <button class="btn btn-secondary" onclick="closeTutorial()" id="btnTutorialClose">Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tutorial Lesson Intro Modal ───────────── -->
+  <div class="confirm-modal" id="tutorialLessonModal" style="z-index: 350;">
+    <div class="confirm-box" style="max-width:380px; padding:28px 22px 22px; text-align:center;">
+      <div id="tutorialLessonIcon" style="font-size:2.8rem; margin-bottom:6px;">♟️</div>
+      <div id="tutorialLessonName" style="font-size:1.15rem; font-weight:800; color:var(--primary); margin-bottom:10px;"></div>
+      <p id="tutorialLessonDesc" style="font-size:0.9rem; color:var(--text); line-height:1.55; margin-bottom:20px; text-align:left;"></p>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary" onclick="closeTutorialLessonModal()" style="flex:1;" id="btnTutorialLessonCancel">✕ Cancelar</button>
+        <button class="btn btn-primary" onclick="startTutorialLesson()" style="flex:2; font-weight:800;" id="btnTutorialLessonStart">▶ Empezar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tutorial Completion Modal ────────────── -->
+  <div class="confirm-modal" id="tutorialCompleteModal" style="z-index: 400;">
+    <div class="confirm-box" style="max-width:380px; padding:28px 22px 22px; text-align:center;">
+      <div style="font-size:2.6rem; margin-bottom:6px;">⭐</div>
+      <div id="tutorialCompleteTitle" style="font-size:1.1rem; font-weight:800; color:var(--primary); margin-bottom:12px;"></div>
+      <p id="tutorialCompleteMsg" style="font-size:0.88rem; color:var(--text); line-height:1.6; margin-bottom:20px; text-align:left;"></p>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn btn-primary" id="btnTutorialNext" onclick="startNextTutorialLesson()" style="font-weight:800; display:none;"></button>
+        <button class="btn btn-secondary" id="btnTutorialChooseAnother" onclick="closeTutorialCompleteModal(); openTutorial();"></button>
+        <button class="btn btn-secondary" id="btnTutorialCompleteMenu" onclick="closeTutorialCompleteModal(); goToMainMenu();"></button>
       </div>
     </div>
   </div>
@@ -5530,6 +5615,7 @@ limitations under the License.
 
     function saveGameState() {
       try {
+        if (lastLoadedChallengeItem?.isTutorial) return; // never persist tutorial sessions
         const saveKey = sessionStartedFromFen ? FEN_SAVE_KEY : GAME_SAVE_KEY;
         if (!history || history.length === 0) { localStorage.removeItem(saveKey); return; }
         const fen = boardToFEN(board);
@@ -5711,7 +5797,7 @@ limitations under the License.
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
         mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?', mainSubtitleHello: '¡Hola, {name}! ¿Con quién juegas hoy?',
-        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnOptionsShort: 'Opciones', btnTraining: '🧩 Entrenamiento FEN', btnProfile: '🏆 Mi Perfil', btnHelp: '❓ Ayuda', btnHelpShort: 'Ayuda',
+        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnOptionsShort: 'Opciones', btnTraining: '🧩 Entrenamiento', btnTutorial: '📚 Tutorial', btnProfile: '🏆 Mi Perfil', btnHelp: '❓ Ayuda', btnHelpShort: 'Ayuda',
         helpClose: 'Cerrar',
         helpT0: 'El Tablero', helpB0: '<ul><li>Toca una pieza para seleccionarla. Los puntos verdes muestran los movimientos legales.</li><li>Toca un punto verde para mover.</li><li>Gira el tablero con el botón 🔄 a la izquierda de la barra de historial de movimientos.</li><li>El rey parpadea en rojo cuando está en jaque.</li></ul>',
         helpT1: 'Niveles de IA', helpB1: '<ul><li>🐣 <b>Pollito</b> — comete errores a propósito. Ideal para aprender.</li><li>🧠 <b>Estudiante</b> — juega decente pero tiene fallos.</li><li>🧙‍♂️ <b>Mago</b> — juega bien, sin errores graves (~1650 ELO, hasta 15 s por jugada).</li><li>👑 <b>Rey Sabio</b> — nivel máximo (~1830 ELO, hasta 30 s por jugada).</li></ul>',
@@ -5829,7 +5915,7 @@ limitations under the License.
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
         mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?', mainSubtitleHello: 'Hello, {name}! Who are you playing with today?',
-        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnOptionsShort: 'Options', btnTraining: '🧩 FEN Training', btnProfile: '🏆 My Profile', btnHelp: '❓ Help', btnHelpShort: 'Help',
+        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnOptionsShort: 'Options', btnTraining: '🧩 Training', btnTutorial: '📚 Tutorial', btnProfile: '🏆 My Profile', btnHelp: '❓ Help', btnHelpShort: 'Help',
         helpClose: 'Close',
         helpT0: 'The Board', helpB0: '<ul><li>Tap a piece to select it. Green dots show legal moves.</li><li>Tap a green dot to move there.</li><li>Flip the board with the 🔄 button on the left of the move history bar.</li><li>The king flashes red when in check.</li></ul>',
         helpT1: 'AI Levels', helpB1: '<ul><li>🐣 <b>Chick</b> — makes deliberate mistakes. Great for learning.</li><li>🧠 <b>Student</b> — plays decently but has weak spots.</li><li>🧙‍♂️ <b>Mage</b> — plays well with no big blunders (~1650 ELO, up to 15 s per move).</li><li>👑 <b>Wise King</b> — maximum difficulty (~1830 ELO, up to 30 s per move).</li></ul>',
@@ -6060,7 +6146,7 @@ limitations under the License.
     function applyTranslations() {
       const map = {
         titleMain: 'mainTitle', menuTitleMain: 'mainTitle', menuSubtitleMain: 'mainSubtitle',
-        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnOptionsShortLabel: 'btnOptionsShort', btnMainTraining: 'btnTraining', btnMainProfile: 'btnProfile', btnHelpShortLabel: 'btnHelpShort',
+        btnMainPvp: 'btn2p', btnMainVsAi: 'btnVsAi', btnOptionsShortLabel: 'btnOptionsShort', btnTrainingLabel: 'btnTraining', btnTutorialLabel: 'btnTutorial', btnMainProfile: 'btnProfile', btnHelpShortLabel: 'btnHelpShort',
         btnMainSaveGame: 'btnSaveShort', btnMainLoadGame: 'btnLoadShort',
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
         colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
@@ -6608,6 +6694,8 @@ limitations under the License.
       lastLoadedFen = null;
       lastLoadedPuzzleMode = null;
       lastLoadedChallengeItem = null;
+      _activeTutorialLesson = null;
+      if (typeof _restoreCommentatorTab === 'function') _restoreCommentatorTab();
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
       aiSearchGeneration++;
@@ -7197,7 +7285,7 @@ limitations under the License.
 
     function inCheck(color, brd) {
       const kp = findKing(color, brd);
-      if (!kp) return true;
+      if (!kp) return false; // kingless board (tutorial FEN) — never in check
       return isSquareAttacked(kp[0], kp[1], color, brd);
     }
 
@@ -7610,10 +7698,16 @@ limitations under the License.
             const expectedUci = puzzleMode.solution[puzzleMode.step];
             const isPawn = board[sr] && board[sr][sc].toUpperCase() === 'P';
             const isPromoRank = (r === 0 || r === 7);
-            // For UCI comparison use the expected promo piece (or Q default) to avoid modal mismatch
-            const guessPromo = isPawn && isPromoRank ? (expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q') : null;
-            const playedUci = moveToUci(sr, sc, r, c, guessPromo);
-            if (playedUci !== expectedUci) {
+            const isTutorialPromo = lastLoadedChallengeItem?.isTutorial && isPawn && isPromoRank;
+            // For tutorials with promotion: let player choose — accept any promo piece
+            // For regular puzzles: auto-match the expected promo piece to avoid modal mismatch
+            const guessPromo = isPawn && isPromoRank ? (isTutorialPromo ? null : (expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q')) : null;
+            // For tutorial promo validation, compare only the 4-char base move (ignore piece choice)
+            const playedUci = isTutorialPromo
+              ? moveToUci(sr, sc, r, c, null).slice(0, 4)
+              : moveToUci(sr, sc, r, c, guessPromo);
+            const compareUci = isTutorialPromo ? expectedUci.slice(0, 4) : expectedUci;
+            if (playedUci !== compareUci) {
               // Wrong move: flash the destination cell and show professor hint
               const en = currentLanguage === 'en';
               playErrorSound();
@@ -7622,15 +7716,24 @@ limitations under the License.
               if (cellEl) { cellEl.classList.add('puzzle-wrong'); setTimeout(() => cellEl.classList.remove('puzzle-wrong'), 700); }
               switchTab('professor');
               const pList = document.getElementById('professorList');
-              pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--danger); background:rgba(239,68,68,0.05); padding:12px; margin-bottom:10px;">
+              const wrongHtml = `<div class="hint-item" style="border-left:4px solid var(--danger); background:rgba(239,68,68,0.05); padding:12px; margin-bottom:10px;">
                 <span class="hint-icon">❌</span>
                 <span class="hint-text">${en ? '⚠️ <strong>Not the right move.</strong> Think again — there is a better continuation.' : '⚠️ <strong>Esa no es la jugada.</strong> Piensa de nuevo — hay una continuación mejor.'}</span>
               </div>`;
+              if (lastLoadedChallengeItem?.isTutorial) {
+                // Keep description pinned, append error below it
+                const pinned = pList.querySelector('.tutorial-desc-pin');
+                if (pinned) { const old = pList.querySelector('.tutorial-wrong-msg'); if (old) old.remove(); const div = document.createElement('div'); div.className='tutorial-wrong-msg'; div.innerHTML=wrongHtml; pList.appendChild(div); }
+                else pList.innerHTML = wrongHtml;
+              } else {
+                pList.innerHTML = wrongHtml;
+              }
               selected = null; legalMoves = []; render();
               return;
             }
-            // Correct move — capture promo piece so makeMove auto-promotes without modal
-            puzzlePromo = guessPromo;
+            // Correct move — for tutorial promos the player chose their piece already via modal;
+            // for regular puzzles pass the expected promo piece so makeMove skips the modal
+            puzzlePromo = isTutorialPromo ? null : guessPromo;
             puzzleMode.step++;
           }
 
@@ -7651,7 +7754,14 @@ limitations under the License.
                 puzzleMode = null;
               }
               if (!isMateChallenge) {
+                const _tutorialDelay = lastLoadedChallengeItem?.isTutorial ? 2000 : 600;
                 setTimeout(() => {
+                  // Tutorial lessons get their own completion modal with next/choose buttons
+                  if (lastLoadedChallengeItem?.isTutorial && _activeTutorialLesson) {
+                    const { lesson, chapter, lessonIdx, chapterIdx } = _activeTutorialLesson;
+                    showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx);
+                    return;
+                  }
                   const customMsg = lastLoadedChallengeItem && (en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
                   if (customMsg) {
                     showStatus('🏆 ' + (en ? 'Puzzle solved!' : '¡Puzzle resuelto!'), '');
@@ -7662,7 +7772,7 @@ limitations under the License.
                       en ? 'Perfect — you found the winning move!' : '¡Perfecto — encontraste la jugada ganadora!'
                     );
                   }
-                }, 600);
+                }, _tutorialDelay);
               }
               // For mate puzzles, checkGameOver() inside makeMove() will show the checkmate modal
             }
@@ -7970,8 +8080,10 @@ limitations under the License.
 
       // 11. COMENTARISTA Y PROFESOR
       setTimeout(() => addCommentaryEntry(notation, [...history]), 150);
-      const pList = document.getElementById('professorList');
-      if (pList) pList.innerHTML = `<div class="hint-empty" id="professorEmptyMsg">${t('professorPrompt')}</div>`;
+      if (!lastLoadedChallengeItem?.isTutorial) {
+        const pList = document.getElementById('professorList');
+        if (pList) pList.innerHTML = `<div class="hint-empty" id="professorEmptyMsg">${t('professorPrompt')}</div>`;
+      }
       lastProfessorAction = null;
 
       // 12. ASSISTED MODE SCANNER — PvP only here; AI mode fires after AI move in triggerAI
@@ -7983,6 +8095,29 @@ limitations under the License.
       // ★ FIX 3: Draw conditions BEFORE !hasMove so K vs K etc. don't reach !hasMove as stalemate
       if (halfMoveClock >= 100) { updateMatchStats('draw', currentDifficulty, history.length); setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? '50-move rule.' : 'Regla de los 50 movimientos.'), 400); return; }
       if (isInsufficientMaterial(board)) { updateMatchStats('draw', currentDifficulty, history.length); setTimeout(() => showStatus('\uD83E\uDD1D ' + (currentLanguage === 'en' ? 'Draw!' : '¡Tablas!'), currentLanguage === 'en' ? 'Insufficient material.' : 'Falta de material.'), 400); return; }
+
+      // Tutorial lessons: skip stalemate/game-over logic on kingless boards
+      if (!hasMove && lastLoadedChallengeItem?.isTutorial) {
+        if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+          if (turn !== playerColor) {
+            // Check if the next scripted step belongs to the AI or the human
+            const nextUci = puzzleMode.solution[puzzleMode.step];
+            const nextM = uciToMoveObj(nextUci);
+            const nextIsAI = nextM && board[nextM.fr] && colorOf(board[nextM.fr][nextM.fc]) !== playerColor;
+            if (nextIsAI) {
+              setTimeout(() => triggerAI(), 400);
+            } else {
+              // Next step is a human move — flip turn back so the player can continue
+              turn = playerColor;
+              render(); updateTurnUI();
+            }
+          } else {
+            render(); updateTurnUI();
+          }
+        }
+        // puzzleMode null = completion already fired — do nothing
+        return;
+      }
 
       if (!hasMove) {
         if (isCheckOnNext) {
@@ -16929,7 +17064,7 @@ limitations under the License.
         }
       }
 
-      pList.innerHTML = _fenBanner + notes.map(n => {
+      setProfessorContent(_fenBanner + notes.map(n => {
         const borderColor = n.color || 'var(--primary)';
         const bg = n.isEval
           ? (n.color === 'var(--success)' ? 'rgba(34,197,94,0.07)'
@@ -16943,7 +17078,7 @@ limitations under the License.
             <span class="hint-text" style="font-size:0.9rem;">${n.text}</span>
           </div>
         `;
-      }).join('');
+      }).join(''));
     }
     function finishProfessorThinking() {
       professorThinking = false;
@@ -17647,7 +17782,7 @@ limitations under the License.
         }
 
         if (displayList.length === 0) {
-          pList.innerHTML = `<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🧩</span><span class="hint-text">${en ? 'No safe options found right now. Focus on king safety and piece coordination.' : 'No encontré opciones seguras ahora mismo. Prioriza la seguridad del rey y la coordinación de piezas.'}</span></div>`;
+          setProfessorContent(`<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🧩</span><span class="hint-text">${en ? 'No safe options found right now. Focus on king safety and piece coordination.' : 'No encontré opciones seguras ahora mismo. Prioriza la seguridad del rey y la coordinación de piezas.'}</span></div>`);
           return;
         }
 
@@ -17773,10 +17908,10 @@ limitations under the License.
           ? `<div style="margin-bottom:10px; padding:8px 10px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); font-size:0.82rem;">${t('emergencyCoachLine')}</div>`
           : '';
 
-        pList.innerHTML = `${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`;
+        setProfessorContent(`${peaceOfMindMsg}${contextMsg}${emergencyMsg}<div class="hint-item" style="border-left: 4px solid var(--primary); padding-left:10px;"><span class="hint-icon">🎯</span><span class="hint-text">${msg}</span></div>`);
 
       } catch (err) {
-        pList.innerHTML = `<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`;
+        setProfessorContent(`<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`);
       } finally { finishProfessorThinking(); }
     }
 
@@ -17791,12 +17926,11 @@ limitations under the License.
         const hintMove = uciToMoveObj(puzzleMode.solution[puzzleMode.step]);
         const en = currentLanguage === 'en';
         switchTab('professor');
-        const pList = document.getElementById('professorList');
         const label = formatMoveLabel(hintMove);
-        pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--accent); padding:12px; margin-bottom:10px;">
+        setProfessorContent(`<div class="hint-item" style="border-left:4px solid var(--accent); padding:12px; margin-bottom:10px;">
           <span class="hint-icon">💡</span>
           <span class="hint-text">${en ? '💡 <strong>Hint:</strong> Try moving <strong>' + label + '</strong>.' : '💡 <strong>Pista:</strong> Prueba jugando <strong>' + label + '</strong>.'}</span>
-        </div>`;
+        </div>`);
         highlightBookMove(hintMove.fr, hintMove.fc, hintMove.tr, hintMove.tc);
         return;
       }
@@ -17807,11 +17941,10 @@ limitations under the License.
         const hint = en ? (lastLoadedChallengeItem.hintEn || '') : (lastLoadedChallengeItem.hintEs || '');
         if (hint) {
           switchTab('professor');
-          const pList = document.getElementById('professorList');
-          pList.innerHTML = `<div class="hint-item" style="border-left:4px solid var(--accent); padding:12px; margin-bottom:10px; background:rgba(244,114,182,0.07); border-radius:4px;">
+          setProfessorContent(`<div class="hint-item" style="border-left:4px solid var(--accent); padding:12px; margin-bottom:10px; background:rgba(244,114,182,0.07); border-radius:4px;">
             <span class="hint-icon">🎓</span>
             <span class="hint-text"><strong>${en ? 'Coach:' : 'Profesor:'}</strong> ${hint}</span>
-          </div>`;
+          </div>`);
           return;
         }
       }
@@ -17827,7 +17960,7 @@ limitations under the License.
       // 3. PREPARAR INTERFAZ
       switchTab('professor');
       const pList = document.getElementById('professorList');
-      pList.innerHTML = `<div class="hint-item"><span class="hint-icon">🤔</span><span class="hint-text">${t('profAnalyzing')}</span></div>`;
+      setProfessorContent(`<div class="hint-item"><span class="hint-icon">🤔</span><span class="hint-text">${t('profAnalyzing')}</span></div>`);
 
       professorThinking = true;
       document.getElementById('thinkingBar').classList.add('show');
@@ -18196,7 +18329,7 @@ limitations under the License.
             const intent = opt.type === 'capture' ? (en ? 'Capture attacker' : 'Captura atacante') : (opt.type === 'escape' ? (en ? 'Escape danger' : 'Escapa del peligro') : (en ? 'Defend piece' : 'Defiende la pieza'));
             html += `<div style="margin-bottom:6px; cursor:pointer;" onclick="highlightBookMove(${m.fr},${m.fc},${m.tr},${m.tc})">${idx + 1}. <strong>${formatMoveLabel(m)}</strong>: ${intent}</div>`;
           });
-          pList.innerHTML = html + `</div></span></div>`;
+          setProfessorContent(html + `</div></span></div>`);
         } else {
           // No hanging pieces — use renderProfessorOptions with empty engine results
           // so book moves and pedagogical fallback are still shown instead of generic analysis
@@ -18215,7 +18348,7 @@ limitations under the License.
       const turnBarE = document.getElementById('turnBar');
       if (turnBarE) turnBarE.style.display = 'none';
       const pList = document.getElementById('professorList');
-      pList.innerHTML = `<div class="hint-item"><span class="hint-icon">🤔</span><span class="hint-text">${t('profAnalyzing')}</span></div>`;
+      setProfessorContent(`<div class="hint-item"><span class="hint-icon">🤔</span><span class="hint-text">${t('profAnalyzing')}</span></div>`);
 
       try {
         const snapTurn2 = currentTurn;
@@ -18226,12 +18359,12 @@ limitations under the License.
           lastSearchTimedOut = false;
           renderProfessorOptions(options || [], !options || options.length === 0, currentTurn);
         }).catch(() => {
-          pList.innerHTML = `<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`;
+          setProfessorContent(`<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`);
           finishProfessorThinking();
         });
 
       } catch (err) {
-        pList.innerHTML = `<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`;
+        setProfessorContent(`<div class="hint-empty" style="color:var(--danger)">${t('noCompute')}</div>`);
         finishProfessorThinking();
       }
     }
@@ -19431,6 +19564,7 @@ limitations under the License.
       lastLoadedFen = null;
       lastLoadedPuzzleMode = null;
       lastLoadedChallengeItem = null;
+      _activeTutorialLesson = null;
       setMode(mode);
       showScreen(null); // Hide menu overlays
       document.querySelector('h1').style.display = 'block';
@@ -19444,10 +19578,12 @@ limitations under the License.
 
     function goToMainMenu() {
       closeIngameMenu();
+      _restoreCommentatorTab();
       document.getElementById('statusBanner').classList.remove('show');
       lastLoadedFen = null;
       lastLoadedPuzzleMode = null;
       lastLoadedChallengeItem = null;
+      _activeTutorialLesson = null;
       document.querySelector('h1').style.display = 'none';
       document.getElementById('topBar').classList.add('hidden');
       document.getElementById('gameMenuBtn').classList.add('hidden');
@@ -19899,7 +20035,7 @@ limitations under the License.
       try { updateVsAiButton(); } catch (_) { }
     }
     // 🧩 LIBRERÍA DE POSICIONES (FEN) CLASIFICADAS
-    const FEN_LIBRARY = [
+    var FEN_LIBRARY = [
       // ── TRAMPAS DE APERTURA ──────────────────────────────────────────────────
       {
         cat: 'opening', nameEs: "Trampa: Mate del Pastor", nameEn: "Trap: Scholar's Mate",
@@ -20396,6 +20532,276 @@ limitations under the License.
 
     const PUZZLES_DB = []; // random challenge now picks from FEN_LIBRARY directly
 
+    // 📚 TUTORIAL LESSONS — scripted interactive lessons for beginners
+    // Each lesson has chapters; each chapter is a sequence of guided steps.
+    // steps[].type: 'move' (player must make this move), 'info' (narrative pause — auto-advances)
+    // The player plays White. The AI opponent does not think — its response moves are scripted in the solution array.
+    // humanSteps controls how many ply the human makes before AI responds (same as puzzleMode).
+    var TUTORIAL_LESSONS = [
+      {
+        id: 'pawns',
+        iconEs: '♟️', iconEn: '♟️',
+        nameEs: 'Los Peones', nameEn: 'The Pawns',
+        descEs: 'Aprende cómo se mueven, capturan y coronan los peones — los soldados del ajedrez.',
+        descEn: 'Learn how pawns move, capture, and promote — the foot soldiers of chess.',
+        chapters: [
+          {
+            id: 'pawn_move',
+            nameEs: '1. Cómo avanza un peón',
+            nameEn: '1. How a pawn moves',
+            descEs: 'Los peones avanzan hacia adelante. En su primera jugada pueden avanzar 1 o 2 casillas. Mueve el peón de d2 una casilla a d3. Luego mueve el peón de e2 dos casillas a e4.',
+            descEn: 'Pawns move forward. On their first move they can advance 1 or 2 squares. Move the d2 pawn one square to d3. Then move the e2 pawn two squares to e4.',
+            fen: '8/8/8/8/8/8/3PP3/8 w - - 0 1',
+            solution: ['d2d3', 'e2e4'],
+            humanSteps: 2,
+            completionMsgEs: '¡Perfecto!\n\nEl peón de d avanzó 1 casilla — siempre puedes avanzar 1.\nEl peón de e avanzó 2 casillas — solo se puede en la primera jugada de ese peón.\n\nDespués de la primera jugada, cada peón solo puede avanzar 1 casilla por turno.',
+            completionMsgEn: 'Perfect!\n\nThe d-pawn moved 1 square — you can always move 1.\nThe e-pawn moved 2 squares — only allowed on that pawn\'s very first move.\n\nAfter the first move, each pawn can only advance 1 square per turn.',
+          },
+          {
+            id: 'pawn_capture',
+            nameEs: '2. Cómo captura un peón',
+            nameEn: '2. How a pawn captures',
+            descEs: 'Los peones capturan en diagonal — ¡nunca recto! Los peones negros avanzan hacia ti. Captúralos cuando estén en diagonal de tus peones.',
+            descEn: 'Pawns capture diagonally — never straight! Black pawns are marching toward you. Capture them when they land diagonally next to your pawns.',
+            fen: '8/3p1p2/8/8/2P1P3/8/8/8 w - - 0 1',
+            solution: ['d7d5', 'c4d5', 'f7f5', 'e4f5'],
+            humanSteps: 4,
+            completionMsgEs: '¡Dos capturas perfectas!\n\nLos peones capturan en diagonal hacia adelante — nunca hacia atrás ni recto. Cuando un peón enemigo avanza a tu diagonal, ¡es tu oportunidad de capturar!',
+            completionMsgEn: 'Two perfect captures!\n\nPawns capture diagonally forward — never backward or straight. When an enemy pawn steps onto your diagonal, that\'s your chance to capture!',
+          },
+          {
+            id: 'pawn_promote',
+            nameEs: '3. ¡Coronación!',
+            nameEn: '3. Promotion!',
+            descEs: 'Cuando un peón llega a la última fila, ¡se convierte en la pieza que elijas! Avanza el peón blanco hasta coronar.',
+            descEn: 'When a pawn reaches the last rank, it becomes any piece you choose! Advance the white pawn all the way to promote.',
+            fen: '8/P7/8/8/8/8/8/8 w - - 0 1',
+            solution: ['a7a8q'],
+            humanSteps: 1,
+            completionMsgEs: '¡Increíble! El peón se convirtió en Dama.\n\nSiempre que puedas, corona un peón en Dama — ¡es la pieza más poderosa del ajedrez!',
+            completionMsgEn: 'Amazing! The pawn became a Queen.\n\nAlways promote your pawn to a Queen whenever you can — it\'s the most powerful piece in chess!',
+          },
+        ],
+      },
+    ];
+
+    var _pendingTutorialLesson = null;  // chapter object waiting to start
+    var _activeTutorialLesson = null;   // {lesson, chapter, lessonIdx, chapterIdx} of the running chapter
+    var _nextTutorialChapter = null;    // {lesson, chapter} of the next chapter, if any
+
+    function _restoreCommentatorTab() {
+      const tabComm = document.getElementById('tabCommentary');
+      if (tabComm) { tabComm.disabled = false; tabComm.style.opacity = ''; tabComm.style.cursor = ''; }
+    }
+
+    function showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx) {
+      _restoreCommentatorTab();
+      const en = currentLanguage === 'en';
+      const msg = en ? chapter.completionMsgEn : chapter.completionMsgEs;
+      const name = en ? chapter.nameEn : chapter.nameEs;
+
+      document.getElementById('tutorialCompleteTitle').textContent = '✅ ' + name;
+      document.getElementById('tutorialCompleteMsg').innerHTML = msg ? msg.replace(/\n/g, '<br>') : '';
+
+      // Determine next chapter
+      const currentLesson = TUTORIAL_LESSONS[lessonIdx];
+      _nextTutorialChapter = null;
+      const btnNext = document.getElementById('btnTutorialNext');
+      if (chapterIdx + 1 < currentLesson.chapters.length) {
+        _nextTutorialChapter = { lesson: currentLesson, chapter: currentLesson.chapters[chapterIdx + 1] };
+        const nextName = en ? currentLesson.chapters[chapterIdx + 1].nameEn : currentLesson.chapters[chapterIdx + 1].nameEs;
+        btnNext.textContent = '▶ ' + nextName;
+        btnNext.style.display = '';
+      } else if (lessonIdx + 1 < TUTORIAL_LESSONS.length) {
+        const nextLesson = TUTORIAL_LESSONS[lessonIdx + 1];
+        _nextTutorialChapter = { lesson: nextLesson, chapter: nextLesson.chapters[0] };
+        const nextName = en ? nextLesson.chapters[0].nameEn : nextLesson.chapters[0].nameEs;
+        btnNext.textContent = '▶ ' + nextName;
+        btnNext.style.display = '';
+      } else {
+        btnNext.style.display = 'none';
+      }
+
+      document.getElementById('btnTutorialChooseAnother').textContent = en ? '📚 Choose another' : '📚 Elegir otro';
+      document.getElementById('btnTutorialCompleteMenu').textContent = en ? '🏠 Main menu' : '🏠 Menú';
+      document.getElementById('tutorialCompleteModal').classList.add('show');
+    }
+
+    function closeTutorialCompleteModal() {
+      document.getElementById('tutorialCompleteModal').classList.remove('show');
+    }
+
+    function startNextTutorialLesson() {
+      closeTutorialCompleteModal();
+      if (!_nextTutorialChapter) return;
+      const { lesson, chapter } = _nextTutorialChapter;
+      _nextTutorialChapter = null;
+      showTutorialLessonModal(lesson, chapter);
+    }
+
+    function openTutorial() {
+      const modal = document.getElementById('tutorialModal');
+      const en = currentLanguage === 'en';
+      document.getElementById('tutorialModalTitle').textContent = en ? '📚 Tutorial' : '📚 Tutorial';
+      document.getElementById('tutorialModalSubtitle').textContent = en
+        ? 'Learn to play chess step by step'
+        : 'Aprende a jugar ajedrez paso a paso';
+      document.getElementById('btnTutorialClose').textContent = en ? 'Back' : 'Volver';
+      renderTutorialChapterList();
+      modal.classList.add('show');
+    }
+
+    function closeTutorial() {
+      document.getElementById('tutorialModal').classList.remove('show');
+    }
+
+    function renderTutorialChapterList() {
+      const container = document.getElementById('tutorialChapterList');
+      const en = currentLanguage === 'en';
+      container.innerHTML = '';
+
+      TUTORIAL_LESSONS.forEach(lesson => {
+        // Lesson header
+        const header = document.createElement('div');
+        header.style.cssText = 'font-size:1rem; font-weight:800; color:var(--primary); margin-bottom:4px; display:flex; align-items:center; gap:6px;';
+        header.innerHTML = `${lesson.iconEs} ${en ? lesson.nameEn : lesson.nameEs}`;
+        container.appendChild(header);
+
+        const subdesc = document.createElement('div');
+        subdesc.style.cssText = 'font-size:0.82rem; color:var(--text-light); margin-bottom:8px;';
+        subdesc.textContent = en ? lesson.descEn : lesson.descEs;
+        container.appendChild(subdesc);
+
+        // Chapter buttons
+        lesson.chapters.forEach((ch, idx) => {
+          const btn = document.createElement('div');
+          btn.className = 'fen-item';
+          btn.style.cssText = 'cursor:pointer; padding:12px 14px; border-radius:12px; border:1.5px solid rgba(56,189,248,0.35); background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(14,165,233,0.05)); margin-bottom:4px;';
+          btn.onclick = () => showTutorialLessonModal(lesson, ch);
+          const chName = en ? ch.nameEn : ch.nameEs;
+          const chDesc = en ? ch.descEn : ch.descEs;
+          btn.innerHTML = `<strong style="font-size:0.92rem;">${chName}</strong><span style="font-size:0.8rem; color:var(--text-light); display:block; margin-top:2px;">${chDesc}</span>`;
+          container.appendChild(btn);
+        });
+      });
+    }
+
+    function showTutorialLessonModal(lesson, chapter) {
+      const en = currentLanguage === 'en';
+      _pendingTutorialLesson = chapter;
+      _pendingTutorialLesson._lesson = lesson;
+      _pendingTutorialLesson._lessonIdx = TUTORIAL_LESSONS.indexOf(lesson);
+      _pendingTutorialLesson._chapterIdx = lesson.chapters.indexOf(chapter);
+      document.getElementById('tutorialModal').classList.remove('show');
+      document.getElementById('tutorialLessonIcon').textContent = lesson.iconEs;
+      document.getElementById('tutorialLessonName').textContent = en ? chapter.nameEn : chapter.nameEs;
+      document.getElementById('tutorialLessonDesc').textContent = en ? chapter.descEn : chapter.descEs;
+      document.getElementById('btnTutorialLessonCancel').textContent = en ? '✕ Cancel' : '✕ Cancelar';
+      document.getElementById('btnTutorialLessonStart').textContent = en ? '▶ Start' : '▶ Empezar';
+      document.getElementById('tutorialLessonModal').classList.add('show');
+    }
+
+    function closeTutorialLessonModal() {
+      document.getElementById('tutorialLessonModal').classList.remove('show');
+      _pendingTutorialLesson = null;
+      openTutorial();
+    }
+
+    function startTutorialLesson() {
+      document.getElementById('tutorialLessonModal').classList.remove('show');
+      document.getElementById('tutorialModal').classList.remove('show');
+      const chapter = _pendingTutorialLesson;
+      const lessonIdx = chapter?._lessonIdx ?? 0;
+      const chapterIdx = chapter?._chapterIdx ?? 0;
+      _pendingTutorialLesson = null;
+      if (!chapter) return;
+
+      _activeTutorialLesson = { lesson: TUTORIAL_LESSONS[lessonIdx], chapter, lessonIdx, chapterIdx };
+
+      clearSavedGame();
+      document.getElementById('fenInput').value = chapter.fen;
+      // Tutorial always plays as White vs AI (non-thinking, moves are scripted via puzzleMode)
+      gameMode = 'ai';
+      playerColor = 'w';
+      currentDifficulty = 'easy';
+      const diffCfg = DIFF_SETTINGS['easy'];
+      aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit;
+
+      // Wrap chapter as a challenge item so the existing puzzleMode system handles step playback
+      lastLoadedChallengeItem = {
+        nameEs: chapter.nameEs,
+        nameEn: chapter.nameEn,
+        descEs: chapter.descEs,
+        descEn: chapter.descEn,
+        fen: chapter.fen,
+        solution: chapter.solution,
+        humanSteps: chapter.humanSteps,
+        completionMsgEs: chapter.completionMsgEs,
+        completionMsgEn: chapter.completionMsgEn,
+        isTutorial: true,
+        lessonIdx,
+        chapterIdx,
+      };
+      sessionStartedFromFen = true;
+      loadPositionFromFEN();
+      if (chapter.solution && chapter.solution.length > 0) {
+        puzzleMode = { solution: chapter.solution, step: 0, humanSteps: chapter.humanSteps ?? null };
+      }
+      lastLoadedPuzzleMode = puzzleMode
+        ? { solution: [...puzzleMode.solution], step: 0, humanSteps: puzzleMode.humanSteps }
+        : null;
+
+      // Block commentator tab and switch to professor with pinned description
+      const tabComm = document.getElementById('tabCommentary');
+      if (tabComm) { tabComm.disabled = true; tabComm.style.opacity = '0.35'; tabComm.style.cursor = 'not-allowed'; }
+      switchTab('professor');
+      _pinTutorialDesc(chapter);
+
+      // If the first solution step belongs to the AI, kick it off via triggerAI
+      // (triggerAI handles the scripted move safely via puzzleMode, with all its guards)
+      if (puzzleMode && puzzleMode.solution.length > 0) {
+        const firstUci = puzzleMode.solution[0];
+        const firstSide = uciToMoveObj(firstUci);
+        const firstIsAI = firstSide && board[firstSide.fr] && colorOf(board[firstSide.fr][firstSide.fc]) !== playerColor;
+        if (firstIsAI) {
+          // Temporarily flip turn to black so triggerAI's guard (turn === aiColor) passes
+          turn = playerColor === 'w' ? 'b' : 'w';
+          setTimeout(() => triggerAI(), 800);
+        }
+      }
+    }
+
+    function _pinTutorialDesc(chapter) {
+      const en = currentLanguage === 'en';
+      const pList = document.getElementById('professorList');
+      if (!pList) return;
+      const desc = en ? chapter.descEn : chapter.descEs;
+      const name = en ? chapter.nameEn : chapter.nameEs;
+      pList.innerHTML = `<div class="tutorial-desc-pin" style="border-left:4px solid var(--primary); background:rgba(56,189,248,0.07); padding:12px 14px; margin-bottom:10px; border-radius:4px;">
+        <div class="tutorial-desc-label" style="font-size:0.75rem; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Tutorial: ${name}</div>
+        <span class="hint-text" style="font-size:0.88rem;">${desc}</span>
+      </div>`;
+    }
+
+    // Sets professor panel content. During a tutorial the pinned description is always
+    // kept at the top; the new content appears below it.
+    function setProfessorContent(html) {
+      const pList = document.getElementById('professorList');
+      if (!pList) return;
+      if (lastLoadedChallengeItem?.isTutorial) {
+        const pin = pList.querySelector('.tutorial-desc-pin');
+        if (pin) {
+          // Remove any previous dynamic content (everything after the pin)
+          while (pList.lastChild && pList.lastChild !== pin) pList.removeChild(pList.lastChild);
+          const div = document.createElement('div');
+          div.innerHTML = html;
+          // Move children into list to avoid extra wrapper
+          while (div.firstChild) pList.appendChild(div.firstChild);
+          return;
+        }
+      }
+      pList.innerHTML = html;
+    }
 
     function openFenLibrary() {
       const modal = document.getElementById('fenLibraryModal');
@@ -20908,7 +21314,8 @@ limitations under the License.
 
         const whiteKings = newBoard.flat().filter(p => p === 'K').length;
         const blackKings = newBoard.flat().filter(p => p === 'k').length;
-        if (whiteKings !== 1 || blackKings !== 1) throw new Error('fen_kings');
+        const isTutorialFen = lastLoadedChallengeItem?.isTutorial;
+        if (!isTutorialFen && (whiteKings !== 1 || blackKings !== 1)) throw new Error('fen_kings');
 
         const sidePart = (parts[1] || '').toLowerCase();
         if (sidePart !== 'w' && sidePart !== 'b') throw new Error('fen_turn');
