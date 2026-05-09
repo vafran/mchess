@@ -3708,12 +3708,9 @@ limitations under the License.
       <div class="menu-title" id="optionsTitle" style="font-size:1.25rem;">Opciones</div>
 
       <span class="options-label" id="optionsLanguageLabel" style="margin-top:8px;">🌐 Idioma</span>
-      <div style="margin-top:6px; margin-bottom:8px;">
-        <select id="optLangSelect" class="lang-select options-lang-select" onchange="setLanguage(this.value)"
-          style="width:100%; padding:8px; border-radius:10px;">
-          <option value="es">Español</option>
-          <option value="en">English</option>
-        </select>
+      <div class="options-diff-row" style="margin-bottom:8px;">
+        <button id="optLangEs" onclick="setLanguage('es')" class="options-diff-btn lang-pill active" style="display:flex; align-items:center; justify-content:center; gap:6px;"><svg width="20" height="14" viewBox="0 0 20 14" style="border-radius:2px;flex-shrink:0;"><rect width="20" height="14" fill="#c60b1e"/><rect y="3.5" width="20" height="7" fill="#ffc400"/></svg> Español</button>
+        <button id="optLangEn" onclick="setLanguage('en')" class="options-diff-btn lang-pill" style="display:flex; align-items:center; justify-content:center; gap:6px;"><svg width="20" height="14" viewBox="0 0 20 14" style="border-radius:2px;flex-shrink:0;"><rect width="20" height="14" fill="#012169"/><path d="M0,0 L20,14 M20,0 L0,14" stroke="#fff" stroke-width="3"/><path d="M0,0 L20,14 M20,0 L0,14" stroke="#c8102e" stroke-width="1.8"/><path d="M10,0 V14 M0,7 H20" stroke="#fff" stroke-width="4"/><path d="M10,0 V14 M0,7 H20" stroke="#c8102e" stroke-width="2.4"/></svg> English</button>
       </div>
 
       <span class="options-label" id="optionsThemeLabel" style="margin-top:8px;">&#127912; Tema Visual</span>
@@ -3812,13 +3809,10 @@ limitations under the License.
       <div style="font-size:2rem;">&#9881;&#65039;</div>
       <div class="menu-title" id="ingameOptionsTitle" style="font-size:1.2rem;">Opciones</div>
 
-      <span class="options-label" id="igLanguageLabel">🌐 Idioma</span>
-      <div style="margin-top:6px; margin-bottom:8px;">
-        <select id="igLangSelect" class="lang-select options-lang-select" onchange="setLanguage(this.value)"
-          style="width:100%; padding:8px; border-radius:10px;">
-          <option value="es">Español</option>
-          <option value="en">English</option>
-        </select>
+      <span class="options-label" id="igLanguageLabel" style="margin-top:8px;">🌐 Idioma</span>
+      <div class="options-diff-row" style="margin-bottom:8px;">
+        <button id="igLangEs" onclick="setLanguage('es')" class="options-diff-btn lang-pill active" style="display:flex; align-items:center; justify-content:center; gap:6px;"><svg width="20" height="14" viewBox="0 0 20 14" style="border-radius:2px;flex-shrink:0;"><rect width="20" height="14" fill="#c60b1e"/><rect y="3.5" width="20" height="7" fill="#ffc400"/></svg> Español</button>
+        <button id="igLangEn" onclick="setLanguage('en')" class="options-diff-btn lang-pill" style="display:flex; align-items:center; justify-content:center; gap:6px;"><svg width="20" height="14" viewBox="0 0 20 14" style="border-radius:2px;flex-shrink:0;"><rect width="20" height="14" fill="#012169"/><path d="M0,0 L20,14 M20,0 L0,14" stroke="#fff" stroke-width="3"/><path d="M0,0 L20,14 M20,0 L0,14" stroke="#c8102e" stroke-width="1.8"/><path d="M10,0 V14 M0,7 H20" stroke="#fff" stroke-width="4"/><path d="M10,0 V14 M0,7 H20" stroke="#c8102e" stroke-width="2.4"/></svg> English</button>
       </div>
 
       <span class="options-label" id="igModeLabel">&#128106; Modo de Juego</span>
@@ -6031,10 +6025,18 @@ limitations under the License.
       currentLanguage = lang === 'en' ? 'en' : 'es';
       try { localStorage.setItem(LANGUAGE_STORAGE_KEY, currentLanguage); } catch (_) { }
 
-      const ids = ['langCornerSelect', 'optLangSelect', 'igLangSelect', 'topBarLangSelect'];
+      const ids = ['langCornerSelect', 'topBarLangSelect'];
       ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = currentLanguage;
+      });
+      // Sync lang pill buttons in both options modals
+      ['opt', 'ig'].forEach(prefix => {
+        const esBtn = document.getElementById(prefix + 'LangEs');
+        const enBtn = document.getElementById(prefix + 'LangEn');
+        if (!esBtn || !enBtn) return;
+        esBtn.classList.toggle('active', currentLanguage === 'es');
+        enBtn.classList.toggle('active', currentLanguage === 'en');
       });
 
       document.documentElement.lang = currentLanguage;
