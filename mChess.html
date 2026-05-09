@@ -1924,7 +1924,7 @@ limitations under the License.
     }
 
     /* Mobile or short screens: outer modal scrolls so content is reachable */
-    @media (max-width: 640px), (max-height: 850px) {
+    @media (max-width: 640px), (max-height: 900px) {
       #profileModal, .confirm-modal, .promo-modal, .trophy-story-overlay, .ingame-menu-overlay, .screen-overlay {
         align-items: flex-start;
         overflow-y: auto;
@@ -3701,8 +3701,9 @@ limitations under the License.
   </div>
 
   <!-- ── Options Screen ──────────────────────── -->
-  <div class="screen-overlay hidden" id="screenOptions">
-    <div class="menu-card">
+  <div class="screen-overlay hidden" id="screenOptions" style="align-items:flex-start; padding-top:16px;">
+    <div class="menu-card" style="position:relative;">
+      <button onclick="showScreen('screenMenu')" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-light); line-height:1; padding:4px;">✕</button>
       <div style="font-size:2rem;">&#9881;&#65039;</div>
       <div class="menu-title" id="optionsTitle" style="font-size:1.25rem;">Opciones</div>
 
