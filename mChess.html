@@ -14929,6 +14929,18 @@ limitations under the License.
 
         }
 
+        // 2.5. Easy blunder injection: Scholar's Mate trap
+        // If Easy, White queen is on h5 and bishop on c4, force a knight to f6 (60%).
+        if (move && currentDifficulty === 'easy' && aiColor === 'b') {
+          const wQ = board[3][7]; // h5
+          const wB = board[4][2]; // c4
+          if (wQ === 'Q' && wB === 'B' && Math.random() < 0.60) {
+            const legalMvs = getLegalMovesForColorInPlace('b');
+            const nf6 = legalMvs.find(m => m.tr === 2 && m.tc === 5 && board[m.fr][m.fc] === 'n');
+            if (nf6) move = nf6;
+          }
+        }
+
         // 3. Execute move
         let targetPiece = null;
         let isCapture = false;
