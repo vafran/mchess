@@ -241,6 +241,18 @@ limitations under the License.
     }
     .tutorial-lesson-header { color: var(--primary); }
     body.theme-ocean .tutorial-lesson-header { color: #5dade2; }
+    .tutorial-tab-btn {
+      flex: 1; min-width: 80px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid rgba(168,85,247,0.3);
+      background: transparent; color: var(--text-light); font-size: 0.82rem; font-weight: 700; cursor: pointer;
+      transition: all 0.18s; font-family: inherit;
+    }
+    .tutorial-tab-btn.active {
+      background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(139,92,246,0.12));
+      border-color: var(--primary); color: var(--primary);
+    }
+    .tutorial-tab-btn:hover:not(.active) { background: rgba(168,85,247,0.07); }
+    body.theme-ocean .tutorial-tab-btn { border-color: rgba(93,173,226,0.3); color: #aecde8; }
+    body.theme-ocean .tutorial-tab-btn.active { border-color: #5dade2; color: #5dade2; background: rgba(93,173,226,0.12); }
     body.theme-ocean .tutorial-desc-pin {
       border-left-color: #5dade2 !important;
       background: rgba(29, 82, 138, 0.25) !important;
@@ -265,10 +277,12 @@ limitations under the License.
     body.theme-ocean .promo-btn {
       background: linear-gradient(145deg, rgba(29, 82, 138, 0.6), rgba(22, 58, 105, 0.8));
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+      color: #aecde8;
     }
     body.theme-ocean .promo-btn:hover {
       border-color: #5dade2;
       box-shadow: 0 8px 24px rgba(93, 173, 226, 0.35);
+      color: #e8f4fd;
     }
     body.theme-ocean .status-box {
       background: linear-gradient(145deg, rgba(22, 58, 105, 0.97), rgba(15, 40, 80, 0.97));
@@ -4268,8 +4282,10 @@ limitations under the License.
     <div class="confirm-box"
       style="max-height: 85vh; display: flex; flex-direction: column; width: 95%; max-width: 420px; padding: 20px; position: relative;">
       <button onclick="closeTutorial()" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-light); line-height:1; padding:4px;">✕</button>
-      <h3 id="tutorialModalTitle" style="margin-bottom:6px; font-size:1.3rem; text-align:center;">Tutorial</h3>
-      <p id="tutorialModalSubtitle" style="font-size:0.83rem; color:var(--text-light); text-align:center; margin-bottom:14px;">Aprende a jugar ajedrez paso a paso</p>
+      <h3 id="tutorialModalTitle" style="margin-bottom:10px; font-size:1.3rem; text-align:center;">Tutorial</h3>
+
+      <!-- Lesson tab bar -->
+      <div id="tutorialLessonTabs" style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;"></div>
 
       <!-- Chapter list -->
       <div id="tutorialChapterList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px; padding-right:4px;">
@@ -20611,8 +20627,54 @@ limitations under the License.
           },
         ],
       },
+      {
+        id: 'knights',
+        iconEs: '♞', iconEn: '♞',
+        nameEs: 'Los Caballos', nameEn: 'The Knights',
+        descEs: 'El caballo es la pieza más especial: ¡salta en forma de L y puede saltar sobre otras piezas!',
+        descEn: 'The knight is the most special piece: it jumps in an L-shape and can leap over other pieces!',
+        chapters: [
+          {
+            id: 'knight_move',
+            nameEs: '1. El salto del caballo',
+            nameEn: '1. The knight\'s leap',
+            descEs: 'El caballo se mueve en forma de L: dos casillas en una dirección y una en perpendicular. ¡Y puede saltar sobre otras piezas! Mueve el caballo de d4 a e6, luego a f4.',
+            descEn: 'The knight moves in an L-shape: two squares in one direction and one to the side. It can even jump over other pieces! Move the knight from d4 to e6, then to f4.',
+            fen: '8/8/8/8/3N4/8/8/8 w - - 0 1',
+            solution: ['d4e6', 'e6f4'],
+            humanSteps: 2,
+            completionMsgEs: '¡Así salta el caballo!\n\nDos casillas hacia adelante y una al lado — o dos al lado y una hacia adelante. Siempre en L.\n\nFíjate que el caballo siempre cambia de color de casilla en cada salto. ¡Es la única pieza que puede saltar sobre las demás!',
+            completionMsgEn: 'That\'s the knight\'s leap!\n\nTwo squares forward and one to the side — or two to the side and one forward. Always an L-shape.\n\nNotice the knight always changes square color with each jump. It\'s the only piece that can leap over others!',
+          },
+          {
+            id: 'knight_capture',
+            nameEs: '2. El caballo ataca',
+            nameEn: '2. The knight attacks',
+            descEs: 'El caballo captura igual que se mueve: en L. Hay peones enemigos en el tablero. ¡Sáltalos a todos! Captura en f6, luego en e4.',
+            descEn: 'The knight captures the same way it moves: in an L. There are enemy pawns on the board. Jump and capture them all! Capture on f6, then on e4.',
+            fen: '8/8/8/8/5p2/8/4p3/2N5 w - - 0 1',
+            solution: ['c1e2', 'e2f4'],
+            humanSteps: 2,
+            completionMsgEs: '¡Dos capturas perfectas!\n\nEl caballo salta en L y captura la pieza que hay en la casilla de llegada. No importa qué haya en el camino — ¡puede saltarlo todo!\n\nEs la única pieza que ataca de forma tan sorprendente.',
+            completionMsgEn: 'Two perfect captures!\n\nThe knight jumps in an L and captures whatever is on the landing square. It doesn\'t matter what\'s in the way — it leaps over everything!\n\nIt\'s the only piece that attacks in such a surprising way.',
+          },
+          {
+            id: 'knight_fork',
+            nameEs: '3. ¡La horquilla!',
+            nameEn: '3. The fork!',
+            descEs: 'La horquilla es cuando un caballo ataca dos piezas a la vez. Mueve el caballo a c5 — desde ahí ataca al alfil en b7 y a la torre en e6 al mismo tiempo. ¡El rival no puede salvar las dos!',
+            descEn: 'A fork is when a knight attacks two pieces at once. Move the knight to c5 — from there it attacks both the bishop on b7 and the rook on e6 at the same time. Your opponent can\'t save both!',
+            fen: '8/1b6/4r3/8/8/1N6/8/8 w - - 0 1',
+            solution: ['b3c5'],
+            humanSteps: 1,
+            completionMsgEs: '¡Horquilla perfecta!\n\nDesde c5 el caballo ataca al alfil en b7 y a la torre en e6 al mismo tiempo. El rival solo puede mover una pieza — ¡tú capturas la otra!\n\nLa horquilla de caballo es una de las tácticas más poderosas del ajedrez.',
+            completionMsgEn: 'Perfect fork!\n\nFrom c5 the knight attacks the bishop on b7 and the rook on e6 at the same time. Your opponent can only move one piece — you capture the other!\n\nThe knight fork is one of the most powerful tactics in chess.',
+          },
+        ],
+      },
     ];
 
+    var _activeTutorialLessonIdx = 0; // which lesson tab is selected in the tutorial modal
     var _pendingTutorialLesson = null;  // chapter object waiting to start
     var _activeTutorialLesson = null;   // {lesson, chapter, lessonIdx, chapterIdx} of the running chapter
     var _nextTutorialChapter = null;    // {lesson, chapter} of the next chapter, if any
@@ -20671,10 +20733,8 @@ limitations under the License.
       const modal = document.getElementById('tutorialModal');
       const en = currentLanguage === 'en';
       document.getElementById('tutorialModalTitle').textContent = en ? '📚 Tutorial' : '📚 Tutorial';
-      document.getElementById('tutorialModalSubtitle').textContent = en
-        ? 'Learn to play chess step by step'
-        : 'Aprende a jugar ajedrez paso a paso';
       document.getElementById('btnTutorialClose').textContent = en ? 'Back' : 'Volver';
+      renderTutorialTabs();
       renderTutorialChapterList();
       modal.classList.add('show');
     }
@@ -20683,35 +20743,40 @@ limitations under the License.
       document.getElementById('tutorialModal').classList.remove('show');
     }
 
+    function renderTutorialTabs() {
+      const tabBar = document.getElementById('tutorialLessonTabs');
+      const en = currentLanguage === 'en';
+      tabBar.innerHTML = '';
+      TUTORIAL_LESSONS.forEach((lesson, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'tutorial-tab-btn' + (idx === _activeTutorialLessonIdx ? ' active' : '');
+        btn.innerHTML = `${lesson.iconEs} ${en ? lesson.nameEn : lesson.nameEs}`;
+        btn.onclick = () => { _activeTutorialLessonIdx = idx; renderTutorialTabs(); renderTutorialChapterList(); };
+        tabBar.appendChild(btn);
+      });
+    }
+
     function renderTutorialChapterList() {
       const container = document.getElementById('tutorialChapterList');
       const en = currentLanguage === 'en';
       container.innerHTML = '';
+      const lesson = TUTORIAL_LESSONS[_activeTutorialLessonIdx];
+      if (!lesson) return;
 
-      TUTORIAL_LESSONS.forEach(lesson => {
-        // Lesson header
-        const header = document.createElement('div');
-        header.className = 'tutorial-lesson-header';
-        header.style.cssText = 'font-size:1rem; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:6px;';
-        header.innerHTML = `${lesson.iconEs} ${en ? lesson.nameEn : lesson.nameEs}`;
-        container.appendChild(header);
+      const subdesc = document.createElement('div');
+      subdesc.style.cssText = 'font-size:0.82rem; color:var(--text-light); margin-bottom:10px;';
+      subdesc.textContent = en ? lesson.descEn : lesson.descEs;
+      container.appendChild(subdesc);
 
-        const subdesc = document.createElement('div');
-        subdesc.style.cssText = 'font-size:0.82rem; color:var(--text-light); margin-bottom:8px;';
-        subdesc.textContent = en ? lesson.descEn : lesson.descEs;
-        container.appendChild(subdesc);
-
-        // Chapter buttons
-        lesson.chapters.forEach((ch, idx) => {
-          const btn = document.createElement('div');
-          btn.className = 'fen-item';
-          btn.style.cssText = 'cursor:pointer; padding:12px 14px; border-radius:12px; border:1.5px solid rgba(56,189,248,0.35); background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(14,165,233,0.05)); margin-bottom:4px;';
-          btn.onclick = () => showTutorialLessonModal(lesson, ch);
-          const chName = en ? ch.nameEn : ch.nameEs;
-          const chDesc = en ? ch.descEn : ch.descEs;
-          btn.innerHTML = `<strong style="font-size:0.92rem;">${chName}</strong><span style="font-size:0.8rem; color:var(--text-light); display:block; margin-top:2px;">${chDesc}</span>`;
-          container.appendChild(btn);
-        });
+      lesson.chapters.forEach((ch) => {
+        const btn = document.createElement('div');
+        btn.className = 'fen-item';
+        btn.style.cssText = 'cursor:pointer; padding:12px 14px; border-radius:12px; border:1.5px solid rgba(56,189,248,0.35); background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(14,165,233,0.05)); margin-bottom:4px;';
+        btn.onclick = () => showTutorialLessonModal(lesson, ch);
+        const chName = en ? ch.nameEn : ch.nameEs;
+        const chDesc = en ? ch.descEn : ch.descEs;
+        btn.innerHTML = `<strong style="font-size:0.92rem;">${chName}</strong><span style="font-size:0.8rem; color:var(--text-light); display:block; margin-top:2px;">${chDesc}</span>`;
+        container.appendChild(btn);
       });
     }
 
