@@ -822,6 +822,22 @@ limitations under the License.
       animation: puzzleWrongFlash 0.7s ease-out forwards;
     }
 
+    .cell.tutorial-target::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(251, 191, 36, 0.45);
+      border: 3px solid rgba(251, 191, 36, 0.85);
+      border-radius: 4px;
+      pointer-events: none;
+      animation: tutorialTargetPulse 1.2s ease-in-out infinite;
+      z-index: 1;
+    }
+    @keyframes tutorialTargetPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
     @keyframes puzzleWrongFlash {
       0% {
         background: rgba(239, 68, 68, 0.6);
@@ -6932,6 +6948,12 @@ limitations under the License.
 
           if (isInCheck && kingPos && kingPos[0] === r && kingPos[1] === c) {
             cell.classList.add('in-check');
+          }
+
+          // Tutorial: highlight the target square of the current expected move
+          if (lastLoadedChallengeItem?.isTutorial && puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
+            const nextM = uciToMoveObj(puzzleMode.solution[puzzleMode.step]);
+            if (nextM && nextM.tr === r && nextM.tc === c) cell.classList.add('tutorial-target');
           }
 
           // 🚦 SQUARE TRAFFIC LIGHT
