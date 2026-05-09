@@ -3793,10 +3793,11 @@ limitations under the License.
           onclick="document.getElementById('globalFileInput').click(); closeIngameMenu();"
           style="flex:1; font-size:0.85rem; padding:10px 6px;">📂 Cargar</button>
       </div>
-      <button class="menu-btn secondary" id="btnFlipBoard" onclick="flipBoard(); closeIngameMenu();">🔄 Girar tablero</button>
-      <button class="menu-btn secondary" id="btnIngameOptions" onclick="showIngameOptions()">&#9881;&#65039;
-        Opciones</button>
-      <button class="menu-btn secondary" id="btnRestartGameMenu" onclick="newGameFromMenu()">&#128260; Reiniciar
+      <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
+        <button class="menu-btn secondary" id="btnFlipBoard" onclick="flipBoard(); closeIngameMenu();" style="flex:1; font-size:0.88rem; padding:10px 6px;">🔄 <span id="btnFlipBoardLabel">Girar</span></button>
+        <button class="menu-btn secondary" id="btnIngameOptions" onclick="showIngameOptions()" style="flex:1; font-size:0.88rem; padding:10px 6px;">&#9881;&#65039; <span id="btnIngameOptionsLabel">Opciones</span></button>
+      </div>
+      <button class="menu-btn secondary" id="btnRestartGameMenu" onclick="newGameFromMenu()">♻️ Reiniciar
         partida</button>
       <button class="menu-btn secondary" id="btnMainMenu" style="color:var(--danger);"
         onclick="goToMainMenu()">&#127968; Menú
@@ -5729,15 +5730,15 @@ limitations under the License.
         colorTitle: 'Elige tu Bando', colorSubtitle: '¿Jugar con Blancas o Negras?', btnChooseWhite: 'Jugar Blancas', btnChooseBlack: 'Jugar Negras',
         optionsTitle: 'Opciones', languageLabel: '🌐 Idioma', themeLabel: '🎨 Tema Visual', soundThemeLabel: '🔊 Sonido', soundClassic: 'Clásico', soundRetro: 'Retro', soundSoft: 'Suave', themeMagic: 'Mágico', themeForest: 'Bosque', themeOcean: 'Océano', themeClassic: 'Clásico', themeFutbol: 'Fútbol',
         commentaryStyle: '🎙️ Estilo del Comentarista', styleSerious: '🎚️ Más serio', styleMixed: '🎚️ Mixto', styleFunny: '🎚️ Más divertido',
-        ingameMenuTitle: 'Menú', continueGame: '▶️ Continuar partida', ingameOptions: '⚙️ Opciones', btnFlipBoard: '🔄 Girar tablero',
+        ingameMenuTitle: 'Menú', continueGame: '▶️ Continuar partida', ingameOptions: '⚙️ Opciones', btnFlipBoard: '🔄 Girar tablero', btnFlipBoardShort: 'Girar', ingameOptionsShort: 'Opciones',
         quickPvp: '👫 2 Jugadores', quickAi: '🤖 vs IA',
-        restartGame: '🔄 Reiniciar partida', mainMenu: '🏠 Menú principal',
+        restartGame: '♻️ Reiniciar partida', mainMenu: '🏠 Menú principal',
         tabCommentary: '🎙️ Comentarista', tabProfessor: '🦉 Profesor',
         btnAnalysis: '🔍 Análisis', btnWhatDo: '🎯 ¿Qué hago?', btnWasGood: '💡 ¿Fue buena?', hawksEye: 'Ojo Halcón',
         trainingOn: '🎓 Modo Asistido: ON', trainingOff: '🎓 Modo Asistido: OFF',
         historyTitle: '📜 Movimientos', capturedTitle: '⚔️ Piezas Capturadas',
         capturedWhite: '⬜ Ganadas por Blancas:', capturedBlack: '⬛ Ganadas por Negras:',
-        undo: '↩️ Deshacer', restartBtn: '🔄 Reiniciar partida', reviewGame: '🔍 Repasar partida', sideMenuBtn: '☰ Menú',
+        undo: '↩️ Deshacer', restartBtn: '♻️ Reiniciar partida', reviewGame: '🔍 Repasar partida', sideMenuBtn: '☰ Menú',
         playAgain: '🔄 ¡Jugar de nuevo!', nextChallenge: '🧩 Otro desafío', mainMenuBtn: '🏠 Menú principal',
         noProfessorGrand: 'El Profesor no te puede ayudar en nivel Maestro 🤫',
         profAnalyzing: 'El Profesor está analizando la mejor estrategia para ti...',
@@ -5847,15 +5848,15 @@ limitations under the License.
         colorTitle: 'Choose your side', colorSubtitle: 'Play as White or Black?', btnChooseWhite: 'Play as White', btnChooseBlack: 'Play as Black',
         optionsTitle: 'Options', languageLabel: '🌐 Language', themeLabel: '🎨 Visual Theme', soundThemeLabel: '🔊 Sound', soundClassic: 'Classic', soundRetro: 'Retro', soundSoft: 'Soft', themeMagic: 'Magic', themeForest: 'Forest', themeOcean: 'Ocean', themeClassic: 'Classic', themeFutbol: 'Soccer',
         commentaryStyle: '🎙️ Commentator Style', styleSerious: '🎚️ More serious', styleMixed: '🎚️ Mixed', styleFunny: '🎚️ More playful',
-        ingameMenuTitle: 'Menu', continueGame: '▶️ Continue game', ingameOptions: '⚙️ Options', btnFlipBoard: '🔄 Flip board',
+        ingameMenuTitle: 'Menu', continueGame: '▶️ Continue game', ingameOptions: '⚙️ Options', btnFlipBoard: '🔄 Flip board', btnFlipBoardShort: 'Flip', ingameOptionsShort: 'Options',
         quickPvp: '👫 2 Players', quickAi: '🤖 vs AI',
-        restartGame: '🔄 Restart game', mainMenu: '🏠 Main menu',
+        restartGame: '♻️ Restart game', mainMenu: '🏠 Main menu',
         tabCommentary: '🎙️ Commentator', tabProfessor: '🦉 Coach',
         btnAnalysis: '🔍 Analysis', btnWhatDo: '🎯 What should I do?', btnWasGood: '💡 Was it good?', hawksEye: 'Hawk Eye',
         trainingOn: '🎓 Assisted Mode: ON', trainingOff: '🎓 Assisted Mode: OFF',
         historyTitle: '📜 Moves', capturedTitle: '⚔️ Captured Pieces',
         capturedWhite: '⬜ Captured by White:', capturedBlack: '⬛ Captured by Black:',
-        undo: '↩️ Undo', restartBtn: '🔄 Restart game', reviewGame: '🔍 Review game', sideMenuBtn: '☰ Menu',
+        undo: '↩️ Undo', restartBtn: '♻️ Restart game', reviewGame: '🔍 Review game', sideMenuBtn: '☰ Menu',
         playAgain: '🔄 Play again!', nextChallenge: '🧩 Next challenge', mainMenuBtn: '🏠 Main menu',
         noProfessorGrand: 'Coach is not available at Master level 🤫',
         profAnalyzing: 'Coach is analyzing the best strategy for you...',
@@ -6061,7 +6062,7 @@ limitations under the License.
         difficultyTitle: 'diffTitle', btnBackToMenu: 'backMenu',
         colorTitle: 'colorTitle', colorSubtitle: 'colorSubtitle', btnChooseWhite: 'btnChooseWhite', btnChooseBlack: 'btnChooseBlack', btnBackToDiff: 'backMenu',
         optionsTitle: 'optionsTitle', optionsLanguageLabel: 'languageLabel', optionsThemeLabel: 'themeLabel', commentaryStyleLabel: 'commentaryStyle', btnOptionsBack: 'backMenu', optionsLoadFenLabel: 'loadFen',
-        ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnOpenProfile: 'btnOpenProfile', btnFlipBoard: 'btnFlipBoard', btnIngameOptions: 'ingameOptions', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
+        ingameMenuTitle: 'ingameMenuTitle', btnContinueGame: 'continueGame', btnOpenProfile: 'btnOpenProfile', btnFlipBoardLabel: 'btnFlipBoardShort', btnIngameOptionsLabel: 'ingameOptionsShort', btnRestartGameMenu: 'restartGame', btnMainMenu: 'mainMenu',
         btnQuickPvp: 'quickPvp', btnQuickAi: 'quickAi',
         btnIngameSaveGame: 'btnSaveShort', btnIngameLoadGame: 'btnLoadShort',
         ingameOptionsTitle: 'optionsTitle', igCommentaryStyleLabel: 'commentaryStyle',
