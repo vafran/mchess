@@ -1,5 +1,5 @@
 <!--
-Airin v2.25.0
+Airin v2.26.0
 Copyright 2026 Aaron Vazquez Fraga (vafran)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ limitations under the License.
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Airin v2.25.0</title>
+  <title>Airin v2.26.0</title>
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♞</text></svg>">
   <style>
@@ -3839,7 +3839,7 @@ limitations under the License.
       <div style="display:flex; gap:8px; width:100%; margin-top:4px;">
         <button class="menu-btn secondary menu-btn-training" id="btnMainTraining" onclick="openFenLibrary()"
           style="flex:1; background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15)); border-color: rgba(16,185,129,0.4); color: var(--text);">
-          <span id="btnTrainingLabel">🧩 Entrenamiento</span></button>
+          <span id="btnTrainingLabel">🧩 Desafíos</span></button>
         <button class="menu-btn secondary" id="btnMainTutorial" onclick="openTutorial()"
           style="flex:1; background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(14,165,233,0.15)); border-color: rgba(56,189,248,0.4); color: var(--text);">
           <span id="btnTutorialLabel">📚 Tutorial</span></button>
@@ -3867,7 +3867,7 @@ limitations under the License.
         Pantalla completa / Fullscreen</button>
       <button id="btnAbout" onclick="openAbout()"
         style="margin-top:10px; background:none; border:none; cursor:pointer; font-size:0.78rem; color:var(--text-light); opacity:0.55; letter-spacing:0.03em; padding:4px 0; width:100%; transition:opacity 0.2s;"
-        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Airin v2.25.0 · Aaron
+        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.55'">ℹ️ Airin v2.26.0 · Aaron
         Vazquez Fraga</button>
     </div>
   </div>
@@ -4435,7 +4435,7 @@ limitations under the License.
       style="max-height: 85vh; display: flex; flex-direction: column; width: 95%; max-width: 420px; padding: 20px; position: relative;">
       <button onclick="document.getElementById('fenLibraryModal').classList.remove('show')"
         style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-light); line-height:1; padding:4px;">✕</button>
-      <h3 id="fenLibraryTitle" style="margin-bottom: 10px; font-size: 1.4rem;">🧩 Entrenamiento</h3>
+      <h3 id="fenLibraryTitle" style="margin-bottom: 10px; font-size: 1.4rem;">🧩 Desafíos</h3>
 
       <!-- Mode selector — the most important choice before loading any position -->
       <div style="display:flex; gap:8px; margin-bottom: 8px;">
@@ -5415,7 +5415,7 @@ limitations under the License.
       king_slayer: { icon: '👑', cat: 1, name: { es: 'El Mata Reyes', en: 'The King Slayer' }, desc: { es: 'Derrota al Rey Sabio por primera vez.', en: 'Defeat the Wise King for the first time.' }, story: { es: 'El Rey Sabio es muy fuerte. Necesitarás paciencia, cálculo perfecto y no cometer errores.', en: 'The Wise King is very strong. You\'ll need patience, perfect calculation, and no blunders.' } },
       first_en_passant: { icon: '👣', cat: 1, name: { es: 'Cazador de Fantasmas', en: 'Ghost Hunter' }, desc: { es: 'Realiza dos capturas al paso en una sola partida.', en: 'Perform two en passant captures in a single game.' }, story: { es: 'La captura al paso es especial. Fíjate cuando un peón enemigo avance dos casillas al lado del tuyo.', en: 'En passant is a special pawn capture. Look out for enemy pawns moving two squares forward next to yours.' } },
       // Category 2 — Technical & Late-Game
-      pure_pride: { icon: '🛡️', cat: 2, name: { es: 'Orgullo Puro', en: 'Pure Pride' }, desc: { es: 'Gana sin ayudas, sin deshacer y sin Modo Entrenamiento (Difícil+).', en: 'Win without undos, hints, or Training Mode (Hard+).' }, story: { es: 'Para conseguir esto, debes ganar al Mago o Rey Sabio sin deshacer movimientos ni usar ayudas del Profesor o Entrenamiento.', en: 'To get this, you must beat the Hard or Master bot without ever pressing Undo or using any Coach hints, including Training Mode.' } },
+      pure_pride: { icon: '🛡️', cat: 2, name: { es: 'Orgullo Puro', en: 'Pure Pride' }, desc: { es: 'Gana sin ayudas, sin deshacer y sin Modo Asistido (Difícil+).', en: 'Win without undos, hints, or Training Mode (Hard+).' }, story: { es: 'Para conseguir esto, debes ganar al Mago o Rey Sabio sin deshacer movimientos ni usar ayudas del Profesor o modo Asistido.', en: 'To get this, you must beat the Hard or Master bot without ever pressing Undo or using any Coach hints, including Training Mode.' } },
       iron_castle: { icon: '🏰', cat: 2, name: { es: 'Castillo de Hierro', en: 'Iron Castle' }, desc: { es: 'Gana enrocando sin mover el rey después.', en: 'Win by castling and never moving your king again.' }, story: { es: 'Enroca rápido y juega posicional. Mantén tu rey seguro y no dejes que tenga que moverse.', en: 'Castle early and play a positional game. Keep your king safe and don\'t let it be forced to move.' } },
       david_goliath: { icon: '🗿', cat: 2, name: { es: 'David y Goliat', en: 'David vs Goliath' }, desc: { es: 'Gana al Mago o Rey Sabio tras llegar a −500cp o peor.', en: 'Win against The Magician or Wise King after your eval reached −500cp or worse.' }, story: { es: 'Sobrevive a un gran error contra los bots más difíciles y remonta. Fíjate en la barra de ventaja.', en: 'Survive a massive blunder against the hardest bots, then mount a comeback. Watch the eval bar go deep red and then win.' } },
       illusion_breaker: { icon: '🌀', cat: 5, name: { es: 'El Rompe-Ilusiones', en: 'Illusion Breaker' }, desc: { es: 'Fuerza tablas contra El Mago.', en: 'Force a draw against The Magician.' }, story: { es: 'Si no puedes ganar, unas tablas son un buen resultado. Busca la triple repetición o el ahogado.', en: 'If you can\'t win, a draw is a good result. Look for threefold repetition or stalemate.' } },
@@ -5428,8 +5428,8 @@ limitations under the License.
       oops_queen: { icon: '😬', cat: 3, hidden: true, name: { es: '¿Mi Dama?', en: 'Oops, My Queen?' }, desc: { es: 'Gana tras perder tu dama sin compensación.', en: 'Win after losing your queen without compensation.' }, story: { es: '¡No te rindas! Incluso sin dama, puedes encontrar el mate si tu rival se descuida.', en: 'Don\'t resign! Even without your queen, you can still find a checkmate if your opponent gets careless.' } },
       ancient_law: { icon: '👻', cat: 3, hidden: true, name: { es: 'La Ley Antigua', en: 'The Ancient Law' }, desc: { es: 'Gana una partida en la que capturaste al paso.', en: 'Win a game where you captured en passant.' }, story: { es: 'Captura al paso. Es la regla más antigua y misteriosa del ajedrez.', en: 'Capture en passant. It\'s the most ancient and mysterious rule of chess.' } },
       the_rebel: { icon: '♞', cat: 3, hidden: true, name: { es: 'El Rebelde', en: 'The Rebel' }, desc: { es: 'Coronas un peón con Caballo y ganas.', en: 'Promote a pawn to a Knight and win.' }, story: { es: 'Cuando un peón llegue al final, corónalo como Caballo en vez de Dama, y gana la partida.', en: 'When a pawn reaches the last rank, promote it to a Knight instead of a Queen, and win the game.' } },
-      first_puzzle: { icon: '🎓', cat: 6, name: { es: 'Primer Puzzle', en: 'First Puzzle' }, desc: { es: 'Completa tu primer puzzle en la Librería de Entrenamiento.', en: 'Complete your first puzzle in the Training Library.' }, story: { es: 'Abre la Librería de Entrenamiento con el botón 🧩, elige cualquier puzzle y resuélvelo.', en: 'Open the Training Library with the 🧩 button, pick any puzzle, and solve it.' } },
-      keep_practicing: { icon: '🔁', cat: 6, name: { es: 'A Practicar', en: 'Keep Practicing' }, desc: { es: 'Completa 10 puzzles en total en la Librería de Entrenamiento.', en: 'Complete 10 puzzles total in the Training Library.' }, story: { es: 'Los 10 puzzles pueden ser de cualquier categoría — mezcla aperturas, mate en 1, mate en 2 y más.', en: 'The 10 puzzles can be from any category — mix openings, mate in 1, mate in 2, and more.' } },
+      first_puzzle: { icon: '🎓', cat: 6, name: { es: 'Primer Puzzle', en: 'First Puzzle' }, desc: { es: 'Completa tu primer puzzle en la Librería de Desafíos.', en: 'Complete your first puzzle in the Challenges Library.' }, story: { es: 'Abre la Librería de Desaf con el botón 🧩, elige cualquier puzzle y resuélvelo.', en: 'Open the Challenges Library with the 🧩 button, pick any puzzle, and solve it.' } },
+      keep_practicing: { icon: '🔁', cat: 6, name: { es: 'A Practicar', en: 'Keep Practicing' }, desc: { es: 'Completa 10 puzzles en total en la Librería de Desafíos.', en: 'Complete 10 puzzles total in the Challenges Library.' }, story: { es: 'Los 10 puzzles pueden ser de cualquier categoría — mezcla aperturas, mate en 1, mate en 2 y más.', en: 'The 10 puzzles can be from any category — mix openings, mate in 1, mate in 2, and more.' } },
       opening_student: { icon: '📖', cat: 6, name: { es: 'Estudiante de Aperturas', en: 'Opening Student' }, desc: { es: 'Usa "¿Qué hago?" 3 veces en la misma partida.', en: 'Use "What should I do?" 3 times in the same game.' }, story: { es: 'En una sola partida, pulsa el botón ¿Qué hago? tres veces para aprender qué jugadas recomienda el Profesor.', en: 'In a single game, press the "What should I do?" button three times to learn what moves the Coach recommends.' } },
       // Category 4 — The Historians (real-time, sacrifice required)
       secret_marshall_qg3: {
@@ -6061,13 +6061,13 @@ limitations under the License.
         diffEasy: 'Fácil', diffMedium: 'Medio', diffHard: 'Difícil', diffGrandmaster: 'Maestro',
         modeFriend: 'Amigo', modeVsAi: 'vs IA',
         mainTitle: '♟️ Airin', mainSubtitle: '¿Con quién juegas hoy?', mainSubtitleHello: '¡Hola, {name}! ¿Con quién juegas hoy?',
-        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnOptionsShort: 'Opciones', btnTraining: '🧩 Entrenamiento', btnTutorial: '📚 Tutorial', btnProfile: '🏆 Mi Perfil', btnHelp: '❓ Ayuda', btnHelpShort: 'Ayuda',
+        btn2p: '👫 2 Jugadores', btnVsAi: '🤖 vs IA', btnOptions: '⚙️ Opciones', btnOptionsShort: 'Opciones', btnTraining: '🧩 Desafíos', btnTutorial: '📚 Tutorial', btnProfile: '🏆 Mi Perfil', btnHelp: '❓ Ayuda', btnHelpShort: 'Ayuda',
         helpClose: 'Cerrar',
         helpT0: 'El Tablero', helpB0: '<ul><li>Toca una pieza para seleccionarla. Los puntos verdes muestran los movimientos legales.</li><li>Toca un punto verde para mover.</li><li>Gira el tablero con el botón 🔄 a la izquierda de la barra de historial de movimientos.</li><li>El rey parpadea en rojo cuando está en jaque.</li></ul>',
         helpT1: 'Niveles de IA', helpB1: '<ul><li>🐣 <b>Pollito</b> — comete errores a propósito. Ideal para aprender.</li><li>🧠 <b>Estudiante</b> — juega decente pero tiene fallos.</li><li>🧙‍♂️ <b>Mago</b> — juega bien, sin errores graves (~1650 ELO, hasta 15 s por jugada).</li><li>👑 <b>Rey Sabio</b> — nivel máximo (~1830 ELO, hasta 30 s por jugada).</li></ul>',
         helpT2: 'El Profesor', helpB2: '<ul><li>🔍 <b>Análisis</b> — evalúa la posición actual y dice si vas ganando o perdiendo.</li><li>🎯 <b>¿Qué hago?</b> — sugiere los mejores movimientos para ti.</li><li>💡 <b>¿Fue buena?</b> — analiza tu último movimiento y avisa si hubo un error o una mejor jugada.</li></ul>',
         helpT3: 'Ojo Halcón', helpB3: '<ul><li>El botón 👁️ <b>Ojo Halcón</b> en el Profesor dibuja flechas en el tablero mostrando amenazas y movimientos clave de la posición actual.</li><li>Úsalo en cualquier momento de la partida para ver qué piezas están en peligro.</li><li>Usa las flechas ◀▶ en la barra de movimientos para revisar la partida jugada a jugada y pulsa 🚀 para volver a la posición actual.</li></ul>',
-        helpT4: 'Entrenamiento', helpB4: '<ul><li>64 puzzles organizados por dificultad: aperturas, mate en 1, 2, 3 y 4.</li><li>El Profesor te da una pista específica para cada puzzle.</li><li>Completa puzzles para desbloquear el trofeo 🧘 <b>Maestro FEN</b>.</li><li>Accede desde el menú principal con el botón 🧩 Entrenamiento.</li></ul>',
+        helpT4: 'Desafíos', helpB4: '<ul><li>64 puzzles organizados por dificultad: aperturas, mate en 1, 2, 3 y 4.</li><li>El Profesor te da una pista específica para cada puzzle.</li><li>Completa puzzles para desbloquear el trofeo 🧘 <b>Maestro FEN</b>.</li><li>Accede desde el menú principal con el botón 🧩 Desafíos.</li></ul>',
         helpT5: 'Trofeos', helpB5: '<ul><li>Hay <b>64 trofeos</b> en total, organizados por categorías.</li><li>Se desbloquean automáticamente al conseguir logros durante las partidas.</li><li>Algunos son secretos — ¡descúbrelos jugando!</li><li>Consulta tu colección en 🏆 <b>Mi Perfil</b>.</li></ul>',
         helpT6: 'Exportar partida', helpB6: '<ul><li>📋 <b>Copiar PGN</b> — copia los movimientos en formato estándar para analizar en otras aplicaciones.</li><li>♟ <b>Copiar FEN</b> — copia la posición actual del tablero como código FEN.</li><li>Ambos botones están en la barra de historial de movimientos.</li></ul>',
         helpT7: 'Tu Perfil', helpB7: '<ul><li>Crea un perfil para guardar tus trofeos, estadísticas y partidas.</li><li>💾 <b>Guardar</b> descarga un archivo con todo tu progreso.</li><li>📂 <b>Cargar</b> restaura tu perfil en cualquier dispositivo.</li><li>Puedes tener varios perfiles para jugar con distintas personas.</li></ul>',
@@ -6179,13 +6179,13 @@ limitations under the License.
         diffEasy: 'Easy', diffMedium: 'Medium', diffHard: 'Hard', diffGrandmaster: 'Master',
         modeFriend: 'Friend', modeVsAi: 'vs AI',
         mainTitle: '♟️ Airin', mainSubtitle: 'Who are you playing with today?', mainSubtitleHello: 'Hello, {name}! Who are you playing with today?',
-        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnOptionsShort: 'Options', btnTraining: '🧩 Training', btnTutorial: '📚 Tutorial', btnProfile: '🏆 My Profile', btnHelp: '❓ Help', btnHelpShort: 'Help',
+        btn2p: '👫 2 Players', btnVsAi: '🤖 vs AI', btnOptions: '⚙️ Options', btnOptionsShort: 'Options', btnTraining: '🧩 Challenges', btnTutorial: '📚 Tutorial', btnProfile: '🏆 My Profile', btnHelp: '❓ Help', btnHelpShort: 'Help',
         helpClose: 'Close',
         helpT0: 'The Board', helpB0: '<ul><li>Tap a piece to select it. Green dots show legal moves.</li><li>Tap a green dot to move there.</li><li>Flip the board with the 🔄 button on the left of the move history bar.</li><li>The king flashes red when in check.</li></ul>',
         helpT1: 'AI Levels', helpB1: '<ul><li>🐣 <b>Chick</b> — makes deliberate mistakes. Great for learning.</li><li>🧠 <b>Student</b> — plays decently but has weak spots.</li><li>🧙‍♂️ <b>Mage</b> — plays well with no big blunders (~1650 ELO, up to 15 s per move).</li><li>👑 <b>Wise King</b> — maximum difficulty (~1830 ELO, up to 30 s per move).</li></ul>',
         helpT2: 'The Coach', helpB2: '<ul><li>🔍 <b>Analysis</b> — evaluates the current position and tells you who is winning.</li><li>🎯 <b>What should I do?</b> — suggests the best moves available to you.</li><li>💡 <b>Was it good?</b> — reviews your last move and warns if there was a mistake or a better option.</li></ul>',
         helpT3: "Hawk's Eye", helpB3: '<ul><li>The 👁️ <b>Hawk\'s Eye</b> button in the Coach draws arrows on the board showing threats and key moves in the current position.</li><li>Use it at any point during the game to spot which pieces are in danger.</li><li>Use the ◀▶ arrows in the move bar to replay the game move by move, and press 🚀 to jump back to the current position.</li></ul>',
-        helpT4: 'Training Library', helpB4: '<ul><li>64 puzzles sorted by difficulty: openings, mate in 1, 2, 3, and 4.</li><li>The Coach gives a specific hint for each puzzle.</li><li>Complete puzzles to unlock the 🧘 <b>FEN Master</b> trophy.</li><li>Access it from the main menu with the 🧩 Training button.</li></ul>',
+        helpT4: 'Training Library', helpB4: '<ul><li>64 puzzles sorted by difficulty: openings, mate in 1, 2, 3, and 4.</li><li>The Coach gives a specific hint for each puzzle.</li><li>Complete puzzles to unlock the 🧘 <b>FEN Master</b> trophy.</li><li>Access it from the main menu with the 🧩 Challenges button.</li></ul>',
         helpT5: 'Trophies', helpB5: '<ul><li>There are <b>64 trophies</b> in total, organized by category.</li><li>They unlock automatically as you achieve things during games.</li><li>Some are secret — discover them by playing!</li><li>Check your collection in 🏆 <b>My Profile</b>.</li></ul>',
         helpT6: 'Export Game', helpB6: '<ul><li>📋 <b>Copy PGN</b> — copies the moves in standard format to analyze in other apps.</li><li>♟ <b>Copy FEN</b> — copies the current board position as a FEN code.</li><li>Both buttons are in the move history bar.</li></ul>',
         helpT7: 'Your Profile', helpB7: '<ul><li>Create a profile to save your trophies, stats, and games.</li><li>💾 <b>Save</b> downloads a file with all your progress.</li><li>📂 <b>Load</b> restores your profile on any device.</li><li>You can have multiple profiles for different players.</li></ul>',
@@ -6951,7 +6951,7 @@ limitations under the License.
     // ── Init ─────────────────────────────────
     function init() {
 
-      console.log("%c♟️ Airin v2.25.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
+      console.log("%c♟️ Airin v2.26.0", "color: #a855f7; font-size: 20px; font-weight: bold;");
       console.log("© 2026 Aaron Vazquez Fraga. Licensed under Apache 2.0");
       console.log("Full license: http://www.apache.org/licenses/LICENSE-2.0");
       fenPositionLoaded = false; // normal game start
@@ -8048,13 +8048,12 @@ limitations under the License.
               } else {
                 puzzleMode = null;
               }
-              if (!isMateChallenge) {
-                const _tutorialDelay = lastLoadedChallengeItem?.isTutorial ? 2000 : 600;
+              const _tutorialDelay = lastLoadedChallengeItem?.isTutorial ? 800 : 600;
                 setTimeout(() => {
-                  // Tutorial lessons get their own completion modal with next/choose buttons
+                  // Tutorial lessons: show completion modal (handles stages vs chapters)
                   if (lastLoadedChallengeItem?.isTutorial && _activeTutorialLesson) {
                     const { lesson, chapter, lessonIdx, chapterIdx } = _activeTutorialLesson;
-                    showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx);
+                    showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx, _activeTutorialStageIdx);
                     return;
                   }
                   const customMsg = lastLoadedChallengeItem && (en ? lastLoadedChallengeItem.completionMsgEn : lastLoadedChallengeItem.completionMsgEs);
@@ -8068,7 +8067,6 @@ limitations under the License.
                     );
                   }
                 }, _tutorialDelay);
-              }
               // For mate puzzles, checkGameOver() inside makeMove() will show the checkmate modal
             }
           }
@@ -8811,7 +8809,7 @@ limitations under the License.
           const total = FEN_LIBRARY.length;
           const pct = total > 0 ? Math.round(completed / total * 100) : 0;
           return `<div>
-            <div class="profile-section-title">🧩 ${L === 'en' ? 'Training' : 'Entrenamiento'}</div>
+            <div class="profile-section-title">🧩 ${L === 'en' ? 'Training' : 'Desafíos'}</div>
             <div class="trophy-progress-wrap">
               <div class="trophy-progress-bar" style="width:${pct}%"></div>
             </div>
@@ -20892,7 +20890,7 @@ limitations under the License.
             id: 'pawn_hunt',
             nameEs: '3. ¡A cazar piezas!',
             nameEn: '3. Piece Hunt!',
-            descEs: '¡Tu peón es un cazador! Hay un caballo, un alfil y una torre enemigos en diagonal. Captúralos a todos en zigzag — izquierda, derecha, izquierda.',
+            descEs: '¡Tu peón es un cazador! Hay un caballo, un alfil y una torre enemigos en diagonal. Captúralos todos en zigzag — izquierda, derecha, izquierda.',
             descEn: 'Your pawn is a hunter! There\'s an enemy knight, bishop and rook lined up diagonally. Capture them all in a zigzag — left, right, left.',
             fen: '8/8/8/2r5/3b4/2n5/3P4/8 w - - 0 1',
             solution: ['d2c3', 'c3d4', 'd4c5'],
@@ -21050,6 +21048,9 @@ limitations under the License.
             fen: '5q2/8/7r/8/8/n7/8/2B5 w - - 0 1',
             solution: ['c1a3', 'a3f8', 'f8h6'],
             humanSteps: 3,
+            tutorialHighlights: {
+              arrows: [{ fr: 7, fc: 2, tr: 5, tc: 0, type: 'good' }, { fr: 5, fc: 0, tr: 0, tc: 5, type: 'good' }, { fr: 0, fc: 5, tr: 2, tc: 7, type: 'good' }]
+            },
             completionMsgEs: '¡Qué puntería!\n\nHas cruzado el tablero tres veces. El alfil es muy poderoso en posiciones abiertas donde no hay peones estorbando.',
             completionMsgEn: 'What a shot!\n\nYou crossed the board three times. The bishop is very powerful in open positions where no pawns are in the way.',
           },
@@ -21064,6 +21065,9 @@ limitations under the License.
             fen: '8/r7/7n/8/8/8/5B2/2B5 w - - 0 1',
             solution: ['c1h6', 'f2a7'],
             humanSteps: 2,
+            tutorialHighlights: {
+              arrows: [{ fr: 7, fc: 2, tr: 2, tc: 7, type: 'good' }, { fr: 6, fc: 5, tr: 1, tc: 0, type: 'good' }]
+            },
             completionMsgEs: '¡Dominio total!\n\nAl cruzar sus caminos, tus alfiles han demostrado que no hay rincón del tablero que esté a salvo. ¡Esta es la verdadera fuerza de la pareja de alfiles!',
             completionMsgEn: 'Total dominance!\n\nBy crossing their paths, your bishops have shown that no corner of the board is safe. This is the true strength of the bishop pair!',
           },
@@ -21086,6 +21090,7 @@ limitations under the License.
             fen: '8/8/8/8/8/8/8/3R4 w - - 0 1',
             solution: ['d1d8'],
             humanSteps: 1,
+            tutorialHighlights: { arrows: [{ fr: 7, fc: 3, tr: 0, tc: 3, type: 'good' }] },
             completionMsgEs: '¡Excelente! Las torres son piezas de largo alcance que pueden cruzar todo el tablero de un golpe.',
             completionMsgEn: 'Excellent! Rooks are long-range pieces that can cross the entire board in one move.',
           },
@@ -21116,7 +21121,6 @@ limitations under the License.
           {
             id: 'rook_rank7',
             nameEs: '4. Incursión en la 7ª fila',
-            nameEn: '4. 7th Rank Intrusion',
             descEs: 'Una torre en la 7ª fila (donde están los peones rivales) es devastadora. ¡Captura los tres peones!',
             descEn: 'A rook on the 7th rank (where enemy pawns live) is devastating. Capture all three pawns!',
             fen: '8/ppp4k/8/8/8/8/8/R7 w - - 0 1',
@@ -21245,33 +21249,44 @@ limitations under the License.
             completionMsgEn: 'Congratulations! Your pawn is now a powerful Queen. Remember you can promote to a Queen, Rook, Bishop, or Knight.',
           },
           {
-            id: 'castling_short',
-            nameEs: '2. Enroque Corto',
-            nameEn: '2. Short Castling',
-            descEs: '¡El centro está abierto y tu flanco de dama está desprotegido! Enrócate corto de inmediato para esconderte tras el sólido escudo de peones de la derecha.',
-            descEn: 'The center is open and your queenside is unprotected! Castle short immediately to hide behind the solid pawn shield on the right.',
-            fen: 'r1bqk2r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/5PPP/R2QK2R w KQkq - 0 1',
-            solution: ['e1g1'],
-            humanSteps: 1,
-            completionMsgEs: '¡Bien hecho! Has elegido el lado seguro. El enroque corto te protege tras un escudo intacto.',
-            completionMsgEn: 'Well done! You chose the safe side. Short castling protects you behind an intact shield.',
-          },
-          {
-            id: 'castling_long',
-            nameEs: '3. Enroque Largo',
-            nameEn: '3. Long Castling',
-            descEs: '¡Tu flanco de rey está expuesto! Enrócate largo para buscar refugio tras el muro de peones de la izquierda, que es mucho más sólido.',
-            descEn: 'Your kingside is exposed! Castle long to seek refuge behind the queenside wall, which is much more solid.',
-            fen: 'r3kb1r/pppq1ppp/2n1bn2/3pp3/3PP3/2N1B3/PPP1Q3/R3K2R w KQkq - 0 1',
-            solution: ['e1c1'],
-            humanSteps: 1,
-            completionMsgEs: '¡Excelente! Has identificado el refugio más seguro. El enroque largo te ha puesto a salvo.',
-            completionMsgEn: 'Excellent! You identified the safer refuge. Long castling has moved you to safety.',
+            id: 'castling',
+            nameEs: '2. Enroque',
+            nameEn: '2. Castling',
+            descEs: 'Protege a tu Rey moviéndolo a una posición segura y activando tu torre al mismo tiempo.',
+            descEn: 'Protect your King by moving it to a safe position and activating your rook at the same time.',
+            stages: [
+              {
+                id: 'castling_short',
+                nameEs: 'Parte 1: Enroque Corto',
+                nameEn: 'Part 1: Short Castling',
+                descEs: '¡El centro está abierto y tu flanco de dama está desprotegido! Enrócate corto de inmediato para esconderte tras el sólido escudo de peones de la derecha.',
+                descEn: 'The center is open and your queenside is unprotected! Castle short immediately to hide behind the solid pawn shield on the right.',
+                fen: 'r1bqk2r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/5PPP/R2QK2R w KQkq - 0 1',
+                solution: ['e1g1'],
+                humanSteps: 1,
+                completionMsgEs: '¡Bien hecho! Al enrocar corto, has puesto a tu Rey a salvo tras un escudo de peones intacto y has conectado tus torres. Es la forma más rápida de asegurar tu posición.',
+                completionMsgEn: 'Well done! By castling short, you have tucked your King away behind an intact pawn shield and connected your rooks. It is the fastest way to secure your position.',
+              },
+              {
+                id: 'castling_long',
+                nameEs: 'Parte 2: Enroque Largo',
+                nameEn: 'Part 2: Long Castling',
+                descEs: '¡Tu flanco de rey está expuesto! Enrócate largo para buscar refugio tras el muro de peones de la izquierda, que es mucho más sólido.',
+                descEn: 'Your kingside is exposed! Castle long to seek refuge behind the queenside wall, which is much more solid.',
+                fen: 'r3kb1r/pppq1ppp/2n1bn2/3pp3/3PP3/2N1B3/PPP1Q3/R3K2R w KQkq - 0 1',
+                solution: ['e1c1'],
+                humanSteps: 1,
+                completionMsgEs: '¡Excelente! El enroque largo a veces es más arriesgado, pero aquí era necesario para evitar el peligro en el otro flanco. ¡Ahora tu torre de "d" ya está atacando el centro!',
+                completionMsgEn: 'Excellent! Long castling is sometimes riskier, but here it was necessary to avoid danger on the other flank. Now your "d" rook is already attacking the center!',
+              }
+            ],
+            completionMsgEs: '¡Maestría en el enroque! Has aprendido a proteger a tu Rey en ambos flancos. Recuerda: un Rey en el centro es un Rey en peligro.',
+            completionMsgEn: 'Castling mastery! You have learned to protect your King on both flanks. Remember: a King in the center is a King in danger.',
           },
           {
             id: 'en_passant',
-            nameEs: '4. Al paso',
-            nameEn: '4. En passant',
+            nameEs: '3. Al paso',
+            nameEn: '3. En passant',
             menuDescEs: 'Captura un peón enemigo que avanzó dos casillas de golpe. ¡Solo en ese momento!',
             menuDescEn: 'Capture an enemy pawn that just advanced two squares. You must act immediately!',
             descEs: 'Regla especial: si un peón enemigo avanza 2 casillas y aterriza al lado del tuyo, puedes capturarlo "de paso" — como si solo hubiera avanzado 1. ¡Solo puedes hacerlo en ese mismo turno! El peón negro avanzará dos casillas hasta d5. Captura "al paso" moviendo tu peón de e5 a d6.',
@@ -21301,64 +21316,191 @@ limitations under the License.
         descEn: 'The final goal: learn how to attack the King and deliver the finishing blow.',
         chapters: [
           {
-            id: 'check_basic',
-            nameEs: '1. El Jaque',
-            nameEn: '1. The Check',
-            descEs: 'Dar jaque significa atacar al Rey enemigo. Mueve tu torre a la columna "e" para poner al Rey en peligro.',
-            descEn: 'Giving check means attacking the enemy King. Move your rook to the "e" file to put the King in danger.',
-            fen: '8/8/8/8/8/4k3/8/2R2K2 w - - 0 1',
-            solution: ['c1e1'],
-            humanSteps: 1,
-            completionMsgEs: '¡Jaque! Has obligado al Rey enemigo a reaccionar. Recuerda: ¡sin jaque no hay mate!',
-            completionMsgEn: 'Check! You\'ve forced the enemy King to react. Remember: no check, no mate!',
+            id: 'king_danger',
+            nameEs: '1. El Rey en Peligro',
+            nameEn: '1. The King in Danger',
+            descEs: 'Aprende a reconocer cuando tu Rey está amenazado y cómo reaccionar para salvar la partida.',
+            descEn: 'Learn to recognize when your King is threatened and how to react to save the game.',
+            stages: [
+              {
+                id: 'check_basic',
+                nameEs: '1. El Jaque',
+                nameEn: '1. The Check',
+                descEs: 'Dar jaque significa atacar al Rey enemigo. Mueve tu torre a la columna "e" para poner al Rey en peligro.',
+                descEn: 'Giving check means attacking the enemy King. Move your rook to the "e" file to put the King in danger.',
+                fen: '8/8/8/8/8/4k3/8/2R2K2 w - - 0 1',
+                solution: ['c1e1'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 7, fc: 2, tr: 5, tc: 4, type: 'good' }] },
+                completionMsgEs: '¡Jaque! Has lanzado una amenaza directa al Rey. En el ajedrez, si el Rey está en jaque, el rival está obligado a defenderlo antes de hacer cualquier otra cosa.',
+                completionMsgEn: 'Check! You have launched a direct threat at the King. In chess, if the King is in check, the opponent is forced to defend it before doing anything else.',
+              },
+              {
+                id: 'check_escape',
+                nameEs: '2. Escapar del Jaque',
+                nameEn: '2. Escaping Check',
+                descEs: '¡Tu Rey está bajo ataque! Cuando recibes un jaque, debes reaccionar de inmediato. Mueve a tu Rey a una casilla segura.',
+                descEn: 'Your King is under attack! When you receive a check, you must react immediately. Move your King to a safe square.',
+                fen: '8/4r3/8/8/8/4K3/8/8 w - - 0 1',
+                solution: ['e3d3', 'e3f3', 'e3d2', 'e3e2', 'e3f2', 'e3d4', 'e3f4'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 5, fc: 4, tr: 5, tc: 3, type: 'good' }] },
+                completionMsgEs: '¡A salvo! Recuerda que tienes tres formas de escapar de un jaque: mover al Rey, bloquear el ataque con otra pieza, o capturar la pieza que te ataca.',
+                completionMsgEn: 'Safe! Remember there are three ways to escape a check: move the King, block the attack with another piece, or capture the piece attacking you.',
+              },
+              {
+                id: 'check_capture',
+                nameEs: '3. Capturar al Atacante',
+                nameEn: '3. Capture the Attacker',
+                descEs: '¡Un alfil enemigo te está dando jaque! A veces, la mejor defensa es el ataque. Captura la pieza que te amenaza.',
+                descEn: 'An enemy bishop is checking you! Sometimes the best defense is an attack. Capture the piece that threatens you.',
+                fen: '8/8/8/8/8/4k3/4b3/4R1K1 w - - 0 1',
+                solution: ['e1e2'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 7, fc: 4, tr: 6, tc: 4, type: 'good' }] },
+                completionMsgEs: '¡Problema resuelto! Al capturar al atacante, eliminas el jaque y ganas una pieza. ¡Es la forma más contundente de defenderse!',
+                completionMsgEn: 'Problem solved! By capturing the attacker, you remove the check and win a piece. It is the most decisive way to defend!',
+              },
+              {
+                id: 'check_block',
+                nameEs: '4. Bloquear el Jaque',
+                nameEn: '4. Block the Check',
+                descEs: '¡Una torre enemiga te ataca desde lejos! Si no puedes mover al Rey o capturar la pieza, intenta interponer una de tus piezas en el camino.',
+                descEn: 'An enemy rook is attacking you from afar! If you cannot move the King or capture the piece, try to interpose one of your pieces in its path.',
+                fen: '4r3/8/8/8/8/8/8/4K1B1 w - - 0 1',
+                solution: ['g1e3'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 7, fc: 6, tr: 5, tc: 4, type: 'good' }] },
+                completionMsgEs: '¡Bloqueo perfecto! Al poner tu alfil en medio, el Rey ya no está en peligro. Esta técnica es vital cuando el Rey no tiene casillas de escape.',
+                completionMsgEn: 'Perfect block! By putting your bishop in the middle, the King is no longer in danger. This technique is vital when the King has no escape squares.',
+              },
+              {
+                id: 'check_double',
+                nameEs: '5. El Doble Jaque',
+                nameEn: '5. The Double Check',
+                descEs: '¡Peligro extremo! Dos piezas te atacan a la vez. En un jaque doble, NO puedes capturar ni bloquear; ¡la ÚNICA opción es mover al Rey!',
+                descEn: 'Extreme danger! Two pieces are attacking you at once. In a double check, you CANNOT capture or block; the ONLY option is to move the King!',
+                fen: '8/8/8/8/8/1n6/r7/K7 w - - 0 1',
+                solution: ['a1b1'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 7, fc: 0, tr: 7, tc: 1, type: 'good' }] },
+                completionMsgEs: '¡Sobreviviste! El jaque doble es una de las armas más temibles. Como no puedes eliminar ambas amenazas a la vez, el Rey debe huir sí o sí.',
+                completionMsgEn: 'You survived! Double check is one of the most fearsome weapons. Since you cannot remove both threats at once, the King must flee no matter what.',
+              }
+            ],
+            completionMsgEs: '¡Maestría en defensa! Ahora ya conoces todas las formas de escapar de un jaque: mover el Rey, bloquear o capturar. ¡Estás listo para cualquier ataque!',
+            completionMsgEn: 'Defense mastery! Now you know all the ways to escape a check: move the King, block, or capture. You are ready for any attack!',
           },
           {
-            id: 'check_escape',
-            nameEs: '2. Escapar del Jaque',
-            nameEn: '2. Escaping Check',
-            descEs: '¡Tu Rey está bajo ataque! Cuando recibes un jaque, debes reaccionar de inmediato. Mueve a tu Rey a una casilla segura.',
-            descEn: 'Your King is under attack! When you receive a check, you must react immediately. Move your King to a safe square.',
-            fen: '8/4r3/8/8/8/4K3/8/8 w - - 0 1',
-            solution: ['e3d3', 'e3f3', 'e3d2', 'e3e2', 'e3f2', 'e3d4', 'e3f4'],
-            humanSteps: 1,
-            completionMsgEs: '¡A salvo! Siempre que tu Rey esté en jaque, tu única prioridad es protegerlo.',
-            completionMsgEn: 'Safe! Whenever your King is in check, your only priority is to protect him.',
+            id: 'special_checks',
+            nameEs: '2. Ataques Especiales',
+            nameEn: '2. Special Attacks',
+            descEs: 'Aprende tácticas avanzadas como el jaque al descubierto para sorprender a tu rival.',
+            descEn: 'Learn advanced tactics like discovered checks to surprise your opponent.',
+            stages: [
+              {
+                id: 'discovered_check',
+                nameEs: 'Jaque al Descubierto',
+                nameEn: 'Discovered Check',
+                descEs: '¡Ataque sorpresa! Tu torre está "escondida" detrás de tu alfil. Mueve el alfil a un lado para desatar el ataque de la torre sobre el Rey enemigo.',
+                descEn: 'Surprise attack! Your rook is "hidden" behind your bishop. Move the bishop aside to unleash the rook\'s attack on the enemy King.',
+                fen: 'k7/8/8/8/8/8/1B6/1R5K w - - 0 1',
+                solution: ['b2a3', 'b2c3', 'b2d4', 'b2e5', 'b2f6', 'b2g7', 'b2h8', 'b2a1'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 6, fc: 1, tr: 5, tc: 2, type: 'good' }] },
+                completionMsgEs: '¡Impactante! El alfil se movió y la torre dio el jaque. Esta táctica es muy peligrosa porque el alfil podría capturar algo mientras la torre da el jaque.',
+                completionMsgEn: 'Stunning! The bishop moved and the rook delivered the check. This tactic is very dangerous because the bishop could capture something while the rook gives check.',
+              }
+            ],
+            completionMsgEs: '¡Dominas las tácticas de jaque! El jaque al descubierto y el doble jaque son herramientas clave para cualquier estratega.',
+            completionMsgEn: 'You master the check tactics! Discovered check and double check are key tools for any strategist.',
           },
           {
-            id: 'mate_basic',
-            nameEs: '3. Jaque Mate',
-            nameEn: '3. Checkmate',
-            descEs: 'El Jaque Mate ocurre cuando el Rey está en jaque y no tiene escapatoria. Usa tu Dama para dar el golpe final en la octava fila.',
-            descEn: 'Checkmate happens when the King is in check and has no escape. Use your Queen to deliver the final blow on the 8th rank.',
-            fen: 'k7/2Q5/1K6/8/8/8/8/8 w - - 0 1',
-            solution: ['c7c8'],
-            humanSteps: 1,
-            completionMsgEs: '¡Jaque Mate! El juego ha terminado y has ganado. El Rey no tiene casillas seguras y nadie puede defenderlo.',
-            completionMsgEn: 'Checkmate! The game is over and you have won. The King has no safe squares and no one can defend him.',
+            id: 'mastering_mate',
+            nameEs: '3. El Golpe de Gracia',
+            nameEn: '3. The Finishing Blow',
+            descEs: 'Domina los patrones de mate fundamentales para sentenciar tus partidas con elegancia.',
+            descEn: 'Master the fundamental checkmate patterns to end your games with style.',
+            stages: [
+              {
+                id: 'mate_basic',
+                nameEs: 'Jaque Mate Básico',
+                nameEn: 'Basic Checkmate',
+                descEs: 'El Jaque Mate ocurre cuando el Rey está en jaque y no tiene escapatoria. Usa tu Dama para dar el golpe final en la octava fila.',
+                descEn: 'Checkmate happens when the King is in check and has no escape. Use your Queen to deliver the final blow on the 8th rank.',
+                fen: 'k7/2Q5/1K6/8/8/8/8/8 w - - 0 1',
+                solution: ['c7c8'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 1, fc: 2, tr: 0, tc: 2, type: 'good' }] },
+                completionMsgEs: '¡Jaque Mate! La Dama está tan cerca que el Rey no puede escapar, y tu propio Rey la protege desde b6. ¡Es el fin de la partida!',
+                completionMsgEn: 'Checkmate! The Queen is so close that the King cannot escape, and your own King protects her from b6. It is game over!',
+              },
+              {
+                id: 'mate_backrank',
+                nameEs: 'Mate del Pasillo',
+                nameEn: 'Back-Rank Mate',
+                descEs: '¡Cuidado con el muro! Los propios peones del Rey a veces le impiden escapar. Lleva tu torre al fondo para dar un mate clásico.',
+                descEn: 'Watch out for the wall! The King\'s own pawns sometimes prevent him from escaping. Lead your rook to the back for a classic mate.',
+                fen: '6k1/5ppp/8/8/8/8/8/3R2K1 w - - 0 1',
+                solution: ['d1d8'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 7, fc: 3, tr: 0, tc: 3, type: 'good' }] },
+                completionMsgEs: '¡Mate del pasillo! Los peones negros, que deberían proteger al Rey, se han convertido en una trampa al bloquearle la salida. ¡Asegúrate de que no le pase a tu Rey!',
+                completionMsgEn: 'Back-rank mate! The black pawns, which should protect the King, became a trap by blocking his exit. Make sure it doesn\'t happen to your King!',
+              },
+              {
+                id: 'mate_in_2',
+                nameEs: 'La Escalera Mortal',
+                nameEn: 'The Deadly Ladder',
+                descEs: '¡Ataque coordinado! Dos torres y el Rey trabajando juntos. Primero, usa tu torre de "e" para empujar al Rey a la banda, y luego remata con la otra torre.',
+                descEn: 'Coordinated attack! Two rooks and the King working together. First, use your "e" rook to push the King to the edge, then finish him off with the other rook.',
+                fen: 'k7/8/2K5/8/8/8/8/1R2R3 w - - 0 1',
+                solution: ['e1e8', 'a8a7', 'b1a1'],
+                humanSteps: 2,
+                tutorialHighlights: { arrows: [{ fr: 7, fc: 4, tr: 0, tc: 4, type: 'good' }] },
+                completionMsgEs: '¡Excelente coordinación! Has usado las torres como una escalera, alternando sus ataques para quitarle al Rey cada fila de escape. ¡Un patrón esencial!',
+                completionMsgEn: 'Excellent coordination! You used the rooks like a ladder, alternating their attacks to take away every escape rank from the King. An essential pattern!',
+              }
+            ],
+            completionMsgEs: '¡Eres un estratega nato! Has dominado los patrones de mate más importantes. ¡El tablero es tuyo!',
+            completionMsgEn: 'You are a natural strategist! You have mastered the most important mate patterns. The board is yours!',
           },
           {
-            id: 'mate_backrank',
-            nameEs: '4. Mate del Pasillo',
-            nameEn: '4. Back-Rank Mate',
-            descEs: '¡Cuidado con el muro! Los propios peones del Rey a veces le impiden escapar. Lleva tu torre al fondo para dar un mate clásico.',
-            descEn: 'Watch out for the wall! The King\'s own pawns sometimes prevent him from escaping. Lead your rook to the back for a classic mate.',
-            fen: '6k1/5ppp/8/8/8/8/8/3R2K1 w - - 0 1',
-            solution: ['d1d8'],
-            humanSteps: 1,
-            completionMsgEs: '¡Mate del pasillo! Este es uno de los mates más comunes. ¡Nunca olvides dejar un "aire" para tu propio Rey!',
-            completionMsgEn: 'Back-rank mate! This is one of the most common mates. Never forget to create some "air" for your own King!',
-          },
-          {
-            id: 'mate_in_2',
-            nameEs: '5. La Escalera Mortal',
-            nameEn: '5. The Deadly Ladder',
-            descEs: '¡Ataque coordinado! Dos torres y el Rey trabajando juntos. Primero, usa tu torre de "e" para empujar al Rey a la banda, y luego remata con la otra torre.',
-            descEn: 'Coordinated attack! Two rooks and the King working together. First, use your "e" rook to push the King to the edge, then finish him off with the other rook.',
-            fen: 'k7/8/2K5/8/8/8/8/1R2R3 w - - 0 1',
-            solution: ['e1e8', 'a8a7', 'b1a1'],
-            humanSteps: 2,
-            completionMsgEs: '¡Impecable! Has usado tus torres en tándem para acorralar al Rey. ¡Esta técnica es fundamental para ganar finales!',
-            completionMsgEn: 'Flawless! You used your rooks in tandem to corner the King. This technique is fundamental for winning endgames!',
+            id: 'stalemate',
+            nameEs: '4. El Ahogado (Stalemate)',
+            nameEn: '4. Stalemate',
+            descEs: 'Aprende cuándo una victoria clara puede convertirse en un empate inesperado.',
+            descEn: 'Learn when a clear victory can turn into an unexpected draw.',
+            stages: [
+              {
+                id: 'stalemate_avoid',
+                nameEs: 'Evitar el Ahogado',
+                nameEn: 'Avoiding Stalemate',
+                descEs: '¡Cuidado! Si dejas al Rey enemigo sin movimientos legales pero NO le estás dando jaque, la partida termina en empate (ahogado). ¡No dejes escapar la victoria! Da el jaque mate en la octava fila.',
+                descEn: 'Watch out! If you leave the enemy King without legal moves but you are NOT giving check, the game ends in a draw (stalemate). Don\'t let victory slip away! Deliver the checkmate on the 8th rank.',
+                fen: 'k7/8/1K6/2Q5/8/8/8/8 w - - 0 1',
+                solution: ['c5c8'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 3, fc: 2, tr: 0, tc: 2, type: 'good' }] },
+                completionMsgEs: '¡Excelente! Si hubieras movido la dama a c7, el Rey negro no tendría escapatoria pero tampoco estaría en jaque: ¡empate por ahogado! Siempre deja un "respiro" al Rey si no hay jaque.',
+                completionMsgEn: 'Excellent! If you had moved the queen to c7, the black King would have no escape but wouldn\'t be in check: stalemate! Always leave the King some "room to breathe" if there is no check.',
+              },
+              {
+                id: 'stalemate_rescue',
+                nameEs: 'El Recurso del Ahogado',
+                nameEn: 'The Stalemate Rescue',
+                descEs: '¡Estás a punto de perder! Pero si logras que el rival te capture tu última pieza móvil mientras tu Rey está atrapado, ¡conseguirás un empate milagroso! Ataca al Rey blanco con tu torre en a6.',
+                descEn: 'You are about to lose! But if you manage to make your opponent capture your last mobile piece while your King is trapped, you will get a miraculous draw! Attack the white King with your rook on a6.',
+                fen: 'k7/2Q5/1K6/8/8/8/8/r7 b - - 0 1',
+                solution: ['a1a6'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 7, fc: 0, tr: 2, tc: 0, type: 'good' }] },
+                completionMsgEs: '¡Increíble! Tras Ra6+, el blanco está obligado a capturar con Kxa6. En ese momento, tu Rey no tiene movimientos legales y no está en jaque: ¡EMPATE! Has salvado medio punto.',
+                completionMsgEn: 'Incredible! After Ra6+, White is forced to capture with Kxa6. At that point, your King has no legal moves and is not in check: DRAW! You saved half a point.',
+              }
+            ],
+            completionMsgEs: '¡Conoces el poder del ahogado! Úsalo para evitar errores cuando ganas y para salvarte cuando pierdes.',
+            completionMsgEn: 'You know the power of stalemate! Use it to avoid mistakes when winning and to save yourself when losing.',
           },
         ],
       },
@@ -21367,6 +21509,7 @@ limitations under the License.
     var _activeTutorialLessonIdx = 0; // which lesson tab is selected in the tutorial modal
     var _pendingTutorialLesson = null;  // chapter object waiting to start
     var _activeTutorialLesson = null;   // {lesson, chapter, lessonIdx, chapterIdx} of the running chapter
+    var _activeTutorialStageIdx = 0;    // current stage index for multi-stage chapters
     var _nextTutorialChapter = null;    // {lesson, chapter} of the next chapter, if any
 
     function _setTutorialButtonsBlocked(blocked) {
@@ -21384,29 +21527,52 @@ limitations under the License.
       });
     }
 
-    function showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx) {
+    function showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx, stageIdx = null) {
       _setTutorialButtonsBlocked(false);
       const en = currentLanguage === 'en';
-      const msg = en ? chapter.completionMsgEn : chapter.completionMsgEs;
-      const name = en ? chapter.nameEn : chapter.nameEs;
+      
+      const isMultiStage = chapter.stages && chapter.stages.length > 1;
+      const hasNextStage = isMultiStage && (stageIdx !== null) && (stageIdx + 1 < chapter.stages.length);
+      
+      let msg = '';
+      let titleName = '';
+      
+      if (hasNextStage) {
+        const currentStage = chapter.stages[stageIdx];
+        msg = en ? (currentStage.completionMsgEn || 'Great! Ready for the next part?') : (currentStage.completionMsgEs || '¡Genial! ¿Listo para la siguiente parte?');
+        titleName = en ? currentStage.nameEn : currentStage.nameEs;
+      } else {
+        msg = en ? chapter.completionMsgEn : chapter.completionMsgEs;
+        titleName = en ? chapter.nameEn : chapter.nameEs;
+      }
 
-      document.getElementById('tutorialCompleteTitle').textContent = '✅ ' + name;
+      document.getElementById('tutorialCompleteTitle').textContent = '✅ ' + titleName;
       document.getElementById('tutorialCompleteMsg').innerHTML = msg ? msg.replace(/\n/g, '<br>') : '';
 
-      // Determine next chapter
-      const currentLesson = TUTORIAL_LESSONS[lessonIdx];
+      // Determine next action
       _nextTutorialChapter = null;
       const btnNext = document.getElementById('btnTutorialNext');
-      if (chapterIdx + 1 < currentLesson.chapters.length) {
-        _nextTutorialChapter = { lesson: currentLesson, chapter: currentLesson.chapters[chapterIdx + 1] };
-        const nextName = en ? currentLesson.chapters[chapterIdx + 1].nameEn : currentLesson.chapters[chapterIdx + 1].nameEs;
+      
+      if (hasNextStage) {
+        const nextStage = chapter.stages[stageIdx + 1];
+        const nextName = en ? nextStage.nameEn : nextStage.nameEs;
         btnNext.textContent = '▶ ' + nextName;
+        btnNext.onclick = () => startNextTutorialStage();
+        btnNext.style.display = '';
+      } else if (chapterIdx + 1 < lesson.chapters.length) {
+        const nextCh = lesson.chapters[chapterIdx + 1];
+        _nextTutorialChapter = { lesson: lesson, chapter: nextCh };
+        const nextName = en ? nextCh.nameEn : nextCh.nameEs;
+        btnNext.textContent = '▶ ' + nextName;
+        btnNext.onclick = () => startNextTutorialLesson();
         btnNext.style.display = '';
       } else if (lessonIdx + 1 < TUTORIAL_LESSONS.length) {
         const nextLesson = TUTORIAL_LESSONS[lessonIdx + 1];
-        _nextTutorialChapter = { lesson: nextLesson, chapter: nextLesson.chapters[0] };
-        const nextName = en ? nextLesson.chapters[0].nameEn : nextLesson.chapters[0].nameEs;
+        const nextCh = nextLesson.chapters[0];
+        _nextTutorialChapter = { lesson: nextLesson, chapter: nextCh };
+        const nextName = en ? nextCh.nameEn : nextCh.nameEs;
         btnNext.textContent = '▶ ' + nextName;
+        btnNext.onclick = () => startNextTutorialLesson();
         btnNext.style.display = '';
       } else {
         btnNext.style.display = 'none';
@@ -21427,6 +21593,52 @@ limitations under the License.
       const { lesson, chapter } = _nextTutorialChapter;
       _nextTutorialChapter = null;
       showTutorialLessonModal(lesson, chapter);
+    }
+
+    function startNextTutorialStage() {
+      closeTutorialCompleteModal();
+      if (!_activeTutorialLesson) return;
+      const { lesson, chapter, lessonIdx, chapterIdx } = _activeTutorialLesson;
+      const en = currentLanguage === 'en';
+
+      if (chapter.stages && _activeTutorialStageIdx + 1 < chapter.stages.length) {
+        _activeTutorialStageIdx++;
+        const nextStage = chapter.stages[_activeTutorialStageIdx];
+        
+        // Reload board with next stage
+        document.getElementById('fenInput').value = nextStage.fen;
+        loadPositionFromFEN();
+        if (nextStage.solution && nextStage.solution.length > 0) {
+          puzzleMode = { solution: nextStage.solution, step: 0, humanSteps: nextStage.humanSteps ?? null };
+        }
+        lastLoadedPuzzleMode = puzzleMode ? { solution: [...puzzleMode.solution], step: 0, humanSteps: puzzleMode.humanSteps } : null;
+        
+        // Update UI
+        _setTutorialButtonsBlocked(true);
+        _pinTutorialDesc(nextStage, chapter);
+        
+        // Update challenge metadata for highlights
+        if (lastLoadedChallengeItem) {
+          lastLoadedChallengeItem.fen = nextStage.fen;
+          lastLoadedChallengeItem.solution = nextStage.solution;
+          lastLoadedChallengeItem.humanSteps = nextStage.humanSteps;
+          lastLoadedChallengeItem.tutorialHighlights = nextStage.tutorialHighlights ?? null;
+          lastLoadedChallengeItem.anyOrder = nextStage.anyOrder ?? false;
+        }
+        
+        drawTutorialHighlights();
+
+        // Kick off AI if needed
+        if (puzzleMode && puzzleMode.solution.length > 0) {
+          const firstUci = puzzleMode.solution[0];
+          const firstSide = uciToMoveObj(firstUci);
+          const firstIsAI = firstSide && board[firstSide.fr] && colorOf(board[firstSide.fr][firstSide.fc]) !== playerColor;
+          if (firstIsAI) {
+            turn = playerColor === 'w' ? 'b' : 'w';
+            setTimeout(() => triggerAI(), 800);
+          }
+        }
+      }
     }
 
     function openTutorial() {
@@ -21490,7 +21702,8 @@ limitations under the License.
       document.getElementById('tutorialModal').classList.remove('show');
       document.getElementById('tutorialLessonIcon').textContent = lesson.iconEs;
       document.getElementById('tutorialLessonName').textContent = en ? chapter.nameEn : chapter.nameEs;
-      document.getElementById('tutorialLessonDesc').textContent = en ? chapter.descEn : chapter.descEs;
+      const desc = en ? (chapter.descEn || (chapter.stages && chapter.stages[0].descEn)) : (chapter.descEs || (chapter.stages && chapter.stages[0].descEs));
+      document.getElementById('tutorialLessonDesc').textContent = desc || '';
       document.getElementById('btnTutorialLessonCancel').textContent = en ? '✕ Cancel' : '✕ Cancelar';
       document.getElementById('btnTutorialLessonStart').textContent = en ? '▶ Start' : '▶ Empezar';
       document.getElementById('tutorialLessonModal').classList.add('show');
@@ -21513,9 +21726,13 @@ limitations under the License.
       if (!chapter) return;
 
       _activeTutorialLesson = { lesson: TUTORIAL_LESSONS[lessonIdx], chapter, lessonIdx, chapterIdx };
+      _activeTutorialStageIdx = 0;
+
+      // Handle multi-stage vs single-stage
+      const activeStage = (chapter.stages && chapter.stages.length > 0) ? chapter.stages[0] : chapter;
 
       clearSavedGame();
-      document.getElementById('fenInput').value = chapter.fen;
+      document.getElementById('fenInput').value = activeStage.fen;
       // Tutorial always plays as White vs AI (non-thinking, moves are scripted via puzzleMode)
       gameMode = 'ai';
       playerColor = 'w';
@@ -21535,22 +21752,22 @@ limitations under the License.
         nameEn: chapter.nameEn,
         descEs: chapter.descEs,
         descEn: chapter.descEn,
-        fen: chapter.fen,
-        solution: chapter.solution,
-        humanSteps: chapter.humanSteps,
+        fen: activeStage.fen,
+        solution: activeStage.solution,
+        humanSteps: activeStage.humanSteps,
         completionMsgEs: chapter.completionMsgEs,
         completionMsgEn: chapter.completionMsgEn,
         goalEmoji: chapter.goalEmoji ?? null,
         isTutorial: true,
         lessonIdx,
         chapterIdx,
-        anyOrder: chapter.anyOrder ?? false,
-        tutorialHighlights: chapter.tutorialHighlights ?? null,
+        anyOrder: activeStage.anyOrder ?? false,
+        tutorialHighlights: activeStage.tutorialHighlights ?? null,
       };
       sessionStartedFromFen = true;
       loadPositionFromFEN();
-      if (chapter.solution && chapter.solution.length > 0) {
-        puzzleMode = { solution: chapter.solution, step: 0, humanSteps: chapter.humanSteps ?? null };
+      if (activeStage.solution && activeStage.solution.length > 0) {
+        puzzleMode = { solution: activeStage.solution, step: 0, humanSteps: activeStage.humanSteps ?? null };
       }
       lastLoadedPuzzleMode = puzzleMode
         ? { solution: [...puzzleMode.solution], step: 0, humanSteps: puzzleMode.humanSteps }
@@ -21559,7 +21776,7 @@ limitations under the License.
       // Block all unused buttons and switch to professor with pinned description
       _setTutorialButtonsBlocked(true);
       switchTab('professor');
-      _pinTutorialDesc(chapter);
+      _pinTutorialDesc(activeStage, chapter);
 
       // If the first solution step belongs to the AI, kick it off via triggerAI
       // (triggerAI handles the scripted move safely via puzzleMode, with all its guards)
@@ -21575,14 +21792,15 @@ limitations under the License.
       }
     }
 
-    function _pinTutorialDesc(chapter) {
+    function _pinTutorialDesc(stage, chapter) {
       const en = currentLanguage === 'en';
       const pList = document.getElementById('professorList');
       if (!pList) return;
-      const desc = en ? chapter.descEn : chapter.descEs;
+      const desc = en ? stage.descEn : stage.descEs;
       const name = en ? chapter.nameEn : chapter.nameEs;
+      const stageInfo = (chapter.stages && chapter.stages.length > 1) ? ` (${en ? 'Stage' : 'Etapa'} ${_activeTutorialStageIdx + 1}/${chapter.stages.length})` : '';
       pList.innerHTML = `<div class="tutorial-desc-pin" style="border-left:4px solid var(--primary); background:rgba(56,189,248,0.07); padding:12px 14px; margin-bottom:10px; border-radius:4px;">
-        <div class="tutorial-desc-label" style="font-size:0.75rem; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Tutorial: ${name}</div>
+        <div class="tutorial-desc-label" style="font-size:0.75rem; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Tutorial: ${name}${stageInfo}</div>
         <span class="hint-text" style="font-size:0.88rem;">${desc}</span>
       </div>`;
     }
@@ -21621,7 +21839,7 @@ limitations under the License.
       const modal = document.getElementById('fenLibraryModal');
       const en = currentLanguage === 'en';
 
-      document.getElementById('fenLibraryTitle').textContent = en ? '🧩 Training' : '🧩 Entrenamiento';
+      document.getElementById('fenLibraryTitle').textContent = en ? '🧩 Challenges' : '🧩 Desafíos';
       document.getElementById('btnFenLibClose').textContent = en ? 'Close' : 'Volver';
       document.getElementById('btnRandomPuzzle').textContent = en ? '🎲 Random Challenge' : '🎲 Reto Aleatorio';
       document.getElementById('tabFen-opening').textContent = en ? 'Openings' : 'Aperturas';

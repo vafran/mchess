@@ -1,7 +1,7 @@
 # Airin Chess — Project Reference
 
 > **AI Context Document** — Keep this file updated as the engine evolves.  
-> Current version: **v2.23.0** (branch `feat/v2.22.0`) | `main` has v2.22.5 | File: `mChess.html` (~16,500 lines, ~860 KB)  
+> Current version: **v2.26.0** (branch `feat/v2.22.0`) | `main` has v2.22.5 | File: `mChess.html` (~16,500 lines, ~860 KB)  
 > The entire project is a **single self-contained HTML file**. No build step, no npm, no bundler.
 
 ---
@@ -113,7 +113,7 @@ All variables live in the main script closure. The worker receives copies via `p
 | `currentLanguage` | `'es'`/`'en'` | UI language |
 | `commentaryLog` | `object[]` | Array of {html, time, tone} commentary entries |
 | `commentaryStyleLevel` | `0\|1\|2` | Commentator persona: 0=serious, 1=mixed, 2=funny |
-| `trainingModeEnabled` | `bool` | Training mode (blunder interception) on/off |
+| `trainingModeEnabled` | `bool` | Challenges mode (blunder interception) on/off |
 | `aiSearchGeneration` | `number` | Monotonically increasing token; stale AI results are discarded |
 | `_currentEngineDone` | `function\|null` | Callback to instantly unblock the current `engineSearch` Promise |
 
@@ -192,7 +192,7 @@ onCellClick(r, c)
   ├─ If piece already selected AND (r,c) is a legal target:
   │    ├─ Save window.snapshotBeforeHumanMove = deepCopy(board)
   │    ├─ Save window.snapshotBeforeRules = {castleRights, enPassantTarget, turn}
-  │    ├─ [Training mode] → check for blunder → possibly BLOCK and show warning
+  │    ├─ [Challenges mode] → check for blunder → possibly BLOCK and show warning
   │    └─ await makeMove(sr, sc, r, c)
   │         ├─ Push full state snapshot to undoStack
   │         ├─ Handle castling (move rook too)
@@ -380,7 +380,7 @@ Three buttons in the Professor tab:
 
 ---
 
-## Training Mode
+## Challenges Mode (formerly Training Mode)
 
 When `trainingModeEnabled = true`, the click handler intercepts potential blunders **before** `makeMove()`:
 
@@ -392,13 +392,11 @@ When `trainingModeEnabled = true`, the click handler intercepts potential blunde
    - Second click of same move: `window.pendingBlunder` matches → allow anyway (player insists)
 5. Safe move: clear `window.pendingBlunder`
 
-Training mode state is persisted to `localStorage`.
+Challenges mode state is persisted to `localStorage`.
 
 ---
 
-## Tutorial System
-
-Scripted interactive lessons for beginners. Each lesson contains chapters; each chapter is a guided sequence where the player makes scripted moves. The AI does **not** think — its responses are pre-defined in the `solution` array.
+Scripted interactive lessons for beginners. Each lesson contains chapters; some chapters contain multiple stages for guided learning. The AI does **not** think — its responses are pre-defined in the `solution` array.
 
 ### Data Structure (`TUTORIAL_LESSONS` array, ~line 20644)
 
@@ -409,18 +407,23 @@ Scripted interactive lessons for beginners. Each lesson contains chapters; each 
   nameEs: '...', nameEn: '...',
   descEs: '...', descEn: '...',
   chapters: [
-    {
-      id: 'pawn_move',                  // unique chapter ID
-      nameEs: '1. Cómo avanza un peón', nameEn: '1. How a pawn moves',
-      descEs: '...', descEn: '...',     // shown pinned in professor panel
-      fen: '8/8/8/8/8/8/3PP3/8 w - - 0 1', // starting position
-      solution: ['d2d3', 'e2e4'],       // UCI moves: human & AI interleaved
-      humanSteps: 2,                    // after this many total moves, show completion modal
-      goalEmoji: '🏁',                  // optional — rendered on target square
-      tutorialHighlights: { ... },      // optional — see schema below
-      menuDescEs: '...',                // optional — SHORT desc for the menu card only
-      menuDescEn: '...',                // if omitted, descEs/En is used in the card too
       completionMsgEs: '...', completionMsgEn: '...',  // shown in completion modal
+    },
+    {
+      id: 'chapter_id',
+      nameEs: '...', nameEn: '...',
+      stages: [
+        {
+          id: 'stage_1',
+          nameEs: '...', nameEn: '...',
+          fen: '...',
+          solution: ['...'],
+          humanSteps: 1,
+          tutorialHighlights: { ... },
+          completionMsgEs: '...', completionMsgEn: '...',
+        }
+      ],
+      completionMsgEs: '...', completionMsgEn: '...',
     }
   ]
 }
@@ -506,7 +509,7 @@ When a tutorial is active, these buttons are **disabled** (grayed, `cursor:not-a
 | `btnProfessorAnalysis` | Irrelevant during scripted sequence |
 | `btnProfessorWasGood` | No free-play analysis |
 | `btnHawksEye` | Tutorial has its own highlight system |
-| `trainingToggleBtn` | Disabled at tutorial start |
+| `trainingToggleBtn` | Challenges button (disabled at tutorial start) |
 | `msUndo` | No undoing scripted sequences |
 | `msCopy`, `msFen`, `msFlip` | Not meaningful in tutorial context |
 
@@ -542,8 +545,9 @@ Buttons are restored (`_setTutorialButtonsBlocked(false)`) when `showTutorialCom
 
 | Lesson | Chapters |
 |--------|---------|
-| **Los Peones / The Pawns** | 1. How a pawn moves · 2. How a pawn captures · 3. Piece Hunt · 4. Promotion · 5. En passant |
-| **Los Caballos / The Knights** | 1. The knight's leap · 2. The knight leaps over everything (jump demo) · 3. The knight attacks · 4. The fork (with tutorialHighlights) |
+| **Los Peones / The Pawns** | 1. How a pawn moves · 2. How a pawn captures · 3. Piece Hunt |
+| **Los Caballos / The Knights** | 1. The knight's leap · 2. The knight leaps over everything (jump demo) · 3. The knight attacks · 4. The great leap · 5. The fork |
+| **Jaque y Mate / Check and Mate** | 1. The King in Danger (5 stages) · 2. Special Attacks (Discovered Check) · 3. The Finishing Blow (3 stages) · 4. Stalemate (2 stages) |
 
 ---
 
