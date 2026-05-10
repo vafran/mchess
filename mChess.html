@@ -21162,6 +21162,27 @@ limitations under the License.
           },
         ],
       },
+      {
+        id: 'queen',
+        iconEs: '♕', iconEn: '♕',
+        nameEs: 'La Dama', nameEn: 'The Queen',
+        descEs: 'Usa la pieza más poderosa del ajedrez. Combina el movimiento de la torre y el alfil.',
+        descEn: 'Use the most powerful piece in chess. It combines the movement of the rook and the bishop.',
+        chapters: [
+          {
+            id: 'queen_move',
+            nameEs: '1. El poder absoluto',
+            nameEn: '1. Absolute Power',
+            descEs: 'La Dama puede moverse en línea recta o diagonal, ¡tantas casillas como quiera! Captura el caballo en a8 y luego la torre en h1.',
+            descEn: 'The Queen can move in straight lines or diagonally, as many squares as she wants! Capture the knight on a8 and then the rook on h1.',
+            fen: 'n7/8/8/8/8/8/8/3Q3r w - - 0 1',
+            solution: ['d1a4', 'a4a8', 'a8h1'],
+            humanSteps: 3,
+            completionMsgEs: '¡Impresionante! Con la Dama en juego, el peligro acecha desde cualquier dirección.',
+            completionMsgEn: 'Impressive! With the Queen in play, danger lurks from any direction.',
+          },
+        ],
+      },
     ];
 
     var _activeTutorialLessonIdx = 0; // which lesson tab is selected in the tutorial modal
