@@ -5327,6 +5327,14 @@ limitations under the License.
 
     function unlockTrophy(id) {
       if (!currentProfile) return;
+      // If we're currently running a tutorial, suppress trophies unless explicitly whitelisted
+      if (lastLoadedChallengeItem?.isTutorial) {
+        const wl = lastLoadedChallengeItem.trophyWhitelist || lastLoadedChallengeItem.allowedTrophies || lastLoadedChallengeItem.allowTrophies || null;
+        if (!Array.isArray(wl) || !wl.includes(id)) {
+          console.log(`[Statistician] Trophy '${id}' suppressed during tutorial`);
+          return;
+        }
+      }
       if (currentProfile.unlockedTrophies.some(t => t.id === id)) return;
       currentProfile.unlockedTrophies.push({ id, unlockedAt: new Date().toISOString() });
       saveProfile();
