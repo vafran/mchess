@@ -7861,6 +7861,33 @@ limitations under the License.
       if (typeof clearArrows === 'function') clearArrows();
       const piece = board[r][c];
 
+      // 🎯 Tutorial Click Mode (Identify pieces by clicking them)
+      if (lastLoadedChallengeItem?.isTutorial && _activeTutorialLesson) {
+        const { chapter } = _activeTutorialLesson;
+        const stage = (chapter.stages && chapter.stages[_activeTutorialStageIdx]) || chapter;
+        if (stage.clickMode) {
+          const sq = sqName(r, c);
+          if (stage.solution.includes(sq)) {
+            playVictorySound();
+            setTimeout(() => {
+              const { lesson, lessonIdx, chapterIdx } = _activeTutorialLesson;
+              showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx, _activeTutorialStageIdx);
+            }, 500);
+            return;
+          } else {
+            // Optional: allow normal selection if they click their own piece but don't finish stage
+            if (piece !== ' ' && colorOf(piece) === turn) {
+              selected = [r, c];
+              legalMoves = legalMovesFor(r, c);
+              render();
+              return;
+            }
+            playErrorSound();
+            return;
+          }
+        }
+      }
+
       if (selected) {
         const [sr, sc] = selected;
         if (legalMoves.some(m => m[0] === r && m[1] === c)) {
@@ -11975,8 +12002,17 @@ limitations under the License.
       return 'abcdefgh'[fc] + (8 - fr) + 'abcdefgh'[tc] + (8 - tr) + (promo ? promo.toLowerCase() : '');
     }
     function uciToMoveObj(uci) {
+      if (!uci) return null;
       const f = 'abcdefgh';
-      return { fr: 8 - parseInt(uci[1]), fc: f.indexOf(uci[0]), tr: 8 - parseInt(uci[3]), tc: f.indexOf(uci[2]), promo: uci.length === 5 ? uci[4].toUpperCase() : null };
+      // Handle standard UCI (e4e5) and common mistake with capture 'x' (a4xc6)
+      const clean = uci.includes('x') ? uci.replace('x', '') : uci;
+      return { 
+        fr: 8 - parseInt(clean[1]), 
+        fc: f.indexOf(clean[0]), 
+        tr: 8 - parseInt(clean[3]), 
+        tc: f.indexOf(clean[2]), 
+        promo: clean.length === 5 ? clean[4].toUpperCase() : null 
+      };
     }
 
     // ── Transposition Table (TT) ─────────
@@ -21213,35 +21249,83 @@ limitations under the License.
             descEn: 'Learn when a bishop is a powerful piece and when it is trapped by its own pawns.',
             stages: [
               {
-                id: 'bad_bishop',
-                nameEs: 'El Alfil Malo',
-                nameEn: 'The Bad Bishop',
-                descEs: '¡Este alfil es "malo"! Tus propios peones en d4 y f4 están en casillas blancas y le cortan el paso. Muévelo a e1 para buscar un camino mejor.',
-                descEn: 'This bishop is "bad"! Your own pawns on d4 and f4 are on light squares and block its path. Move it to e1 to find a better way.',
-                fen: 'k7/8/8/3p1p2/3P1P2/2B5/8/K7 w - - 0 1',
-                solution: ['c3e1'],
-                humanSteps: 1,
-                tutorialHighlights: {
-                  arrows: [{ fr: 5, fc: 2, tr: 7, tc: 4, type: 'good' }],
-                },
-                completionMsgEs: '¡Escape logrado! Al moverlo fuera de la cadena de peones, tu alfil vuelve a tener futuro. Recuerda: no dejes que tus peones estorben a tus alfiles.',
-                completionMsgEn: 'Escape achieved! By moving it outside the pawn chain, your bishop has a future again. Remember: don\'t let your pawns get in your bishops\' way.',
+                id: 'bishop_lvl1',
+                nameEs: 'Nivel 1: Reconocimiento',
+                nameEn: 'Level 1: Recognition',
+                descEs: '¡Identifica las piezas! Haz clic sobre el alfil malo de las blancas (el que está encerrado por sus propios peones en d4 y e3).',
+                descEn: 'Identify the pieces! Click on the white bad bishop (the one enclosed by its own pawns on d4 and e3).',
+                fen: 'r3k2r/pp1b1ppp/2n1pn2/3p4/3P4/2P1P3/PP1B3P/R2Q1BKR w - - 0 1',
+                solution: ['d2'],
+                clickMode: true,
+                completionMsgEs: '¡Correcto! El alfil de d2 es "malo" porque choca contra sus propios peones en d4 y e3. Sus diagonales están bloqueadas.',
+                completionMsgEn: 'Correct! The bishop on d2 is "bad" because it bumps into its own pawns on d4 and e3. Its diagonals are blocked.',
               },
               {
-                id: 'good_bishop',
-                nameEs: 'El Alfil Bueno',
-                nameEn: 'The Good Bishop',
-                descEs: '¡Este alfil es "bueno"! Tus peones están en casillas negras, dejando las blancas libres para que tu alfil cruce el tablero y capture la torre en g8.',
-                descEn: 'This bishop is "good"! Your pawns are on dark squares, leaving the light ones free for your bishop to cross the board and capture the rook on g8.',
-                fen: 'k5r1/8/8/4p3/3p4/1B6/8/K7 w - - 0 1',
-                solution: ['b3g8'],
-                humanSteps: 1,
+                id: 'bishop_lvl2',
+                nameEs: 'Nivel 2: Liberación',
+                nameEn: 'Level 2: Liberation',
+                descEs: 'Cuando no puedes mover tus peones, debes reubicar al alfil. Vamos a sacarlo de la cadena de peones siguiendo la ruta: d2 -> e1 -> h4.',
+                descEn: 'When you can\'t move your pawns, you must relocate your bishop. Let\'s move it outside the pawn chain following the route: d2 -> e1 -> h4.',
+                fen: 'r3k2r/pp1b1ppp/2n1pn2/3p4/3P4/2P1P3/PP1B3P/R2Q1BKR w - - 0 1',
+                solution: ['d2e1', 'a7a6', 'e1h4'],
+                humanSteps: 2,
                 tutorialHighlights: {
-                  arrows: [{ fr: 5, fc: 1, tr: 0, tc: 6, type: 'good' }],
+                  arrows: [
+                    { fr: 6, fc: 3, tr: 7, tc: 4, type: 'good' },
+                    { fr: 7, fc: 4, tr: 4, tc: 7, type: 'good' }
+                  ],
                 },
-                completionMsgEs: '¡Poder total! Un alfil "bueno" tiene diagonales abiertas para atacar. Al mantener tus peones en el color opuesto, tu alfil es una pieza devastadora.',
-                completionMsgEn: 'Total power! A "good" bishop has open diagonals to attack. By keeping your pawns on the opposite color, your bishop is a devastating piece.',
-              }
+                completionMsgEs: '¡Excelente maniobra! Al no poder mover tus peones, has "recirculado" la pieza para que sea útil por otro lado.',
+                completionMsgEn: 'Excellent maneuver! Since you couldn\'t move your pawns, you "recirculated" the piece to be useful from another side.',
+              },
+              {
+                id: 'bishop_lvl3',
+                nameEs: 'Nivel 3: El Cambio',
+                nameEn: 'Level 3: The Exchange',
+                descEs: 'Tu alfil de d2 es malo. El de las negras en a3 es muy bueno y controla la diagonal. ¡Cámbialo para eliminar su ventaja!',
+                descEn: 'Your bishop on d2 is bad. Black\'s on a3 is very good and controls the diagonal. Trade it to eliminate their advantage!',
+                fen: 'r1b1k2r/pp3ppp/2n1pn2/3p4/2PP4/bPN1P3/P2B2PP/R2Q1BKR w - - 0 1',
+                solution: ['d2c1', 'h7h6', 'c1a3'],
+                humanSteps: 2,
+                tutorialHighlights: {
+                  arrows: [{ fr: 6, fc: 3, tr: 7, tc: 2, type: 'good' }],
+                },
+                completionMsgEs: '¡Gran decisión! Cambiar tu "pieza mala" por la "pieza buena" del rival es una estrategia posicional fundamental.',
+                completionMsgEn: 'Great decision! Trading your "bad piece" for the opponent\'s "good piece" is a fundamental positional strategy.',
+              },
+              {
+                id: 'bishop_lvl4',
+                nameEs: 'Nivel 4: Estructura',
+                nameEn: 'Level 4: Structure',
+                descEs: 'La forma más directa de liberar un alfil es mejorar tu estructura de peones. Mueve el peón de e3 a e4 para abrir la diagonal y luego lleva tu alfil a g5.',
+                descEn: 'The most direct way to free a bishop is to improve your pawn structure. Move the e3 pawn to e4 to open the diagonal and then move your bishop to g5.',
+                fen: 'r3k2r/pp1b1ppp/2n1pn2/3p4/3P4/2P1P3/PP1B3P/R2Q1BKR w - - 0 1',
+                solution: ['e3e4', 'a7a6', 'd2g5'],
+                humanSteps: 2,
+                tutorialHighlights: {
+                  arrows: [
+                    { fr: 5, fc: 4, tr: 4, tc: 4, type: 'good' },
+                    { fr: 6, fc: 3, tr: 3, tc: 6, type: 'good' }
+                  ],
+                },
+                completionMsgEs: '¡Perfecto! Al mover tus peones al color opuesto de tu alfil, le has dado libertad total para atacar en campo enemigo.',
+                completionMsgEn: 'Perfect! By moving your pawns to the color opposite of your bishop, you gave it total freedom to attack in enemy territory.',
+              },
+              {
+                id: 'bishop_lvl5',
+                nameEs: 'Nivel 5: El Final',
+                nameEn: 'Level 5: The Endgame',
+                descEs: 'En el final, el alfil bueno domina al malo. Lleva tu alfil a a4 para presionar el punto débil y luego captura el peón de c6.',
+                descEn: 'In the endgame, the good bishop dominates the bad one. Move your bishop to a4 to pressure the weak point and then capture the c6 pawn.',
+                fen: '4k3/4b3/p1p1p1p1/P1PpP1P1/1P1P1P1P/8/4B3/4K3 w - - 0 1',
+                solution: ['e2d1', 'e8f8', 'd1a4', 'f8g8', 'a4c6'],
+                humanSteps: 5,
+                tutorialHighlights: {
+                  arrows: [{ fr: 6, fc: 4, tr: 7, tc: 3, type: 'good' }, { fr: 7, fc: 3, tr: 4, tc: 0, type: 'good' }, { fr: 4, fc: 0, tr: 2, tc: 2, type: 'good' }],
+                },
+                completionMsgEs: '¡Victoria posicional! Un alfil que no tiene peones propios estorbando puede atacar debilidades que el rival nunca podrá defender.',
+                completionMsgEn: 'Positional victory! A bishop with no friendly pawns in its way can attack weaknesses that the opponent can never defend.',
+              },
             ],
             completionMsgEs: '¡Maestría en alfiles! Ahora sabes distinguir entre un alfil activo y uno bloqueado. ¡Usa este conocimiento para dominar el tablero!',
             completionMsgEn: 'Bishop mastery! Now you know how to distinguish between an active bishop and a blocked one. Use this knowledge to dominate the board!',
