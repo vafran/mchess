@@ -547,7 +547,9 @@ Buttons are restored (`_setTutorialButtonsBlocked(false)`) when `showTutorialCom
 |--------|---------|
 | **Los Peones / The Pawns** | 1. How a pawn moves · 2. How a pawn captures · 3. Piece Hunt · 4. Pawn Mastery (3 stages) |
 | **Los Caballos / The Knights** | 1. The knight's leap · 2. The knight leaps over everything (jump demo) · 3. The knight attacks · 4. The great leap · 5. The fork |
+| **Los Alfiles / The Bishops** | 1. How the bishop moves · 2. The secret of colors · 3. Captures and blocks · 4. Diagonal Hunt · 5. The Tactical Cross · 6. Good and Bad Bishop (2 stages) |
 | **Jaque y Mate / Check and Mate** | 1. The King in Danger (5 stages) · 2. Special Attacks (Discovered Check) · 3. The Finishing Blow (3 stages) · 4. Stalemate (2 stages) |
+| **Aperturas / Openings** | 1. Basic Principles · 2. Italian Game (White) · 3. Sicilian Defense (Black) |
 
 ---
 

@@ -21205,6 +21205,47 @@ limitations under the License.
             completionMsgEn: 'Total dominance!\n\nBy crossing their paths, your bishops have shown that no corner of the board is safe. This is the true strength of the bishop pair!',
           },
 
+          {
+            id: 'bishop_good_bad',
+            nameEs: '6. Alfil Bueno y Malo',
+            nameEn: '6. Good and Bad Bishop',
+            descEs: 'Aprende cuándo un alfil es una pieza poderosa y cuándo está atrapado por sus propios peones.',
+            descEn: 'Learn when a bishop is a powerful piece and when it is trapped by its own pawns.',
+            stages: [
+              {
+                id: 'bad_bishop',
+                nameEs: 'El Alfil Malo',
+                nameEn: 'The Bad Bishop',
+                descEs: '¡Este alfil es "malo"! Tus propios peones en d4 y f4 están en casillas blancas y le cortan el paso. Muévelo a e1 para buscar un camino mejor.',
+                descEn: 'This bishop is "bad"! Your own pawns on d4 and f4 are on light squares and block its path. Move it to e1 to find a better way.',
+                fen: 'k7/8/8/3p1p2/3P1P2/2B5/8/K7 w - - 0 1',
+                solution: ['c3e1'],
+                humanSteps: 1,
+                tutorialHighlights: {
+                  arrows: [{ fr: 5, fc: 2, tr: 7, tc: 4, type: 'good' }],
+                },
+                completionMsgEs: '¡Escape logrado! Al moverlo fuera de la cadena de peones, tu alfil vuelve a tener futuro. Recuerda: no dejes que tus peones estorben a tus alfiles.',
+                completionMsgEn: 'Escape achieved! By moving it outside the pawn chain, your bishop has a future again. Remember: don\'t let your pawns get in your bishops\' way.',
+              },
+              {
+                id: 'good_bishop',
+                nameEs: 'El Alfil Bueno',
+                nameEn: 'The Good Bishop',
+                descEs: '¡Este alfil es "bueno"! Tus peones están en casillas negras, dejando las blancas libres para que tu alfil cruce el tablero y capture la torre en g8.',
+                descEn: 'This bishop is "good"! Your pawns are on dark squares, leaving the light ones free for your bishop to cross the board and capture the rook on g8.',
+                fen: 'k5r1/8/8/4p3/3p4/1B6/8/K7 w - - 0 1',
+                solution: ['b3g8'],
+                humanSteps: 1,
+                tutorialHighlights: {
+                  arrows: [{ fr: 5, fc: 1, tr: 0, tc: 6, type: 'good' }],
+                },
+                completionMsgEs: '¡Poder total! Un alfil "bueno" tiene diagonales abiertas para atacar. Al mantener tus peones en el color opuesto, tu alfil es una pieza devastadora.',
+                completionMsgEn: 'Total power! A "good" bishop has open diagonals to attack. By keeping your pawns on the opposite color, your bishop is a devastating piece.',
+              }
+            ],
+            completionMsgEs: '¡Maestría en alfiles! Ahora sabes distinguir entre un alfil activo y uno bloqueado. ¡Usa este conocimiento para dominar el tablero!',
+            completionMsgEn: 'Bishop mastery! Now you know how to distinguish between an active bishop and a blocked one. Use this knowledge to dominate the board!',
+          },
         ],
       },
       {
@@ -21636,6 +21677,51 @@ limitations under the License.
             completionMsgEn: 'You know the power of stalemate! Use it to avoid mistakes when winning and to save yourself when losing.',
           },
         ],
+      },
+      {
+        id: 'openings',
+        iconEs: '📖', iconEn: '📖',
+        nameEs: 'Aperturas', nameEn: 'Openings',
+        descEs: 'Aprende los principios básicos y las mejores jugadas para empezar tus partidas con ventaja.',
+        descEn: 'Learn the basic principles and the best moves to start your games with an advantage.',
+        chapters: [
+          {
+            id: 'opening_principles',
+            nameEs: '1. Principios Básicos',
+            nameEn: '1. Basic Principles',
+            descEs: 'Controlar el centro, desarrollar piezas y proteger al Rey son las tres reglas de oro del inicio.',
+            descEn: 'Controlling the center, developing pieces, and protecting the King are the three golden rules of the start.',
+            fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            solution: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'g8f6', 'e1g1'],
+            humanSteps: 7,
+            completionMsgEs: '¡Principios dominados! Has controlado el centro con e4, desarrollado tus piezas menores (Nf3, Bc4) y puesto a tu Rey a salvo con el enroque. ¡Esta es la base de un buen ajedrez!',
+            completionMsgEn: 'Principles mastered! You controlled the center with e4, developed your minor pieces (Nf3, Bc4), and put your King to safety with castling. This is the foundation of good chess!',
+          },
+          {
+            id: 'white_opening_italian',
+            nameEs: '2. Apertura Italiana (Blancas)',
+            nameEn: '2. Italian Game (White)',
+            descEs: 'La Italiana es perfecta para principiantes. Busca el desarrollo rápido y ataca el punto más débil del negro: f7.',
+            descEn: 'The Italian Game is perfect for beginners. It aims for rapid development and attacks Black\'s weakest point: f7.',
+            fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            solution: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4'],
+            humanSteps: 5,
+            completionMsgEs: '¡Apertura Italiana completada! Has desarrollado tus piezas hacia el centro y tu alfil ya está apuntando a f7. ¡Estás listo para el ataque!',
+            completionMsgEn: 'Italian Game completed! You developed your pieces towards the center and your bishop is already pointing at f7. You are ready for the attack!',
+          },
+          {
+            id: 'black_opening_sicilian',
+            nameEs: '3. Defensa Siciliana (Negras)',
+            nameEn: '3. Sicilian Defense (Black)',
+            descEs: '¿Tu rival juega e4? ¡Responde con c5! La Siciliana es la defensa más exitosa para luchar por la victoria con negras.',
+            descEn: 'Does your opponent play e4? Respond with c5! The Sicilian is the most successful defense to fight for victory with Black.',
+            fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+            solution: ['c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4'],
+            humanSteps: 6,
+            completionMsgEs: '¡Defensa Siciliana activada! Al jugar c5, has created una posición asimétrica que te da grandes oportunidades de contraataque. ¡El centro está en disputa!',
+            completionMsgEn: 'Sicilian Defense activated! By playing c5, you have created an asymmetrical position that gives you great counter-attacking opportunities. The center is up for grabs!',
+          }
+        ]
       },
     ];
 
