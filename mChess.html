@@ -20702,6 +20702,29 @@ limitations under the License.
             completionMsgEs: '¡Increíble! El peón se convirtió en Dama.\n\nSiempre que puedas, corona un peón en Dama — ¡es la pieza más poderosa del ajedrez!',
             completionMsgEn: 'Amazing! The pawn became a Queen.\n\nAlways promote your pawn to a Queen whenever you can — it\'s the most powerful piece in chess!',
           },
+          {
+            id: 'pawn_enpassant',
+            nameEs: '5. Al paso',
+            nameEn: '5. En passant',
+            menuDescEs: 'Captura un peón enemigo que avanzó dos casillas de golpe. ¡Solo en ese momento!',
+            menuDescEn: 'Capture an enemy pawn that just advanced two squares. You must act immediately!',
+            descEs: 'Regla especial: si un peón enemigo avanza 2 casillas y aterriza al lado del tuyo, puedes capturarlo "de paso" — como si solo hubiera avanzado 1. ¡Solo puedes hacerlo en ese mismo turno! El peón negro avanzará dos casillas hasta d5. Captura "al paso" moviendo tu peón de e5 a d6.',
+            descEn: 'Special rule: if an enemy pawn advances 2 squares and lands right next to yours, you can capture it "in passing" — as if it had only moved 1 square. You must do it immediately or the chance is gone! The black pawn will advance two squares to d5. Capture en passant by moving your pawn from e5 to d6.',
+            fen: '8/3p4/8/4P3/8/8/8/8 w - - 0 1',
+            solution: ['d7d5', 'e5d6'],
+            humanSteps: 1,
+            tutorialHighlights: {
+              historyLength: 1, // trigger after Black plays d7d5
+              enemySquares: [[3, 3]], // glow the black pawn on d5 (row 3, col 3)
+              arrows: [
+                { fr: 3, fc: 3, tr: 2, tc: 3, type: 'bad' },  // d5→d6 shows where the pawn came from (red — enemy threat)
+                { fr: 3, fc: 4, tr: 2, tc: 3, type: 'good' }, // e5→d6 shows your capture destination (green)
+              ],
+              pauseMs: 5000, // 5 seconds — enough for the player to read and understand
+            },
+            completionMsgEs: '¡Al paso!\n\n¡Lo hiciste perfectamente! Tu peón capturó "de paso" al peón negro — aunque no había ninguna pieza en d6.\n\nEsta regla solo se puede usar en el turno inmediatamente después de que el peón enemigo avanza dos casillas. ¡Si esperas, pierdes la oportunidad para siempre!\n\nEs una de las reglas más sorprendentes del ajedrez — ¡y ahora la conoces!',
+            completionMsgEn: 'En passant!\n\nPerfectly done! Your pawn captured "in passing" the black pawn — even though there was no piece on d6.\n\nThis rule can only be used on the very next turn after the enemy pawn advances two squares. Wait, and the chance is gone forever!\n\nIt\'s one of the most surprising rules in chess — and now you know it!',
+          },
         ],
       },
       {
@@ -20725,9 +20748,24 @@ limitations under the License.
             completionMsgEn: 'That\'s the knight\'s leap!\n\nTwo squares forward and one to the side — or two to the side and one forward. Always an L-shape.\n\nNotice the knight always changes square color with each jump. It\'s the only piece that can leap over others!',
           },
           {
+            id: 'knight_jump',
+            nameEs: '2. ¡El caballo salta todo!',
+            nameEn: '2. The knight leaps over everything!',
+            menuDescEs: 'El caballo es la única pieza que puede saltar por encima de otras.',
+            menuDescEn: 'The knight is the only piece that can jump over other pieces.',
+            descEs: '¡El caballo es la única pieza del ajedrez que puede saltar sobre otras! Los peones que bloquean el camino no le importan en absoluto. Lleva el caballo desde d1 hasta la bandera en f5, saltando sobre todos los peones.',
+            descEn: 'The knight is the only chess piece that can jump over others! The pawns blocking the way don\'t matter at all. Get the knight from d1 to the flag on f5, leaping over all the pawns.',
+            fen: '8/8/8/8/1P1P4/8/2PPP3/3N4 w - - 0 1',
+            solution: ['d1e3', 'e3f5'],
+            humanSteps: 2,
+            goalEmoji: '🏁',
+            completionMsgEs: '¡El caballero volador!\n\nNingun a otra pieza puede hacer esto. El caballo salta en su forma de L y aterriza sin importar qué haya en el camino.\n\nEsto lo hace único en el ajedrez — puede escapar de situaciones donde todas las demás piezas estarían atrapadas.',
+            completionMsgEn: 'The flying knight!\n\nNo other piece can do this. The knight jumps in its L-shape and lands no matter what\'s in the way.\n\nThis makes it unique in chess — it can escape situations where every other piece would be trapped.',
+          },
+          {
             id: 'knight_capture',
-            nameEs: '2. El caballo ataca',
-            nameEn: '2. The knight attacks',
+            nameEs: '3. El caballo ataca',
+            nameEn: '3. The knight attacks',
             descEs: 'El caballo captura igual que se mueve: en L. Hay peones enemigos en el tablero. ¡Sáltalos a todos! Captura en e2, luego en f4.',
             descEn: 'The knight captures the same way it moves: in an L. There are enemy pawns on the board. Jump and capture them all! Capture on e2, then on f4.',
             fen: '8/8/8/8/5p2/8/4p3/2N5 w - - 0 1',
@@ -20738,8 +20776,8 @@ limitations under the License.
           },
           {
             id: 'knight_fork',
-            nameEs: '3. ¡La horquilla!',
-            nameEn: '3. The fork!',
+            nameEs: '4. ¡La horquilla!',
+            nameEn: '4. The fork!',
             descEs: 'La horquilla es cuando un caballo ataca dos piezas a la vez. Mueve el caballo a c5 — ataca al alfil en b7 y a la torre en e6 al mismo tiempo. La torre escapa, ¡pero tú capturas el alfil!',
             descEn: 'A fork is when a knight attacks two pieces at once. Move the knight to c5 — it attacks the bishop on b7 and the rook on e6 at the same time. The rook escapes, but you capture the bishop!',
             fen: '8/1b6/4r3/8/8/1N6/8/8 w - - 0 1',
@@ -20871,7 +20909,7 @@ limitations under the License.
         btn.style.cssText = 'cursor:pointer; padding:12px 14px; border-radius:12px; border:1.5px solid rgba(56,189,248,0.35); background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(14,165,233,0.05)); margin-bottom:4px;';
         btn.onclick = () => showTutorialLessonModal(lesson, ch);
         const chName = en ? ch.nameEn : ch.nameEs;
-        const chDesc = en ? ch.descEn : ch.descEs;
+        const chDesc = en ? (ch.menuDescEn || ch.descEn) : (ch.menuDescEs || ch.descEs);
         btn.innerHTML = `<strong style="font-size:0.92rem;">${chName}</strong><span style="font-size:0.8rem; color:var(--text-light); display:block; margin-top:2px;">${chDesc}</span>`;
         container.appendChild(btn);
       });

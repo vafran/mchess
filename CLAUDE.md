@@ -396,6 +396,157 @@ Training mode state is persisted to `localStorage`.
 
 ---
 
+## Tutorial System
+
+Scripted interactive lessons for beginners. Each lesson contains chapters; each chapter is a guided sequence where the player makes scripted moves. The AI does **not** think — its responses are pre-defined in the `solution` array.
+
+### Data Structure (`TUTORIAL_LESSONS` array, ~line 20644)
+
+```javascript
+{
+  id: 'pawns',               // unique lesson ID
+  iconEs: '♟️', iconEn: '♟️',
+  nameEs: '...', nameEn: '...',
+  descEs: '...', descEn: '...',
+  chapters: [
+    {
+      id: 'pawn_move',                  // unique chapter ID
+      nameEs: '1. Cómo avanza un peón', nameEn: '1. How a pawn moves',
+      descEs: '...', descEn: '...',     // shown pinned in professor panel
+      fen: '8/8/8/8/8/8/3PP3/8 w - - 0 1', // starting position
+      solution: ['d2d3', 'e2e4'],       // UCI moves: human & AI interleaved
+      humanSteps: 2,                    // after this many total moves, show completion modal
+      goalEmoji: '🏁',                  // optional — rendered on target square
+      tutorialHighlights: { ... },      // optional — see schema below
+      menuDescEs: '...',                // optional — SHORT desc for the menu card only
+      menuDescEn: '...',                // if omitted, descEs/En is used in the card too
+      completionMsgEs: '...', completionMsgEn: '...',  // shown in completion modal
+    }
+  ]
+}
+```
+
+**`solution` array rules:**
+- Player always plays White. `playerColor = 'w'`.
+- If the piece at `solution[0]` belongs to Black, the AI plays it automatically on start.
+- Moves alternate: if a move's piece color ≠ `playerColor`, it's an AI scripted move played by `triggerAI()` via `puzzleMode`.
+- `humanSteps` = total number of moves in the solution (human + AI combined) after which the completion modal fires.
+
+**Key state variables during a tutorial:**
+| Variable | Value |
+|----------|-------|
+| `lastLoadedChallengeItem.isTutorial` | `true` |
+| `lastLoadedChallengeItem.tutorialHighlights` | chapter's highlights config (or `null`) |
+| `puzzleMode` | `{ solution, step, humanSteps }` |
+| `trainingModeEnabled` | **force-set to `false`** on chapter start |
+
+### `tutorialHighlights` Schema (optional per chapter)
+
+```javascript
+tutorialHighlights: {
+  historyLength: 1,        // activate when history.length === this value
+                           // null → always active from move 0
+  enemySquares: [[r,c]],  // red pulsing glow on these squares (enemy pieces under attack)
+  ownSquares: [[r,c]],    // red pulsing glow on these squares (own pieces under threat)
+  arrows: [
+    { fr, fc, tr, tc, type: 'good' }, // green arrow (suggests where to move)
+    { fr, fc, tr, tc, type: 'bad'  }, // red arrow (shows threat / enemy attack)
+  ],
+  pauseMs: 4000,           // how long the AI waits before playing its next scripted move
+                           // (gives the player time to read the highlights)
+}
+```
+
+**Coordinates:** `r` = row (0=rank8, 7=rank1), `c` = col (0=file a, 7=file h).
+
+**CSS classes applied by `render()`:**
+- `.spider-sense` — red animated glow (used for `enemySquares`)
+- `.spider-sense-own` — slightly stronger red glow (used for `ownSquares`)
+
+**Arrows:** drawn by `drawTutorialHighlights()` (called from `makeMove()` after `render()`) using `drawArrow(fr,fc,tr,tc,type)`. Cleared automatically when `historyLength` no longer matches, or when the tutorial ends.
+
+### Execution Flow
+
+```
+openTutorial() → (modal) → startTutorialLesson()
+  └─ _startTutorialChapter(lesson, chapter, lessonIdx, chapterIdx)
+       ├─ trainingModeEnabled = false  (force-disable assisted mode)
+       ├─ lastLoadedChallengeItem = { ..., isTutorial:true, tutorialHighlights }
+       ├─ loadPositionFromFEN()
+       ├─ puzzleMode = { solution, step:0, humanSteps }
+       ├─ _setTutorialButtonsBlocked(true)   ← lock UI
+       ├─ switchTab('professor')
+       ├─ _pinTutorialDesc(chapter)           ← pin description in professor panel
+       └─ [if solution[0] is AI move] → setTimeout(triggerAI, 800)
+
+Player clicks a square:
+  └─ onCellClick()
+       ├─ puzzleMode validation: playedUci vs solution[step]
+       │    ├─ WRONG: red flash cell, setProfessorContent(error msg), return
+       │    └─ CORRECT: puzzleMode.step++
+       └─ makeMove()
+            ├─ render()
+            ├─ drawTutorialHighlights()   ← draw arrows + (re)apply glow classes
+            └─ [if humanSteps reached] → showTutorialCompleteModal()
+                 └─ _setTutorialButtonsBlocked(false)
+
+AI scripted move (triggerAI):
+  └─ puzzleMode path: uciToMoveObj(solution[step]), puzzleMode.step++
+       ├─ [tutorialHighlights.pauseMs] → wait before playing
+       └─ makeMove()  (same path as above)
+```
+
+### Button Locking During Tutorials (`_setTutorialButtonsBlocked`)
+
+When a tutorial is active, these buttons are **disabled** (grayed, `cursor:not-allowed`):
+
+| Blocked | Why |
+|---------|-----|
+| `tabCommentary` | Forces focus on professor panel |
+| `btnProfessorAnalysis` | Irrelevant during scripted sequence |
+| `btnProfessorWasGood` | No free-play analysis |
+| `btnHawksEye` | Tutorial has its own highlight system |
+| `trainingToggleBtn` | Disabled at tutorial start |
+| `msUndo` | No undoing scripted sequences |
+| `msCopy`, `msFen`, `msFlip` | Not meaningful in tutorial context |
+
+**Always remain active:** `soundToggle`, `btnRestart`, `btnSideMenu`, fullscreen, language toggle, `btnProfessorBest` (What should I do? — still useful).
+
+Buttons are restored (`_setTutorialButtonsBlocked(false)`) when `showTutorialCompleteModal()` fires.
+
+### How to Add a New Tutorial Chapter
+
+1. Find the appropriate lesson in `TUTORIAL_LESSONS` (or add a new lesson object).
+2. Add a chapter object at the end of its `chapters` array:
+   ```javascript
+   {
+     id: 'lesson_chaptername',
+     nameEs: 'N. Título en español', nameEn: 'N. English title',
+     descEs: 'Instrucciones...', descEn: 'Instructions...',
+     fen: '<FEN string>',           // always starts as White to move
+     solution: ['e2e4', 'd7d5'],   // UCI, alternating human/AI as needed
+     humanSteps: 2,                 // total solution moves (human + AI)
+     tutorialHighlights: {          // optional
+       historyLength: 1,
+       enemySquares: [[r,c]],
+       arrows: [{ fr, fc, tr, tc, type:'good' }],
+       pauseMs: 4000,
+     },
+     completionMsgEs: '...', completionMsgEn: '...',
+   }
+   ```
+3. Verify the FEN is correct and the solution UCI moves are legal from that position.
+4. If using `tutorialHighlights`, convert algebraic squares to `[row,col]`: `a8=[0,0]`, `h1=[7,7]`.
+
+### Current Tutorial Lessons
+
+| Lesson | Chapters |
+|--------|---------|
+| **Los Peones / The Pawns** | 1. How a pawn moves · 2. How a pawn captures · 3. Piece Hunt · 4. Promotion · 5. En passant |
+| **Los Caballos / The Knights** | 1. The knight's leap · 2. The knight leaps over everything (jump demo) · 3. The knight attacks · 4. The fork (with tutorialHighlights) |
+
+---
+
 ## Opening Book
 
 `OPENING_BOOK` is a JS object keyed by comma-separated SAN history (with `+`/`#` stripped):
