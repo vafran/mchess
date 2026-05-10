@@ -3473,6 +3473,13 @@ limitations under the License.
       box-shadow: inset 0 0 10px rgba(239, 68, 68, 0.5);
     }
 
+    /* Tutorial: own pieces under attack (same red glow, different semantic) */
+    .cell.spider-sense-own {
+      animation: spiderSense 1.5s infinite;
+      border-radius: 12px;
+      box-shadow: inset 0 0 14px rgba(239, 68, 68, 0.7);
+    }
+
     /* 🚦 Semáforo de Casillas */
     body .cell.move-hint.safe::after {
       background: rgba(34, 197, 94, 0.65);
@@ -7004,15 +7011,18 @@ limitations under the License.
             }
           }
 
-          // Apply Spider Sense CSS
-          if (hangingSquares.has(`${r},${c}`)) cell.classList.add('spider-sense');
-          
+          // Apply Spider Sense CSS (only outside tutorials — tutorials use their own highlight system)
+          if (!lastLoadedChallengeItem?.isTutorial && hangingSquares.has(`${r},${c}`)) cell.classList.add('spider-sense');
+
+          // Tutorial highlights: glow enemy or own squares based on chapter config
           if (puzzleMode && lastLoadedChallengeItem?.tutorialHighlights) {
             const th = lastLoadedChallengeItem.tutorialHighlights;
-            if (history.length === th.historyLength) {
-              if (th.squares.some(sq => sq[0] === r && sq[1] === c)) {
+            const atStep = (th.historyLength == null) || (history.length === th.historyLength);
+            if (atStep) {
+              if (th.enemySquares && th.enemySquares.some(sq => sq[0] === r && sq[1] === c))
                 cell.classList.add('spider-sense');
-              }
+              if (th.ownSquares && th.ownSquares.some(sq => sq[0] === r && sq[1] === c))
+                cell.classList.add('spider-sense-own');
             }
           }
 
@@ -8147,6 +8157,7 @@ limitations under the License.
       } else if (isCastle) { playCastleSound(); } else { playMoveSound(); }
 
       render();
+      if (lastLoadedChallengeItem?.isTutorial) drawTutorialHighlights();
       updateTurnUI();
       updateHistory();
       updateCaptured();
@@ -20735,9 +20746,13 @@ limitations under the License.
             solution: ['b3c5', 'e6e8', 'c5b7'],
             humanSteps: 3,
             tutorialHighlights: {
-              historyLength: 1, // trigger after the first move (b3c5)
-              squares: [[1, 1], [2, 4]], // b7 and e6
-              pauseMs: 4000 // wait 4 seconds to block user and show highlights
+              historyLength: 1, // trigger after the first move (b3c5) when knight lands on c5
+              enemySquares: [[1, 1], [2, 4]], // glow bishop on b7 and rook on e6 in red
+              arrows: [
+                { fr: 2, fc: 2, tr: 1, tc: 1, type: 'bad' }, // c5→b7 (attacked enemy)
+                { fr: 2, fc: 2, tr: 2, tc: 4, type: 'bad' }, // c5→e6 (attacked enemy)
+              ],
+              pauseMs: 4000 // wait 4 seconds so the player sees the highlights
             },
             completionMsgEs: '¡Horquilla ganadora!\n\nMoviste el caballo a c5 y atacaste dos piezas a la vez. La torre escapó, pero el alfil no pudo — ¡lo capturaste gratis!\n\nAsí funciona la horquilla: el rival solo puede salvar una pieza. La otra es tuya.\n\nLa horquilla de caballo es una de las tácticas más poderosas del ajedrez.',
             completionMsgEn: 'Winning fork!\n\nYou moved the knight to c5 and attacked two pieces at once. The rook escaped, but the bishop couldn\'t — you captured it for free!\n\nThat\'s how a fork works: your opponent can only save one piece. The other one is yours.\n\nThe knight fork is one of the most powerful tactics in chess.',
@@ -20903,6 +20918,12 @@ limitations under the License.
       const diffCfg = DIFF_SETTINGS['easy'];
       aiDepth = diffCfg.depth; aiMistakeChance = diffCfg.mistakes; aiTimeLimit = diffCfg.timeLimit;
 
+      // Force-disable assisted/training mode for the duration of this tutorial
+      if (trainingModeEnabled) {
+        trainingModeEnabled = false;
+        try { localStorage.setItem(TRAINING_MODE_STORAGE_KEY, '0'); } catch (_) { }
+      }
+
       // Wrap chapter as a challenge item so the existing puzzleMode system handles step playback
       lastLoadedChallengeItem = {
         nameEs: chapter.nameEs,
@@ -20918,6 +20939,7 @@ limitations under the License.
         isTutorial: true,
         lessonIdx,
         chapterIdx,
+        tutorialHighlights: chapter.tutorialHighlights ?? null,
       };
       sessionStartedFromFen = true;
       loadPositionFromFEN();
@@ -20961,6 +20983,16 @@ limitations under the License.
 
     // Sets professor panel content. During a tutorial the pinned description is always
     // kept at the top; the new content appears below it.
+    // Draws (or clears) arrows defined in tutorialHighlights for the current history length
+    function drawTutorialHighlights() {
+      clearArrows();
+      if (!puzzleMode || !lastLoadedChallengeItem?.tutorialHighlights) return;
+      const th = lastLoadedChallengeItem.tutorialHighlights;
+      const atStep = (th.historyLength == null) || (history.length === th.historyLength);
+      if (!atStep || !th.arrows) return;
+      th.arrows.forEach(a => drawArrow(a.fr, a.fc, a.tr, a.tc, a.type ?? 'good'));
+    }
+
     function setProfessorContent(html) {
       const pList = document.getElementById('professorList');
       if (!pList) return;
