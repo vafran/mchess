@@ -5376,7 +5376,8 @@ limitations under the License.
 
     function showMedalCelebration(mDef, catNum) {
       const name = mDef.name[currentLanguage] || mDef.name.es;
-      _queueCelebration(mDef.icon, '🏆 ' + (currentLanguage === 'en' ? 'Category Medal' : 'Medalla de Categoría'), name, 3500);
+      const label = currentLanguage === 'en' ? 'Category Medal' : 'Medalla de Categoría';
+      _queueCelebration(mDef.icon, label, name, 3500);
     }
 
     function showWheatChessboardCelebration() {
@@ -5408,8 +5409,8 @@ limitations under the License.
     function showTrophyCelebration(def, id) {
       const name = def ? (def.name[currentLanguage] || def.name.es) : id;
       const icon = def ? def.icon : '🏆';
-      const catLabels = { 1: '🏅', 2: '🧠', 3: '🥚', 4: '📜', 5: '⚡', 6: '📚', 7: '⚔️', 8: '🥊' };
-      const label = def ? (catLabels[def.cat] + ' ' + t('profileCat' + def.cat)) : '🏆';
+      // Show only the category name here; the icon is rendered separately to avoid duplicate emojis
+      const label = def ? t('profileCat' + def.cat) : (currentLanguage === 'en' ? 'Trophy' : 'Trofeo');
       _queueCelebration(icon, label, name, 2800);
     }
 
