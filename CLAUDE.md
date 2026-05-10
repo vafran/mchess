@@ -545,7 +545,7 @@ Buttons are restored (`_setTutorialButtonsBlocked(false)`) when `showTutorialCom
 
 | Lesson | Chapters |
 |--------|---------|
-| **Los Peones / The Pawns** | 1. How a pawn moves · 2. How a pawn captures · 3. Piece Hunt |
+| **Los Peones / The Pawns** | 1. How a pawn moves · 2. How a pawn captures · 3. Piece Hunt · 4. Pawn Mastery (3 stages) |
 | **Los Caballos / The Knights** | 1. The knight's leap · 2. The knight leaps over everything (jump demo) · 3. The knight attacks · 4. The great leap · 5. The fork |
 | **Jaque y Mate / Check and Mate** | 1. The King in Danger (5 stages) · 2. Special Attacks (Discovered Check) · 3. The Finishing Blow (3 stages) · 4. Stalemate (2 stages) |
 
