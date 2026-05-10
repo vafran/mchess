@@ -19676,7 +19676,7 @@ limitations under the License.
 
     function goToMainMenu() {
       closeIngameMenu();
-      _restoreCommentatorTab();
+      if (typeof _restoreCommentatorTab === 'function') _restoreCommentatorTab();
       document.getElementById('statusBanner').classList.remove('show');
       lastLoadedFen = null;
       lastLoadedPuzzleMode = null;
