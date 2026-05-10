@@ -21183,6 +21183,27 @@ limitations under the License.
           },
         ],
       },
+      {
+        id: 'king',
+        iconEs: '♔', iconEn: '♔',
+        nameEs: 'El Rey', nameEn: 'The King',
+        descEs: 'Aprende a proteger y mover a la pieza más importante del ajedrez.',
+        descEn: 'Learn how to protect and move the most important piece in chess.',
+        chapters: [
+          {
+            id: 'king_move',
+            nameEs: '1. Paso a paso',
+            nameEn: '1. Step by Step',
+            descEs: 'El Rey es lento pero valiente. Se mueve solo una casilla en cualquier dirección. Lleva a tu Rey hasta el peón enemigo para capturarlo.',
+            descEn: 'The King is slow but brave. He moves only one square in any direction. Lead your King to the enemy pawn to capture it.',
+            fen: '8/8/8/3p4/8/8/8/3K4 w - - 0 1',
+            solution: ['d1e2', 'e2e3', 'e3d4', 'd4d5'],
+            humanSteps: 4,
+            completionMsgEs: '¡Rey victorioso! Recuerda: si pierdes al Rey, pierdes la partida. Protégelo bien.',
+            completionMsgEn: 'Victorious King! Remember: if you lose the King, you lose the game. Protect him well.',
+          },
+        ],
+      },
     ];
 
     var _activeTutorialLessonIdx = 0; // which lesson tab is selected in the tutorial modal
