@@ -21304,20 +21304,17 @@ limitations under the License.
             descEs: 'Aprende cuándo un alfil es una pieza poderosa y cuándo está atrapado por sus propios peones.',
             descEn: 'Learn when a bishop is a powerful piece and when it is trapped by its own pawns.',
             stages: [
-              {
+                            {
                 id: 'bishop_lvl1',
-                nameEs: 'Nivel 1: El Diagnóstico',
-                nameEn: 'Level 1: The Diagnosis',
-                descEs: 'Tienes dos alfiles. El de g2 vuela libre. El de e3 choca contra su propia cadena de peones (tus peones también están en negro). Haz clic en el ALFIL MALO (el de e3) y retrocede a d2 para buscar otra diagonal.',
-                descEn: 'You have two bishops. The g2 one flies free. The e3 one crashes into its own pawn chain. Click the BAD BISHOP (the e3 one) and retreat to d2 to find another diagonal.',
-                fen: 'k7/8/p7/4P3/3P1P2/4B3/6B1/7K w - - 0 1',
-                solution: ['e3d2', 'a6a5'],
-                humanSteps: 1,
-                tutorialHighlights: {
-                  arrows: [{ fr: 5, fc: 4, tr: 6, tc: 3, type: 'good' }]
-                },
-                completionMsgEs: '¡Ese es! El alfil de e3 es tu "alfil malo" porque su visión está bloqueada por tus propios peones. Saber identificarlo es el primer paso.',
-                completionMsgEn: 'That\'s it! The e3 bishop is your "bad bishop" because its vision is blocked by your own pawns. Identifying it is the first step.',
+                nameEs: 'Nivel 1: Reconocimiento',
+                nameEn: 'Level 1: Recognition',
+                descEs: '¡Identifica las piezas! Haz clic sobre el alfil malo de las blancas (el que está encerrado por sus propios peones en d4 y e3).',
+                descEn: 'Identify the pieces! Click on the white bad bishop (the one enclosed by its own pawns on d4 and e3).',
+                fen: 'r3k2r/pp1b1ppp/2n1pn2/3p4/3P4/2P1P3/PP1B3P/R2Q1BKR w - - 0 1',
+                solution: ['d2'],
+                clickMode: true,
+                completionMsgEs: '¡Correcto! El alfil de d2 es "malo" porque choca contra sus propios peones en d4 y e3. Sus diagonales están bloqueadas.',
+                completionMsgEn: 'Correct! The bishop on d2 is "bad" because it bumps into its own pawns on d4 and e3. Its diagonals are blocked.',
               },
               {
                 id: 'bishop_lvl2',
@@ -21325,7 +21322,7 @@ limitations under the License.
                 nameEn: 'Level 2: Liberation',
                 descEs: 'Cuando no puedes mover tus peones, debes reubicar al alfil. Vamos a sacarlo de la cadena de peones siguiendo la ruta: d2 -> e1 -> h4.',
                 descEn: 'When you can\'t move your pawns, you must relocate your bishop. Let\'s move it outside the pawn chain following the route: d2 -> e1 -> h4.',
-                fen: '6k1/pp3pp1/4p2p/3pP3/3P4/2P5/PP1B2PP/4K3 w - - 0 1',
+                fen: 'r3k2r/pp1b1ppp/2n1pn2/3p4/3P4/2P1P3/PP1B3P/R2Q1BKR w - - 0 1',
                 solution: ['d2e1', 'a7a6', 'e1h4'],
                 humanSteps: 2,
                 tutorialHighlights: {
@@ -21337,6 +21334,7 @@ limitations under the License.
                 completionMsgEs: '¡Excelente maniobra! Al no poder mover tus peones, has "recirculado" la pieza para que sea útil por otro lado.',
                 completionMsgEn: 'Excellent maneuver! Since you couldn\'t move your pawns, you "recirculated" the piece to be useful from another side.',
               },
+
               {
                 id: 'bishop_lvl3',
                 nameEs: 'Nivel 3: El Cambio',
