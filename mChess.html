@@ -20949,6 +20949,18 @@ limitations under the License.
             completionMsgEn: 'You master pawn movement! Remember: 1 or 2 on the first turn, then always 1 — and if you reach the end... Queen!',
           },
           {
+            id: 'promotion',
+            nameEs: 'La Coronación',
+            nameEn: 'Promotion',
+            descEs: 'Cuando un peón llega al final del tablero, ¡se convierte en una pieza mayor! Lleva tu peón a g8 y elige la Dama.',
+            descEn: 'When a pawn reaches the end of the board, it turns into a major piece! Move your pawn to g8 and choose the Queen.',
+            fen: '8/6P1/8/8/8/8/8/k6K w - - 0 1',
+            solution: ['g7g8q'],
+            humanSteps: 1,
+            completionMsgEs: '¡Felicidades! Tu peón es ahora una poderosa Dama. Recuerda que puedes coronar Dama, Torre, Alfil o Caballo.',
+            completionMsgEn: 'Congratulations! Your pawn is now a powerful Queen. Remember you can promote to a Queen, Rook, Bishop, or Knight.',
+          },
+          {
             id: 'pawn_secrets',
             nameEs: '2. El Secreto del Peón',
             nameEn: '2. Pawn Secrets',
@@ -21019,6 +21031,27 @@ limitations under the License.
                 tutorialHighlights: { arrows: [{ fr: 6, fc: 3, tr: 5, tc: 2, type: 'good' }] },
                 completionMsgEs: '¡Increíble! Un solo peón capturó un caballo, un alfil y una torre en zigzag. Los peones son lentos, pero imparables cuando tienen un camino libre. ¡Nunca los subestimes!',
                 completionMsgEn: 'Incredible! One pawn captured a knight, a bishop and a rook in a zigzag. Pawns are slow but unstoppable when they have a clear path. Never underestimate them!',
+              },
+              {
+                id: 'en_passant',
+                nameEs: 'Captura al paso',
+                nameEn: 'En passant',
+                descEs: 'Regla especial: si un peón enemigo avanza 2 casillas y aterriza al lado del tuyo, puedes capturarlo "de paso" — como si solo hubiera avanzado 1. ¡Solo puedes hacerlo en ese mismo turno! El peón negro avanzará dos casillas hasta d5. Captura "al paso" moviendo tu peón de e5 a d6.',
+                descEn: 'Special rule: if an enemy pawn advances 2 squares and lands right next to yours, you can capture it "in passing" — as if it had only moved 1 square. You must do it immediately or the chance is gone! The black pawn will advance two squares to d5. Capture en passant by moving your pawn from e5 to d6.',
+                fen: '8/3p4/8/4P3/8/8/8/8 w - - 0 1',
+                solution: ['d7d5', 'e5d6'],
+                humanSteps: 1,
+                tutorialHighlights: {
+                  historyLength: 1, // trigger after Black plays d7d5
+                  enemySquares: [[3, 3]], // glow the black pawn on d5 (row 3, col 3)
+                  arrows: [
+                    { fr: 3, fc: 3, tr: 2, tc: 3, type: 'bad' },  // d5→d6 shows where the pawn came from (red — enemy threat)
+                    { fr: 3, fc: 4, tr: 2, tc: 3, type: 'good' }, // e5→d6 shows your capture destination (green)
+                  ],
+                  pauseMs: 5000, // 5 seconds — enough for the player to read and understand
+                },
+                completionMsgEs: '¡Al paso!\n\n¡Lo hiciste perfectamente! Tu peón capturó "de paso" al peón negro — aunque no había ninguna pieza en d6.\n\nEsta regla solo se puede usar en el turno inmediatamente después de que el peón enemigo avanza dos casillas. ¡Si esperas, pierdes la oportunidad para siempre!\n\nEs una de las reglas más sorprendentes del ajedrez — ¡y ahora la conoces!',
+                completionMsgEn: 'En passant!\n\nPerfectly done! Your pawn captured "in passing" the black pawn — even though there was no piece on d6.\n\nThis rule can only be used on the very next turn after the enemy pawn advances two squares. Wait, and the chance is gone forever!\n\nIt\'s one of the most surprising rules in chess — and now you know it!',
               },
             ],
             completionMsgEs: '¡Dominas las capturas del peón! Recuerda: avanza recto, pero ataca en diagonal. Una regla simple con grandes consecuencias.',
@@ -21273,15 +21306,18 @@ limitations under the License.
             stages: [
               {
                 id: 'bishop_lvl1',
-                nameEs: 'Nivel 1: Reconocimiento',
-                nameEn: 'Level 1: Recognition',
-                descEs: '¡Identifica las piezas! Haz clic sobre el alfil malo de las blancas (el que está encerrado por sus propios peones en d4 y e3).',
-                descEn: 'Identify the pieces! Click on the white bad bishop (the one enclosed by its own pawns on d4 and e3).',
-                fen: 'r3k2r/pp1b1ppp/2n1pn2/3p4/3P4/2P1P3/PP1B3P/R2Q1BKR w - - 0 1',
-                solution: ['d2'],
-                clickMode: true,
-                completionMsgEs: '¡Correcto! El alfil de d2 es "malo" porque choca contra sus propios peones en d4 y e3. Sus diagonales están bloqueadas.',
-                completionMsgEn: 'Correct! The bishop on d2 is "bad" because it bumps into its own pawns on d4 and e3. Its diagonals are blocked.',
+                nameEs: 'Nivel 1: El Diagnóstico',
+                nameEn: 'Level 1: The Diagnosis',
+                descEs: 'Tienes dos alfiles. El de g2 vuela libre. El de e3 choca contra su propia cadena de peones (tus peones también están en negro). Haz clic en el ALFIL MALO (el de e3) y retrocede a d2 para buscar otra diagonal.',
+                descEn: 'You have two bishops. The g2 one flies free. The e3 one crashes into its own pawn chain. Click the BAD BISHOP (the e3 one) and retreat to d2 to find another diagonal.',
+                fen: 'k7/8/p7/4P3/3P1P2/4B3/6B1/7K w - - 0 1',
+                solution: ['e3d2', 'a6a5'],
+                humanSteps: 1,
+                tutorialHighlights: {
+                  arrows: [{ fr: 5, fc: 4, tr: 6, tc: 3, type: 'good' }]
+                },
+                completionMsgEs: '¡Ese es! El alfil de e3 es tu "alfil malo" porque su visión está bloqueada por tus propios peones. Saber identificarlo es el primer paso.',
+                completionMsgEn: 'That\'s it! The e3 bishop is your "bad bishop" because its vision is blocked by your own pawns. Identifying it is the first step.',
               },
               {
                 id: 'bishop_lvl2',
@@ -21289,7 +21325,7 @@ limitations under the License.
                 nameEn: 'Level 2: Liberation',
                 descEs: 'Cuando no puedes mover tus peones, debes reubicar al alfil. Vamos a sacarlo de la cadena de peones siguiendo la ruta: d2 -> e1 -> h4.',
                 descEn: 'When you can\'t move your pawns, you must relocate your bishop. Let\'s move it outside the pawn chain following the route: d2 -> e1 -> h4.',
-                fen: 'r3k2r/pp1b1ppp/2n1pn2/3p4/3P4/2P1P3/PP1B3P/R2Q1BKR w - - 0 1',
+                fen: '6k1/pp3pp1/4p2p/3pP3/3P4/2P5/PP1B2PP/4K3 w - - 0 1',
                 solution: ['d2e1', 'a7a6', 'e1h4'],
                 humanSteps: 2,
                 tutorialHighlights: {
@@ -21305,49 +21341,52 @@ limitations under the License.
                 id: 'bishop_lvl3',
                 nameEs: 'Nivel 3: El Cambio',
                 nameEn: 'Level 3: The Exchange',
-                descEs: 'Tu alfil de d2 es malo. El de las negras en a3 es muy bueno y controla la diagonal. ¡Cámbialo para eliminar su ventaja!',
-                descEn: 'Your bishop on d2 is bad. Black\'s on a3 is very good and controls the diagonal. Trade it to eliminate their advantage!',
-                fen: 'r1b1k2r/pp3ppp/2n1pn2/3p4/2PP4/bPN1P3/P2B2PP/R2Q1BKR w - - 0 1',
-                solution: ['d2c1', 'h7h6', 'c1a3'],
+                descEs: 'Tu alfil de d2 es malo. El de las negras en a3 es muy bueno y presiona tu posición. ¡Ofrécele el cambio moviendo tu alfil a c1 para eliminar su ventaja!',
+                descEn: 'Your bishop on d2 is bad. Black\'s on a3 is very good and pressures your position. Trade it by moving your bishop to c1 to eliminate their advantage!',
+                fen: '6k1/pp3pp1/4p2p/3pP3/3P4/b1P5/PP1B2PP/R5K1 w - - 0 1',
+                solution: ['d2c1', 'a3c1', 'a1c1'],
                 humanSteps: 2,
                 tutorialHighlights: {
                   arrows: [{ fr: 6, fc: 3, tr: 7, tc: 2, type: 'good' }],
                 },
-                completionMsgEs: '¡Gran decisión! Cambiar tu "pieza mala" por la "pieza buena" del rival es una estrategia posicional fundamental.',
-                completionMsgEn: 'Great decision! Trading your "bad piece" for the opponent\'s "good piece" is a fundamental positional strategy.',
+                completionMsgEs: '¡Gran decisión! Forzar el cambio de tu "pieza mala" por la "pieza buena" del rival es una estrategia posicional fundamental.',
+                completionMsgEn: 'Great decision! Forcing the trade of your "bad piece" for the opponent\'s "good piece" is a fundamental positional strategy.',
               },
               {
                 id: 'bishop_lvl4',
                 nameEs: 'Nivel 4: Estructura',
                 nameEn: 'Level 4: Structure',
-                descEs: 'La forma más directa de liberar un alfil es mejorar tu estructura de peones. Mueve el peón de e3 a e4 para abrir la diagonal y luego lleva tu alfil a g5.',
-                descEn: 'The most direct way to free a bishop is to improve your pawn structure. Move the e3 pawn to e4 to open the diagonal and then move your bishop to g5.',
-                fen: 'r3k2r/pp1b1ppp/2n1pn2/3p4/3P4/2P1P3/PP1B3P/R2Q1BKR w - - 0 1',
-                solution: ['e3e4', 'a7a6', 'd2g5'],
+                descEs: 'La forma más directa de liberar un alfil es avanzar el peón que lo bloquea. Avanza tu peón a e5: esto atacará a su caballo y abrirá la diagonal para que tu alfil capture en h7.',
+                descEn: 'The most direct way to free a bishop is to advance the pawn blocking it. Advance your pawn to e5: this attacks their knight and opens the diagonal for your bishop to capture on h7.',
+                fen: '2k5/pp1q1ppr/4pn1p/3p4/3PP3/3B4/PP3PPP/6K1 w - - 0 1',
+                solution: ['e4e5', 'f6e8', 'd3h7'],
                 humanSteps: 2,
                 tutorialHighlights: {
                   arrows: [
-                    { fr: 5, fc: 4, tr: 4, tc: 4, type: 'good' },
-                    { fr: 6, fc: 3, tr: 3, tc: 6, type: 'good' }
+                    { fr: 4, fc: 4, tr: 3, tc: 4, type: 'good' },
+                    { fr: 5, fc: 3, tr: 1, tc: 7, type: 'good' }
                   ],
                 },
-                completionMsgEs: '¡Perfecto! Al mover tus peones al color opuesto de tu alfil, le has dado libertad total para atacar en campo enemigo.',
-                completionMsgEn: 'Perfect! By moving your pawns to the color opposite of your bishop, you gave it total freedom to attack in enemy territory.',
+                completionMsgEs: '¡Perfecto! Al avanzar el peón, liberaste todo el potencial táctico de tu alfil, ganando material al instante.',
+                completionMsgEn: 'Perfect! By advancing the pawn, you unleashed the full tactical potential of your bishop, winning material instantly.',
               },
               {
                 id: 'bishop_lvl5',
                 nameEs: 'Nivel 5: El Final',
                 nameEn: 'Level 5: The Endgame',
-                descEs: 'En el final, el alfil bueno domina al malo. Lleva tu alfil a a4 para presionar el punto débil y luego captura el peón de c6.',
-                descEn: 'In the endgame, the good bishop dominates the bad one. Move your bishop to a4 to pressure the weak point and then capture the c6 pawn.',
-                fen: '4k3/4b3/p1p1p1p1/P1PpP1P1/1P1P1P1P/8/4B3/4K3 w - - 0 1',
-                solution: ['e2d1', 'e8f8', 'd1a4', 'f8g8', 'a4c6'],
-                humanSteps: 5,
+                descEs: '¡El alfil bueno también puede cazar al Rey! Mueve tu alfil a e2 para dar jaque. El rey huirá a h4, lo que te permitirá capturar gratis el peón de a6 cruzando todo el tablero.',
+                descEn: 'The good bishop can also hunt the King! Move your bishop to e2 to give check. The king will flee to h4, allowing you to capture the a6 pawn for free across the board.',
+                fen: '2b5/8/p3p1p1/P3P1Pk/8/8/8/3B2K1 w - - 0 1',
+                solution: ['d1e2', 'h5h4', 'e2a6'],
+                humanSteps: 2,
                 tutorialHighlights: {
-                  arrows: [{ fr: 6, fc: 4, tr: 7, tc: 3, type: 'good' }, { fr: 7, fc: 3, tr: 4, tc: 0, type: 'good' }, { fr: 4, fc: 0, tr: 2, tc: 2, type: 'good' }],
+                  arrows: [
+                    { fr: 7, fc: 3, tr: 6, tc: 4, type: 'good' },
+                    { fr: 6, fc: 4, tr: 2, tc: 0, type: 'good' }
+                  ],
                 },
-                completionMsgEs: '¡Victoria posicional! Un alfil que no tiene peones propios estorbando puede atacar debilidades que el rival nunca podrá defender.',
-                completionMsgEn: 'Positional victory! A bishop with no friendly pawns in its way can attack weaknesses that the opponent can never defend.',
+                completionMsgEs: '¡Jaque y captura!\n\nAl dar jaque forzaste al Rey a retirarse, y usaste el larguísimo alcance de tu alfil libre para capturar en el lado opuesto del tablero.',
+                completionMsgEn: 'Check and capture!\n\nBy giving check you forced the King to retreat, and you used the extremely long reach of your free bishop to capture on the opposite side of the board.',
               },
             ],
             completionMsgEs: '¡Maestría en alfiles! Ahora sabes distinguir entre un alfil activo y uno bloqueado. ¡Usa este conocimiento para dominar el tablero!',
@@ -21508,31 +21547,10 @@ limitations under the License.
             completionMsgEs: '¡Cacería completa! Has demostrado que un Rey activo puede detener a todo un ejército de peones. ¡Nada se escapa del Rey Guerrero!',
             completionMsgEn: 'Hunt complete! You have shown that an active King can stop an entire army of pawns. Nothing escapes the Warrior King!',
           },
-        ],
-      },
-      {
-        id: 'special',
-        iconEs: '⭐', iconEn: '⭐',
-        nameEs: 'Jugadas Especiales', nameEn: 'Special Moves',
-        descEs: 'Domina las reglas avanzadas: Enroque, Coronación y Al Paso.',
-        descEn: 'Master advanced rules: Castling, Promotion, and En Passant.',
-        chapters: [
-          {
-            id: 'promotion',
-            nameEs: '1. Coronación',
-            nameEn: '1. Promotion',
-            descEs: 'Cuando un peón llega al final del tablero, ¡se convierte en una pieza mayor! Lleva tu peón a g8 y elige la Dama.',
-            descEn: 'When a pawn reaches the end of the board, it turns into a major piece! Move your pawn to g8 and choose the Queen.',
-            fen: '8/6P1/8/8/8/8/8/k6K w - - 0 1',
-            solution: ['g7g8q'],
-            humanSteps: 1,
-            completionMsgEs: '¡Felicidades! Tu peón es ahora una poderosa Dama. Recuerda que puedes coronar Dama, Torre, Alfil o Caballo.',
-            completionMsgEn: 'Congratulations! Your pawn is now a powerful Queen. Remember you can promote to a Queen, Rook, Bishop, or Knight.',
-          },
           {
             id: 'castling',
-            nameEs: '2. Enroque',
-            nameEn: '2. Castling',
+            nameEs: 'El Enroque',
+            nameEn: 'Castling',
             descEs: 'Protege a tu Rey moviéndolo a una posición segura y activando tu torre al mismo tiempo.',
             descEn: 'Protect your King by moving it to a safe position and activating your rook at the same time.',
             stages: [
@@ -21563,29 +21581,6 @@ limitations under the License.
             ],
             completionMsgEs: '¡Maestría en el enroque! Has aprendido a proteger a tu Rey en ambos flancos. Recuerda: un Rey en el centro es un Rey en peligro.',
             completionMsgEn: 'Castling mastery! You have learned to protect your King on both flanks. Remember: a King in the center is a King in danger.',
-          },
-          {
-            id: 'en_passant',
-            nameEs: '3. Al paso',
-            nameEn: '3. En passant',
-            menuDescEs: 'Captura un peón enemigo que avanzó dos casillas de golpe. ¡Solo en ese momento!',
-            menuDescEn: 'Capture an enemy pawn that just advanced two squares. You must act immediately!',
-            descEs: 'Regla especial: si un peón enemigo avanza 2 casillas y aterriza al lado del tuyo, puedes capturarlo "de paso" — como si solo hubiera avanzado 1. ¡Solo puedes hacerlo en ese mismo turno! El peón negro avanzará dos casillas hasta d5. Captura "al paso" moviendo tu peón de e5 a d6.',
-            descEn: 'Special rule: if an enemy pawn advances 2 squares and lands right next to yours, you can capture it "in passing" — as if it had only moved 1 square. You must do it immediately or the chance is gone! The black pawn will advance two squares to d5. Capture en passant by moving your pawn from e5 to d6.',
-            fen: '8/3p4/8/4P3/8/8/8/8 w - - 0 1',
-            solution: ['d7d5', 'e5d6'],
-            humanSteps: 1,
-            tutorialHighlights: {
-              historyLength: 1, // trigger after Black plays d7d5
-              enemySquares: [[3, 3]], // glow the black pawn on d5 (row 3, col 3)
-              arrows: [
-                { fr: 3, fc: 3, tr: 2, tc: 3, type: 'bad' },  // d5→d6 shows where the pawn came from (red — enemy threat)
-                { fr: 3, fc: 4, tr: 2, tc: 3, type: 'good' }, // e5→d6 shows your capture destination (green)
-              ],
-              pauseMs: 5000, // 5 seconds — enough for the player to read and understand
-            },
-            completionMsgEs: '¡Al paso!\n\n¡Lo hiciste perfectamente! Tu peón capturó "de paso" al peón negro — aunque no había ninguna pieza en d6.\n\nEsta regla solo se puede usar en el turno inmediatamente después de que el peón enemigo avanza dos casillas. ¡Si esperas, pierdes la oportunidad para siempre!\n\nEs una de las reglas más sorprendentes del ajedrez — ¡y ahora la conoces!',
-            completionMsgEn: 'En passant!\n\nPerfectly done! Your pawn captured "in passing" the black pawn — even though there was no piece on d6.\n\nThis rule can only be used on the very next turn after the enemy pawn advances two squares. Wait, and the chance is gone forever!\n\nIt\'s one of the most surprising rules in chess — and now you know it!',
           },
         ],
       },
