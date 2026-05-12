@@ -8021,10 +8021,11 @@ limitations under the License.
             const isPawn = board[sr] && board[sr][sc].toUpperCase() === 'P';
             const isPromoRank = (r === 0 || r === 7);
             const isTutorialPromo = lastLoadedChallengeItem?.isTutorial && isPawn && isPromoRank;
-            // For tutorials with promotion: let player choose — accept any promo piece
+            // For tutorials: always show the modal (null = show modal); accept any piece via 4-char compare
             // For regular puzzles: auto-match the expected promo piece to avoid modal mismatch
-            const guessPromo = isPawn && isPromoRank ? (isTutorialPromo ? null : (expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q')) : null;
-            // For tutorial promo validation, compare only the 4-char base move (ignore piece choice)
+            const guessPromo = isPawn && isPromoRank
+              ? (isTutorialPromo ? null : (expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q'))
+              : null;
             const playedUci = isTutorialPromo
               ? moveToUci(sr, sc, r, c, null).slice(0, 4)
               : moveToUci(sr, sc, r, c, guessPromo);
@@ -8053,8 +8054,7 @@ limitations under the License.
               selected = null; legalMoves = []; render();
               return;
             }
-            // Correct move — for tutorial promos the player chose their piece already via modal;
-            // for regular puzzles pass the expected promo piece so makeMove skips the modal
+            // Correct move — for tutorial promos show modal (null); for regular puzzles auto-promote
             puzzlePromo = isTutorialPromo ? null : guessPromo;
             puzzleMode.step++;
           }
@@ -8608,16 +8608,25 @@ limitations under the License.
         const opts = document.getElementById('promoOptions');
         opts.innerHTML = '';
         const choices = color === 'w' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
+        const queenOnly = lastLoadedChallengeItem?.forcePromo;
         for (const ch of choices) {
           const btn = document.createElement('button');
           btn.className = 'promo-btn';
           btn.textContent = PIECES[ch];
           btn.title = PIECE_NAMES[ch];
-          btn.addEventListener('click', () => {
-            modal.classList.remove('show');
-            playCaptureSound();
-            resolve(ch);
-          });
+          const isQueen = ch.toUpperCase() === 'Q';
+          if (queenOnly && !isQueen) {
+            btn.disabled = true;
+            btn.style.opacity = '0.3';
+            btn.style.cursor = 'not-allowed';
+            btn.style.filter = 'grayscale(1)';
+          } else {
+            btn.addEventListener('click', () => {
+              modal.classList.remove('show');
+              playCaptureSound();
+              resolve(ch);
+            });
+          }
           opts.appendChild(btn);
         }
         modal.classList.add('show');
@@ -20902,8 +20911,8 @@ limitations under the License.
             id: 'pawn_movement',
             nameEs: '1. Cómo se Mueve',
             nameEn: '1. How it Moves',
-            descEs: 'Descubre todos los secretos del movimiento del peón: el salto inicial, el avance, y la coronación.',
-            descEn: 'Discover all the secrets of pawn movement: the initial jump, advancing, and promotion.',
+            descEs: 'Descubre cómo avanza el peón: el salto inicial y el avance casilla a casilla.',
+            descEn: 'Discover how the pawn advances: the initial jump and the step-by-step march.',
             stages: [
               {
                 id: 'pawn_first_jump',
@@ -20931,80 +20940,16 @@ limitations under the License.
                 completionMsgEs: '¡Eso es! Paso a paso, siempre hacia adelante. El peón nunca puede retroceder — ¡así que hay que pensar bien antes de moverlo!',
                 completionMsgEn: 'That\'s it! Step by step, always forward. The pawn can never go back — so you have to think carefully before moving it!',
               },
-              {
-                id: 'pawn_promote',
-                nameEs: '¡Coronación!',
-                nameEn: 'Promotion!',
-                descEs: 'Cuando un peón llega al otro extremo del tablero, ¡se transforma en cualquier pieza que quieras! Avanza el peón a la octava fila.',
-                descEn: 'When a pawn reaches the other end of the board, it transforms into any piece you want! Advance the pawn to the 8th rank.',
-                fen: '8/4P3/8/8/8/8/8/k6K w - - 0 1',
-                solution: ['e7e8q'],
-                humanSteps: 1,
-                tutorialHighlights: { arrows: [{ fr: 1, fc: 4, tr: 0, tc: 4, type: 'good' }] },
-                completionMsgEs: '¡CORONACIÓN! El humilde peón se convirtió en Reina. Por eso los peones son tan valiosos al final de la partida — ¡cada uno es una Reina en potencia!',
-                completionMsgEn: 'PROMOTION! The humble pawn became a Queen. That\'s why pawns are so valuable in the endgame — each one is a potential Queen!',
-              },
             ],
-            completionMsgEs: '¡Dominas el movimiento del peón! Recuerda: 1 o 2 en el primer turno, luego 1 siempre, y si llegas al final... ¡Reina!',
-            completionMsgEn: 'You master pawn movement! Remember: 1 or 2 on the first turn, then always 1 — and if you reach the end... Queen!',
-          },
-          {
-            id: 'promotion',
-            nameEs: 'La Coronación',
-            nameEn: 'Promotion',
-            descEs: 'Cuando un peón llega al final del tablero, ¡se convierte en una pieza mayor! Lleva tu peón a g8 y elige la Dama.',
-            descEn: 'When a pawn reaches the end of the board, it turns into a major piece! Move your pawn to g8 and choose the Queen.',
-            fen: '8/6P1/8/8/8/8/8/k6K w - - 0 1',
-            solution: ['g7g8q'],
-            humanSteps: 1,
-            completionMsgEs: '¡Felicidades! Tu peón es ahora una poderosa Dama. Recuerda que puedes coronar Dama, Torre, Alfil o Caballo.',
-            completionMsgEn: 'Congratulations! Your pawn is now a powerful Queen. Remember you can promote to a Queen, Rook, Bishop, or Knight.',
-          },
-          {
-            id: 'pawn_secrets',
-            nameEs: '2. El Secreto del Peón',
-            nameEn: '2. Pawn Secrets',
-            descEs: 'Los peones esconden tácticas únicas que ninguna otra pieza tiene.',
-            descEn: 'Pawns hide unique tactics that no other piece has.',
-            stages: [
-              {
-                id: 'pawn_race',
-                nameEs: 'La Carrera de Peones',
-                nameEn: 'The Pawn Race',
-                descEs: '¡Es una carrera reñida! Ambos peones están a la misma distancia. Corre a coronar primero — y cuando el peón negro también corone, ¡captúralo con tu nueva Reina!',
-                descEn: 'It\'s a tight race! Both pawns are the same distance away. Race to promote first — and when the black pawn also promotes, capture it with your new Queen!',
-                fen: 'k7/1p6/8/8/8/8/4P3/7K w - - 0 1',
-                solution: ['e2e4', 'b7b5', 'e4e5', 'b5b4', 'e5e6', 'b4b3', 'e6e7', 'b3b2', 'e7e8q', 'a8a7', 'e8b5', 'b2b1q', 'b5b1'],
-                humanSteps: 13,
-                completionMsgEs: '¡Ganaste la carrera! Coronaste primero, reposicionaste tu Reina en b5 para controlar el b1, y cuando el rival también coronó, ¡la capturaste! Así se gana una carrera de peones.',
-                completionMsgEn: 'You won the race! You promoted first, repositioned your Queen to b5 to control b1, and when the rival also promoted, you captured it! That\'s how you win a pawn race.',
-              },
-              {
-                id: 'pawn_chain',
-                nameEs: 'La Cadena de Peones',
-                nameEn: 'The Pawn Chain',
-                descEs: '¡El peón negro en e5 amenaza capturar tu peón en d4! No lo cambies — ¡en su lugar forma una cadena! Avanza el peón de c para que proteja a d4 en diagonal.',
-                descEn: 'The black pawn on e5 threatens to capture your d4 pawn! Don\'t trade — form a chain instead! Advance the c-pawn to protect d4 diagonally.',
-                fen: 'k6K/8/5p2/4p3/3P4/8/2P5/8 w - - 0 1',
-                solution: ['c2c3'],
-                humanSteps: 1,
-                tutorialHighlights: { arrows: [
-                  { fr: 3, fc: 4, tr: 4, tc: 3, type: 'bad' },
-                  { fr: 6, fc: 2, tr: 5, tc: 2, type: 'good' },
-                ] },
-                completionMsgEs: '¡Cadena formada! El peón de c3 protege al de d4. Ahora si el peón negro captura en d4, tú recapturas con c3. Los peones en cadena son casi imposibles de romper — ¡cada uno cuida al otro!',
-                completionMsgEn: 'Chain formed! The c3 pawn protects d4. Now if the black pawn captures on d4, you recapture with c3. Pawns in a chain are nearly unbreakable — each one watches the other\'s back!',
-              },
-            ],
-            completionMsgEs: '¡Conoces los secretos del peón! La carrera al coronar y las cadenas de defensa son armas poderosas en tus manos.',
-            completionMsgEn: 'You know the pawn\'s secrets! The promotion race and defensive chains are powerful weapons in your hands.',
+            completionMsgEs: '¡Dominas el movimiento del peón! Recuerda: 1 o 2 en el primer turno, y luego siempre 1 casilla hacia adelante.',
+            completionMsgEn: 'You master pawn movement! Remember: 1 or 2 on the first turn, then always 1 square forward.',
           },
           {
             id: 'pawn_captures',
-            nameEs: '3. Cómo Captura',
-            nameEn: '3. How it Captures',
-            descEs: 'Los peones no capturan como avanzan. ¡Aprende su arma diagonal!',
-            descEn: 'Pawns don\'t capture the way they advance. Learn their diagonal weapon!',
+            nameEs: '2. Cómo Captura',
+            nameEn: '2. How it Captures',
+            descEs: 'Los peones no capturan como avanzan. ¡Aprende su arma diagonal, incluyendo el famoso "al paso"!',
+            descEn: 'Pawns don\'t capture the way they advance. Learn their diagonal weapon, including the famous en passant!',
             stages: [
               {
                 id: 'pawn_capture_basic',
@@ -21034,35 +20979,72 @@ limitations under the License.
               },
               {
                 id: 'en_passant',
-                nameEs: 'Captura al paso',
-                nameEn: 'En passant',
+                nameEs: 'Captura al Paso',
+                nameEn: 'En Passant',
                 descEs: 'Regla especial: si un peón enemigo avanza 2 casillas y aterriza al lado del tuyo, puedes capturarlo "de paso" — como si solo hubiera avanzado 1. ¡Solo puedes hacerlo en ese mismo turno! El peón negro avanzará dos casillas hasta d5. Captura "al paso" moviendo tu peón de e5 a d6.',
                 descEn: 'Special rule: if an enemy pawn advances 2 squares and lands right next to yours, you can capture it "in passing" — as if it had only moved 1 square. You must do it immediately or the chance is gone! The black pawn will advance two squares to d5. Capture en passant by moving your pawn from e5 to d6.',
                 fen: '8/3p4/8/4P3/8/8/8/8 w - - 0 1',
                 solution: ['d7d5', 'e5d6'],
                 humanSteps: 1,
                 tutorialHighlights: {
-                  historyLength: 1, // trigger after Black plays d7d5
-                  enemySquares: [[3, 3]], // glow the black pawn on d5 (row 3, col 3)
+                  historyLength: 1,
+                  enemySquares: [[3, 3]],
                   arrows: [
-                    { fr: 3, fc: 3, tr: 2, tc: 3, type: 'bad' },  // d5→d6 shows where the pawn came from (red — enemy threat)
-                    { fr: 3, fc: 4, tr: 2, tc: 3, type: 'good' }, // e5→d6 shows your capture destination (green)
+                    { fr: 3, fc: 3, tr: 2, tc: 3, type: 'bad' },
+                    { fr: 3, fc: 4, tr: 2, tc: 3, type: 'good' },
                   ],
-                  pauseMs: 5000, // 5 seconds — enough for the player to read and understand
+                  pauseMs: 5000,
                 },
                 completionMsgEs: '¡Al paso!\n\n¡Lo hiciste perfectamente! Tu peón capturó "de paso" al peón negro — aunque no había ninguna pieza en d6.\n\nEsta regla solo se puede usar en el turno inmediatamente después de que el peón enemigo avanza dos casillas. ¡Si esperas, pierdes la oportunidad para siempre!\n\nEs una de las reglas más sorprendentes del ajedrez — ¡y ahora la conoces!',
                 completionMsgEn: 'En passant!\n\nPerfectly done! Your pawn captured "in passing" the black pawn — even though there was no piece on d6.\n\nThis rule can only be used on the very next turn after the enemy pawn advances two squares. Wait, and the chance is gone forever!\n\nIt\'s one of the most surprising rules in chess — and now you know it!',
               },
             ],
-            completionMsgEs: '¡Dominas las capturas del peón! Recuerda: avanza recto, pero ataca en diagonal. Una regla simple con grandes consecuencias.',
-            completionMsgEn: 'You master pawn captures! Remember: advance straight, but attack diagonally. A simple rule with big consequences.',
+            completionMsgEs: '¡Dominas las capturas del peón! Recuerda: avanza recto, pero ataca en diagonal. Y si el rival da un salto de dos casillas junto al tuyo... ¡al paso!',
+            completionMsgEn: 'You master pawn captures! Remember: advance straight, but attack diagonally. And if the enemy jumps two squares next to yours… en passant!',
+          },
+          {
+            id: 'pawn_promotion',
+            nameEs: '3. La Coronación',
+            nameEn: '3. Promotion',
+            descEs: 'El sueño de todo peón: llegar al otro lado del tablero y convertirse en la pieza más poderosa.',
+            descEn: 'Every pawn\'s dream: reach the other side of the board and become the most powerful piece.',
+            stages: [
+              {
+                id: 'pawn_promote',
+                nameEs: '¡Coronación!',
+                nameEn: 'Promotion!',
+                descEs: 'Cuando un peón llega al otro extremo del tablero, ¡se transforma en cualquier pieza que quieras! Avanza el peón a la octava fila.',
+                descEn: 'When a pawn reaches the other end of the board, it transforms into any piece you want! Advance the pawn to the 8th rank.',
+                fen: '8/4P3/8/8/8/8/8/k6K w - - 0 1',
+                solution: ['e7e8q'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 1, fc: 4, tr: 0, tc: 4, type: 'good' }] },
+                completionMsgEs: '¡CORONACIÓN! El humilde peón se convirtió en Reina. Por eso los peones son tan valiosos al final de la partida — ¡cada uno es una Reina en potencia!',
+                completionMsgEn: 'PROMOTION! The humble pawn became a Queen. That\'s why pawns are so valuable in the endgame — each one is a potential Queen!',
+              },
+              {
+                id: 'pawn_race',
+                nameEs: 'La Carrera de Peones',
+                nameEn: 'The Pawn Race',
+                descEs: '¡Es una carrera reñida! Ambos peones están a la misma distancia. Corre a coronar primero en Dama — y cuando el peón negro también corone, ¡captúralo con tu nueva Dama!',
+                descEn: 'It\'s a tight race! Both pawns are the same distance away. Race to promote first to a Queen — and when the black pawn also promotes, capture it with your new Queen!',
+                fen: 'k7/1p6/8/8/8/8/4P3/7K w - - 0 1',
+                solution: ['e2e4', 'b7b5', 'e4e5', 'b5b4', 'e5e6', 'b4b3', 'e6e7', 'b3b2', 'e7e8q', 'a8a7', 'e8b5', 'b2b1q', 'b5b1'],
+                humanSteps: 13,
+                forcePromo: true,
+                completionMsgEs: '¡Ganaste la carrera! Coronaste primero, reposicionaste tu Reina en b5 para controlar el b1, y cuando el rival también coronó, ¡la capturaste! Así se gana una carrera de peones.',
+                completionMsgEn: 'You won the race! You promoted first, repositioned your Queen to b5 to control b1, and when the rival also promoted, you captured it! That\'s how you win a pawn race.',
+              },
+            ],
+            completionMsgEs: '¡El sueño del peón cumplido! Sabe coronar y sabe ganar la carrera. Recuerda: siempre elige la Dama al coronar.',
+            completionMsgEn: 'The pawn\'s dream fulfilled! You can promote and win the race. Remember: always choose the Queen when you promote.',
           },
           {
             id: 'pawn_defense',
-            nameEs: '4. Defenderse con Peones',
+            nameEs: '4. Defender con Peones',
             nameEn: '4. Defending with Pawns',
-            descEs: 'Los peones no solo atacan. Aprende a usarlos para proteger piezas y abrir caminos estratégicos.',
-            descEn: 'Pawns don\'t just attack. Learn to use them to protect pieces and open strategic paths.',
+            descEs: 'Los peones no solo atacan. Aprende a usarlos para proteger piezas, formar cadenas y frenar al rival.',
+            descEn: 'Pawns don\'t just attack. Learn to use them to protect pieces, form chains and stop the opponent.',
             stages: [
               {
                 id: 'pawn_guard',
@@ -21096,9 +21078,25 @@ limitations under the License.
                 completionMsgEs: '¡Torre salvada! Tu peón capturó al caballo atacante. Los peones no solo avanzan — también pueden defender a tus piezas capturando amenazas directas. ¡Un peón puede tener más valor que una pieza!',
                 completionMsgEn: 'Rook saved! Your pawn captured the attacking knight. Pawns don\'t just advance — they can also defend your pieces by capturing direct threats. A pawn can be worth more than a piece!',
               },
+              {
+                id: 'pawn_chain',
+                nameEs: 'La Cadena de Peones',
+                nameEn: 'The Pawn Chain',
+                descEs: '¡El peón negro en e5 amenaza capturar tu peón en d4! No lo cambies — ¡en su lugar forma una cadena! Avanza el peón de c para que proteja a d4 en diagonal.',
+                descEn: 'The black pawn on e5 threatens to capture your d4 pawn! Don\'t trade — form a chain instead! Advance the c-pawn to protect d4 diagonally.',
+                fen: 'k6K/8/5p2/4p3/3P4/8/2P5/8 w - - 0 1',
+                solution: ['c2c3'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [
+                  { fr: 3, fc: 4, tr: 4, tc: 3, type: 'bad' },
+                  { fr: 6, fc: 2, tr: 5, tc: 2, type: 'good' },
+                ] },
+                completionMsgEs: '¡Cadena formada! El peón de c3 protege al de d4. Ahora si el peón negro captura en d4, tú recapturas con c3. Los peones en cadena son casi imposibles de romper — ¡cada uno cuida al otro!',
+                completionMsgEn: 'Chain formed! The c3 pawn protects d4. Now if the black pawn captures on d4, you recapture with c3. Pawns in a chain are nearly unbreakable — each one watches the other\'s back!',
+              },
             ],
-            completionMsgEs: '¡Eres un maestro de los peones! Ahora sabes que pueden avanzar, coronar, capturar, defender y abrir caminos. ¡Son las piezas más importantes del tablero!',
-            completionMsgEn: 'You\'re a pawn master! Now you know they can advance, promote, capture, defend and open paths. They are the most important pieces on the board!',
+            completionMsgEs: '¡Eres un maestro de los peones! Ahora sabes que pueden avanzar, coronar, capturar, defender y formar cadenas. ¡Son las piezas más importantes del tablero!',
+            completionMsgEn: 'You\'re a pawn master! Now you know they can advance, promote, capture, defend and form chains. They are the most important pieces on the board!',
           },
         ],
       },
@@ -21943,6 +21941,7 @@ limitations under the License.
           lastLoadedChallengeItem.humanSteps = nextStage.humanSteps;
           lastLoadedChallengeItem.tutorialHighlights = nextStage.tutorialHighlights ?? null;
           lastLoadedChallengeItem.anyOrder = nextStage.anyOrder ?? false;
+          lastLoadedChallengeItem.forcePromo = nextStage.forcePromo ?? false;
         }
         
         drawTutorialHighlights();
@@ -22082,6 +22081,7 @@ limitations under the License.
         chapterIdx,
         anyOrder: activeStage.anyOrder ?? false,
         tutorialHighlights: activeStage.tutorialHighlights ?? null,
+        forcePromo: activeStage.forcePromo ?? false,
       };
       sessionStartedFromFen = true;
       loadPositionFromFEN();
