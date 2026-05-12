@@ -974,6 +974,18 @@ limitations under the License.
       }
     }
 
+    .mini-board { display:grid; grid-template-columns: repeat(8, 1fr); border:2px solid rgba(255,255,255,0.15); border-radius:6px; overflow:hidden; }
+    .mini-cell { width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:1.25rem; line-height:1; position:relative; }
+    .mini-cell.light { background:#b8cfe0; }
+    .mini-cell.dark  { background:#4a7fa5; }
+    body.theme-ocean .mini-cell.light { background:#7ba7c4; }
+    body.theme-ocean .mini-cell.dark  { background:#2d5f7a; }
+    .mini-cell.mini-last { outline:3px solid rgba(251,191,36,0.85); outline-offset:-3px; }
+    .mini-cell .mini-piece { pointer-events:none; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.7); }
+    .mini-cell .mini-piece.black { color:#1a1a2e; text-shadow:0 1px 2px rgba(255,255,255,0.3); }
+    .mini-cell.mini-check { background: rgba(239,68,68,0.6) !important; }
+    .mini-board-label { font-size:0.7rem; color:var(--text-light); text-align:center; margin-top:4px; }
+
     .tutorial-goal-emoji {
       position: absolute;
       inset: 0;
@@ -4554,6 +4566,7 @@ limitations under the License.
       <div id="tutorialResultStar" style="font-size:2.6rem; margin-bottom:6px;">⭐</div>
       <div id="tutorialCompleteTitle"
         style="font-size:1.1rem; font-weight:800; color:var(--primary); margin-bottom:12px;"></div>
+      <div id="tutorialMiniBoard" style="display:none; margin:0 auto 16px; width:fit-content;"></div>
       <p id="tutorialCompleteMsg"
         style="font-size:0.88rem; color:var(--text); line-height:1.6; margin-bottom:20px; text-align:left;"></p>
       <div style="display:flex; flex-direction:column; gap:8px;">
@@ -21119,6 +21132,8 @@ limitations under the License.
                 humanSteps: 1,
                 forcePromo: 'N',
                 resultType: 'checkmate',
+                miniBoardFen: '1Nb4r/p2p3p/kb1P3n/3Q4/N3Pp2/8/P1P3PP/7K w - - 0 3',
+                miniBoardHighlight: [[0,1],[2,0]],
                 tutorialHighlights: { arrows: [{ fr: 1, fc: 2, tr: 0, tc: 1, type: 'good' }] },
                 completionMsgEs: '¡Jaque mate con Caballo!\n\nSolo el Caballo podía dar jaque mate aquí. La Dama habría dado jaque — pero el rey habría podido escapar. ¡El Caballo salta en L de forma única y cierra todas las salidas!\n\nRecuerda: los Caballos son las únicas piezas que pueden saltar por encima de otras. Su movimiento en L sorprende hasta a los jugadores más experimentados.',
                 completionMsgEn: 'Checkmate with a Knight!\n\nOnly the Knight could deliver checkmate here. A Queen would give check — but the king could escape. The Knight jumps in its unique L-shape and closes every exit!\n\nRemember: knights are the only pieces that can leap over others. Their L-shape movement surprises even experienced players.',
@@ -21932,6 +21947,44 @@ limitations under the License.
       });
     }
 
+    function renderMiniBoard(containerEl, fen, highlightSquares) {
+      // Parse FEN piece placement into an 8x8 array
+      const rows = fen.split(' ')[0].split('/');
+      const grid = rows.map(row => {
+        const cells = [];
+        for (const ch of row) {
+          if (ch >= '1' && ch <= '8') for (let i = 0; i < +ch; i++) cells.push(' ');
+          else cells.push(ch);
+        }
+        return cells;
+      });
+      // Find black king for check highlight
+      let bkRow = -1, bkCol = -1;
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (grid[r][c] === 'k') { bkRow = r; bkCol = c; }
+      const inChk = bkRow >= 0 && inCheck('b', grid);
+      containerEl.innerHTML = '';
+      const boardEl = document.createElement('div');
+      boardEl.className = 'mini-board';
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const cell = document.createElement('div');
+          const isLight = (r + c) % 2 === 0;
+          cell.className = 'mini-cell ' + (isLight ? 'light' : 'dark');
+          if (highlightSquares && highlightSquares.some(s => s[0] === r && s[1] === c)) cell.classList.add('mini-last');
+          if (inChk && r === bkRow && c === bkCol) cell.classList.add('mini-check');
+          const p = grid[r][c];
+          if (p && p !== ' ') {
+            const span = document.createElement('span');
+            span.className = 'mini-piece ' + (p === p.toUpperCase() ? 'white' : 'black');
+            span.textContent = PIECES[p] || '';
+            cell.appendChild(span);
+          }
+          boardEl.appendChild(cell);
+        }
+      }
+      containerEl.appendChild(boardEl);
+    }
+
     function showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx, stageIdx = null) {
       _setTutorialButtonsBlocked(false);
       const en = currentLanguage === 'en';
@@ -21983,6 +22036,17 @@ limitations under the License.
       } else {
         banner.style.display = 'none';
         star.style.display = '';
+      }
+
+      // Mini board — shown if stage defines miniBoardFen
+      const miniBoardEl = document.getElementById('tutorialMiniBoard');
+      const miniBoardFen = activeStage?.miniBoardFen || null;
+      if (miniBoardFen) {
+        miniBoardEl.style.display = '';
+        renderMiniBoard(miniBoardEl, miniBoardFen, activeStage.miniBoardHighlight || null);
+      } else {
+        miniBoardEl.style.display = 'none';
+        miniBoardEl.innerHTML = '';
       }
 
       // Determine next action
