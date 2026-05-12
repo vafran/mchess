@@ -5555,15 +5555,20 @@ limitations under the License.
       8: { icon: '🥊', name: { es: 'Campeón Cara a Cara', en: 'Head-to-Head Champion' }, desc: { es: 'Completa los 7 trofeos de 2 Jugadores.', en: 'Complete all 7 Two-Player trophies.' } },
     };
 
+    // Trophies that are explicitly awarded for challenge/puzzle completion — always allowed
+    const _CHALLENGE_TROPHIES = new Set(['first_puzzle', 'keep_practicing', 'fen_master']);
+
     function unlockTrophy(id) {
       if (!currentProfile) return;
-      // If we're currently running a tutorial, suppress trophies unless explicitly whitelisted
+      // Suppress all move-triggered trophies during tutorials (no whitelist mechanism needed)
       if (lastLoadedChallengeItem?.isTutorial) {
-        const wl = lastLoadedChallengeItem.trophyWhitelist || lastLoadedChallengeItem.allowedTrophies || lastLoadedChallengeItem.allowTrophies || null;
-        if (!Array.isArray(wl) || !wl.includes(id)) {
-          console.log(`[Statistician] Trophy '${id}' suppressed during tutorial`);
-          return;
-        }
+        console.log(`[Statistician] Trophy '${id}' suppressed during tutorial`);
+        return;
+      }
+      // Suppress move-triggered trophies during FEN challenges — only challenge-completion trophies allowed
+      if (sessionStartedFromFen && !_CHALLENGE_TROPHIES.has(id)) {
+        console.log(`[Statistician] Trophy '${id}' suppressed during FEN challenge`);
+        return;
       }
       if (currentProfile.unlockedTrophies.some(t => t.id === id)) return;
       currentProfile.unlockedTrophies.push({ id, unlockedAt: new Date().toISOString() });
@@ -8046,21 +8051,47 @@ limitations under the License.
 
           // ── Puzzle mode: validate move against expected solution step ──
           let puzzlePromo = null;
+          let _tutorialPromoHandled = false;
           if (puzzleMode && puzzleMode.step < puzzleMode.solution.length) {
             const expectedUci = puzzleMode.solution[puzzleMode.step];
             const isPawn = board[sr] && board[sr][sc].toUpperCase() === 'P';
             const isPromoRank = (r === 0 || r === 7);
             const isTutorialPromo = lastLoadedChallengeItem?.isTutorial && isPawn && isPromoRank;
-            // For tutorials: always show the modal (null = show modal); accept any piece via 4-char compare
+            // validatePromo: tutorial stage requires the player to pick the specific piece
+            const tutorialValidatesPromo = isTutorialPromo && lastLoadedChallengeItem?.validatePromo;
+            // For tutorials: show modal, accept any piece (4-char compare) — unless validatePromo is set
             // For regular puzzles: auto-match the expected promo piece to avoid modal mismatch
             const guessPromo = isPawn && isPromoRank
-              ? (isTutorialPromo ? null : (expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q'))
+              ? (isTutorialPromo && !tutorialValidatesPromo ? null : (expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q'))
               : null;
-            const playedUci = isTutorialPromo
+            const playedUci = (isTutorialPromo && !tutorialValidatesPromo)
               ? moveToUci(sr, sc, r, c, null).slice(0, 4)
               : moveToUci(sr, sc, r, c, guessPromo);
-            const compareUci = isTutorialPromo ? expectedUci.slice(0, 4) : expectedUci;
-            if (playedUci !== compareUci) {
+            const compareUci = (isTutorialPromo && !tutorialValidatesPromo) ? expectedUci.slice(0, 4) : expectedUci;
+
+            // For validatePromo tutorials: ask for piece choice NOW so we can validate before committing
+            if (tutorialValidatesPromo && playedUci.slice(0, 4) === compareUci.slice(0, 4)) {
+              const chosenPiece = await promptPromotion(turn);
+              const expectedPiece = expectedUci.length === 5 ? expectedUci[4].toUpperCase() : 'Q';
+              if (chosenPiece.toUpperCase() !== expectedPiece) {
+                const en = currentLanguage === 'en';
+                playErrorSound();
+                const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+                if (cellEl) { cellEl.classList.add('puzzle-wrong'); setTimeout(() => cellEl.classList.remove('puzzle-wrong'), 700); }
+                switchTab('professor');
+                const pList = document.getElementById('professorList');
+                const wrongHtml = `<div class="hint-item" style="border-left:4px solid var(--danger); background:rgba(239,68,68,0.05); padding:12px; margin-bottom:10px;"><span style="font-size:1.1rem;">❌</span> <strong>${en ? 'Not quite!' : '¡Casi!'}</strong><br><span style="font-size:0.9rem;">${en ? 'That piece doesn\'t give checkmate. Think about which piece can jump to h8 in an L-shape...' : 'Esa pieza no da jaque mate. Piensa qué pieza puede saltar hasta h8 en forma de L...'}</span></div>`;
+                const pinned = pList.querySelector('.tutorial-desc-pin');
+                if (pinned) { const old = pList.querySelector('.tutorial-wrong-msg'); if (old) old.remove(); const div = document.createElement('div'); div.className = 'tutorial-wrong-msg'; div.innerHTML = wrongHtml; pList.appendChild(div); }
+                else pList.innerHTML = wrongHtml;
+                selected = null; legalMoves = []; render();
+                return;
+              }
+              // Correct piece — pass it directly to makeMove (skip the modal inside makeMove)
+              puzzleMode.step++;
+              await makeMove(sr, sc, r, c, chosenPiece);
+              _tutorialPromoHandled = true;
+            } else if (playedUci !== compareUci) {
               // Wrong move: flash the destination cell and show professor hint
               const en = currentLanguage === 'en';
               playErrorSound();
@@ -8089,7 +8120,7 @@ limitations under the License.
             puzzleMode.step++;
           }
 
-          await makeMove(sr, sc, r, c, puzzlePromo);
+          if (!_tutorialPromoHandled) await makeMove(sr, sc, r, c, puzzlePromo);
 
           // Puzzle complete check (after last human move)
           if (puzzleMode) {
@@ -21065,9 +21096,23 @@ limitations under the License.
                 completionMsgEs: '¡Ganaste la carrera! Coronaste primero, reposicionaste tu Reina en b5 para controlar el b1, y cuando el rival también coronó, ¡la capturaste! Así se gana una carrera de peones.',
                 completionMsgEn: 'You won the race! You promoted first, repositioned your Queen to b5 to control b1, and when the rival also promoted, you captured it! That\'s how you win a pawn race.',
               },
+              {
+                id: 'pawn_underpromote',
+                nameEs: '¡El Caballo da Jaque Mate!',
+                nameEn: 'Knight Delivers Checkmate!',
+                descEs: 'El rey negro ha caído en la trampa. El peón blanco en c7 puede coronar ahora mismo — ¡pero tiene que ser Caballo! Una Dama en c8 no da jaque mate. Solo el Caballo cierra todas las salidas del rey. ¡Corona en Caballo y gana la partida!',
+                descEn: 'The black king has fallen into the trap. The white pawn on c7 can promote right now — but it must be a Knight! A Queen on c8 doesn\'t give checkmate. Only the Knight closes all the king\'s escape routes. Promote to a Knight and win the game!',
+                fen: '1rb4r/p1Pp3p/kb1P3n/3Q4/N3Pp2/8/P1P3PP/7K w - - 2 2',
+                solution: ['c7b8n'],
+                humanSteps: 1,
+                validatePromo: true,
+                tutorialHighlights: { arrows: [{ fr: 1, fc: 2, tr: 0, tc: 1, type: 'good' }] },
+                completionMsgEs: '¡Jaque mate con Caballo!\n\nSolo el Caballo podía dar jaque mate aquí. La Dama habría dado jaque — pero el rey habría podido escapar. ¡El Caballo salta en L de forma única y cierra todas las salidas!\n\nRecuerda: los Caballos son las únicas piezas que pueden saltar por encima de otras. Su movimiento en L sorprende hasta a los jugadores más experimentados.',
+                completionMsgEn: 'Checkmate with a Knight!\n\nOnly the Knight could deliver checkmate here. A Queen would give check — but the king could escape. The Knight jumps in its unique L-shape and closes every exit!\n\nRemember: knights are the only pieces that can leap over others. Their L-shape movement surprises even experienced players.',
+              },
             ],
-            completionMsgEs: '¡El sueño del peón cumplido! Sabe coronar y sabe ganar la carrera. Recuerda: siempre elige la Dama al coronar.',
-            completionMsgEn: 'The pawn\'s dream fulfilled! You can promote and win the race. Remember: always choose the Queen when you promote.',
+            completionMsgEs: '¡El sueño del peón cumplido! Sabes coronar, ganar carreras y hasta cuándo NO coronar en Dama. ¡Un peón en tus manos es una amenaza real!',
+            completionMsgEn: 'The pawn\'s dream fulfilled! You can promote, win races, and even know when NOT to promote to a Queen. A pawn in your hands is a real threat!',
           },
           {
             id: 'pawn_defense',
@@ -21980,6 +22025,7 @@ limitations under the License.
           lastLoadedChallengeItem.tutorialHighlights = nextStage.tutorialHighlights ?? null;
           lastLoadedChallengeItem.anyOrder = nextStage.anyOrder ?? false;
           lastLoadedChallengeItem.forcePromo = nextStage.forcePromo ?? false;
+          lastLoadedChallengeItem.validatePromo = nextStage.validatePromo ?? false;
         }
         
         drawTutorialHighlights();
@@ -22124,6 +22170,7 @@ limitations under the License.
         anyOrder: activeStage.anyOrder ?? false,
         tutorialHighlights: activeStage.tutorialHighlights ?? null,
         forcePromo: activeStage.forcePromo ?? false,
+        validatePromo: activeStage.validatePromo ?? false,
       };
       sessionStartedFromFen = true;
       loadPositionFromFEN();
