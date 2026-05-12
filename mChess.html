@@ -984,6 +984,8 @@ limitations under the License.
     .mini-cell .mini-piece { pointer-events:none; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.7); }
     .mini-cell .mini-piece.black { color:#1a1a2e; text-shadow:0 1px 2px rgba(255,255,255,0.3); }
     .mini-cell.mini-check { background: rgba(239,68,68,0.6) !important; }
+    .mini-cell.mini-danger { background: rgba(239,68,68,0.45) !important; }
+    .mini-cell.mini-danger::after { content:'✕'; position:absolute; font-size:0.75rem; color:rgba(220,38,38,0.9); font-weight:900; pointer-events:none; }
     .mini-board-label { font-size:0.7rem; color:var(--text-light); text-align:center; margin-top:4px; }
 
     .tutorial-goal-emoji {
@@ -8619,7 +8621,7 @@ limitations under the License.
       }
       const cHash = positionHashes[positionHashes.length - 1];
       // La detección ya es correcta porque ahora positionHashes incluye castleRights y EP
-      if (positionHashes.filter(h => h === cHash).length >= 3) { setTimeout(() => { const m = document.getElementById('drawClaimModal'), en = currentLanguage === 'en'; document.getElementById('drawClaimTitle').innerHTML = en ? '⚖️ Threefold Repetition!' : '⚖️ ¡Triple Repetición!'; document.getElementById('drawClaimDesc').innerHTML = en ? 'The exact same position has occurred 3 times. You can claim a draw right now.' : 'La misma posición exacta se ha repetido 3 veces. Puedes reclamar un empate ahora mismo.'; document.getElementById('btnIgnoreDraw').innerHTML = en ? 'Keep playing' : 'Continuar'; document.getElementById('btnAcceptDraw').innerHTML = en ? 'Claim Draw' : 'Reclamar Tablas'; m.classList.add('show'); }, 400); return; }
+      if (!lastLoadedChallengeItem?.isTutorial && positionHashes.filter(h => h === cHash).length >= 3) { setTimeout(() => { const m = document.getElementById('drawClaimModal'), en = currentLanguage === 'en'; document.getElementById('drawClaimTitle').innerHTML = en ? '⚖️ Threefold Repetition!' : '⚖️ ¡Triple Repetición!'; document.getElementById('drawClaimDesc').innerHTML = en ? 'The exact same position has occurred 3 times. You can claim a draw right now.' : 'La misma posición exacta se ha repetido 3 veces. Puedes reclamar un empate ahora mismo.'; document.getElementById('btnIgnoreDraw').innerHTML = en ? 'Keep playing' : 'Continuar'; document.getElementById('btnAcceptDraw').innerHTML = en ? 'Claim Draw' : 'Reclamar Tablas'; m.classList.add('show'); }, 400); return; }
       saveGameState(); // 💾 Autosave after every legal move
       // In a tutorial where the next solution step belongs to the human, flip turn back
       // instead of triggering the AI — all-human-move exercises need this to continue
@@ -21840,42 +21842,142 @@ limitations under the License.
             completionMsgEs: '¡Eres un estratega nato! Has dominado los patrones de mate más importantes. ¡El tablero es tuyo!',
             completionMsgEn: 'You are a natural strategist! You have mastered the most important mate patterns. The board is yours!',
           },
+        ],
+      },
+      {
+        id: 'draws',
+        iconEs: '🤝', iconEn: '🤝',
+        nameEs: 'Las Tablas', nameEn: 'Draws',
+        descEs: 'Una partida no siempre termina en jaque mate. Descubre cuándo y por qué una partida puede terminar en empate.',
+        descEn: 'A game doesn\'t always end in checkmate. Discover when and why a game can end in a draw.',
+        chapters: [
           {
-            id: 'stalemate',
-            nameEs: '4. El Ahogado (Stalemate)',
-            nameEn: '4. Stalemate',
-            descEs: 'Aprende cuándo una victoria clara puede convertirse en un empate inesperado.',
-            descEn: 'Learn when a clear victory can turn into an unexpected draw.',
+            id: 'draw_stalemate',
+            nameEs: '1. El Ahogado',
+            nameEn: '1. Stalemate',
+            descEs: 'El ahogado es un empate: el rey no está en jaque pero no tiene ningún movimiento legal. Puede costarte una victoria o salvarte una derrota.',
+            descEn: 'Stalemate is a draw: the king is not in check but has no legal moves. It can cost you a win or save you from a loss.',
             stages: [
               {
-                id: 'stalemate_avoid',
-                nameEs: 'Evitar el Ahogado',
-                nameEn: 'Avoiding Stalemate',
-                descEs: '¡Cuidado! Si dejas al Rey enemigo sin movimientos legales pero NO le estás dando jaque, la partida termina en empate (ahogado). ¡No dejes escapar la victoria! Da el jaque mate en la octava fila.',
-                descEn: 'Watch out! If you leave the enemy King without legal moves but you are NOT giving check, the game ends in a draw (stalemate). Don\'t let victory slip away! Deliver the checkmate on the 8th rank.',
-                fen: 'k7/8/1K6/2Q5/8/8/8/8 w - - 0 1',
-                solution: ['c5c8'],
+                id: 'draw_stalemate_avoid',
+                nameEs: '1. Cuidado: ¿Mate o Tablas?',
+                nameEn: '1. Careful: Mate or Draw?',
+                descEs: '¡Estás a punto de ganar con dama y rey! Hay un caballo negro de regalo — captúralo con la dama. Pero ojo: si mueves la dama al sitio equivocado el rey negro se queda sin movimientos pero sin jaque — ¡AHOGADO y empate! Captura el caballo en f8.',
+                descEn: 'You are about to win with queen and king! There is a free black knight — capture it with the queen. But careful: moving the queen to the wrong square leaves the black king with no moves but no check — STALEMATE and draw! Capture the knight on f8.',
+                fen: '3Q1n2/5K1k/8/8/8/8/8/8 w - - 0 1',
+                solution: ['d8f8'],
                 humanSteps: 1,
-                tutorialHighlights: { arrows: [{ fr: 3, fc: 2, tr: 0, tc: 2, type: 'good' }] },
-                completionMsgEs: '¡Excelente! Si hubieras movido la dama a c7, el Rey negro no tendría escapatoria pero tampoco estaría en jaque: ¡empate por ahogado! Siempre deja un "respiro" al Rey si no hay jaque.',
-                completionMsgEn: 'Excellent! If you had moved the queen to c7, the black King would have no escape but wouldn\'t be in check: stalemate! Always leave the King some "room to breathe" if there is no check.',
+                tutorialHighlights: { arrows: [{ fr: 0, fc: 3, tr: 0, tc: 5, type: 'good' }] },
+                miniBoardFen: '5Q2/5K1k/8/8/8/8/8/8 w - - 0 2',
+                miniBoardHighlight: [[1,7]],
+                miniBoardDanger: [[0,7],[0,6],[1,6],[2,6],[2,7]],
+                completionMsgEs: '¡Jaque mate! El mini tablero muestra lo que habría pasado con Df8: el rey negro en h7 no tiene ningún movimiento posible pero NO está en jaque — ¡ahogado! Las casillas rojas son las que controlan dama y rey. Una sola casilla marca la diferencia entre ganar y empatar.',
+                completionMsgEn: 'Checkmate! The mini board shows what would have happened with Qf8: the black king on h7 has no legal moves but is NOT in check — stalemate! The red squares are the ones controlled by the queen and king. A single square makes the difference between winning and drawing.',
               },
               {
-                id: 'stalemate_rescue',
-                nameEs: 'El Recurso del Ahogado',
-                nameEn: 'The Stalemate Rescue',
-                descEs: '¡Estás a punto de perder! Pero si logras que el rival te capture tu última pieza móvil mientras tu Rey está atrapado, ¡conseguirás un empate milagroso! Ataca al Rey blanco con tu torre en a6.',
-                descEn: 'You are about to lose! But if you manage to make your opponent capture your last mobile piece while your King is trapped, you will get a miraculous draw! Attack the white King with your rook on a6.',
-                fen: 'k7/2Q5/1K6/8/8/8/8/r7 b - - 0 1',
-                solution: ['a1a6'],
+                id: 'draw_stalemate_pawn',
+                nameEs: '2. El Peón que Ahoga',
+                nameEn: '2. The Stalemate Pawn',
+                descEs: '¡El ahogado puede venir de donde menos te esperas! Las blancas tienen peón y rey contra rey solo — una ventaja ganadora... en teoría. Pero mueve el rey a g6 y mira lo que pasa.',
+                descEn: 'Stalemate can come from the most unexpected places! White has a pawn and king vs lone king — a winning advantage in theory. But move the king to g6 and watch what happens.',
+                fen: '7k/7P/8/6K1/8/8/8/8 w - - 0 1',
+                solution: ['g5g6'],
                 humanSteps: 1,
-                tutorialHighlights: { arrows: [{ fr: 7, fc: 0, tr: 2, tc: 0, type: 'good' }] },
-                completionMsgEs: '¡Increíble! Tras Ra6+, el blanco está obligado a capturar con Kxa6. En ese momento, tu Rey no tiene movimientos legales y no está en jaque: ¡EMPATE! Has salvado medio punto.',
-                completionMsgEn: 'Incredible! After Ra6+, White is forced to capture with Kxa6. At that point, your King has no legal moves and is not in check: DRAW! You saved half a point.',
+                resultType: 'stalemate',
+                tutorialHighlights: { arrows: [{ fr: 3, fc: 6, tr: 2, tc: 6, type: 'good' }] },
+                miniBoardFen: '7k/7P/6K1/8/8/8/8/8 w - - 0 2',
+                miniBoardHighlight: [[0,7]],
+                miniBoardDanger: [[1,6],[0,6],[1,7]],
+                completionMsgEs: '¡AHOGADO! El rey negro en h8 no tiene ningún movimiento posible — el peón h7 bloquea h8, el rey blanco g6 controla g8 y g7, y h7 lo ocupa el propio peón. No está en jaque pero no puede moverse: tablas. ¡Una ventaja ganadora convertida en empate!',
+                completionMsgEn: 'STALEMATE! The black king on h8 has no legal moves — the pawn on h7 blocks h8, the white king on g6 controls g8 and g7, and h7 is occupied by the pawn. Not in check but cannot move: draw. A winning advantage turned into a draw!',
               }
             ],
-            completionMsgEs: '¡Conoces el poder del ahogado! Úsalo para evitar errores cuando ganas y para salvarte cuando pierdes.',
-            completionMsgEn: 'You know the power of stalemate! Use it to avoid mistakes when winning and to save yourself when losing.',
+            completionMsgEs: '¡Conoces el poder del ahogado! Evítalo cuando ganas, y úsalo como último recurso cuando pierdes.',
+            completionMsgEn: 'You know the power of stalemate! Avoid it when winning, and use it as a last resort when losing.',
+          },
+          {
+            id: 'draw_insufficient',
+            nameEs: '2. Material Insuficiente',
+            nameEn: '2. Insufficient Material',
+            descEs: 'Si quedan tan pocas piezas que es imposible dar jaque mate, la partida termina en tablas automáticamente.',
+            descEn: 'If so few pieces remain that checkmate is impossible, the game ends in a draw automatically.',
+            stages: [
+              {
+                id: 'draw_kk',
+                nameEs: '1. Rey contra Rey',
+                nameEn: '1. King vs King',
+                descEs: 'El rey blanco puede capturar ese peón negro. Hazlo — y mira qué pasa: solo quedan dos reyes. Sin más piezas, es imposible dar jaque mate. El juego lo detecta automáticamente y declara tablas.',
+                descEn: 'The white king can capture that black pawn. Do it — and watch what happens: only two kings remain. With no other pieces, checkmate is impossible. The game detects this automatically and declares a draw.',
+                fen: '8/3k4/8/8/8/5p2/5K2/8 w - - 0 1',
+                solution: ['f2f3'],
+                humanSteps: 1,
+                completionMsgEs: '¡Tablas por material insuficiente! Solo dos reyes — imposible dar jaque mate. Un rey nunca puede acercarse al otro sin ponerse en jaque él mismo.',
+                completionMsgEn: 'Draw by insufficient material! Only two kings — checkmate is impossible. A king can never approach the other without putting itself in check.',
+              },
+              {
+                id: 'draw_kb',
+                nameEs: '2. Rey y Alfil contra Rey',
+                nameEn: '2. King and Bishop vs King',
+                descEs: 'Vuelve a capturar el peón con el rey. Esta vez el bando negro conserva su alfil. ¿Puede un solo alfil dar jaque mate? No — el alfil solo controla casillas de un color y nunca puede acorralar al rey enemigo sin ayuda. ¡Tablas!',
+                descEn: 'Capture the pawn with the king again. This time the black side keeps its bishop. Can a lone bishop deliver checkmate? No — a bishop only controls squares of one color and can never corner the enemy king alone. Draw!',
+                fen: '8/3k4/8/8/8/5p2/5K2/2b5 w - - 0 1',
+                solution: ['f2f3'],
+                humanSteps: 1,
+                completionMsgEs: '¡Tablas por material insuficiente! Rey + Alfil contra Rey solo — el alfil no puede dar jaque mate sin otra pieza que lo ayude. Lo mismo ocurre con Rey + Caballo contra Rey.',
+                completionMsgEn: 'Draw by insufficient material! King + Bishop vs lone King — the bishop cannot deliver checkmate without another piece to help. The same applies to King + Knight vs King.',
+              }
+            ],
+            completionMsgEs: '¡Importante saberlo! Rey solo, Rey + Alfil y Rey + Caballo no pueden dar jaque mate. Si llegas a esas posiciones, el juego termina automáticamente en empate.',
+            completionMsgEn: 'Important to know! A lone king, King + Bishop, and King + Knight cannot checkmate. If the game reaches those positions, it ends in a draw automatically.',
+          },
+          {
+            id: 'draw_repetition',
+            nameEs: '3. Triple Repetición',
+            nameEn: '3. Threefold Repetition',
+            descEs: 'Si la misma posición se repite tres veces en la partida, se declaran tablas. Es un recurso para salvarse cuando vas perdiendo.',
+            descEn: 'If the same position occurs three times in the game, a draw is declared. It is a resource to save yourself when you are losing.',
+            stages: [
+              {
+                id: 'draw_repetition_demo',
+                nameEs: 'La Danza del Empate',
+                nameEn: 'The Draw Dance',
+                descEs: '¡Vas perdiendo pero puedes forzar tablas! El rey negro no puede escapar del rincón. Mueve el caballo entre g7 y f5 varias veces, el rey negro se verá obligado a repetir movimientos, y la posición se repetirá tres veces: ¡tablas!',
+                descEn: 'You are losing but you can force a draw! The black king cannot escape the corner. Move the knight back and forth between g7 and f5 a few times, the black king will be forced to repeat moves, and the position will occur three times: draw!',
+                fen: '7k/6N1/7K/8/8/8/8/8 w - - 0 1',
+                solution: ['g7f5', 'h8g8', 'f5g7', 'g8h8', 'g7f5', 'h8g8', 'f5g7'],
+                humanSteps: 4,
+                resultType: 'draw',
+                tutorialHighlights: { arrows: [{ fr: 1, fc: 6, tr: 3, tc: 5, type: 'good' }] },
+                completionMsgEs: '¡Tablas por repetición! La misma posición (Caballo en g7, Rey negro en h8) ocurrió tres veces. En ajedrez real, el juegador que lo detecta puede reclamar las tablas. Es un recurso valioso para escapar de posiciones perdidas.',
+                completionMsgEn: 'Draw by repetition! The same position (Knight on g7, black King on h8) occurred three times. In real chess, the player who detects it can claim the draw. It is a valuable resource to escape losing positions.',
+              }
+            ],
+            completionMsgEs: '¡Buena jugada de supervivencia! La triple repetición se usa especialmente cuando vas perdiendo. Si no puedes ganar, ¡al menos no pierdas!',
+            completionMsgEn: 'Good survival play! Threefold repetition is especially useful when you are losing. If you cannot win, at least don\'t lose!',
+          },
+          {
+            id: 'draw_fifty',
+            nameEs: '4. Regla de los 50 Movimientos',
+            nameEn: '4. The 50-Move Rule',
+            descEs: 'La regla más rara del ajedrez: si ningún jugador mueve un peón ni hace una captura en 50 movimientos seguidos, se pueden reclamar tablas.',
+            descEn: 'The strangest rule in chess: if neither player moves a pawn or makes a capture in 50 consecutive moves, a draw can be claimed.',
+            stages: [
+              {
+                id: 'draw_fifty_info',
+                nameEs: 'La Regla que Evita el Ajedrez Eterno',
+                nameEn: 'The Rule That Prevents Eternal Chess',
+                descEs: 'Imagina que las blancas tienen torre y rey, y las negras solo tienen el rey. Las blancas pueden ganar, pero si no capturan nada ni mueven un peón en 50 movimientos, las negras pueden pedir tablas. Mueve la torre para continuar.',
+                descEn: 'Imagine White has a rook and king, and Black has only a king. White can win, but if they go 50 moves without capturing anything or moving a pawn, Black can claim a draw. Move the rook to continue.',
+                fen: '4k3/8/8/8/8/8/8/R3K3 w - - 0 1',
+                solution: ['a1a2'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 7, fc: 0, tr: 6, tc: 0, type: 'good' }] },
+                completionMsgEs: 'En la práctica, la regla de los 50 movimientos rara vez importa — un buen jugador ganaría mucho antes. Pero existe para evitar que las partidas duren para siempre. Lo clave: mover un peón o capturar una pieza reinicia el contador a cero.',
+                completionMsgEn: 'In practice, the 50-move rule rarely matters — a good player would win long before that. But it exists to prevent games from lasting forever. The key: moving a pawn or capturing a piece resets the counter to zero.',
+              }
+            ],
+            completionMsgEs: '¡Ya conoces todos los tipos de tablas! Ahogado, material insuficiente, triple repetición y regla de los 50. ¡Eres un experto en las reglas del ajedrez!',
+            completionMsgEn: 'You now know all the draw types! Stalemate, insufficient material, threefold repetition, and the 50-move rule. You are an expert in the rules of chess!',
           },
         ],
       },
@@ -21947,7 +22049,7 @@ limitations under the License.
       });
     }
 
-    function renderMiniBoard(containerEl, fen, highlightSquares) {
+    function renderMiniBoard(containerEl, fen, highlightSquares, dangerSquares) {
       // Parse FEN piece placement into an 8x8 array
       const rows = fen.split(' ')[0].split('/');
       const grid = rows.map(row => {
@@ -21971,6 +22073,7 @@ limitations under the License.
           const isLight = (r + c) % 2 === 0;
           cell.className = 'mini-cell ' + (isLight ? 'light' : 'dark');
           if (highlightSquares && highlightSquares.some(s => s[0] === r && s[1] === c)) cell.classList.add('mini-last');
+          if (dangerSquares && dangerSquares.some(s => s[0] === r && s[1] === c)) cell.classList.add('mini-danger');
           if (inChk && r === bkRow && c === bkCol) cell.classList.add('mini-check');
           const p = grid[r][c];
           if (p && p !== ' ') {
@@ -22043,7 +22146,7 @@ limitations under the License.
       const miniBoardFen = activeStage?.miniBoardFen || null;
       if (miniBoardFen) {
         miniBoardEl.style.display = '';
-        renderMiniBoard(miniBoardEl, miniBoardFen, activeStage.miniBoardHighlight || null);
+        renderMiniBoard(miniBoardEl, miniBoardFen, activeStage.miniBoardHighlight || null, activeStage.miniBoardDanger || null);
       } else {
         miniBoardEl.style.display = 'none';
         miniBoardEl.innerHTML = '';
