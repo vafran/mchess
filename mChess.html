@@ -22084,6 +22084,7 @@ limitations under the License.
 
     function closeTutorial() {
       document.getElementById('tutorialModal').classList.remove('show');
+      goToMainMenu();
     }
 
     function renderTutorialTabs() {
@@ -22147,7 +22148,11 @@ limitations under the License.
     function closeTutorialLessonModal() {
       document.getElementById('tutorialLessonModal').classList.remove('show');
       _pendingTutorialLesson = null;
-      openTutorial();
+      if (_activeTutorialLesson) {
+        goToMainMenu();
+      } else {
+        openTutorial();
+      }
     }
 
     function startTutorialLesson() {
