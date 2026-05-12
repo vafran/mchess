@@ -22025,23 +22025,9 @@ limitations under the License.
             id: 'draw_fifty',
             nameEs: '4. Regla de los 50 Movimientos',
             nameEn: '4. The 50-Move Rule',
-            descEs: 'La regla más rara del ajedrez: si ningún jugador mueve un peón ni hace una captura en 50 movimientos seguidos, se pueden reclamar tablas.',
-            descEn: 'The strangest rule in chess: if neither player moves a pawn or makes a capture in 50 consecutive moves, a draw can be claimed.',
-            stages: [
-              {
-                id: 'draw_fifty_info',
-                nameEs: 'La Regla que Evita el Ajedrez Eterno',
-                nameEn: 'The Rule That Prevents Eternal Chess',
-                descEs: 'Imagina que las blancas tienen torre y rey, y las negras solo tienen el rey. Las blancas pueden ganar, pero si no capturan nada ni mueven un peón en 50 movimientos, las negras pueden pedir tablas. Mueve la torre para continuar.',
-                descEn: 'Imagine White has a rook and king, and Black has only a king. White can win, but if they go 50 moves without capturing anything or moving a pawn, Black can claim a draw. Move the rook to continue.',
-                fen: '4k3/8/8/8/8/8/8/R3K3 w - - 0 1',
-                solution: ['a1a2'],
-                humanSteps: 1,
-                tutorialHighlights: { arrows: [{ fr: 7, fc: 0, tr: 6, tc: 0, type: 'good' }] },
-                completionMsgEs: 'En la práctica, la regla de los 50 movimientos rara vez importa — un buen jugador ganaría mucho antes. Pero existe para evitar que las partidas duren para siempre. Lo clave: mover un peón o capturar una pieza reinicia el contador a cero.',
-                completionMsgEn: 'In practice, the 50-move rule rarely matters — a good player would win long before that. But it exists to prevent games from lasting forever. The key: moving a pawn or capturing a piece resets the counter to zero.',
-              }
-            ],
+            descEs: 'La regla más extraña del ajedrez: si ningún jugador mueve un peón ni hace una captura en 50 movimientos seguidos, se pueden reclamar tablas.\n\nEjemplo: las blancas tienen torre y rey, las negras solo tienen el rey. Las blancas pueden ganar, pero si pasan 50 movimientos sin capturar nada ni mover un peón, las negras pueden pedir tablas.\n\nLo clave: mover un peón o capturar una pieza reinicia el contador a cero. En la práctica, esta regla rara vez importa — un buen jugador ganaría mucho antes. Existe solo para evitar que las partidas duren para siempre.',
+            descEn: 'The strangest rule in chess: if neither player moves a pawn or makes a capture in 50 consecutive moves, a draw can be claimed.\n\nExample: White has a rook and king, Black has only a king. White can win, but if 50 moves pass without any capture or pawn move, Black can claim a draw.\n\nThe key: moving a pawn or capturing a piece resets the counter to zero. In practice this rule rarely matters — a good player would win long before that. It exists only to prevent games from lasting forever.',
+            readOnly: true,
             completionMsgEs: '¡Ya conoces todos los tipos de tablas! Ahogado, material insuficiente, triple repetición y regla de los 50. ¡Eres un experto en las reglas del ajedrez!',
             completionMsgEn: 'You now know all the draw types! Stalemate, insufficient material, threefold repetition, and the 50-move rule. You are an expert in the rules of chess!',
           },
@@ -22307,10 +22293,12 @@ limitations under the License.
         if (!resultType) document.getElementById('tutorialResultStar').style.display = '';
       }
 
+      const _continueLabel = chapter.readOnly ? (en ? '▶ Continue' : '▶ Continuar') : null;
+
       if (hasNextStage) {
         const nextStage = chapter.stages[stageIdx + 1];
         const nextName = en ? nextStage.nameEn : nextStage.nameEs;
-        btnNext.textContent = '▶ ' + nextName;
+        btnNext.textContent = _continueLabel || ('▶ ' + nextName);
         btnNext.onclick = () => startNextTutorialStage();
         btnNext.className = 'btn btn-primary';
         btnNext.style.cssText = 'display:block; font-weight:800;';
@@ -22318,7 +22306,7 @@ limitations under the License.
         const nextCh = lesson.chapters[chapterIdx + 1];
         _nextTutorialChapter = { lesson: lesson, chapter: nextCh };
         const nextName = en ? nextCh.nameEn : nextCh.nameEs;
-        btnNext.textContent = '▶ ' + nextName;
+        btnNext.textContent = _continueLabel || ('▶ ' + nextName);
         btnNext.onclick = () => startNextTutorialLesson();
         btnNext.className = 'btn btn-primary';
         btnNext.style.cssText = 'display:block; font-weight:800;';
@@ -22327,10 +22315,10 @@ limitations under the License.
         const nextCh = nextLesson.chapters[0];
         _nextTutorialChapter = { lesson: nextLesson, chapter: nextCh };
         const nextLessonName = en ? nextLesson.nameEn : nextLesson.nameEs;
-        btnNext.textContent = (en ? '🎓 Next Lesson: ' : '🎓 Siguiente lección: ') + nextLessonName;
+        btnNext.textContent = _continueLabel || ((en ? '🎓 Next Lesson: ' : '🎓 Siguiente lección: ') + nextLessonName);
         btnNext.onclick = () => startNextTutorialLesson();
         btnNext.className = 'btn btn-primary';
-        btnNext.style.cssText = 'display:block; font-weight:800; background: linear-gradient(135deg,#f59e0b,#d97706); border-color:#d97706;';
+        btnNext.style.cssText = 'display:block; font-weight:800;' + (isLessonComplete && !_continueLabel ? ' background: linear-gradient(135deg,#f59e0b,#d97706); border-color:#d97706;' : '');
       } else {
         btnNext.style.cssText = 'display:none;';
       }
@@ -22469,7 +22457,7 @@ limitations under the License.
       const desc = en ? (chapter.descEn || (chapter.stages && chapter.stages[0].descEn)) : (chapter.descEs || (chapter.stages && chapter.stages[0].descEs));
       document.getElementById('tutorialLessonDesc').textContent = desc || '';
       document.getElementById('btnTutorialLessonCancel').textContent = en ? '✕ Cancel' : '✕ Cancelar';
-      document.getElementById('btnTutorialLessonStart').textContent = en ? '▶ Start' : '▶ Empezar';
+      document.getElementById('btnTutorialLessonStart').textContent = chapter.readOnly ? (en ? '▶ Continue' : '▶ Continuar') : (en ? '▶ Start' : '▶ Empezar');
       document.getElementById('tutorialLessonModal').classList.add('show');
     }
 
@@ -22534,6 +22522,13 @@ limitations under the License.
         forcePromo: activeStage.forcePromo ?? false,
         validatePromo: activeStage.validatePromo ?? false,
       };
+      if (activeStage.readOnly) {
+        puzzleMode = null;
+        _setTutorialButtonsBlocked(false);
+        const lesson = TUTORIAL_LESSONS[lessonIdx];
+        setTimeout(() => showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx, null), 400);
+        return;
+      }
       sessionStartedFromFen = true;
       loadPositionFromFEN();
       if (activeStage.solution && activeStage.solution.length > 0) {
