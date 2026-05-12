@@ -5413,6 +5413,19 @@ limitations under the License.
       const _fenReq = { opening: 3, mate1: 4, mate2: 6, mate3: 8, mate4: 10 };
       if (Object.entries(_fenReq).every(([cat, req]) => _cc.filter(c => c.cat === cat).length >= req))
         unlockTrophy('fen_master');
+      // 📜 Historical trophies — unlock directly when the historical challenge is completed
+      if (item.cat === 'historical') {
+        const _histMap = {
+          'secret_marshall_qg3':   ['La Lluvia de Oro',      'Golden Rain'],
+          'secret_vladimirov_bh6': ['El Cañonazo',           'The Cannon Shot'],
+          'secret_sanz_rxb2':      ['La Locomotora',         'The Locomotive'],
+          'secret_shirov_bh3':     ['Fuego en el Tablero',   'Fire on the Board'],
+        };
+        for (const [trophyId, [es, en]] of Object.entries(_histMap)) {
+          if (item.nameEs && item.nameEs.includes(es) || item.nameEn && item.nameEn.includes(en))
+            unlockTrophy(trophyId);
+        }
+      }
     }
 
     function recordTutorialCompleted(lessonId, chapterId, stageId) {
@@ -21819,15 +21832,15 @@ limitations under the License.
                 nameEn: '3. Double Check and Mate',
                 descEs: '¡El doble jaque puede dar mate directo! El rey negro está acorralado en la esquina. Mueve el caballo a b6: dará jaque, descubrirá el jaque de la torre, y el rey no tendrá a dónde ir.',
                 descEn: 'A double check can deliver checkmate directly! The black king is cornered. Move the knight to b6: it will give check, reveal the rook\'s check, and the king will have nowhere to go.',
-                fen: 'k7/3N4/8/8/8/8/8/R6K w - - 0 1',
+                fen: 'k7/1P1N4/8/8/8/8/8/R6K w - - 0 1',
                 solution: ['d7b6'],
                 humanSteps: 1,
                 tutorialHighlights: { arrows: [{ fr: 1, fc: 3, tr: 2, tc: 1, type: 'good' }] },
-                miniBoardFen: 'k7/8/1N6/8/8/8/8/R6K b - - 0 1',
+                miniBoardFen: 'k7/1P6/1N6/8/8/8/8/R6K b - - 0 1',
                 miniBoardHighlight: [[0,0]],
                 miniBoardDanger: [[0,1],[1,0],[1,1]],
-                completionMsgEs: '¡Jaque Mate por doble jaque! El caballo en b6 ataca a8 y descubre el jaque de la torre en a1. El rey no puede capturar el caballo (la torre lo protege), ni bloquear ambos jaques. ¡El arma definitiva!',
-                completionMsgEn: 'Checkmate by double check! The knight on b6 attacks a8 and reveals the rook check on a1. The king cannot capture the knight (the rook protects it), nor block both checks. The ultimate weapon!',
+                completionMsgEs: '¡Jaque Mate por doble jaque! El caballo en b6 y la torre en a1 dan jaque a la vez. El rey no puede ir a b7 (bloqueado por el peón), ni a b8 (cubierto por caballo y peón), ni a a7 (torre). ¡Sin escapatoria!',
+                completionMsgEn: 'Checkmate by double check! The knight on b6 and the rook on a1 give check simultaneously. The king cannot go to b7 (blocked by the pawn), b8 (covered by knight and pawn), or a7 (rook). No escape!',
               },
             ],
             completionMsgEs: '¡Dominas los ataques especiales! El jaque al descubierto gana material, el doble jaque obliga al rey a moverse, y juntos pueden dar mate fulminante.',
