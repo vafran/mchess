@@ -5227,7 +5227,8 @@ limitations under the License.
       wheatAndChessboard: false,   // true when all 64 trophies and all 8 medals are earned
       playDates: [],               // ISO date strings 'YYYY-MM-DD' when player played
       namedOpeningsPlayed: [],     // distinct named opening keys seen across games
-      completedChallenges: []      // [{ nameEs, nameEn, cat, completedAt }]
+      completedChallenges: [],     // [{ nameEs, nameEn, cat, completedAt }]
+      completedTutorials: []       // [{ lessonId, chapterId, stageId, completedAt }]
     };
 
     let currentProfile = null;
@@ -5293,7 +5294,8 @@ limitations under the License.
             wheatAndChessboard: saved.wheatAndChessboard || false,
             playDates: Array.isArray(saved.playDates) ? saved.playDates : [],
             namedOpeningsPlayed: Array.isArray(saved.namedOpeningsPlayed) ? saved.namedOpeningsPlayed : [],
-            completedChallenges: Array.isArray(saved.completedChallenges) ? saved.completedChallenges : []
+            completedChallenges: Array.isArray(saved.completedChallenges) ? saved.completedChallenges : [],
+            completedTutorials: Array.isArray(saved.completedTutorials) ? saved.completedTutorials : []
           };
         } else {
           currentProfile = JSON.parse(JSON.stringify(defaultProfile));
@@ -5372,6 +5374,7 @@ limitations under the License.
 
     function recordChallengeCompleted(item) {
       if (!item || !currentProfile) return;
+      if (item.isTutorial) return; // tutorials tracked separately via recordTutorialCompleted
       const already = currentProfile.completedChallenges.some(
         c => c.nameEs === item.nameEs && c.nameEn === item.nameEn
       );
@@ -5391,6 +5394,33 @@ limitations under the License.
       const _fenReq = { opening: 3, mate1: 4, mate2: 6, mate3: 8, mate4: 10 };
       if (Object.entries(_fenReq).every(([cat, req]) => _cc.filter(c => c.cat === cat).length >= req))
         unlockTrophy('fen_master');
+    }
+
+    function recordTutorialCompleted(lessonId, chapterId, stageId) {
+      if (!currentProfile) return;
+      if (!currentProfile.completedTutorials) currentProfile.completedTutorials = [];
+      const already = currentProfile.completedTutorials.some(
+        t => t.lessonId === lessonId && t.chapterId === chapterId && t.stageId === stageId
+      );
+      if (already) return;
+      currentProfile.completedTutorials.push({
+        lessonId, chapterId, stageId: stageId || null, completedAt: new Date().toISOString()
+      });
+      saveProfile();
+    }
+
+    function isTutorialChapterDone(lesson, chapter) {
+      if (!currentProfile?.completedTutorials) return false;
+      if (chapter.stages && chapter.stages.length > 0) {
+        return chapter.stages.every(s =>
+          currentProfile.completedTutorials.some(t => t.lessonId === lesson.id && t.chapterId === chapter.id && t.stageId === s.id)
+        );
+      }
+      return currentProfile.completedTutorials.some(t => t.lessonId === lesson.id && t.chapterId === chapter.id);
+    }
+
+    function isTutorialLessonDone(lesson) {
+      return lesson.chapters.every(ch => isTutorialChapterDone(lesson, ch));
     }
 
     function _checkTimeBasedTrophies(p) {
@@ -21847,9 +21877,17 @@ limitations under the License.
     function showTutorialCompleteModal(lesson, chapter, lessonIdx, chapterIdx, stageIdx = null) {
       _setTutorialButtonsBlocked(false);
       const en = currentLanguage === 'en';
-      
+
       const isMultiStage = chapter.stages && chapter.stages.length > 1;
       const hasNextStage = isMultiStage && (stageIdx !== null) && (stageIdx + 1 < chapter.stages.length);
+
+      // Record completion — stage or chapter
+      if (isMultiStage && stageIdx !== null) {
+        const stage = chapter.stages[stageIdx];
+        recordTutorialCompleted(lesson.id, chapter.id, stage.id);
+      } else {
+        recordTutorialCompleted(lesson.id, chapter.id, null);
+      }
       
       let msg = '';
       let titleName = '';
@@ -21978,9 +22016,11 @@ limitations under the License.
       const en = currentLanguage === 'en';
       tabBar.innerHTML = '';
       TUTORIAL_LESSONS.forEach((lesson, idx) => {
+        const lessonDone = isTutorialLessonDone(lesson);
         const btn = document.createElement('button');
         btn.className = 'tutorial-tab-btn' + (idx === _activeTutorialLessonIdx ? ' active' : '');
-        btn.innerHTML = `${lesson.iconEs} ${en ? lesson.nameEn : lesson.nameEs}`;
+        const doneTag = lessonDone ? ' ✅' : '';
+        btn.innerHTML = `${lesson.iconEs} ${en ? lesson.nameEn : lesson.nameEs}${doneTag}`;
         btn.onclick = () => { _activeTutorialLessonIdx = idx; renderTutorialTabs(); renderTutorialChapterList(); };
         tabBar.appendChild(btn);
       });
@@ -21999,13 +22039,15 @@ limitations under the License.
       container.appendChild(subdesc);
 
       lesson.chapters.forEach((ch) => {
+        const done = isTutorialChapterDone(lesson, ch);
         const btn = document.createElement('div');
         btn.className = 'fen-item';
-        btn.style.cssText = 'cursor:pointer; padding:12px 14px; border-radius:12px; border:1.5px solid rgba(56,189,248,0.35); background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(14,165,233,0.05)); margin-bottom:4px;';
+        btn.style.cssText = `cursor:pointer; padding:12px 14px; border-radius:12px; border:1.5px solid ${done ? 'rgba(34,197,94,0.5)' : 'rgba(56,189,248,0.35)'}; background:${done ? 'linear-gradient(135deg,rgba(34,197,94,0.08),rgba(21,128,61,0.05))' : 'linear-gradient(135deg,rgba(56,189,248,0.08),rgba(14,165,233,0.05))'}; margin-bottom:4px;`;
         btn.onclick = () => showTutorialLessonModal(lesson, ch);
         const chName = en ? ch.nameEn : ch.nameEs;
         const chDesc = en ? (ch.menuDescEn || ch.descEn) : (ch.menuDescEs || ch.descEs);
-        btn.innerHTML = `<strong style="font-size:0.92rem;">${chName}</strong><span style="font-size:0.8rem; color:var(--text-light); display:block; margin-top:2px;">${chDesc}</span>`;
+        const checkmark = done ? '<span style="color:#22c55e; font-size:1rem; margin-left:6px;">✅</span>' : '';
+        btn.innerHTML = `<strong style="font-size:0.92rem;">${chName}${checkmark}</strong><span style="font-size:0.8rem; color:var(--text-light); display:block; margin-top:2px;">${chDesc}</span>`;
         container.appendChild(btn);
       });
     }
