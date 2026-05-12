@@ -4560,7 +4560,11 @@ limitations under the License.
 
   <!-- ── Tutorial Completion Modal ────────────── -->
   <div class="confirm-modal" id="tutorialCompleteModal" style="z-index: 400;">
-    <div class="confirm-box" style="max-width:380px; padding:28px 22px 22px; text-align:center;">
+    <div class="confirm-box" id="tutorialCompleteBox" style="max-width:380px; padding:28px 22px 22px; text-align:center; transition: background 0.3s;">
+      <div id="tutorialLessonCompleteBanner" style="display:none; margin-bottom:10px;">
+        <div style="font-size:3.2rem; line-height:1; margin-bottom:4px;">🏆</div>
+        <div id="tutorialLessonCompleteLabel" style="font-size:1.3rem; font-weight:900; letter-spacing:0.04em; margin-bottom:4px; color:#f59e0b; text-transform:uppercase;"></div>
+      </div>
       <div id="tutorialResultBanner" style="display:none; margin-bottom:10px;">
         <div id="tutorialResultIcon" style="font-size:3rem; line-height:1; margin-bottom:4px;"></div>
         <div id="tutorialResultLabel" style="font-size:1.6rem; font-weight:900; letter-spacing:0.03em; margin-bottom:6px;"></div>
@@ -22298,30 +22302,55 @@ limitations under the License.
       // Determine next action
       _nextTutorialChapter = null;
       const btnNext = document.getElementById('btnTutorialNext');
-      
+      const lessonCompleteBanner = document.getElementById('tutorialLessonCompleteBanner');
+      const lessonCompleteLabel = document.getElementById('tutorialLessonCompleteLabel');
+      const completeBox = document.getElementById('tutorialCompleteBox');
+
+      const isLessonComplete = !hasNextStage && chapterIdx + 1 >= lesson.chapters.length;
+
+      if (isLessonComplete) {
+        lessonCompleteBanner.style.display = '';
+        lessonCompleteLabel.textContent = en ? 'Lesson Complete!' : '¡Lección Completada!';
+        document.getElementById('tutorialResultStar').style.display = 'none';
+        completeBox.style.background = 'linear-gradient(160deg, rgba(245,158,11,0.12) 0%, var(--card) 60%)';
+        completeBox.style.border = '2px solid rgba(245,158,11,0.4)';
+        if (!resultType) {
+          document.getElementById('tutorialCompleteTitle').style.color = '#f59e0b';
+        }
+      } else {
+        lessonCompleteBanner.style.display = 'none';
+        completeBox.style.background = '';
+        completeBox.style.border = '';
+        document.getElementById('tutorialCompleteTitle').style.color = '';
+        if (!resultType) document.getElementById('tutorialResultStar').style.display = '';
+      }
+
       if (hasNextStage) {
         const nextStage = chapter.stages[stageIdx + 1];
         const nextName = en ? nextStage.nameEn : nextStage.nameEs;
         btnNext.textContent = '▶ ' + nextName;
         btnNext.onclick = () => startNextTutorialStage();
-        btnNext.style.display = '';
+        btnNext.className = 'btn btn-primary';
+        btnNext.style.cssText = 'display:block; font-weight:800;';
       } else if (chapterIdx + 1 < lesson.chapters.length) {
         const nextCh = lesson.chapters[chapterIdx + 1];
         _nextTutorialChapter = { lesson: lesson, chapter: nextCh };
         const nextName = en ? nextCh.nameEn : nextCh.nameEs;
         btnNext.textContent = '▶ ' + nextName;
         btnNext.onclick = () => startNextTutorialLesson();
-        btnNext.style.display = '';
+        btnNext.className = 'btn btn-primary';
+        btnNext.style.cssText = 'display:block; font-weight:800;';
       } else if (lessonIdx + 1 < TUTORIAL_LESSONS.length) {
         const nextLesson = TUTORIAL_LESSONS[lessonIdx + 1];
         const nextCh = nextLesson.chapters[0];
         _nextTutorialChapter = { lesson: nextLesson, chapter: nextCh };
-        const nextName = en ? nextCh.nameEn : nextCh.nameEs;
-        btnNext.textContent = '▶ ' + nextName;
+        const nextLessonName = en ? nextLesson.nameEn : nextLesson.nameEs;
+        btnNext.textContent = (en ? '🎓 Next Lesson: ' : '🎓 Siguiente lección: ') + nextLessonName;
         btnNext.onclick = () => startNextTutorialLesson();
-        btnNext.style.display = '';
+        btnNext.className = 'btn btn-primary';
+        btnNext.style.cssText = 'display:block; font-weight:800; background: linear-gradient(135deg,#f59e0b,#d97706); border-color:#d97706;';
       } else {
-        btnNext.style.display = 'none';
+        btnNext.style.cssText = 'display:none;';
       }
 
       document.getElementById('btnTutorialChooseAnother').textContent = en ? '📚 Choose another' : '📚 Elegir otro';
