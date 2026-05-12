@@ -8163,7 +8163,13 @@ limitations under the License.
                 const _st = (_atl.chapter.stages && _atl.chapter.stages[_activeTutorialStageIdx]) || _atl.chapter;
                 return !!_st.resultType;
               })();
-              const _tutorialDelay = _hasResult ? 2200 : (lastLoadedChallengeItem?.isTutorial ? 800 : 600);
+              const _hasMiniBoard = lastLoadedChallengeItem?.isTutorial && (() => {
+                const _atl = _activeTutorialLesson;
+                if (!_atl) return false;
+                const _st = (_atl.chapter.stages && _atl.chapter.stages[_activeTutorialStageIdx]) || _atl.chapter;
+                return !!_st.miniBoardFen;
+              })();
+              const _tutorialDelay = _hasResult ? 2200 : (_hasMiniBoard ? 1800 : (lastLoadedChallengeItem?.isTutorial ? 1400 : 600));
                 setTimeout(() => {
                   // Tutorial lessons: show completion modal (handles stages vs chapters)
                   if (lastLoadedChallengeItem?.isTutorial && _activeTutorialLesson) {
@@ -20992,7 +20998,7 @@ limitations under the License.
       {
         id: 'pawns',
         iconEs: '♟️', iconEn: '♟️',
-        nameEs: 'Los Peones', nameEn: 'The Pawns',
+        nameEs: 'Peones', nameEn: 'Pawns',
         descEs: 'Domina el movimiento, las capturas, los secretos y la defensa del soldado más numeroso del ajedrez.',
         descEn: 'Master the movement, captures, secrets and defense of chess\'s most numerous soldier.',
         chapters: [
@@ -21209,7 +21215,7 @@ limitations under the License.
       {
         id: 'knights',
         iconEs: '♞', iconEn: '♞',
-        nameEs: 'Los Caballos', nameEn: 'The Knights',
+        nameEs: 'Caballos', nameEn: 'Knights',
         descEs: 'El caballo es la pieza más especial: ¡salta en forma de L y puede saltar sobre otras piezas!',
         descEn: 'The knight is the most special piece: it jumps in an L-shape and can leap over other pieces!',
         chapters: [
@@ -21295,7 +21301,7 @@ limitations under the License.
       {
         id: 'bishops',
         iconEs: '♗', iconEn: '♗',
-        nameEs: 'Los Alfiles', nameEn: 'The Bishops',
+        nameEs: 'Alfiles', nameEn: 'Bishops',
         descEs: 'El alfil se mueve en diagonal y no puede saltar piezas.',
         descEn: 'The bishop moves diagonally and cannot jump over pieces.',
         chapters: [
@@ -21499,7 +21505,7 @@ limitations under the License.
       {
         id: 'rook',
         iconEs: '♖', iconEn: '♖',
-        nameEs: 'La Torre', nameEn: 'The Rook',
+        nameEs: 'Torre', nameEn: 'Rook',
         descEs: 'Aprende cómo se mueve la torre en línea recta y cómo domina el tablero.',
         descEn: 'Learn how the rook moves in straight lines and how it dominates the board.',
         chapters: [
@@ -21688,10 +21694,10 @@ limitations under the License.
       },
       {
         id: 'mate',
-        iconEs: '🏁', iconEn: '🏁',
-        nameEs: 'Jaque y Mate', nameEn: 'Check and Mate',
-        descEs: 'El objetivo final: aprende a atacar al Rey y a dar el golpe de gracia.',
-        descEn: 'The final goal: learn how to attack the King and deliver the finishing blow.',
+        iconEs: '⚔️', iconEn: '⚔️',
+        nameEs: 'Atacando', nameEn: 'Attacking',
+        descEs: 'Aprende a dar jaque, ejecutar tácticas y rematar al rey enemigo.',
+        descEn: 'Learn to give check, execute tactics, and deliver the finishing blow to the enemy king.',
         chapters: [
           {
             id: 'king_danger',
@@ -21773,25 +21779,59 @@ limitations under the License.
             id: 'special_checks',
             nameEs: '2. Ataques Especiales',
             nameEn: '2. Special Attacks',
-            descEs: 'Aprende tácticas avanzadas como el jaque al descubierto para sorprender a tu rival.',
-            descEn: 'Learn advanced tactics like discovered checks to surprise your opponent.',
+            descEs: 'Dos de las tácticas más peligrosas del ajedrez: el jaque al descubierto y el doble jaque.',
+            descEn: 'Two of the most dangerous tactics in chess: the discovered check and the double check.',
             stages: [
               {
                 id: 'discovered_check',
-                nameEs: 'Jaque al Descubierto',
-                nameEn: 'Discovered Check',
-                descEs: '¡Ataque sorpresa! Tu torre está "escondida" detrás de tu alfil. Mueve el alfil a un lado para desatar el ataque de la torre sobre el Rey enemigo.',
-                descEn: 'Surprise attack! Your rook is "hidden" behind your bishop. Move the bishop aside to unleash the rook\'s attack on the enemy King.',
-                fen: 'k7/8/8/8/8/8/1B6/1R5K w - - 0 1',
-                solution: ['b2a3', 'b2c3', 'b2d4', 'b2e5', 'b2f6', 'b2g7', 'b2h8', 'b2a1'],
+                nameEs: '1. Ataque al Descubierto',
+                nameEn: '1. Discovered Attack',
+                descEs: 'Tu caballo en e5 bloquea a tu torre de atacar la dama negra en e7. ¡Mueve el caballo a g6! El caballo atacará la dama directamente, Y la torre quedará libre para también apuntarla. La dama no puede escapar de dos piezas a la vez.',
+                descEn: 'Your knight on e5 is blocking your rook from attacking the black queen on e7. Move the knight to g6! The knight will attack the queen directly, AND the rook will be free to target it too. The queen cannot escape two pieces at once.',
+                fen: '5rk1/pp2qppp/2p2n2/3pN3/2PP4/1P5P/P4PP1/3QR1K1 w - - 0 1',
+                solution: ['e5g6', 'h7g6', 'e1e7'],
+                humanSteps: 3,
+                tutorialHighlights: {
+                  arrows: [
+                    { fr: 3, fc: 4, tr: 2, tc: 6, type: 'good' },
+                    { fr: 7, fc: 4, tr: 1, tc: 4, type: 'good' },
+                  ]
+                },
+                completionMsgEs: '¡Ataque al descubierto! El caballo atacó la dama y descubrió el ataque de la torre. Las negras capturaron el caballo — pero la dama seguía indefensa en e7. ¡La torre la captura gratis!',
+                completionMsgEn: 'Discovered attack! The knight attacked the queen and uncovered the rook\'s attack. Black captured the knight — but the queen was still undefended on e7. The rook takes it for free!',
+              },
+              {
+                id: 'double_check',
+                nameEs: '2. El Doble Jaque',
+                nameEn: '2. The Double Check',
+                descEs: 'El doble jaque es el ataque más poderoso del ajedrez: DOS piezas dan jaque al mismo tiempo. Es imposible bloquear o capturar las dos a la vez — el rey DEBE moverse sí o sí. Mueve el caballo a c8.',
+                descEn: 'The double check is the most powerful attack in chess: TWO pieces give check at the same time. It is impossible to block or capture both at once — the king MUST move no matter what. Move the knight to c8.',
+                fen: 'k7/8/8/3N4/8/8/8/1R5K w - - 0 1',
+                solution: ['d5b6'],
                 humanSteps: 1,
-                tutorialHighlights: { arrows: [{ fr: 6, fc: 1, tr: 5, tc: 2, type: 'good' }] },
-                completionMsgEs: '¡Impactante! El alfil se movió y la torre dio el jaque. Esta táctica es muy peligrosa porque el alfil podría capturar algo mientras la torre da el jaque.',
-                completionMsgEn: 'Stunning! The bishop moved and the rook delivered the check. This tactic is very dangerous because the bishop could capture something while the rook gives check.',
-              }
+                tutorialHighlights: { arrows: [{ fr: 3, fc: 3, tr: 2, tc: 1, type: 'good' }, { fr: 7, fc: 1, tr: 0, tc: 1, type: 'good' }] },
+                completionMsgEs: '¡Doble jaque! El caballo en c8 da jaque, y al moverse también descubrió el jaque de la torre por la columna b. El rey no puede capturar ni bloquear ambas a la vez: ¡solo puede huir!',
+                completionMsgEn: 'Double check! The knight on c8 gives check, and by moving it also revealed the rook\'s check on the b-file. The king cannot capture or block both at once: it can only flee!',
+              },
+              {
+                id: 'double_check_mate',
+                nameEs: '3. Doble Jaque y Mate',
+                nameEn: '3. Double Check and Mate',
+                descEs: '¡El doble jaque puede dar mate directo! El rey negro está acorralado en la esquina. Mueve el caballo a b6: dará jaque, descubrirá el jaque de la torre, y el rey no tendrá a dónde ir.',
+                descEn: 'A double check can deliver checkmate directly! The black king is cornered. Move the knight to b6: it will give check, reveal the rook\'s check, and the king will have nowhere to go.',
+                fen: 'k7/3N4/8/8/8/8/8/R6K w - - 0 1',
+                solution: ['d7b6'],
+                humanSteps: 1,
+                tutorialHighlights: { arrows: [{ fr: 1, fc: 3, tr: 2, tc: 1, type: 'good' }] },
+                miniBoardFen: 'k7/8/1N6/8/8/8/8/R6K b - - 0 1',
+                miniBoardHighlight: [[0,0]],
+                miniBoardDanger: [[0,1],[1,0],[1,1]],
+                completionMsgEs: '¡Jaque Mate por doble jaque! El caballo en b6 ataca a8 y descubre el jaque de la torre en a1. El rey no puede capturar el caballo (la torre lo protege), ni bloquear ambos jaques. ¡El arma definitiva!',
+                completionMsgEn: 'Checkmate by double check! The knight on b6 attacks a8 and reveals the rook check on a1. The king cannot capture the knight (the rook protects it), nor block both checks. The ultimate weapon!',
+              },
             ],
-            completionMsgEs: '¡Dominas las tácticas de jaque! El jaque al descubierto y el doble jaque son herramientas clave para cualquier estratega.',
-            completionMsgEn: 'You master the check tactics! Discovered check and double check are key tools for any strategist.',
+            completionMsgEs: '¡Dominas los ataques especiales! El jaque al descubierto gana material, el doble jaque obliga al rey a moverse, y juntos pueden dar mate fulminante.',
+            completionMsgEn: 'You master special attacks! Discovered check wins material, double check forces the king to move, and together they can deliver a crushing mate.',
           },
           {
             id: 'mastering_mate',
@@ -21810,8 +21850,11 @@ limitations under the License.
                 solution: ['c7c8'],
                 humanSteps: 1,
                 tutorialHighlights: { arrows: [{ fr: 1, fc: 2, tr: 0, tc: 2, type: 'good' }] },
-                completionMsgEs: '¡Jaque Mate! La Dama está tan cerca que el Rey no puede escapar, y tu propio Rey la protege desde b6. ¡Es el fin de la partida!',
-                completionMsgEn: 'Checkmate! The Queen is so close that the King cannot escape, and your own King protects her from b6. It is game over!',
+                miniBoardFen: 'k1Q5/8/1K6/8/8/8/8/8 b - - 0 1',
+                miniBoardHighlight: [[0,0]],
+                miniBoardDanger: [[0,1],[1,0],[1,1]],
+                completionMsgEs: '¡Jaque Mate! La Dama está tan cerca que el Rey no puede escapar, y tu propio Rey la protege desde b6. Las casillas rojas muestran que no hay ningún escape. ¡Es el fin de la partida!',
+                completionMsgEn: 'Checkmate! The Queen is so close that the King cannot escape, and your own King protects her from b6. The red squares show there is no escape. It is game over!',
               },
               {
                 id: 'mate_backrank',
@@ -21823,8 +21866,11 @@ limitations under the License.
                 solution: ['d1d8'],
                 humanSteps: 1,
                 tutorialHighlights: { arrows: [{ fr: 7, fc: 3, tr: 0, tc: 3, type: 'good' }] },
-                completionMsgEs: '¡Mate del pasillo! Los peones negros, que deberían proteger al Rey, se han convertido en una trampa al bloquearle la salida. ¡Asegúrate de que no le pase a tu Rey!',
-                completionMsgEn: 'Back-rank mate! The black pawns, which should protect the King, became a trap by blocking his exit. Make sure it doesn\'t happen to your King!',
+                miniBoardFen: '3R2k1/5ppp/8/8/8/8/8/6K1 b - - 0 1',
+                miniBoardHighlight: [[0,6]],
+                miniBoardDanger: [[0,5],[0,7],[1,5],[1,6],[1,7]],
+                completionMsgEs: '¡Mate del pasillo! Los peones negros, que deberían proteger al Rey, se han convertido en una trampa al bloquearle la salida. Las casillas rojas muestran por qué no puede escapar. ¡Asegúrate de que no le pase a tu Rey!',
+                completionMsgEn: 'Back-rank mate! The black pawns, which should protect the King, became a trap by blocking his exit. The red squares show why it cannot escape. Make sure it doesn\'t happen to your King!',
               },
               {
                 id: 'mate_in_2',
@@ -21836,8 +21882,11 @@ limitations under the License.
                 solution: ['e1e8', 'a8a7', 'b1a1'],
                 humanSteps: 2,
                 tutorialHighlights: { arrows: [{ fr: 7, fc: 4, tr: 0, tc: 4, type: 'good' }] },
-                completionMsgEs: '¡Excelente coordinación! Has usado las torres como una escalera, alternando sus ataques para quitarle al Rey cada fila de escape. ¡Un patrón esencial!',
-                completionMsgEn: 'Excellent coordination! You used the rooks like a ladder, alternating their attacks to take away every escape rank from the King. An essential pattern!',
+                miniBoardFen: 'R3R3/k7/2K5/8/8/8/8/8 b - - 0 2',
+                miniBoardHighlight: [[1,0]],
+                miniBoardDanger: [[0,0],[0,1],[1,1],[2,0]],
+                completionMsgEs: '¡Excelente coordinación! Has usado las torres como una escalera, alternando sus ataques para quitarle al Rey cada fila de escape. Las casillas rojas muestran que el rey no tiene ningún refugio. ¡Un patrón esencial!',
+                completionMsgEn: 'Excellent coordination! You used the rooks like a ladder, alternating their attacks to take away every escape rank from the King. The red squares show the king has nowhere to hide. An essential pattern!',
               }
             ],
             completionMsgEs: '¡Eres un estratega nato! Has dominado los patrones de mate más importantes. ¡El tablero es tuyo!',
@@ -21848,7 +21897,7 @@ limitations under the License.
       {
         id: 'draws',
         iconEs: '🤝', iconEn: '🤝',
-        nameEs: 'Las Tablas', nameEn: 'Draws',
+        nameEs: 'Tablas', nameEn: 'Draws',
         descEs: 'Una partida no siempre termina en jaque mate. Descubre cuándo y por qué una partida puede terminar en empate.',
         descEn: 'A game doesn\'t always end in checkmate. Discover when and why a game can end in a draw.',
         chapters: [
