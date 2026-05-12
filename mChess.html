@@ -7013,6 +7013,7 @@ limitations under the License.
       lastLoadedPuzzleMode = null;
       lastLoadedChallengeItem = null;
       _activeTutorialLesson = null;
+      if (typeof _setTutorialButtonsBlocked === 'function') _setTutorialButtonsBlocked(false);
       if (typeof _restoreCommentatorTab === 'function') _restoreCommentatorTab();
 
       // 🔴 RACE FIX: Increment generation token so any in-flight triggerAI discards its result
@@ -22020,7 +22021,7 @@ limitations under the License.
             descEn: 'Does your opponent play e4? Respond with c5! The Sicilian is the most successful defense to fight for victory with Black.',
             fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
             solution: ['c7c5', 'g1f3', 'd7d6', 'd2d4', 'c5d4', 'f3d4'],
-            humanSteps: 6,
+            humanSteps: 5,
             completionMsgEs: '¡Defensa Siciliana activada! Al jugar c5, has created una posición asimétrica que te da grandes oportunidades de contraataque. ¡El centro está en disputa!',
             completionMsgEn: 'Sicilian Defense activated! By playing c5, you have created an asymmetrical position that gives you great counter-attacking opportunities. The center is up for grabs!',
           }
