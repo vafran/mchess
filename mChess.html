@@ -4547,7 +4547,11 @@ limitations under the License.
   <!-- ── Tutorial Completion Modal ────────────── -->
   <div class="confirm-modal" id="tutorialCompleteModal" style="z-index: 400;">
     <div class="confirm-box" style="max-width:380px; padding:28px 22px 22px; text-align:center;">
-      <div style="font-size:2.6rem; margin-bottom:6px;">⭐</div>
+      <div id="tutorialResultBanner" style="display:none; margin-bottom:10px;">
+        <div id="tutorialResultIcon" style="font-size:3rem; line-height:1; margin-bottom:4px;"></div>
+        <div id="tutorialResultLabel" style="font-size:1.6rem; font-weight:900; letter-spacing:0.03em; margin-bottom:6px;"></div>
+      </div>
+      <div id="tutorialResultStar" style="font-size:2.6rem; margin-bottom:6px;">⭐</div>
       <div id="tutorialCompleteTitle"
         style="font-size:1.1rem; font-weight:800; color:var(--primary); margin-bottom:12px;"></div>
       <p id="tutorialCompleteMsg"
@@ -8669,14 +8673,15 @@ limitations under the License.
         const opts = document.getElementById('promoOptions');
         opts.innerHTML = '';
         const choices = color === 'w' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
-        const queenOnly = lastLoadedChallengeItem?.forcePromo;
+        const fp = lastLoadedChallengeItem?.forcePromo;
+        // forcePromo can be true (→ queen only) or a piece letter like 'N' (→ that piece only)
+        const forcedPiece = fp ? (fp === true ? 'Q' : String(fp).toUpperCase()) : null;
         for (const ch of choices) {
           const btn = document.createElement('button');
           btn.className = 'promo-btn';
           btn.textContent = PIECES[ch];
           btn.title = PIECE_NAMES[ch];
-          const isQueen = ch.toUpperCase() === 'Q';
-          if (queenOnly && !isQueen) {
+          if (forcedPiece && ch.toUpperCase() !== forcedPiece) {
             btn.disabled = true;
             btn.style.opacity = '0.3';
             btn.style.cursor = 'not-allowed';
@@ -21105,7 +21110,8 @@ limitations under the License.
                 fen: '1rb4r/p1Pp3p/kb1P3n/3Q4/N3Pp2/8/P1P3PP/7K w - - 2 2',
                 solution: ['c7b8n'],
                 humanSteps: 1,
-                validatePromo: true,
+                forcePromo: 'N',
+                resultType: 'checkmate',
                 tutorialHighlights: { arrows: [{ fr: 1, fc: 2, tr: 0, tc: 1, type: 'good' }] },
                 completionMsgEs: '¡Jaque mate con Caballo!\n\nSolo el Caballo podía dar jaque mate aquí. La Dama habría dado jaque — pero el rey habría podido escapar. ¡El Caballo salta en L de forma única y cierra todas las salidas!\n\nRecuerda: los Caballos son las únicas piezas que pueden saltar por encima de otras. Su movimiento en L sorprende hasta a los jugadores más experimentados.',
                 completionMsgEn: 'Checkmate with a Knight!\n\nOnly the Knight could deliver checkmate here. A Queen would give check — but the king could escape. The Knight jumps in its unique L-shape and closes every exit!\n\nRemember: knights are the only pieces that can leap over others. Their L-shape movement surprises even experienced players.',
@@ -21948,6 +21954,29 @@ limitations under the License.
 
       document.getElementById('tutorialCompleteTitle').textContent = '✅ ' + titleName;
       document.getElementById('tutorialCompleteMsg').innerHTML = msg ? msg.replace(/\n/g, '<br>') : '';
+
+      // Result banner (checkmate / draw / stalemate) — driven by resultType on the active stage
+      const activeStage = (chapter.stages && stageIdx !== null) ? chapter.stages[stageIdx] : chapter;
+      const resultType = activeStage?.resultType || null;
+      const banner = document.getElementById('tutorialResultBanner');
+      const star = document.getElementById('tutorialResultStar');
+      if (resultType) {
+        const resultDefs = {
+          checkmate: { icon: '♟️', labelEs: '¡Jaque Mate!', labelEn: 'Checkmate!', color: '#f59e0b' },
+          draw:      { icon: '🤝', labelEs: '¡Tablas!',     labelEn: 'Draw!',       color: '#38bdf8' },
+          stalemate: { icon: '🔒', labelEs: '¡Ahogado!',    labelEn: 'Stalemate!',  color: '#a78bfa' },
+        };
+        const def = resultDefs[resultType] || resultDefs.checkmate;
+        document.getElementById('tutorialResultIcon').textContent = def.icon;
+        const label = document.getElementById('tutorialResultLabel');
+        label.textContent = en ? def.labelEn : def.labelEs;
+        label.style.color = def.color;
+        banner.style.display = '';
+        star.style.display = 'none';
+      } else {
+        banner.style.display = 'none';
+        star.style.display = '';
+      }
 
       // Determine next action
       _nextTutorialChapter = null;
