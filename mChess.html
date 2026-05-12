@@ -8140,7 +8140,14 @@ limitations under the License.
               } else {
                 puzzleMode = null;
               }
-              const _tutorialDelay = lastLoadedChallengeItem?.isTutorial ? 800 : 600;
+              // Give extra time for lessons that end in checkmate/draw so the player can see the board
+              const _hasResult = lastLoadedChallengeItem?.isTutorial && (() => {
+                const _atl = _activeTutorialLesson;
+                if (!_atl) return false;
+                const _st = (_atl.chapter.stages && _atl.chapter.stages[_activeTutorialStageIdx]) || _atl.chapter;
+                return !!_st.resultType;
+              })();
+              const _tutorialDelay = _hasResult ? 2200 : (lastLoadedChallengeItem?.isTutorial ? 800 : 600);
                 setTimeout(() => {
                   // Tutorial lessons: show completion modal (handles stages vs chapters)
                   if (lastLoadedChallengeItem?.isTutorial && _activeTutorialLesson) {
