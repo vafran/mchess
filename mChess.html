@@ -5357,6 +5357,12 @@ limitations under the License.
       const _cc = (p.completedChallenges || []);
       if (_cc.length >= 1) grant('first_puzzle');
       if (_cc.length >= 10) grant('keep_practicing');
+      // 🎓 tutorial_master: every chapter in every lesson has at least one completion record
+      const _ct = p.completedTutorials || [];
+      const _allTutorialsDone = typeof TUTORIAL_LESSONS !== 'undefined' && TUTORIAL_LESSONS.every(l =>
+        l.chapters.every(ch => _ct.some(t => t.lessonId === l.id && t.chapterId === ch.id))
+      );
+      if (_allTutorialsDone) grant('tutorial_master');
       changed = p.unlockedTrophies.length > before;
       // Sync medals: revoke any that are no longer fully earned, grant any that now are
       const unlockedSet = new Set(p.unlockedTrophies.map(t => t.id));
