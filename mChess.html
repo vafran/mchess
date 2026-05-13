@@ -5598,7 +5598,10 @@ limitations under the License.
     };
 
     // Trophies that are explicitly awarded for challenge/puzzle completion — always allowed
-    const _CHALLENGE_TROPHIES = new Set(['first_puzzle', 'keep_practicing', 'fen_master']);
+    const _CHALLENGE_TROPHIES = new Set([
+      'first_puzzle', 'keep_practicing', 'fen_master', 'tutorial_master',
+      'secret_marshall_qg3', 'secret_vladimirov_bh6', 'secret_sanz_rxb2', 'secret_shirov_bh3',
+    ]);
 
     function unlockTrophy(id) {
       if (!currentProfile) return;
