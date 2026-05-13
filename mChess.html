@@ -5568,7 +5568,7 @@ limitations under the License.
       la_sorpresa: { icon: '🎁', cat: 7, name: { es: '¡Sorpresa!', en: 'Discovered Attack!' }, desc: { es: 'Realiza un jaque a la descubierta.', en: 'Deliver a discovered check.' }, story: { es: 'Mueve una pieza que bloqueaba a un alfil, torre o dama, de forma que la pieza descubierta dé jaque.', en: 'Move a pawn or piece that was blocking a bishop, rook, or queen — so the newly uncovered piece gives check. Very hard to defend against.' } },
       fen_master: { icon: '🧘', cat: 6, name: { es: 'Maestro FEN', en: 'FEN Master' }, desc: { es: 'Completa 3 aperturas, 4 mates en 1, 6 mates en 2, 8 mates en 3 y 10 mates en 4.', en: 'Complete 3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, and 10 mate-in-4s.' }, story: { es: 'Un jugador completo domina todas las fases del tablero. Resolver desafíos de apertura y matemáticas de mate demuestra que tu visión tabléro es verdaderamente equilibrada.', en: 'A complete player masters the whole board. Solving opening traps and mating puzzles across every difficulty proves your chess vision is truly well-rounded.' } },
       the_analyst: { icon: '🔍', cat: 6, name: { es: 'El Analista', en: 'The Analyst' }, desc: { es: 'Usa ¿Fue buena? 5 veces.', en: 'Use "Was it good?" 5 times.' }, story: { es: 'Los grandes jugadores no solo juegan — estudian sus propias jugadas después. Usa el botón ¿Fue buena? cinco veces para reflexionar sobre tus movimientos.', en: 'Great players don\'t just play — they study their own moves afterwards. Use the "Was it good?" button five times to reflect on your play.' } },
-      tutorial_master: { icon: '🎓', cat: 6, name: { es: 'Maestro de las Lecciones', en: 'Lesson Master' }, desc: { es: 'Completa todas las lecciones del modo Tutorial.', en: 'Complete all lessons in Tutorial mode.' }, story: { es: 'Has completado cada lección del tutorial de Airin. Conoces el movimiento de cada pieza, las tácticas básicas, las aperturas y mucho más. ¡Estás listo para jugar de verdad!', en: 'You\'ve completed every tutorial lesson in Airin. You know how every piece moves, the basic tactics, openings, and much more. You\'re ready to play for real!' } },
+      tutorial_master: { icon: '⭐', cat: 6, name: { es: 'Estudiante Ejemplar', en: 'Lesson Master' }, desc: { es: 'Completa todas las lecciones del modo Tutorial.', en: 'Complete all lessons in Tutorial mode.' }, story: { es: 'Has completado cada lección del tutorial de Airin. Conoces el movimiento de cada pieza, las tácticas básicas, las aperturas y mucho más. ¡Estás listo para jugar de verdad!', en: 'You\'ve completed every tutorial lesson in Airin. You know how every piece moves, the basic tactics, openings, and much more. You\'re ready to play for real!' } },
       artilleria_pesada: { icon: '🔫', cat: 7, name: { es: 'Artillería Pesada', en: 'The Battery' }, desc: { es: 'Apila dos Torres tuyas en la misma columna.', en: 'Stack two of your Rooks on the same column.' }, story: { es: 'Dobla las torres en una columna abierta sin piezas de por medio. Muy común en las columnas d o e.', en: 'Double rooks on an open file with no pieces in between. Commonly played on the d-file or e-file.' } },
       great_trade: { icon: '🌪️', cat: 7, name: { es: 'Teoría del Caos', en: 'Chaos Theory' }, desc: { es: '4 capturas en 4 medias jugadas consecutivas.', en: '4 consecutive half-moves are all captures — a full fireworks sequence.' }, story: { es: 'Cuando el centro estalla y ambos bandos intercambian pieza por pieza sin parar — eso es la Teoría del Caos.', en: 'When the center explodes and both sides trade piece for piece without stopping — that\'s Chaos Theory.' } },
       kings_support: { icon: '👑', cat: 2, name: { es: 'El Rey Guerrero', en: "King's Support" }, desc: { es: 'Da jaque mate con tu Rey activo en la 6ª fila (3ª con negras) cerca del rey rival.', en: 'Deliver checkmate with your King on the 6th rank (3rd as Black), within 2 squares of the enemy king.' }, story: { es: 'Lleva tu Rey hasta la 6ª fila y úsalo para apoyar el jaque mate — igual que los profesionales en los finales.', en: 'March your King up to rank 6 and use it to support the mating attack — just like the pros do in endgames.' } },
@@ -22137,6 +22137,18 @@ limitations under the License.
         ]
       },
     ];
+
+    // Retroactive tutorial_master check — runs once at script time, after TUTORIAL_LESSONS is fully assigned.
+    // migrateProfileTrophies() runs before this array exists (var hoisting), so we repeat the check here.
+    (function() {
+      if (!currentProfile) return;
+      const _ct = currentProfile.completedTutorials || [];
+      if (_ct.length === 0) return;
+      const allDone = TUTORIAL_LESSONS.every(l =>
+        l.chapters.every(ch => _ct.some(t => t.lessonId === l.id && t.chapterId === ch.id))
+      );
+      if (allDone) unlockTrophy('tutorial_master');
+    })();
 
     var _activeTutorialLessonIdx = 0; // which lesson tab is selected in the tutorial modal
     var _pendingTutorialLesson = null;  // chapter object waiting to start
