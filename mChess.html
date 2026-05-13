@@ -22000,26 +22000,11 @@ limitations under the License.
             id: 'draw_repetition',
             nameEs: '3. Triple Repetición',
             nameEn: '3. Threefold Repetition',
-            descEs: 'Si la misma posición se repite tres veces en la partida, se declaran tablas. Es un recurso para salvarse cuando vas perdiendo.',
-            descEn: 'If the same position occurs three times in the game, a draw is declared. It is a resource to save yourself when you are losing.',
-            stages: [
-              {
-                id: 'draw_repetition_demo',
-                nameEs: 'La Danza del Empate',
-                nameEn: 'The Draw Dance',
-                descEs: '¡Vas perdiendo pero puedes forzar tablas! El rey negro no puede escapar del rincón. Mueve el caballo entre g7 y f5 varias veces, el rey negro se verá obligado a repetir movimientos, y la posición se repetirá tres veces: ¡tablas!',
-                descEn: 'You are losing but you can force a draw! The black king cannot escape the corner. Move the knight back and forth between g7 and f5 a few times, the black king will be forced to repeat moves, and the position will occur three times: draw!',
-                fen: '7k/6N1/7K/8/8/8/8/8 w - - 0 1',
-                solution: ['g7f5', 'h8g8', 'f5g7', 'g8h8', 'g7f5', 'h8g8', 'f5g7'],
-                humanSteps: 4,
-                resultType: 'draw',
-                tutorialHighlights: { arrows: [{ fr: 1, fc: 6, tr: 3, tc: 5, type: 'good' }] },
-                completionMsgEs: '¡Tablas por repetición! La misma posición (Caballo en g7, Rey negro en h8) ocurrió tres veces. En ajedrez real, el juegador que lo detecta puede reclamar las tablas. Es un recurso valioso para escapar de posiciones perdidas.',
-                completionMsgEn: 'Draw by repetition! The same position (Knight on g7, black King on h8) occurred three times. In real chess, the player who detects it can claim the draw. It is a valuable resource to escape losing positions.',
-              }
-            ],
+            descEs: 'Las tablas por repetición ocurren cuando la misma posición se repite tres veces, con el mismo jugador al turno y los mismos derechos de enroque y al paso.\n\n📌 El jugador debe reclamar las tablas — no ocurren automáticamente.\n\n📌 Las repeticiones no tienen que ser consecutivas.\n\n⚔️ Úsalo para escapar: si vas perdiendo, repetir movimientos puede forzar tablas.\n\n⚠️ Evítalo si vas ganando: ten cuidado de no repetir posiciones cuando intentas convertir tu ventaja.\n\n🧠 También es táctica psicológica: repetir movimientos puede poner a prueba los nervios del rival.',
+            descEn: 'A draw by repetition occurs when the same position appears three times, with the same player to move and the same castling and en passant rights.\n\n📌 The player must claim the draw — it does not happen automatically.\n\n📌 The repetitions do not have to be consecutive.\n\n⚔️ Use it to escape: if you are losing, repeating moves may force a draw.\n\n⚠️ Avoid it when winning: be careful not to repeat positions when trying to convert your advantage.\n\n🧠 It is also psychological: repeating moves can test your opponent\'s nerves.',
+            readOnly: true,
             completionMsgEs: '¡Buena jugada de supervivencia! La triple repetición se usa especialmente cuando vas perdiendo. Si no puedes ganar, ¡al menos no pierdas!',
-            completionMsgEn: 'Good survival play! Threefold repetition is especially useful when you are losing. If you cannot win, at least don\'t lose!',
+            completionMsgEn: 'Good survival play! Threefold repetition is especially useful when you are losing. If you cannot win, at least do not lose!',
           },
           {
             id: 'draw_fifty',
@@ -22210,8 +22195,8 @@ limitations under the License.
       const isMultiStage = chapter.stages && chapter.stages.length > 1;
       const hasNextStage = isMultiStage && (stageIdx !== null) && (stageIdx + 1 < chapter.stages.length);
 
-      // Record completion — stage or chapter
-      if (isMultiStage && stageIdx !== null) {
+      // Record completion — always record stage id if stage exists
+      if (chapter.stages && stageIdx !== null && chapter.stages[stageIdx]) {
         const stage = chapter.stages[stageIdx];
         recordTutorialCompleted(lesson.id, chapter.id, stage.id);
       } else {
@@ -22437,7 +22422,8 @@ limitations under the License.
         btn.style.cssText = `cursor:pointer; padding:12px 14px; border-radius:12px; border:1.5px solid ${done ? 'rgba(34,197,94,0.5)' : 'rgba(56,189,248,0.35)'}; background:${done ? 'linear-gradient(135deg,rgba(34,197,94,0.08),rgba(21,128,61,0.05))' : 'linear-gradient(135deg,rgba(56,189,248,0.08),rgba(14,165,233,0.05))'}; margin-bottom:4px;`;
         btn.onclick = () => showTutorialLessonModal(lesson, ch);
         const chName = en ? ch.nameEn : ch.nameEs;
-        const chDesc = en ? (ch.menuDescEn || ch.descEn) : (ch.menuDescEs || ch.descEs);
+        const _rawDesc = en ? (ch.menuDescEn || ch.descEn) : (ch.menuDescEs || ch.descEs);
+        const chDesc = ch.readOnly ? (_rawDesc || '').split('\n')[0] : _rawDesc;
         const checkmark = done ? '<span style="color:#22c55e; font-size:1rem; margin-left:6px;">✅</span>' : '';
         btn.innerHTML = `<strong style="font-size:0.92rem;">${chName}${checkmark}</strong><span style="font-size:0.8rem; color:var(--text-light); display:block; margin-top:2px;">${chDesc}</span>`;
         container.appendChild(btn);
@@ -22455,7 +22441,7 @@ limitations under the License.
       document.getElementById('tutorialLessonIcon').textContent = lesson.iconEs;
       document.getElementById('tutorialLessonName').textContent = en ? chapter.nameEn : chapter.nameEs;
       const desc = en ? (chapter.descEn || (chapter.stages && chapter.stages[0].descEn)) : (chapter.descEs || (chapter.stages && chapter.stages[0].descEs));
-      document.getElementById('tutorialLessonDesc').textContent = desc || '';
+      document.getElementById('tutorialLessonDesc').innerHTML = (desc || '').split('\n\n').map(p => `<p style="margin:0 0 10px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
       document.getElementById('btnTutorialLessonCancel').textContent = en ? '✕ Cancel' : '✕ Cancelar';
       document.getElementById('btnTutorialLessonStart').textContent = chapter.readOnly ? (en ? '▶ Continue' : '▶ Continuar') : (en ? '▶ Start' : '▶ Empezar');
       document.getElementById('tutorialLessonModal').classList.add('show');
