@@ -5596,8 +5596,8 @@ limitations under the License.
 
     function unlockTrophy(id) {
       if (!currentProfile) return;
-      // Suppress all move-triggered trophies during tutorials (no whitelist mechanism needed)
-      if (lastLoadedChallengeItem?.isTutorial) {
+      // Suppress all move-triggered trophies during tutorials except tutorial completion itself
+      if (lastLoadedChallengeItem?.isTutorial && id !== 'tutorial_master') {
         console.log(`[Statistician] Trophy '${id}' suppressed during tutorial`);
         return;
       }
