@@ -142,7 +142,7 @@ These trophies are unlocked by playing specific famous moves in any position. Lo
 | 🔁 | **Keep Practicing** | Complete **10 puzzles total** in the Training Library (any mix of categories). |
 | 🔍 | **The Analyst** | Use the **"Was it good?"** Coach button **5 times** across any games. |
 | 🧘 | **FEN Master** | Complete **3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, and 10 mate-in-4s** in the Training Library. |
-| ⭐ | **Estudiante Ejemplar** | Complete **all lessons** in Tutorial mode. |
+| 🧑🏻‍🎓 | **Model Student** | Complete **all lessons** in Tutorial mode. |
 
 > **Tips:**
 > - **The Student**: open the Coach tab and press any of the three buttons — each press counts. Available on Easy, Medium, and Hard.
