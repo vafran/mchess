@@ -1,13 +1,13 @@
 # 🏆 Airin Chess — Trophy Guide
 
 > **64 trophies · 8 medals · 1 legend** | Hidden Easter Eggs marked with 🔒  
-> Version: v2.25.1+
+> Version: v2.26.0+
 
 ---
 
 ## How it Works
 
-**Trophies** (64 total) are unlocked by achieving specific in-game feats.  
+**Trophies** (64 total) are unlocked by achieving specific in-game feats.    
 **Medals** (8 total) are earned by completing **every trophy** in a category — one medal per category.  
 **2⁶⁴ − 1: The Wheat and Chessboard** is the final title, unlocked when you hold all 64 trophies and all 8 medals. A king once promised a wise man 1 grain of wheat on the first square, doubling on each square after. The total — 2⁶⁴ − 1 — was more wheat than the world has ever grown. You have claimed every square.
 
@@ -29,7 +29,6 @@
 | 👑 | **I Am Queen!** | Promote a pawn to any piece for the first time. |
 | 🏰 | **My Castle!** | Castle (kingside or queenside) for the **very first time** ever. |
 | 👻 | **Ghost Capture!** | Capture en passant for the **very first time** ever. |
-| 🐛 | **Ant Army** | Move **5 different pawns** off their starting squares in a single game. |
 
 > **Tips:**
 > - The first six are earned by just playing regularly. Start on Easy and work your way up.
@@ -38,7 +37,6 @@
 > - **Ghost Hunter**: track per-game — do it twice in a single game to unlock.
 > - **My Castle!**: fires the very first time you ever perform a castling move in any game.
 > - **Ghost Capture!**: fires the very first time you ever capture en passant.
-> - **Ant Army**: push pawns on both sides of the board early — e, d, c, f, g all count. Very easy to get naturally.
 
 ---
 
@@ -139,19 +137,21 @@ These trophies are unlocked by playing specific famous moves in any position. Lo
 |------|-----------------|---------------|
 | 🦉 | **The Student** | Use any Coach feature (Analysis, What should I do?, or Was it good?) a total of **10 times** across all games. |
 | 🗺️ | **The Explorer** | Play through **5 different named openings** across any games (the Commentator must announce the opening name). |
-| 📖 | **Opening Student** | Use **"What should I do?"** 3 times in a single game. |
+| 📖 | **Hint Seeker** | Use **"What should I do?"** 3 times in a single game. |
 | 🎓 | **First Puzzle** | Complete your **first puzzle** in the Training Library (any category). |
 | 🔁 | **Keep Practicing** | Complete **10 puzzles total** in the Training Library (any mix of categories). |
 | 🔍 | **The Analyst** | Use the **"Was it good?"** Coach button **5 times** across any games. |
 | 🧘 | **FEN Master** | Complete **3 openings, 4 mate-in-1s, 6 mate-in-2s, 8 mate-in-3s, and 10 mate-in-4s** in the Training Library. |
+| 🎓 | **Lesson Master** | Complete **all lessons** in Tutorial mode. |
 
 > **Tips:**
 > - **The Student**: open the Coach tab and press any of the three buttons — each press counts. Available on Easy, Medium, and Hard.
 > - **The Explorer**: play e4 e5, d4 d5, c4, Nf3, etc. Each named line the Commentator announces counts as one discovery.
-> - **Opening Student**: in a single game, press "What should I do?" three times.
+> - **Hint Seeker**: in a single game, press "What should I do?" three times.
 > - **First Puzzle / Keep Practicing**: open the Training Library with the 🧩 button and solve any puzzle. Completions accumulate across all sessions.
 > - **The Analyst**: after each move you make, click the Coach tab and press "Was it good?" Five reflections unlock the trophy.
 > - **FEN Master**: with 64 puzzles total, this is a long-term challenge.
+> - **Lesson Master**: complete every chapter in every lesson of the Tutorial mode. Takes time, but proves mastery of all the fundamentals.
 
 ---
 
@@ -208,12 +208,12 @@ These trophies are unlocked by playing specific famous moves in any position. Lo
 
 | Category | Trophies | Medal |
 |---|---|---|
-| 🏅 Progression | 12 | 🥇 |
+| 🏅 Progression | 11 | 🥇 |
 | 🧠 Technical | 10 | 🧠 |
 | 🥚 Easter Eggs | 6 | 🥚 |
 | 📜 Historians | 4 | 📜 |
 | ⚡ Relentless | 9 | ⚡ |
-| 📚 Learning | 7 | 📚 |
+| 📚 Learning | 8 | 📚 |
 | ⚔️ Tactics | 9 | ⚔️ |
 | 🥊 Two-Player | 7 | 🥊 |
 | **Total** | **64** | **8** |

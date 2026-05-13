@@ -6,6 +6,24 @@ Formato: versión · tamaño · qué cambió.
 [Ir a README_es.md](../README_es.md)
 
 ---
+## v2.26.0 — Modo Tutorial y Reequilibrio de Trofeos
+
+### 🎓 Modo Tutorial
+- Sistema tutorial interactivo completo con 5 lecciones (Peones, Caballos, Alfiles, Jaque y Mate, Aperturas) que cubren más de 30 capítulos y etapas.
+- Los capítulos de teoría pura (Triple Repetición, Regla de los 50 Movimientos) usan modo `readOnly` — se muestran como texto con un botón **▶ Continuar**, sin interacción con el tablero.
+- La compleción de una lección muestra un banner de trofeo dorado con un botón "Siguiente lección" en estilo dorado.
+- Las tarjetas de la lista de capítulos muestran una línea de previsualización corta, no la descripción completa.
+
+### 🏆 Reequilibrio de Trofeos — v2.26.0
+- **🎓 Maestro de las Lecciones (nuevo, Aprendizaje):** Se desbloquea al completar todas las lecciones del Tutorial.
+- **📖 Estudiante de Aperturas → Buscador de Pistas:** Renombrado para reflejar su condición real (usar "¿Qué hago?" 3 veces en una partida).
+- **🐛 Ejército de Hormigas (retirado):** Eliminado de Progresión — mover 5 peones en una partida era demasiado trivial y se obtenía automáticamente en casi todas las partidas.
+- Categoría Aprendizaje: 7 → **8 trofeos**. Categoría Progresión: 12 → **11 trofeos**. Total sigue siendo **64**.
+
+### Varios
+- Notificación "¡Posición cargada!" eliminada — aparecía en cada capítulo del tutorial.
+
+---
 ## v2.25.0 — Renovación de la Librería de Entrenamiento
 **~20.000 líneas · ~1,08 MB**
 

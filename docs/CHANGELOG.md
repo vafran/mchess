@@ -6,6 +6,24 @@ Format: version · size · what changed.
 [Go to README.md](../README.md)
 
 ---
+## v2.26.0 — Tutorial Mode & Trophy Rebalance
+
+### 🎓 Tutorial Mode
+- Full interactive tutorial system added with 5 lessons (Pawns, Knights, Bishops, Check & Mate, Openings) covering 30+ chapters and stages.
+- Theory-only chapters (Threefold Repetition, 50-Move Rule) use `readOnly` mode — shown as text with a **▶ Continue** button, no board interaction required.
+- Lesson completion shows a distinct gold trophy banner with a "Next Lesson" button in gold styling.
+- Chapter list cards show a short preview line, not the full description.
+
+### 🏆 Trophy Rebalance — v2.26.0
+- **🎓 Lesson Master (new, Learning):** Unlocks when all tutorial lessons are completed.
+- **📖 Opening Student → Hint Seeker:** Renamed to match its actual condition (use "What should I do?" 3 times in a game).
+- **🐛 Ant Army (removed):** Retired from Progression — move 5 pawns in a game was too trivial and granted automatically in almost every game.
+- Learning category: 7 → **8 trophies**. Progression category: 12 → **11 trophies**. Total remains **64**.
+
+### Misc
+- "Position loaded" toast notification removed — it was showing every time a tutorial chapter started.
+
+---
 ## v2.25.0 — Training Library Overhaul
 **~20,000 lines · ~1.08 MB**
 
