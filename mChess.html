@@ -5285,6 +5285,7 @@ limitations under the License.
     let sessionLastCapturePiece = null;
     let sessionRookOn7thStreak = 0;        // consecutive player turns with a rook on opp's 7th rank
     let sessionConsecutiveCaptures = 0;      // consecutive half-moves that were captures (great_trade)
+    let sessionTrainingUsed = false;         // true if training mode was on at game start (blocks pure_pride)
 
     function loadProfile() {
       try {
