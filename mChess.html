@@ -15628,29 +15628,32 @@ limitations under the License.
 
 
       if (mistakeChance > 0 && Math.random() < mistakeChance) {
-        const legal = getLegalMovesForColorInPlace(color);
-        if (legal.length > 1) {
-          // Filter suicidal moves from the mistake pool so Easy/Medium don't randomly hang
-          // their queen or rook. Easy blocks queen hangs only; Medium blocks all absurd moves.
-          const isSafeEnough = (mv) => {
-            if (currentDifficulty !== 'easy' && currentDifficulty !== 'medium') return true;
-            const profile = getMoveSafetyProfile(mv, color);
-            if (currentDifficulty === 'medium') return !profile.absurd;
-            const pc = board[mv.fr] && board[mv.fr][mv.fc];
-            return !(profile.absurd && (PIECE_VALUES[(pc || '').toUpperCase()] || 0) >= 885);
-          };
-          const tryFilter = (arr) => { const ok = arr.filter(isSafeEnough); return ok.length > 0 ? ok : arr; };
-
-          const cutoff = Math.max(1, Math.floor(results.length * 0.7));
-          const weakPool = tryFilter(results.slice(cutoff).map(r => r.move));
-          if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)];
-          const nonBest = legal.filter(m => {
-            const b = results[0] && results[0].move;
-            return !(b && m.fr === b.fr && m.fc === b.fc && m.tr === b.tr && m.tc === b.tc);
-          });
-          const filteredNonBest = tryFilter(nonBest.slice(0, 4));
-          if (filteredNonBest.length > 0) return filteredNonBest[Math.floor(Math.random() * filteredNonBest.length)];
-          if (nonBest.length > 0) return nonBest[Math.floor(Math.random() * Math.min(4, nonBest.length))];
+        if (results.length > 1) {
+          if (currentDifficulty === 'medium') {
+            // Medium: skip only the best move, pick from the remaining engine candidates.
+            // These are all moves the engine considered reasonable — no queen hangs, no blunders.
+            const pool = results.slice(1).map(r => r.move);
+            return pool[Math.floor(Math.random() * pool.length)];
+          } else {
+            // Easy: pick from the bottom 30% of engine results, filtering queen hangs.
+            const isSafeEnough = (mv) => {
+              const profile = getMoveSafetyProfile(mv, color);
+              const pc = board[mv.fr] && board[mv.fr][mv.fc];
+              return !(profile.absurd && (PIECE_VALUES[(pc || '').toUpperCase()] || 0) >= 885);
+            };
+            const tryFilter = (arr) => { const ok = arr.filter(isSafeEnough); return ok.length > 0 ? ok : arr; };
+            const cutoff = Math.max(1, Math.floor(results.length * 0.7));
+            const weakPool = tryFilter(results.slice(cutoff).map(r => r.move));
+            if (weakPool.length > 0) return weakPool[Math.floor(Math.random() * weakPool.length)];
+            const legal = getLegalMovesForColorInPlace(color);
+            const nonBest = legal.filter(m => {
+              const b = results[0] && results[0].move;
+              return !(b && m.fr === b.fr && m.fc === b.fc && m.tr === b.tr && m.tc === b.tc);
+            });
+            const filteredNonBest = tryFilter(nonBest.slice(0, 4));
+            if (filteredNonBest.length > 0) return filteredNonBest[Math.floor(Math.random() * filteredNonBest.length)];
+            if (nonBest.length > 0) return nonBest[Math.floor(Math.random() * Math.min(4, nonBest.length))];
+          }
         }
       }
       return results[0].move || null;
