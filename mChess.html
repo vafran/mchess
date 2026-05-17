@@ -15630,10 +15630,12 @@ limitations under the License.
       if (mistakeChance > 0 && Math.random() < mistakeChance) {
         if (results.length > 1) {
           if (currentDifficulty === 'medium') {
-            // Medium: skip only the best move, pick from the remaining engine candidates.
-            // These are all moves the engine considered reasonable — no queen hangs, no blunders.
-            const pool = results.slice(1).map(r => r.move);
-            return pool[Math.floor(Math.random() * pool.length)];
+            // Medium: pick from candidates within 150cp of the best move, excluding the best itself.
+            // Uses the engine's own scores — no secondary heuristic needed.
+            const bestScore = results[0].score;
+            const pool = results.slice(1).filter(r => bestScore - r.score < 150).map(r => r.move);
+            const chosen = pool.length > 0 ? pool : [results[1].move]; // fallback: second-best
+            return chosen[Math.floor(Math.random() * chosen.length)];
           } else {
             // Easy: pick from the bottom 30% of engine results, filtering queen hangs.
             const isSafeEnough = (mv) => {
